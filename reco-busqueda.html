@@ -1053,7 +1053,7 @@ function fmtPinPrice(p){
 }
 
 function renderPins(list){
-  document.getElementById('pinCount').textContent=list.length;
+  const pinCountEl=document.getElementById('pinCount'); if(pinCountEl) pinCountEl.textContent=list.length;
   if(!leafletMap) return;
 
   Object.values(leafletMarkers).forEach(m=>m.remove());
