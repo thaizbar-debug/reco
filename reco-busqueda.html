@@ -1024,10 +1024,10 @@ function onSearch(v){ showSuggestions(v); }
 // ─────────────────────── AUTOCOMPLETE ───────────────────────
 let SG_DATA=[];
 function buildSuggestions(){
-  const districts=[...new Set(PROPERTIES.map(p=>p.district))];
+  const districts=[...new Set(properties.map(p=>p.district))];
   SG_DATA=[
     ...districts.map(d=>({icon:'📍',label:d,sub:'Distrito · Lima'})),
-    ...PROPERTIES.map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type}))
+    ...properties.map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type}))
   ];
 }
 function boldMatch(text,q){
