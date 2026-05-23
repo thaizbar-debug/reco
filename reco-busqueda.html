@@ -351,6 +351,37 @@ header .spacer{flex:1}
   box-shadow:var(--sh);z-index:500;
 }
 
+/* ── Radius search ── */
+.radius-toggle{
+  position:absolute;bottom:50px;left:12px;z-index:500;
+  background:#fff;border:1.5px solid var(--blue);border-radius:8px;
+  color:var(--blue);font-size:.78rem;font-weight:700;
+  padding:6px 12px;cursor:pointer;box-shadow:var(--sh);
+  display:flex;align-items:center;gap:6px;transition:all .15s;
+}
+.radius-toggle:hover{background:var(--blue);color:#fff}
+.radius-toggle.active{background:var(--blue);color:#fff}
+.radius-panel{
+  position:absolute;bottom:100px;left:12px;z-index:500;
+  background:rgba(255,255,255,.96);backdrop-filter:blur(8px);
+  border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;width:220px;box-shadow:var(--sh2);
+  display:none;flex-direction:column;gap:8px;
+}
+.radius-panel.open{display:flex}
+.radius-hint{font-size:.75rem;color:var(--muted);line-height:1.4}
+.radius-slider-row{display:flex;align-items:center;gap:8px}
+.radius-slider-row input[type=range]{flex:1;accent-color:var(--blue)}
+.radius-km{font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap}
+.radius-clear{
+  background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  font-size:.75rem;color:var(--muted);padding:5px 8px;cursor:pointer;
+  transition:background .1s;
+}
+.radius-clear:hover{background:#fee2e2;color:var(--red);border-color:var(--red)}
+#realMap.radius-mode{cursor:crosshair !important}
+#realMap.radius-mode .leaflet-interactive{cursor:crosshair !important}
+
 /* ══════════════ DETAIL PANEL ══════════════ */
 .detail-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.3);
@@ -713,6 +744,18 @@ header .spacer{flex:1}
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
     <div id="realMap"></div>
+
+    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar por radio</button>
+
+    <div class="radius-panel" id="radiusPanel">
+      <div class="radius-hint" id="radiusHint">Haz clic en el mapa para centrar el área de búsqueda</div>
+      <div class="radius-slider-row">
+        <input type="range" min="200" max="5000" step="100" value="1000" id="radiusSlider" oninput="updateRadius(this.value)"/>
+        <span class="radius-km" id="radiusLabel">1.0 km</span>
+      </div>
+      <button class="radius-clear" onclick="clearRadius()">✕ Limpiar área</button>
+    </div>
+
     <div class="map-layer-info">📍 Lima Metropolitana · <strong id="pinCount">0</strong> propiedades</div>
   </div>
 </div>
@@ -841,6 +884,7 @@ const S = {
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
   keysLeft:3, selectedPlan:{name:'Bronce',price:45,qty:5},
+  radiusMode:false, radiusCenter:null, radiusMeters:1000,
 };
 
 // ─────────────────────── FILTERS ───────────────────────
@@ -859,6 +903,10 @@ function getFiltered(){
     if(S.minArea>0 && p.area<S.minArea) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0 && !S.features.every(f=>p.features.includes(f))) return false;
+    if(S.radiusCenter && GEO[p.id]){
+      const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
+      if(dist>S.radiusMeters) return false;
+    }
     return true;
   });
 
@@ -934,6 +982,53 @@ function initMap(){
     attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     maxZoom:19
   }).addTo(leafletMap);
+  leafletMap.on('click',onMapClick);
+}
+
+// ─────────────────────── RADIUS SEARCH ───────────────────────
+let radiusCircle=null;
+
+function toggleRadiusMode(){
+  S.radiusMode=!S.radiusMode;
+  const btn=document.getElementById('radiusToggle');
+  const panel=document.getElementById('radiusPanel');
+  const mapEl=document.getElementById('realMap');
+  btn.classList.toggle('active',S.radiusMode);
+  panel.classList.toggle('open',S.radiusMode);
+  mapEl.classList.toggle('radius-mode',S.radiusMode);
+  if(!S.radiusMode){ clearRadius(); }
+}
+
+function onMapClick(e){
+  if(!S.radiusMode) return;
+  S.radiusCenter=e.latlng;
+  document.getElementById('radiusHint').textContent='Ajusta el radio con el slider';
+  drawRadiusCircle();
+  applyFilters();
+}
+
+function drawRadiusCircle(){
+  if(radiusCircle){ radiusCircle.remove(); }
+  if(!S.radiusCenter) return;
+  radiusCircle=L.circle(S.radiusCenter,{
+    radius:S.radiusMeters,
+    color:'#0891b2',weight:2,
+    fillColor:'#0891b2',fillOpacity:.08
+  }).addTo(leafletMap);
+}
+
+function updateRadius(val){
+  S.radiusMeters=Number(val);
+  const km=(val/1000).toFixed(1);
+  document.getElementById('radiusLabel').textContent=km+' km';
+  if(S.radiusCenter){ drawRadiusCircle(); applyFilters(); }
+}
+
+function clearRadius(){
+  S.radiusCenter=null;
+  if(radiusCircle){ radiusCircle.remove(); radiusCircle=null; }
+  document.getElementById('radiusHint').textContent='Haz clic en el mapa para centrar el área de búsqueda';
+  applyFilters();
 }
 
 function fmtPinPrice(p){
@@ -947,9 +1042,8 @@ function renderPins(list){
   Object.values(leafletMarkers).forEach(m=>m.remove());
   leafletMarkers={};
 
-  const ids=new Set(list.map(p=>p.id));
   properties.forEach(p=>{
-    if(!ids.has(p.id)||!GEO[p.id]) return;
+    if(!GEO[p.id]) return;
     const isActive=S.selectedId===p.id;
     const price=fmtPinPrice(p);
     const icon=L.divIcon({
