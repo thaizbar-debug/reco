@@ -463,7 +463,7 @@ header .spacer{flex:1}
 }
 .detail-close:hover{background:rgba(0,0,0,.5)}
 
-.detail-body{flex:1;overflow-y:auto;padding:18px}
+.detail-body{flex:1;overflow-y:auto;padding:18px;min-height:0}
 
 .detail-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:14px}
 .detail-price{font-size:1.5rem;font-weight:900;color:var(--blue)}
@@ -1278,7 +1278,7 @@ function buildValChart(p){
     const label=v>=1000?(v/1000).toFixed(0)+'K':v;
     return `<div class="val-bar-wrap">
       <div class="val-bar" style="height:${h}px"></div>
-      <div class="val-tip">${years[i]} · ${p.cur} ${label}</div>
+      <div class="val-tip">${p.cur} ${label}</div>
     </div>`;
   }).join('');
   const labels=years.map(y=>`<span class="val-label">${y}</span>`).join('');
