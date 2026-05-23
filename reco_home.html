@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reco — Inteligencia inmobiliaria del Perú</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0E1117;--ink-2:#2A2F3A;--ink-3:#555B6A;--ink-4:#8E94A0;
+  --paper:#F5F3EF;--paper-2:#EDEAE4;--paper-3:#E0DDD7;--white:#FDFCFA;
+  --green:#1A6B4A;--green-bg:#E8F4EE;--green-mid:#3DB07A;
+  --red:#9B2020;--red-bg:#FAEAEA;
+  --amber:#8B5E0A;--amber-bg:#FDF3E3;
+  --accent:#1A4FBF;--accent-light:#EAF0FD;
+  --border:rgba(14,17,23,.1);--border-strong:rgba(14,17,23,.18);
+  --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;max-width:1100px;margin:0 auto;}
+
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:var(--serif);font-size:22px;display:flex;align-items:center;gap:8px;}
+.nav-logo span{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--white);padding:2px 7px;border-radius:4px;}
+.nav-links{display:flex;align-items:center;gap:6px;}
+.nav-link{font-size:13px;font-weight:500;color:var(--ink-3);padding:7px 12px;border-radius:6px;cursor:pointer;border:none;background:none;}
+.nav-link:hover{background:var(--paper);color:var(--ink);}
+.btn-nav-primary{font-size:13px;font-weight:500;color:var(--white);background:var(--ink);padding:8px 16px;border-radius:7px;cursor:pointer;border:none;}
+.btn-nav-primary:hover{opacity:.88;}
+
+.trust-strip{background:var(--ink);color:var(--white);text-align:center;padding:10px 24px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;}
+.trust-item{display:flex;align-items:center;gap:6px;opacity:.85;}
+.trust-dot{width:5px;height:5px;background:var(--green-mid);border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+.trust-strip strong{opacity:1;font-weight:600;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.hero{padding:64px 32px 44px;background:var(--white);border-bottom:1px solid var(--border);display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;}
+.hero-eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before{content:'';display:block;width:24px;height:1.5px;background:var(--accent);}
+.hero h1{font-family:var(--serif);font-size:54px;line-height:1.05;margin-bottom:16px;letter-spacing:-.01em;}
+.hero h1 em{font-style:italic;color:var(--accent);}
+.hero-sub{font-size:17px;color:var(--ink-3);margin-bottom:28px;line-height:1.6;max-width:520px;}
+.search-box{background:var(--paper);border:1.5px solid var(--border-strong);border-radius:var(--radius-lg);padding:6px 6px 6px 18px;display:flex;align-items:center;gap:10px;transition:border-color .2s,box-shadow .2s;}
+.search-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,79,191,.1);}
+.search-box input{flex:1;border:none;background:none;font-family:var(--sans);font-size:15px;color:var(--ink);outline:none;padding:10px 0;}
+.search-box input::placeholder{color:var(--ink-4);}
+.btn-search{background:var(--ink);color:var(--white);border:none;border-radius:10px;padding:11px 22px;font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-search:hover{background:var(--ink-2);}
+.search-hints{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.search-hint-label{font-size:12px;color:var(--ink-4);}
+.hint-chip{font-size:12px;color:var(--ink-2);background:var(--paper-2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;cursor:pointer;}
+.hint-chip:hover{background:var(--paper-3);}
+
+/* HERO PREVIEW CARD — the differentiator made tangible */
+.preview-card{background:var(--paper);border:1px solid var(--border);border-radius:20px;padding:24px;}
+.preview-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:14px;}
+.preview-tag .live-dot{width:6px;height:6px;background:var(--green-mid);border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+.preview-addr{font-family:var(--serif);font-size:22px;margin-bottom:2px;}
+.preview-meta{font-size:12px;color:var(--ink-4);margin-bottom:16px;}
+.verdict-pill{display:inline-flex;align-items:center;gap:8px;background:var(--red-bg);color:var(--red);border:1px solid rgba(155,32,32,.18);font-size:13px;font-weight:600;padding:6px 12px;border-radius:8px;margin-bottom:14px;}
+.preview-prices{display:flex;align-items:baseline;gap:12px;margin-bottom:12px;}
+.preview-ask{font-family:var(--serif);font-size:30px;color:var(--ink);}
+.preview-est{font-size:13px;color:var(--ink-4);}
+.gauge-track{height:8px;background:linear-gradient(90deg,var(--green-mid),#68c56a 30%,#e8b84b 55%,#e06040 75%,#c83030);border-radius:4px;position:relative;margin:18px 0 8px;}
+.gauge-needle{position:absolute;top:-5px;left:72%;width:2px;height:18px;background:var(--ink);border-radius:1px;transform:translateX(-50%);}
+.gauge-needle::after{content:'';position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);width:8px;height:8px;background:var(--ink);border-radius:50%;}
+.gauge-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--ink-4);}
+.preview-rows{margin-top:18px;display:flex;flex-direction:column;gap:8px;}
+.preview-row{display:flex;justify-content:space-between;font-size:13px;}
+.preview-row .k{color:var(--ink-3);}
+.preview-row .v{font-weight:600;color:var(--ink);}
+.btn-full{display:block;width:100%;margin-top:18px;background:var(--accent);color:white;border:none;border-radius:9px;padding:12px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;}
+.btn-full:hover{opacity:.9;}
+
+/* SECTIONS */
+.section{padding:48px 32px;border-bottom:1px solid var(--border);}
+.section-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px;gap:16px;}
+.section-tag{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:6px;}
+.section-title{font-family:var(--serif);font-size:28px;color:var(--ink);}
+.section-sub{font-size:13px;color:var(--ink-3);max-width:520px;margin-top:4px;}
+.section-link{font-size:13px;color:var(--accent);cursor:pointer;font-weight:500;white-space:nowrap;}
+
+/* DIFFERENTIATION BAR */
+.diff-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--paper);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.diff-cell{padding:24px 22px;border-right:1px solid var(--border);}
+.diff-cell:last-child{border-right:none;}
+.diff-icon{font-size:18px;margin-bottom:10px;display:block;color:var(--accent);}
+.diff-cell h4{font-size:14px;font-weight:600;margin-bottom:4px;}
+.diff-cell p{font-size:12px;color:var(--ink-3);line-height:1.5;}
+.diff-vs{font-size:11px;color:var(--ink-4);margin-top:8px;font-style:italic;}
+
+/* AI SIGNALS */
+.signals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.signal{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;position:relative;overflow:hidden;}
+.signal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.signal.buy::before{background:var(--green-mid);}
+.signal.watch::before{background:#e8b84b;}
+.signal.hot::before{background:var(--red);}
+.sig-label{font-size:10px;font-weight:700;letter-spacing:.08em;display:inline-block;padding:3px 8px;border-radius:4px;margin-bottom:14px;}
+.sig-label.buy{background:var(--green-bg);color:var(--green);}
+.sig-label.watch{background:var(--amber-bg);color:var(--amber);}
+.sig-label.hot{background:var(--red-bg);color:var(--red);}
+.sig-district{font-family:var(--serif);font-size:24px;margin-bottom:6px;}
+.sig-text{font-size:13px;color:var(--ink-3);line-height:1.6;margin-bottom:14px;}
+.sig-stats{display:flex;gap:18px;font-size:11px;color:var(--ink-4);border-top:1px solid var(--border);padding-top:12px;}
+.sig-stats strong{color:var(--ink);font-weight:600;display:block;font-size:14px;font-family:var(--serif);}
+
+/* MARKET PULSE */
+.pulse-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.pulse-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;position:relative;overflow:hidden;}
+.pulse-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.pulse-card.up::before{background:var(--green-mid);}
+.pulse-card.down::before{background:var(--red);}
+.pulse-card.neutral::before{background:#e8b84b;}
+.pulse-district{font-size:13px;font-weight:600;margin-bottom:2px;}
+.pulse-type{font-size:11px;color:var(--ink-4);margin-bottom:12px;}
+.pulse-price{font-family:var(--serif);font-size:22px;}
+.pulse-unit{font-family:var(--sans);font-size:11px;color:var(--ink-4);}
+.pulse-change{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:4px;margin-top:8px;}
+.pulse-change.up{background:var(--green-bg);color:var(--green);}
+.pulse-change.down{background:var(--red-bg);color:var(--red);}
+.pulse-change.neutral{background:var(--amber-bg);color:var(--amber);}
+.pulse-source{font-size:10px;color:var(--ink-4);margin-top:10px;}
+
+/* OPPORTUNITIES */
+.opp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.opp-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+.opp-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(14,17,23,.08);}
+.opp-img{height:130px;background:linear-gradient(135deg,#e8ddd0,#d0c5b5);display:flex;align-items:center;justify-content:center;font-size:32px;position:relative;}
+.opp-badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;}
+.opp-badge.buy{background:var(--green-bg);color:var(--green);}
+.opp-badge.warn{background:var(--red-bg);color:var(--red);}
+.opp-body{padding:14px 16px;}
+.opp-addr{font-size:13px;font-weight:600;margin-bottom:2px;}
+.opp-district{font-size:12px;color:var(--ink-4);margin-bottom:10px;}
+.opp-prices{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;}
+.opp-price-ask{font-family:var(--serif);font-size:19px;}
+.opp-price-est{font-size:12px;color:var(--ink-4);text-decoration:line-through;}
+.opp-delta{font-size:12px;font-weight:600;color:var(--green);}
+.opp-delta.over{color:var(--red);}
+.opp-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.tag{font-size:11px;color:var(--ink-3);background:var(--paper);border:1px solid var(--border);border-radius:4px;padding:2px 7px;}
+
+/* HOW IT WORKS */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.how-step{padding:24px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);}
+.how-num{font-family:var(--serif);font-size:42px;color:var(--paper-3);line-height:1;margin-bottom:12px;}
+.how-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+.how-body{font-size:13px;color:var(--ink-3);line-height:1.55;}
+
+/* B2B */
+.b2b-strip{background:var(--ink);color:var(--white);padding:42px 32px;display:flex;align-items:center;justify-content:space-between;gap:32px;}
+.b2b-left h3{font-family:var(--serif);font-size:26px;margin-bottom:8px;}
+.b2b-left p{font-size:13px;opacity:.7;max-width:480px;line-height:1.6;}
+.b2b-logos{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.b2b-logo-pill{font-size:11px;font-weight:500;opacity:.7;border:1px solid rgba(255,255,255,.2);padding:5px 12px;border-radius:20px;}
+.btn-b2b{background:var(--white);color:var(--ink);border:none;border-radius:8px;padding:13px 26px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;}
+
+/* TRUST STATS */
+.trust-section{padding:48px 32px;background:var(--white);border-bottom:1px solid var(--border);}
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;}
+.trust-stat{padding:20px 12px;}
+.trust-number{font-family:var(--serif);font-size:36px;margin-bottom:6px;}
+.trust-label{font-size:12px;color:var(--ink-4);line-height:1.4;}
+
+footer{padding:32px;background:var(--white);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.footer-brand{font-family:var(--serif);font-size:18px;}
+.footer-note{font-size:12px;color:var(--ink-4);text-align:center;}
+.footer-links{display:flex;gap:16px;}
+.footer-link{font-size:12px;color:var(--ink-4);cursor:pointer;}
+
+@media(max-width:780px){
+  .hero{grid-template-columns:1fr;padding:40px 24px;}
+  .hero h1{font-size:38px;}
+  .diff-bar,.signals-grid,.pulse-grid,.opp-grid,.how-grid,.trust-grid{grid-template-columns:1fr 1fr;}
+  .b2b-strip{flex-direction:column;text-align:center;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Reco <span>PE</span></div>
+  <div class="nav-links">
+    <button class="nav-link">Mapa de calor</button>
+    <button class="nav-link">Analizar URL</button>
+    <button class="nav-link">Oportunidades</button>
+    <button class="nav-link">Para bancos</button>
+    <button class="btn-nav-primary">Publicar gratis</button>
+  </div>
+</nav>
+
+<div class="trust-strip">
+  <div class="trust-item"><div class="trust-dot"></div>Datos de <strong>&nbsp;Vanet Data</strong> — tasadora con +25 años en Perú</div>
+  <div class="trust-item"><div class="trust-dot"></div><strong>+180,000</strong>&nbsp;transacciones registradas</div>
+  <div class="trust-item"><div class="trust-dot"></div>Actualización mensual</div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <div class="hero-eyebrow">Inteligencia de mercado inmobiliario</div>
+    <h1>¿Esta propiedad vale <em>lo que piden</em>?</h1>
+    <p class="hero-sub">Pega el link de Urbania o escribe una dirección. En 5 segundos te decimos si el precio es justo — basado en transacciones reales, no en avisos.</p>
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style="flex-shrink:0;opacity:.45">
+        <circle cx="6.5" cy="6.5" r="4.5" stroke="#0E1117" stroke-width="1.5"/>
+        <path d="M10 10L13 13" stroke="#0E1117" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <input type="text" placeholder="Dirección, distrito o link de Urbania…">
+      <button class="btn-search">Analizar</button>
+    </div>
+    <div class="search-hints">
+      <span class="search-hint-label">Prueba con:</span>
+      <span class="hint-chip">Av. Arequipa 1842, Miraflores</span>
+      <span class="hint-chip">San Isidro, 3 dorm</span>
+      <span class="hint-chip">Pegar URL ↗</span>
+    </div>
+  </div>
+
+  <!-- LIVE PREVIEW: tangible proof of value -->
+  <div class="preview-card">
+    <div class="preview-tag"><span class="live-dot"></span>Análisis en vivo · Ejemplo</div>
+    <div class="preview-addr">Av. Arequipa 1842</div>
+    <div class="preview-meta">Miraflores · 85 m² · 3 dorm · Piso 8</div>
+    <div class="verdict-pill">▲ Sobrevalorado +14% vs. mercado</div>
+    <div class="preview-prices">
+      <span class="preview-ask">S/ 550,000</span>
+      <span class="preview-est">Justo: S/ 481,000</span>
+    </div>
+    <div class="gauge-track"><div class="gauge-needle"></div></div>
+    <div class="gauge-labels"><span>Infravalorado</span><span>Justo</span><span>Sobrevalorado</span></div>
+    <div class="preview-rows">
+      <div class="preview-row"><span class="k">Comparables usados</span><span class="v">23 ventas · radio 600m</span></div>
+      <div class="preview-row"><span class="k">Liquidez de la zona</span><span class="v">38 días promedio</span></div>
+      <div class="preview-row"><span class="k">Yield estimado</span><span class="v">5.9% anual</span></div>
+      <div class="preview-row"><span class="k">Score de inversión</span><span class="v">7.5 / 10</span></div>
+    </div>
+    <button class="btn-full">Ver análisis completo →</button>
+  </div>
+</section>
+
+<!-- DIFFERENTIATION BAR — explicit vs competitors -->
+<div class="diff-bar">
+  <div class="diff-cell">
+    <span class="diff-icon">●</span>
+    <h4>Precios de venta reales</h4>
+    <p>No usamos avisos: usamos los precios a los que se cerraron las operaciones en Registros Públicos.</p>
+    <div class="diff-vs">vs. portales que solo muestran lo que el vendedor pide</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">◐</span>
+    <h4>Veredicto, no listado</h4>
+    <p>Te decimos si está sobrevalorado, justo o es oportunidad — con margen de negociación sugerido.</p>
+    <div class="diff-vs">vs. tener que adivinar entre 200 publicaciones</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">◆</span>
+    <h4>Liquidez y velocidad</h4>
+    <p>Cuánto tarda en venderse, oferta vs demanda real, yield esperado y momentum por distrito.</p>
+    <div class="diff-vs">vs. precio/m² aislado sin contexto</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">▲</span>
+    <h4>Señales predictivas con IA</h4>
+    <p>Modelos propietarios detectan zonas BUY, WATCH y OVERHEATED antes que el mercado reaccione.</p>
+    <div class="diff-vs">vs. data histórica congelada</div>
+  </div>
+</div>
+
+<!-- AI SIGNALS -->
+<section class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">AI Signals · Mayo 2026</div>
+      <h2 class="section-title">Dónde está el dinero esta semana</h2>
+      <p class="section-sub">Tres zonas que nuestro modelo detectó antes de que la prensa hable de ellas.</p>
+    </div>
+    <a class="section-link">Ver todos los distritos →</a>
+  </div>
+  <div class="signals-grid">
+    <div class="signal buy">
+      <span class="sig-label buy">● Buy Zone</span>
+      <div class="sig-district">Jesús María</div>
+      <p class="sig-text">Precio en percentil 28 histórico, absorción +22% trimestral y nuevo desarrollo de transporte. Ventana estimada: 4–6 meses.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 4,860</strong>/m²</div>
+        <div><strong>+3.5%</strong> YoY</div>
+        <div><strong>7.1%</strong> yield</div>
+      </div>
+    </div>
+    <div class="signal watch">
+      <span class="sig-label watch">◐ Watchlist</span>
+      <div class="sig-district">Barranco</div>
+      <p class="sig-text">Inventario subiendo, días en mercado +21%. Buen momento para esperar o negociar duro en 2-dorm.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 5,890</strong>/m²</div>
+        <div><strong>-2.4%</strong> YoY</div>
+        <div><strong>68d</strong> en venta</div>
+      </div>
+    </div>
+    <div class="signal hot">
+      <span class="sig-label hot">▲ Overheated</span>
+      <div class="sig-district">San Isidro</div>
+      <p class="sig-text">Pricing en máximos históricos (percentil 92). Compradores pagan ~9% sobre comparables cerrados.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 8,610</strong>/m²</div>
+        <div><strong>+1.1%</strong> YoY</div>
+        <div><strong>5.2%</strong> yield</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MARKET PULSE -->
+<section class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">Market Pulse</div>
+      <h2 class="section-title">Cómo se mueve Lima hoy</h2>
+    </div>
+    <a class="section-link">Abrir mapa de calor →</a>
+  </div>
+  <div class="pulse-grid">
+    <div class="pulse-card up">
+      <div class="pulse-district">Surco</div>
+      <div class="pulse-type">Departamentos · 3 dorm</div>
+      <div class="pulse-price">S/ 6,320<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change up">▲ +8.4% YoY</span>
+      <div class="pulse-source">210 ventas · últimos 18m · fuente: Vanet</div>
+    </div>
+    <div class="pulse-card up">
+      <div class="pulse-district">Miraflores</div>
+      <div class="pulse-type">Departamentos · 3 dorm</div>
+      <div class="pulse-price">S/ 7,240<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change up">▲ +6.2% YoY</span>
+      <div class="pulse-source">134 ventas · liquidez muy alta</div>
+    </div>
+    <div class="pulse-card down">
+      <div class="pulse-district">Barranco</div>
+      <div class="pulse-type">Departamentos · 2 dorm</div>
+      <div class="pulse-price">S/ 5,890<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change down">▼ −2.4% YoY</span>
+      <div class="pulse-source">44 ventas · sobreoferta</div>
+    </div>
+    <div class="pulse-card neutral">
+      <div class="pulse-district">San Isidro</div>
+      <div class="pulse-type">Departamentos · 3 dorm</div>
+      <div class="pulse-price">S/ 8,610<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change neutral">● +1.1% YoY</span>
+      <div class="pulse-source">89 ventas · percentil 92</div>
+    </div>
+    <div class="pulse-card up">
+      <div class="pulse-district">La Molina</div>
+      <div class="pulse-type">Casas</div>
+      <div class="pulse-price">S/ 5,980<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change up">▲ +6.8% YoY</span>
+      <div class="pulse-source">118 ventas · absorción +14%</div>
+    </div>
+    <div class="pulse-card up">
+      <div class="pulse-district">San Miguel</div>
+      <div class="pulse-type">Departamentos · 2 dorm</div>
+      <div class="pulse-price">S/ 4,980<span class="pulse-unit"> /m²</span></div>
+      <span class="pulse-change up">▲ +2.9% YoY · Oportunidad</span>
+      <div class="pulse-source">76 ventas · liquidez subiendo</div>
+    </div>
+  </div>
+</section>
+
+<!-- OPPORTUNITIES -->
+<section class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">Oportunidades detectadas hoy</div>
+      <h2 class="section-title">412 propiedades fuera de mercado</h2>
+      <p class="section-sub">Filtradas por nuestro modelo: 5%+ debajo del estimado, en zonas con liquidez sana.</p>
+    </div>
+    <a class="section-link">Ver las 412 →</a>
+  </div>
+  <div class="opp-grid">
+    <div class="opp-card">
+      <div class="opp-img">🏢<span class="opp-badge buy">▼ −12% vs. mercado</span></div>
+      <div class="opp-body">
+        <div class="opp-addr">Calle Schell 380</div>
+        <div class="opp-district">Miraflores · 82 m² · 3 dorm</div>
+        <div class="opp-prices">
+          <span class="opp-price-ask">S/ 425,000</span>
+          <span class="opp-price-est">S/ 483,000</span>
+        </div>
+        <span class="opp-delta">Ahorras ~S/ 58,000</span>
+        <div class="opp-tags"><span class="tag">5 años</span><span class="tag">Ascensor</span><span class="tag">Vista</span></div>
+      </div>
+    </div>
+    <div class="opp-card">
+      <div class="opp-img">🏠<span class="opp-badge buy">▼ −9% vs. mercado</span></div>
+      <div class="opp-body">
+        <div class="opp-addr">Av. La Marina 2450</div>
+        <div class="opp-district">San Miguel · 95 m² · 3 dorm</div>
+        <div class="opp-prices">
+          <span class="opp-price-ask">S/ 398,000</span>
+          <span class="opp-price-est">S/ 437,000</span>
+        </div>
+        <span class="opp-delta">Yield estimado 7.3%</span>
+        <div class="opp-tags"><span class="tag">Estreno</span><span class="tag">2 baños</span></div>
+      </div>
+    </div>
+    <div class="opp-card">
+      <div class="opp-img">🏢<span class="opp-badge warn">▲ +18% sobre mercado</span></div>
+      <div class="opp-body">
+        <div class="opp-addr">Av. El Polo 740</div>
+        <div class="opp-district">Santiago de Surco · 110 m²</div>
+        <div class="opp-prices">
+          <span class="opp-price-ask">S/ 780,000</span>
+          <span class="opp-price-est">S/ 661,000</span>
+        </div>
+        <span class="opp-delta over">Negociable S/ 100K+</span>
+        <div class="opp-tags"><span class="tag">Piscina</span><span class="tag">3 cocheras</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">¿Cómo funciona?</div>
+      <h2 class="section-title">Decisión con data, en 3 pasos</h2>
+    </div>
+  </div>
+  <div class="how-grid">
+    <div class="how-step">
+      <div class="how-num">01</div>
+      <div class="how-title">Pegas el link o la dirección</div>
+      <div class="how-body">Funciona con Urbania, AdondeVivir, Properati o cualquier dirección de Lima Metropolitana.</div>
+    </div>
+    <div class="how-step">
+      <div class="how-num">02</div>
+      <div class="how-title">Cruzamos con +180k transacciones reales</div>
+      <div class="how-body">Comparables cerrados de Vanet Data + señales predictivas de nuestros modelos AI.</div>
+    </div>
+    <div class="how-step">
+      <div class="how-num">03</div>
+      <div class="how-title">Recibes veredicto, score y margen</div>
+      <div class="how-body">Sabes si comprar, esperar o negociar — y cuánto. Sin sesgo del vendedor.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section class="trust-section">
+  <div class="trust-grid">
+    <div class="trust-stat"><div class="trust-number">180k+</div><div class="trust-label">Transacciones verificadas en Registros Públicos</div></div>
+    <div class="trust-stat"><div class="trust-number">±4.8%</div><div class="trust-label">Margen promedio del modelo predictivo</div></div>
+    <div class="trust-stat"><div class="trust-number">38</div><div class="trust-label">Distritos de Lima con cobertura completa</div></div>
+    <div class="trust-stat"><div class="trust-number">25 años</div><div class="trust-label">De data Vanet en el mercado peruano</div></div>
+  </div>
+</section>
+
+<!-- B2B -->
+<div class="b2b-strip">
+  <div class="b2b-left">
+    <h3>¿Eres banco, fondo o tasador?</h3>
+    <p>Acceso por API a comparables, indicadores de liquidez y scoring para originación hipotecaria y tasación masiva.</p>
+    <div class="b2b-logos">
+      <span class="b2b-logo-pill">Banca</span>
+      <span class="b2b-logo-pill">Fondos inmobiliarios</span>
+      <span class="b2b-logo-pill">Tasadores</span>
+      <span class="b2b-logo-pill">Aseguradoras</span>
+    </div>
+  </div>
+  <button class="btn-b2b">Hablar con ventas →</button>
+</div>
+
+<footer>
+  <div class="footer-brand">Reco</div>
+  <div class="footer-note">Hecho en Lima · Datos de Vanet Data · © 2026</div>
+  <div class="footer-links">
+    <span class="footer-link">Sobre</span>
+    <span class="footer-link">API</span>
+    <span class="footer-link">Prensa</span>
+  </div>
+</footer>
+
+</body>
+</html>

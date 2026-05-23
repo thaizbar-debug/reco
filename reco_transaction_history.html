@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Histórico de ventas — Reco</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0E1117;--ink-2:#2A2F3A;--ink-3:#555B6A;--ink-4:#8E94A0;
+  --paper:#F5F3EF;--paper-2:#EDEAE4;--paper-3:#E0DDD7;--white:#FDFCFA;
+  --green:#1A6B4A;--green-bg:#E8F4EE;--green-mid:#3DB07A;
+  --red:#9B2020;--red-bg:#FAEAEA;
+  --amber:#8B5E0A;--amber-bg:#FDF3E3;
+  --accent:#1A4FBF;--accent-light:#EAF0FD;
+  --border:rgba(14,17,23,.1);--border-strong:rgba(14,17,23,.18);
+  --serif:'DM Serif Display',Georgia,serif;--sans:'DM Sans',system-ui,sans-serif;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;max-width:1180px;margin:0 auto;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:var(--serif);font-size:22px;display:flex;align-items:center;gap:8px;}
+.nav-logo span{font-family:var(--sans);font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--white);padding:2px 7px;border-radius:4px;}
+.nav-links{display:flex;align-items:center;gap:6px;}
+.nav-link{font-size:13px;font-weight:500;color:var(--ink-3);padding:7px 12px;border-radius:6px;cursor:pointer;border:none;background:none;text-decoration:none;}
+.nav-link:hover, .nav-link.active{background:var(--paper);color:var(--ink);}
+.btn-nav-primary{font-size:13px;font-weight:500;color:var(--white);background:var(--ink);padding:8px 16px;border-radius:7px;cursor:pointer;border:none;}
+.btn-nav-primary:hover{opacity:.88;}
+.keys-chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(139,94,10,.2);padding:5px 10px;border-radius:20px;}
+.trust-strip{background:var(--ink);color:var(--white);text-align:center;padding:10px 24px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;}
+.trust-item{display:flex;align-items:center;gap:6px;opacity:.85;}
+.trust-dot{width:5px;height:5px;background:var(--green-mid);border-radius:50%;animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:'';display:block;width:24px;height:1.5px;background:var(--accent);}
+h1.page{font-family:var(--serif);font-size:44px;line-height:1.05;margin-bottom:14px;letter-spacing:-.01em;}
+h1.page em{font-style:italic;color:var(--accent);}
+.page-sub{font-size:16px;color:var(--ink-3);max-width:600px;line-height:1.55;}
+.section{padding:40px 32px;border-bottom:1px solid var(--border);background:var(--white);}
+.section.paper{background:var(--paper);}
+footer{padding:32px;text-align:center;font-size:12px;color:var(--ink-4);background:var(--ink);color:#cdd0d6;}
+footer .ft-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;text-align:left;max-width:1000px;margin:0 auto 24px;}
+footer h5{font-family:var(--serif);font-size:16px;color:white;margin-bottom:10px;}
+footer a{display:block;color:#9aa0aa;font-size:12px;text-decoration:none;padding:3px 0;}
+footer a:hover{color:white;}
+.ft-bottom{border-top:1px solid rgba(255,255,255,.1);padding-top:18px;display:flex;justify-content:space-between;max-width:1000px;margin:0 auto;font-size:11px;color:#7a7f88;}
+</style></head><body><nav>
+<div class="nav-logo">reco<span>data</span></div>
+<div class="nav-links">
+<a class="nav-link ">Comprar</a><a class="nav-link ">Alquilar</a>
+<a class="nav-link active">Histórico</a><a class="nav-link ">Heatmap</a>
+<a class="nav-link ">Planes</a>
+<span class="keys-chip">🔑 12 llaves</span>
+<button class="btn-nav-primary">Mi cuenta</button>
+</div></nav><div class="trust-strip">
+<span class="trust-item"><span class="trust-dot"></span>Datos verificados • <strong>Registros Públicos SUNARP</strong></span>
+<span class="trust-item">📊 <strong>847K</strong> transacciones reales</span>
+<span class="trust-item">📍 <strong>43</strong> distritos cubiertos</span>
+<span class="trust-item">⚡ Actualizado <strong>hoy 06:00</strong></span>
+</div>
+<div class="section">
+<div class="eyebrow">El diferenciador · Datos SUNARP procesados</div>
+<h1 class="page">Histórico real de <em>ventas cerradas</em></h1>
+<p class="page-sub">No precios de aviso. No estimaciones de portal. Transacciones efectivamente registradas en Registros Públicos, geocodificadas y normalizadas $/m².</p>
+</div>
+
+<!-- VS competitors strip -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:var(--paper);border-bottom:1px solid var(--border);">
+<div style="padding:22px 24px;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;color:var(--ink-4);letter-spacing:.08em;margin-bottom:6px;">PORTALES TRADICIONALES</div><div style="font-size:14px;color:var(--ink-3);">Solo precios de <strong>publicación</strong>. Sesgo +12% a +18% sobre cierre real.</div></div>
+<div style="padding:22px 24px;border-right:1px solid var(--border);"><div style="font-size:10px;font-weight:700;color:var(--ink-4);letter-spacing:.08em;margin-bottom:6px;">TASADORES</div><div style="font-size:14px;color:var(--ink-3);">Tasaciones puntuales caras (~S/350) sin visibilidad de la calle.</div></div>
+<div style="padding:22px 24px;background:var(--accent-light);"><div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:.08em;margin-bottom:6px;">RECO</div><div style="font-size:14px;color:var(--ink);"><strong>847,213 transacciones reales</strong> desde 2018. Geocodificadas, depuradas, comparables en segundos.</div></div>
+</div>
+
+<!-- Query bar -->
+<div class="section paper">
+<div style="background:white;border:1px solid var(--border);border-radius:14px;padding:22px;">
+<div style="display:grid;grid-template-columns:2.5fr 1fr 1fr 1fr 1fr auto;gap:10px;align-items:end;">
+<div><label style="font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;">Dirección o distrito</label><input value="San Isidro" style="width:100%;padding:11px 14px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;font-family:var(--sans);"></div>
+<div><label style="font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;">Tipo</label><select style="width:100%;padding:11px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:white;"><option>Departamento</option><option>Casa</option><option>Comercial</option><option>Terreno</option></select></div>
+<div><label style="font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;">Año desde</label><select style="width:100%;padding:11px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:white;"><option>2022</option></select></div>
+<div><label style="font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;">Año hasta</label><select style="width:100%;padding:11px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:white;"><option>2026</option></select></div>
+<div><label style="font-size:11px;color:var(--ink-4);font-weight:600;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px;">Radio</label><select style="width:100%;padding:11px 12px;border:1.5px solid var(--border-strong);border-radius:8px;font-size:14px;background:white;"><option>500 m</option><option>1 km</option></select></div>
+<button style="padding:12px 22px;background:var(--ink);color:white;border:none;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;">Consultar 🔑</button>
+</div>
+<div style="margin-top:14px;display:flex;gap:18px;font-size:12px;color:var(--ink-4);">
+<span>💰 Consulta cuesta <strong style="color:var(--ink);">1 llave</strong></span>
+<span>📊 Resultados típicos: 80–300 transacciones</span>
+<span>📥 Exportable a CSV / Excel</span>
+</div>
+</div>
+</div>
+
+<!-- KPIs summary -->
+<div class="section">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px;">
+
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+<div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Transacciones</div>
+<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;">187</div>
+<div style="font-size:11px;color:var(--ink-3);margin-top:6px;font-weight:600;">desde 2022</div>
+</div>
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+<div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Precio mediano</div>
+<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;">$3,420/m²</div>
+<div style="font-size:11px;color:var(--green);margin-top:6px;font-weight:600;">+5.2% YoY</div>
+</div>
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+<div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Rango P25–P75</div>
+<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;">$2,890 – $3,980</div>
+<div style="font-size:11px;color:var(--ink-3);margin-top:6px;font-weight:600;">spread $1,090</div>
+</div>
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+<div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Días en mercado</div>
+<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;">71 días</div>
+<div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:600;">+18 vs 2023</div>
+</div>
+<div style="background:white;border:1px solid var(--border);border-radius:12px;padding:18px;">
+<div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Cap rate medio</div>
+<div style="font-family:var(--serif);font-size:26px;color:var(--ink);line-height:1;">5.4%</div>
+<div style="font-size:11px;color:var(--red);margin-top:6px;font-weight:600;">-0.3 pp YoY</div>
+</div>
+</div>
+
+<!-- Price evolution chart -->
+<div style="background:white;border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:24px;">
+<div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:18px;">
+<div><div style="font-size:10px;color:var(--ink-4);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">Evolución $/m²</div><h3 style="font-family:var(--serif);font-size:22px;">San Isidro · Departamentos · 2022–2026</h3></div>
+<div style="display:flex;gap:6px;"><button style="padding:5px 11px;font-size:11px;border:1px solid var(--border-strong);background:white;color:var(--ink);border-radius:5px;cursor:pointer;">1A</button><button style="padding:5px 11px;font-size:11px;border:1px solid var(--border-strong);background:white;color:var(--ink);border-radius:5px;cursor:pointer;">2A</button><button style="padding:5px 11px;font-size:11px;border:1px solid var(--border-strong);background:var(--ink);color:white;border-radius:5px;cursor:pointer;">5A</button><button style="padding:5px 11px;font-size:11px;border:1px solid var(--border-strong);background:white;color:var(--ink);border-radius:5px;cursor:pointer;">Todo</button></div>
+</div>
+<svg viewBox="0 0 800 280" style="width:100%;height:260px;">
+<defs><linearGradient id="grd" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#1A4FBF" stop-opacity=".25"/><stop offset="100%" stop-color="#1A4FBF" stop-opacity="0"/></linearGradient></defs>
+<g stroke="#E0DDD7" stroke-width="1">
+<line x1="50" y1="40" x2="780" y2="40"/><line x1="50" y1="100" x2="780" y2="100"/><line x1="50" y1="160" x2="780" y2="160"/><line x1="50" y1="220" x2="780" y2="220"/>
+</g>
+<g fill="#8E94A0" font-size="10" font-family="DM Sans">
+<text x="40" y="44" text-anchor="end">$3,800</text><text x="40" y="104" text-anchor="end">$3,400</text><text x="40" y="164" text-anchor="end">$3,000</text><text x="40" y="224" text-anchor="end">$2,600</text>
+</g>
+<!-- Band P25-P75 -->
+<path d="M50,165 L120,160 L200,155 L290,140 L380,130 L470,115 L560,100 L650,90 L730,75 L780,68 L780,135 L730,140 L650,150 L560,160 L470,170 L380,180 L290,190 L200,200 L120,205 L50,210 Z" fill="#EAF0FD" opacity=".6"/>
+<!-- Median line -->
+<path d="M50,188 L120,182 L200,178 L290,165 L380,155 L470,140 L560,128 L650,118 L730,108 L780,100" fill="none" stroke="#1A4FBF" stroke-width="2.5"/>
+<!-- Dots = transactions -->
+<circle cx="50" cy="200.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="57" cy="190.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="64" cy="181.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="71" cy="171.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="78" cy="162.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="85" cy="193.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="92" cy="183.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="99" cy="174.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="106" cy="164.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="113" cy="155.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="120" cy="186.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="127" cy="176.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="134" cy="167.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="141" cy="157.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="148" cy="148.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="155" cy="179.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="162" cy="169.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="169" cy="160.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="176" cy="150.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="183" cy="141.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="190" cy="172.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="197" cy="162.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="204" cy="153.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="211" cy="143.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="218" cy="134.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="225" cy="165.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="232" cy="155.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="239" cy="146.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="246" cy="136.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="253" cy="127.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="260" cy="158.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="267" cy="148.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="274" cy="139.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="281" cy="129.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="288" cy="120.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="295" cy="151.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="302" cy="141.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="309" cy="132.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="316" cy="122.80000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="323" cy="113.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="330" cy="144.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="337" cy="134.6" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="344" cy="125.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="351" cy="115.80000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="358" cy="106.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="365" cy="137.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="372" cy="127.60000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="379" cy="118.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="386" cy="108.80000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="393" cy="199.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="400" cy="130.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="407" cy="120.60000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="414" cy="111.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="421" cy="101.80000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="428" cy="192.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="435" cy="123.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="442" cy="113.60000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="449" cy="104.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="456" cy="194.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="463" cy="185.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="470" cy="116.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="477" cy="106.60000000000001" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="484" cy="197.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="491" cy="187.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="498" cy="178.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="505" cy="109.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="512" cy="199.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="519" cy="190.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="526" cy="180.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="533" cy="171.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="540" cy="102.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="547" cy="192.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="554" cy="183.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="561" cy="173.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="568" cy="164.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="575" cy="195.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="582" cy="185.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="589" cy="176.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="596" cy="166.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="603" cy="157.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="610" cy="188.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="617" cy="178.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="624" cy="169.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="631" cy="159.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="638" cy="150.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="645" cy="181.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="652" cy="171.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="659" cy="162.2" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="666" cy="152.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="673" cy="143.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="680" cy="174.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="687" cy="164.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="694" cy="155.20000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="701" cy="145.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="708" cy="136.4" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="715" cy="167.0" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="722" cy="157.60000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="729" cy="148.20000000000002" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="736" cy="138.8" r="2.5" fill="#0E1117" opacity=".35"/><circle cx="743" cy="129.4" r="2.5" fill="#0E1117" opacity=".35"/>
+<g fill="#555B6A" font-size="10">
+<text x="60" y="265">2022</text><text x="225" y="265">2023</text><text x="395" y="265">2024</text><text x="565" y="265">2025</text><text x="745" y="265">2026</text>
+</g>
+<!-- Legend -->
+<g transform="translate(620,30)" font-size="10" font-family="DM Sans">
+<rect x="0" y="0" width="14" height="2" fill="#1A4FBF"/><text x="20" y="3" fill="#2A2F3A">Mediana $/m²</text>
+<rect x="0" y="14" width="14" height="6" fill="#EAF0FD"/><text x="20" y="20" fill="#2A2F3A">Banda P25–P75</text>
+<circle cx="7" cy="34" r="2.5" fill="#0E1117" opacity=".35"/><text x="20" y="37" fill="#2A2F3A">Transacción real</text>
+</g>
+</svg>
+</div>
+
+<!-- Transactions table -->
+<div style="background:white;border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+<div style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+<h3 style="font-family:var(--serif);font-size:20px;">Transacciones registradas — 187 resultados</h3>
+<div style="display:flex;gap:8px;"><button style="padding:7px 14px;font-size:12px;border:1px solid var(--border-strong);background:white;border-radius:6px;cursor:pointer;">📥 Exportar CSV</button><button style="padding:7px 14px;font-size:12px;border:1px solid var(--border-strong);background:white;border-radius:6px;cursor:pointer;">🗺 Ver en mapa</button></div>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+<thead><tr style="background:var(--paper);font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-4);">
+<th style="padding:12px 18px;text-align:left;font-weight:600;">Fecha</th><th style="padding:12px;text-align:left;font-weight:600;">Dirección</th><th style="padding:12px;text-align:right;font-weight:600;">m²</th><th style="padding:12px;text-align:right;font-weight:600;">Precio</th><th style="padding:12px;text-align:right;font-weight:600;">$/m²</th><th style="padding:12px;text-align:right;font-weight:600;">vs. mediana</th><th style="padding:12px;text-align:center;font-weight:600;">Fuente</th>
+</tr></thead><tbody>
+<tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">14 mar 2026</td><td style="padding:13px;font-weight:500;">Calle Las Begonias 415, Dpto 802</td><td style="padding:13px;text-align:right;color:var(--ink-3);">118</td><td style="padding:13px;text-align:right;font-weight:600;">$421,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,568</td><td style="padding:13px;text-align:right;color:var(--green);font-weight:600;">+4.3%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">22 feb 2026</td><td style="padding:13px;font-weight:500;">Av. Conquistadores 770, Dpto 502</td><td style="padding:13px;text-align:right;color:var(--ink-3);">94</td><td style="padding:13px;text-align:right;font-weight:600;">$312,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,319</td><td style="padding:13px;text-align:right;color:var(--red);font-weight:600;">-3.0%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">10 feb 2026</td><td style="padding:13px;font-weight:500;">Calle Burgos 270, Dpto 1101</td><td style="padding:13px;text-align:right;color:var(--ink-3);">142</td><td style="padding:13px;text-align:right;font-weight:600;">$512,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,606</td><td style="padding:13px;text-align:right;color:var(--green);font-weight:600;">+5.4%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">28 ene 2026</td><td style="padding:13px;font-weight:500;">Av. República de Panamá 3030, Dpto 305</td><td style="padding:13px;text-align:right;color:var(--ink-3);">86</td><td style="padding:13px;text-align:right;font-weight:600;">$276,500</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,215</td><td style="padding:13px;text-align:right;color:var(--red);font-weight:600;">-6.0%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">15 ene 2026</td><td style="padding:13px;font-weight:500;">Calle Amador Merino R. 480, Dpto 701</td><td style="padding:13px;text-align:right;color:var(--ink-3);">105</td><td style="padding:13px;text-align:right;font-weight:600;">$378,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,600</td><td style="padding:13px;text-align:right;color:var(--green);font-weight:600;">+5.3%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">06 ene 2026</td><td style="padding:13px;font-weight:500;">Av. Pezet 555, Dpto 904</td><td style="padding:13px;text-align:right;color:var(--ink-3);">128</td><td style="padding:13px;text-align:right;font-weight:600;">$445,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,477</td><td style="padding:13px;text-align:right;color:var(--ink-3);font-weight:600;">+1.7%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">22 dic 2025</td><td style="padding:13px;font-weight:500;">Calle Manuel Bañón 215, Dpto 402</td><td style="padding:13px;text-align:right;color:var(--ink-3);">78</td><td style="padding:13px;text-align:right;font-weight:600;">$248,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,179</td><td style="padding:13px;text-align:right;color:var(--red);font-weight:600;">-7.0%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr><tr style="border-top:1px solid var(--border);">
+<td style="padding:13px 18px;color:var(--ink-3);">14 dic 2025</td><td style="padding:13px;font-weight:500;">Av. Salaverry 2840, Dpto 1502</td><td style="padding:13px;text-align:right;color:var(--ink-3);">156</td><td style="padding:13px;text-align:right;font-weight:600;">$562,000</td><td style="padding:13px;text-align:right;color:var(--ink-2);">$3,603</td><td style="padding:13px;text-align:right;color:var(--green);font-weight:600;">+5.3%</td><td style="padding:13px;text-align:center;"><span style="font-size:10px;font-weight:600;background:var(--green-bg);color:var(--green);padding:3px 8px;border-radius:4px;">SUNARP ✓</span></td>
+</tr>
+</tbody></table>
+<div style="padding:14px 22px;border-top:1px solid var(--border);text-align:center;font-size:12px;color:var(--ink-4);">Mostrando 8 de 187 — <a style="color:var(--accent);cursor:pointer;font-weight:600;">cargar 50 más</a> · costo: 0 llaves adicionales</div>
+</div>
+</div>
+<footer>
+<div class="ft-grid">
+<div><h5>Reco</h5><a>Cómo funciona</a><a>Diferencia vs. portales</a><a>Metodología de datos</a><a>API para empresas</a></div>
+<div><h5>Productos</h5><a>Comprar propiedad</a><a>Histórico de ventas</a><a>Heatmap distrital</a><a>Valorización IA</a></div>
+<div><h5>Recursos</h5><a>Glosario inmobiliario</a><a>Reporte trimestral Lima</a><a>Blog</a><a>Casos de estudio</a></div>
+<div><h5>Empresa</h5><a>Sobre Reco</a><a>Contacto</a><a>Trabaja con nosotros</a><a>Prensa</a></div>
+</div>
+<div class="ft-bottom"><span>© 2026 Reco Data S.A.C. — Lima, Perú</span><span>Términos · Privacidad · Cookies</span></div>
+</footer></body></html>
