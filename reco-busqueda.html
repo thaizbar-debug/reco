@@ -232,6 +232,40 @@ header .spacer{flex:1}
 }
 /* recalculated by JS when adv panel opens */
 
+/* ══════════════ HISTÓRICO EXPLAINER ══════════════ */
+.hist-banner{
+  display:none;
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:20px 22px 0;flex-direction:column;gap:0;
+}
+.hist-banner.open{display:flex}
+.hist-tag{font-size:.68rem;font-weight:800;letter-spacing:1.2px;color:var(--blue);
+  display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.hist-tag::before{content:'';display:block;width:28px;height:2px;background:var(--blue)}
+.hist-headline{font-size:1.35rem;font-weight:900;color:var(--txt);line-height:1.2;margin-bottom:8px}
+.hist-headline em{color:var(--blue);font-style:italic}
+.hist-sub{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:18px;max-width:340px}
+.hist-compare{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);margin:0 -22px}
+.hist-col{padding:14px 16px;border-right:1px solid var(--border);font-size:.75rem}
+.hist-col:last-child{border-right:none;background:#eff6ff}
+.hist-col-label{font-size:.65rem;font-weight:800;letter-spacing:.9px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.hist-col:last-child .hist-col-label{color:var(--blue)}
+.hist-col-body{color:var(--txt);line-height:1.5}
+.hist-col-body strong{font-weight:700}
+
+/* ══════════════ SUNARP DETAIL ══════════════ */
+.sun-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--border);margin-top:14px}
+.sun-col{padding:16px 18px;border-right:1px solid var(--border)}
+.sun-col:last-child{border-right:none}
+.sun-col-title{font-size:.75rem;font-weight:800;color:var(--txt);margin-bottom:12px;letter-spacing:.3px}
+.sun-field{margin-bottom:8px}
+.sun-field-label{font-size:.7rem;color:var(--muted);margin-bottom:3px}
+.sun-field-val{background:var(--light);border-radius:8px;padding:7px 11px;font-size:.82rem;color:var(--txt);font-weight:500;display:flex;align-items:center;gap:7px}
+.sun-field-val .ico{font-size:.85rem}
+.sun-rrpp{background:var(--light);border-radius:8px;padding:10px 12px;margin-top:4px}
+.sun-rrpp strong{font-size:.8rem;color:var(--txt);display:block;margin-bottom:3px}
+.sun-rrpp span{font-size:.75rem;color:var(--muted)}
+
 /* ══════════════ RESULTS PANEL ══════════════ */
 .results-panel{
   width:420px;min-width:320px;
@@ -407,6 +441,7 @@ header .spacer{flex:1}
   box-shadow:-8px 0 40px rgba(0,0,0,.15);
 }
 .detail-panel.open{transform:translateX(0)}
+#detailContent{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 
 .detail-header{
   position:relative;height:180px;flex-shrink:0;
@@ -429,7 +464,7 @@ header .spacer{flex:1}
 }
 .detail-close:hover{background:rgba(0,0,0,.5)}
 
-.detail-body{flex:1;overflow-y:auto;padding:18px}
+.detail-body{flex:1;overflow-y:auto;padding:18px;min-height:0}
 
 .detail-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:14px}
 .detail-price{font-size:1.5rem;font-weight:900;color:var(--blue)}
@@ -456,13 +491,23 @@ header .spacer{flex:1}
 /* Valuation chart */
 .val-chart{margin-bottom:18px}
 .val-bars{display:flex;align-items:flex-end;gap:6px;height:60px;margin-bottom:4px}
+.val-bar-wrap{position:relative;flex:1;display:flex;align-items:flex-end}
 .val-bar{
-  flex:1;border-radius:4px 4px 0 0;
+  width:100%;border-radius:4px 4px 0 0;
   background:linear-gradient(to top,var(--blue),var(--blue2));
-  opacity:.7;transition:opacity .2s;min-width:20px;
+  opacity:.7;transition:opacity .2s;min-width:20px;cursor:pointer;
 }
-.val-bar:last-child{opacity:1;background:linear-gradient(to top,var(--amber),var(--amber2))}
-.val-bar:hover{opacity:1}
+.val-bar-wrap:last-child .val-bar{opacity:1;background:linear-gradient(to top,var(--amber),var(--amber2))}
+.val-bar-wrap:hover .val-bar{opacity:1}
+.val-tip{
+  display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--txt);color:#fff;font-size:.72rem;font-weight:600;
+  white-space:nowrap;padding:5px 10px;border-radius:7px;pointer-events:none;z-index:20;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+.val-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:var(--txt)}
+.val-bar-wrap:hover .val-tip{display:block}
 .val-labels{display:flex;justify-content:space-between}
 .val-label{font-size:.65rem;color:var(--muted);text-align:center;flex:1}
 
@@ -738,6 +783,28 @@ header .spacer{flex:1}
 
   <!-- Results panel -->
   <div class="results-panel">
+
+    <!-- Histórico explainer banner -->
+    <div class="hist-banner" id="histBanner">
+      <div class="hist-tag">Registros Públicos · SUNARP</div>
+      <div class="hist-headline">Valor real,<br><em>no precio de lista</em></div>
+      <div class="hist-sub">Un inmueble tiene precio y tiene valor — y no siempre coinciden. El precio lo fija quien vende. El valor lo determina el mercado y lo certifica SUNARP al momento de inscribir la transferencia en Registros Públicos.</div>
+      <div class="hist-compare">
+        <div class="hist-col">
+          <div class="hist-col-label">Tasadores y peritos</div>
+          <div class="hist-col-body">Sustenta tu informe de tasación con el <strong>valor real inscrito</strong> en Registros Públicos, no con portales ni estimaciones.</div>
+        </div>
+        <div class="hist-col">
+          <div class="hist-col-label">Bancos y financieras</div>
+          <div class="hist-col-body">Valida el valor del inmueble con datos <strong>oficiales SUNARP</strong> antes de aprobar una hipoteca o un crédito.</div>
+        </div>
+        <div class="hist-col">
+          <div class="hist-col-label">Propietarios e inversores</div>
+          <div class="hist-col-body">Conoce cuánto <strong>vale realmente</strong> tu inmueble según el mercado, más allá del precio que te ofrecen.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
       <select class="sort-sel" id="sortSel" onchange="applyFilters()">
@@ -861,10 +928,14 @@ const properties = [
   { id:12, address:'Av. Conquistadores 850', district:'San Isidro', type:'Departamento', op:'Venta', price:680000, cur:'$', area:135, beds:3, baths:3, park:2, floor:15, floors:20, age:4, features:['Ascensor','Gimnasio','Seguridad 24/7','Balcón','Vista Ciudad','Zona Comercio','Zona Hospital'], gradient:'linear-gradient(135deg,#fbc2eb,#a6c1ee)', pin:{x:56,y:26}, val:[500,550,600,640,680], desc:'Exclusivo departamento en torre premium de San Isidro. Lobby de doble altura, concierge y spa privado. Terminaciones de lujo: mármol travertino y maderas nobles.', owner:'Premium Realty', phone:'01-***-9988', bank:false, isNew:true, emoji:'👑' },
 
   // ── Histórico ──
-  { id:13, address:'Jr. Schell 150', district:'Miraflores', type:'Departamento', op:'Histórico', price:380000, cur:'$', area:80, beds:2, baths:2, park:1, floor:5, floors:10, age:8, features:['Ascensor','Balcón','Vista Mar','Seguridad 24/7'], gradient:'linear-gradient(135deg,#0ea5e9,#7dd3fc)', pin:{x:47,y:53}, val:[280,300,320,350,380], desc:'Departamento vendido hace 8 meses como referencia de mercado. Vista parcial al mar desde el balcón. Acabados modernos y bien conservado en una de las mejores zonas de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📋' },
-  { id:14, address:'Calle Los Ficus 890', district:'La Molina', type:'Casa', op:'Histórico', price:920000, cur:'$', area:320, beds:5, baths:4, park:3, floor:1, floors:2, age:10, features:['Piscina','Jardín','Terraza','Gimnasio','Seguridad 24/7','Vista Jardín','Estacionamiento 2'], gradient:'linear-gradient(135deg,#34d399,#6ee7b7)', pin:{x:82,y:60}, val:[650,720,780,860,920], desc:'Gran casa familiar en exclusiva urbanización de La Molina. Transacción cerrada hace 6 meses. Jardín con piscina y área de parrilla. Referencia premium del mercado residencial alto.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏰' },
-  { id:15, address:'Av. Huaylas 350', district:'Chorrillos', type:'Terreno', op:'Histórico', price:95000, cur:'$', area:180, beds:0, baths:0, park:0, floor:0, floors:0, age:0, features:['Vista Mar','Zona Comercio'], gradient:'linear-gradient(135deg,#fbbf24,#f59e0b)', pin:{x:40,y:86}, val:[60,70,78,88,95], desc:'Terreno a pasos del mar de Chorrillos. Transacción de referencia cerrada hace 5 meses. Uso mixto permitido. Acceso a avenida principal y redes de servicios instaladas.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏖️' },
-  { id:16, address:'Calle Alcanfores 480', district:'Miraflores', type:'Departamento', op:'Histórico', price:520000, cur:'$', area:90, beds:2, baths:2, park:1, floor:7, floors:12, age:6, features:['Ascensor','Amoblado','Vista Mar','Balcón','Seguridad 24/7'], gradient:'linear-gradient(135deg,#7dd3fc,#38bdf8)', pin:{x:45,y:51}, val:[380,410,450,490,520], desc:'Transacción histórica de referencia. Departamento con vista al mar vendido hace 4 meses. Excelente indicador para valorizar propiedades similares en la zona costera de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📊' },
+  { id:13, address:'Jr. Schell 150', district:'Miraflores', type:'Departamento', op:'Histórico', price:380000, cur:'$', area:80, beds:2, baths:2, park:1, floor:5, floors:10, age:8, features:['Ascensor','Balcón','Vista Mar','Seguridad 24/7'], gradient:'linear-gradient(135deg,#0ea5e9,#7dd3fc)', pin:{x:47,y:53}, val:[280,300,320,350,380], desc:'Departamento vendido hace 8 meses como referencia de mercado. Vista parcial al mar desde el balcón. Acabados modernos y bien conservado en una de las mejores zonas de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📋',
+    sun:{fechaVenta:'Sep 2024',valorUnit:4750,areaTerr:80,areaTech:76,areaLibre:4,areaOcup:74,depositos:0,estacVals:[18500,0,0,0],depVals:[0,0,0,0],rrpp:'Partida 07089234 · Zona Reg. IX – Lima'} },
+  { id:14, address:'Calle Los Ficus 890', district:'La Molina', type:'Casa', op:'Histórico', price:920000, cur:'$', area:320, beds:5, baths:4, park:3, floor:1, floors:2, age:10, features:['Piscina','Jardín','Terraza','Gimnasio','Seguridad 24/7','Vista Jardín','Estacionamiento 2'], gradient:'linear-gradient(135deg,#34d399,#6ee7b7)', pin:{x:82,y:60}, val:[650,720,780,860,920], desc:'Gran casa familiar en exclusiva urbanización de La Molina. Transacción cerrada hace 6 meses. Jardín con piscina y área de parrilla. Referencia premium del mercado residencial alto.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏰',
+    sun:{fechaVenta:'Nov 2024',valorUnit:2875,areaTerr:450,areaTech:320,areaLibre:130,areaOcup:310,depositos:1,estacVals:[22000,22000,22000,0],depVals:[8000,0,0,0],rrpp:'Partida 12045678 · Zona Reg. IX – Lima'} },
+  { id:15, address:'Av. Huaylas 350', district:'Chorrillos', type:'Terreno', op:'Histórico', price:95000, cur:'$', area:180, beds:0, baths:0, park:0, floor:0, floors:0, age:0, features:['Vista Mar','Zona Comercio'], gradient:'linear-gradient(135deg,#fbbf24,#f59e0b)', pin:{x:40,y:86}, val:[60,70,78,88,95], desc:'Terreno a pasos del mar de Chorrillos. Transacción de referencia cerrada hace 5 meses. Uso mixto permitido. Acceso a avenida principal y redes de servicios instaladas.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏖️',
+    sun:{fechaVenta:'Dic 2024',valorUnit:528,areaTerr:180,areaTech:0,areaLibre:180,areaOcup:0,depositos:0,estacVals:[0,0,0,0],depVals:[0,0,0,0],rrpp:'Partida 04123890 · Zona Reg. IX – Lima'} },
+  { id:16, address:'Calle Alcanfores 480', district:'Miraflores', type:'Departamento', op:'Histórico', price:520000, cur:'$', area:90, beds:2, baths:2, park:1, floor:7, floors:12, age:6, features:['Ascensor','Amoblado','Vista Mar','Balcón','Seguridad 24/7'], gradient:'linear-gradient(135deg,#7dd3fc,#38bdf8)', pin:{x:45,y:51}, val:[380,410,450,490,520], desc:'Transacción histórica de referencia. Departamento con vista al mar vendido hace 4 meses. Excelente indicador para valorizar propiedades similares en la zona costera de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📊',
+    sun:{fechaVenta:'Ene 2025',valorUnit:5778,areaTerr:90,areaTech:87,areaLibre:3,areaOcup:85,depositos:1,estacVals:[20000,0,0,0],depVals:[7500,0,0,0],rrpp:'Partida 07156234 · Zona Reg. IX – Lima'} },
 
   // ── Más oficinas ──
   { id:17, address:'Av. Javier Prado Este 4600', district:'La Molina', type:'Oficina', op:'Venta', price:420000, cur:'$', area:95, beds:0, baths:2, park:2, floor:8, floors:14, age:2, features:['Ascensor','Seguridad 24/7','Vista Ciudad','Zona Comercio','Zona Hospital'], gradient:'linear-gradient(135deg,#818cf8,#6366f1)', pin:{x:79,y:54}, val:[320,350,370,400,420], desc:'Oficina en edificio de última generación sobre Javier Prado Este. Planta libre, losa técnica y sistema BMS. Certificación LEED en trámite. Ideal para empresa de hasta 30 personas.', owner:'Corp. Prado SAC', phone:'01-***-4444', bank:false, isNew:true, emoji:'💼' },
@@ -1147,7 +1218,9 @@ function handleSearchKey(e){
 function setOp(btn,val){
   document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  S.op=val; applyFilters();
+  S.op=val;
+  document.getElementById('histBanner').classList.toggle('open', val==='Histórico');
+  applyFilters();
 }
 function setBeds(btn,val){
   document.querySelectorAll('#bedsSeg button').forEach(b=>b.classList.remove('active'));
@@ -1203,13 +1276,55 @@ function buildValChart(p){
   const max=Math.max(...p.val);
   const bars=p.val.map((v,i)=>{
     const h=Math.round((v/max)*52)+8;
-    return `<div class="val-bar" style="height:${h}px" title="${years[i]}: ${p.cur} ${v.toLocaleString()}K"></div>`;
+    const label=v>=1000?(v/1000).toFixed(0)+'K':v;
+    return `<div class="val-bar-wrap">
+      <div class="val-bar" style="height:${h}px"></div>
+      <div class="val-tip">${p.cur} ${label}</div>
+    </div>`;
   }).join('');
   const labels=years.map(y=>`<span class="val-label">${y}</span>`).join('');
   return `<div class="val-chart">
     <div class="section-title" style="margin-bottom:10px">Historial de valorización</div>
     <div class="val-bars">${bars}</div>
     <div class="val-labels">${labels}</div>
+  </div>`;
+}
+
+function sunField(ico,label,val){
+  return `<div class="sun-field"><div class="sun-field-label">${label}</div><div class="sun-field-val"><span class="ico">${ico}</span>${val}</div></div>`;
+}
+function buildSunarpPanel(p){
+  const s=p.sun;
+  const fmt=v=>v>0?'S/ '+v.toLocaleString():'S/ 0';
+  return `
+  <div class="section-title" style="margin-top:16px">Datos SUNARP</div>
+  <div class="sun-grid">
+    <div class="sun-col">
+      <div class="sun-col-title">Características</div>
+      ${sunField('🏠','Tipo de inmueble',p.type)}
+      ${sunField('📅','Años de antigüedad',p.age>0?p.age+' años':'Sin construcción')}
+      ${sunField('🚗','N° de estacionamientos',p.park)}
+      ${sunField('📦','N° de depósitos',s.depositos)}
+      ${sunField('📐','Área de terreno',s.areaTerr+' m²')}
+      ${sunField('🏗️','Área techada',s.areaTech+' m²')}
+      ${sunField('🌿','Área de libre',s.areaLibre+' m²')}
+      ${sunField('📏','Área ocupada',s.areaOcup+' m²')}
+      <div class="sun-rrpp"><strong>Registros públicos</strong><span>${s.rrpp}</span></div>
+    </div>
+    <div class="sun-col">
+      <div class="sun-col-title">Valor de la propiedad</div>
+      ${sunField('📅','Fecha de venta',s.fechaVenta)}
+      ${sunField('📊','Valor unitario',fmt(s.valorUnit)+' / m²')}
+      ${sunField('🏠','Valor de venta total',fmt(p.price))}
+      ${sunField('🚗','Valor estacionamiento 1',fmt(s.estacVals[0]))}
+      ${sunField('🚗','Valor estacionamiento 2',fmt(s.estacVals[1]))}
+      ${sunField('🚗','Valor estacionamiento 3',fmt(s.estacVals[2]))}
+      ${sunField('🚗','Valor estacionamiento 4',fmt(s.estacVals[3]))}
+      ${sunField('📦','Valor depósito 1',fmt(s.depVals[0]))}
+      ${sunField('📦','Valor depósito 2',fmt(s.depVals[1]))}
+      ${sunField('📦','Valor depósito 3',fmt(s.depVals[2]))}
+      ${sunField('📦','Valor depósito 4',fmt(s.depVals[3]))}
+    </div>
   </div>`;
 }
 
@@ -1257,6 +1372,8 @@ function openDetail(id){
       <div class="detail-desc">${p.desc}</div>
 
       ${buildValChart(p)}
+
+      ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p):''}
 
       <div class="detail-contact">
         <div class="section-title">Contacto del propietario</div>
