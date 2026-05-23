@@ -535,6 +535,47 @@ header .spacer{flex:1}
   display:flex;gap:7px;align-items:flex-start;
 }
 
+/* ══════════════ GATE PANEL ══════════════ */
+.detail-gate{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:36px 28px;text-align:center;gap:10px;
+  overflow-y:auto;
+}
+.gate-icon{font-size:2.8rem;line-height:1}
+.gate-title{font-size:1.08rem;font-weight:800;color:var(--txt);margin-top:4px}
+.gate-desc{font-size:.83rem;color:var(--muted);line-height:1.6;max-width:280px}
+.gate-features{
+  display:flex;flex-direction:column;gap:5px;
+  text-align:left;width:100%;max-width:260px;margin:4px 0;
+}
+.gate-feat{display:flex;gap:8px;align-items:center;font-size:.8rem;color:var(--muted)}
+.gate-feat span:first-child{font-size:.9rem}
+.gate-keys-row{
+  display:flex;align-items:center;gap:6px;
+  background:#f8fafc;border:1px solid var(--border);
+  border-radius:99px;padding:6px 16px;font-size:.8rem;margin-top:6px;
+}
+.gk-count{font-weight:700;color:var(--txt)}
+.gk-cost{color:var(--muted)}
+.gk-zero{color:#ef4444;font-weight:600}
+.gate-btn-primary{
+  width:100%;max-width:260px;margin-top:10px;
+  background:linear-gradient(135deg,#f59e0b,#f97316);
+  color:#fff;border:none;padding:13px 20px;
+  border-radius:var(--r);font-size:.92rem;font-weight:700;
+  transition:opacity .15s;
+}
+.gate-btn-primary.unlock{background:linear-gradient(135deg,var(--blue),var(--blue2))}
+.gate-btn-primary:hover{opacity:.88}
+.gate-btn-secondary{
+  background:none;border:none;color:var(--muted);
+  font-size:.82rem;padding:6px;margin-top:-4px;
+}
+.gate-btn-secondary:hover{color:var(--txt)}
+.card-detail-btn.card-locked{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.card-detail-btn.card-unlocked{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+
 /* ══════════════ KEYS MODAL ══════════════ */
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,.4);
@@ -635,7 +676,7 @@ header .spacer{flex:1}
   <div class="nav-phone">📞 <a href="tel:+5101232-3232">(51) 01 232-3232</a></div>
 
   <div class="keys-badge" onclick="openModal()">
-    🔑 Mis llaves <span class="count" id="keyCount">3</span>
+    🔑 Mis llaves <span class="count" id="keyCount">0</span>
   </div>
 
   <button class="btn-publish">Publicar inmueble</button>
@@ -968,8 +1009,9 @@ const S = {
   minPrice:0, maxPrice:Infinity, minArea:0,
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
-  keysLeft:3, selectedPlan:{name:'Bronce',price:45,qty:5},
+  keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
+  unlockedIds:new Set(), pendingUnlockId:null,
 };
 
 // ─────────────────────── FILTERS ───────────────────────
@@ -1051,7 +1093,9 @@ function renderCards(list){
             <div class="card-sqm">${p.cur} ${sqmPrice(p).toLocaleString()} / m²</div>
           </div>
           ${p.op==='Histórico'
-            ?`<button class="card-detail-btn" onclick="event.stopPropagation();promptKey(${p.id})">🔑 Ver detalle</button>`
+            ? S.unlockedIds.has(p.id)
+              ?`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail(${p.id})">✓ Ver informe</button>`
+              :`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail(${p.id})">🔑 Ver informe</button>`
             :`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail(${p.id})">Ver detalle</button>`
           }
         </div>
@@ -1334,6 +1378,16 @@ function openDetail(id){
   S.selectedId=id;
   applyFilters();
 
+  // Histórico requires a key — show gate if not yet unlocked
+  if(p.op==='Histórico' && !S.unlockedIds.has(id)){
+    showGatePanel(p);
+    document.getElementById('detailOverlay').classList.add('open');
+    document.getElementById('detailPanel').classList.add('open');
+    const card=document.getElementById('card-'+id);
+    if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
+    return;
+  }
+
   const sqm=sqmPrice(p);
   document.getElementById('detailContent').innerHTML=`
     <div class="detail-header" style="background:${p.gradient}">
@@ -1380,15 +1434,11 @@ function openDetail(id){
         <div class="contact-row">
           <div class="contact-info">
             <div class="label">Propietario</div>
-            <div class="value">${(p.op!=='Histórico'||S.keysLeft>0)?p.owner:'••••••••'}</div>
-            <div class="phone">${(p.op!=='Histórico'||S.keysLeft>0)?'📞 '+p.phone:'Requiere 1 llave para ver'}</div>
+            <div class="value">${p.owner}</div>
+            <div class="phone">📞 ${p.phone}</div>
           </div>
-          ${(p.op!=='Histórico'||S.keysLeft>0)
-            ?`<button class="btn-contact" onclick="toast('Llamando a ${p.owner}…')">📞 Contactar</button>`
-            :`<button class="btn-contact" onclick="openModal()">🔑 Desbloquear</button>`
-          }
+          <button class="btn-contact" onclick="toast('Llamando a ${p.owner}…')">📞 Contactar</button>
         </div>
-        ${(p.op==='Histórico'&&S.keysLeft===0)?`<div class="key-warn">🔑 Necesitas al menos 1 llave para ver los datos de este registro histórico.</div>`:''}
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1413,18 +1463,60 @@ function closeDetail(){
   applyFilters();
 }
 
+function showGatePanel(p){
+  const has=S.keysLeft>0;
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-header" style="background:${p.gradient}">
+      <button class="detail-close" onclick="closeDetail()">✕</button>
+      <div class="detail-header-content">
+        <div class="detail-title">${p.address}, ${p.district}</div>
+        <div class="detail-sub">${p.type} · Histórico</div>
+      </div>
+    </div>
+    <div class="detail-gate">
+      <div class="gate-icon">${has?'🔑':'🔒'}</div>
+      <div class="gate-title">${has?'Desbloquear informe':'Informe bloqueado'}</div>
+      <div class="gate-desc">
+        ${has
+          ?`Usa 1 llave para acceder al informe completo de valuación con todos los datos registrales.`
+          :`Necesitas llaves para acceder al informe completo de valuación con datos registrales.`
+        }
+      </div>
+      <div class="gate-features">
+        <div class="gate-feat"><span>📋</span><span>Partida registral SUNARP</span></div>
+        <div class="gate-feat"><span>📈</span><span>Historial de valorización</span></div>
+        <div class="gate-feat"><span>💰</span><span>Valor tasado por m²</span></div>
+        <div class="gate-feat"><span>👤</span><span>Propietario registrado</span></div>
+      </div>
+      <div class="gate-keys-row">
+        ${has
+          ?`<span class="gk-count">🔑 ${S.keysLeft} llave${S.keysLeft!==1?'s':''} disponible${S.keysLeft!==1?'s':''}</span><span class="gk-cost">· Costo: 1 llave</span>`
+          :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
+        }
+      </div>
+      ${has
+        ?`<button class="gate-btn-primary unlock" onclick="unlockAndOpen(${p.id})">Desbloquear este informe →</button>
+          <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>`
+        :`<button class="gate-btn-primary" onclick="S.pendingUnlockId=${p.id};openModal()">🛒 Comprar llaves</button>
+          <button class="gate-btn-secondary" onclick="closeDetail()">← Volver a resultados</button>`
+      }
+    </div>`;
+}
+
+function unlockAndOpen(id){
+  S.unlockedIds.add(id);
+  S.keysLeft--;
+  document.getElementById('keyCount').textContent=S.keysLeft;
+  toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
+  openDetail(id);
+  applyFilters();
+}
+
 function pinClick(id){
   openDetail(id);
   const card=document.getElementById('card-'+id);
   if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); }
   if(leafletMap&&GEO[id]){ leafletMap.panTo(GEO[id]); }
-}
-
-function promptKey(id){
-  const p=properties.find(x=>x.id===id);
-  if(!p||p.op!=='Histórico'){ openDetail(id); return; }
-  if(S.keysLeft>0){ openDetail(id); }
-  else { openModal(); }
 }
 
 // ─────────────────────── MODAL ───────────────────────
@@ -1443,7 +1535,14 @@ function simulatePay(){
   S.keysLeft+=qty;
   document.getElementById('keyCount').textContent=S.keysLeft;
   closeModal();
-  toast(`✅ ¡Pago exitoso! Agregaste ${qty} llave${qty>1?'s':''} (${name}). Total: ${S.keysLeft} llaves`);
+  const pending=S.pendingUnlockId;
+  S.pendingUnlockId=null;
+  if(pending!==null){
+    toast(`✅ ¡Pago exitoso! ${qty} llave${qty>1?'s':''} agregadas. Abriendo informe…`);
+    setTimeout(()=>unlockAndOpen(pending),500);
+  } else {
+    toast(`✅ ¡Pago exitoso! Agregaste ${qty} llave${qty>1?'s':''} (${name}). Total: ${S.keysLeft} llaves`);
+  }
 }
 
 // ─────────────────────── TOAST ───────────────────────
