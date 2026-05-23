@@ -490,13 +490,23 @@ header .spacer{flex:1}
 /* Valuation chart */
 .val-chart{margin-bottom:18px}
 .val-bars{display:flex;align-items:flex-end;gap:6px;height:60px;margin-bottom:4px}
+.val-bar-wrap{position:relative;flex:1;display:flex;align-items:flex-end}
 .val-bar{
-  flex:1;border-radius:4px 4px 0 0;
+  width:100%;border-radius:4px 4px 0 0;
   background:linear-gradient(to top,var(--blue),var(--blue2));
-  opacity:.7;transition:opacity .2s;min-width:20px;
+  opacity:.7;transition:opacity .2s;min-width:20px;cursor:pointer;
 }
-.val-bar:last-child{opacity:1;background:linear-gradient(to top,var(--amber),var(--amber2))}
-.val-bar:hover{opacity:1}
+.val-bar-wrap:last-child .val-bar{opacity:1;background:linear-gradient(to top,var(--amber),var(--amber2))}
+.val-bar-wrap:hover .val-bar{opacity:1}
+.val-tip{
+  display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--txt);color:#fff;font-size:.72rem;font-weight:600;
+  white-space:nowrap;padding:5px 10px;border-radius:7px;pointer-events:none;z-index:20;
+  box-shadow:0 4px 12px rgba(0,0,0,.2);
+}
+.val-tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:var(--txt)}
+.val-bar-wrap:hover .val-tip{display:block}
 .val-labels{display:flex;justify-content:space-between}
 .val-label{font-size:.65rem;color:var(--muted);text-align:center;flex:1}
 
@@ -918,13 +928,13 @@ const properties = [
 
   // ── Histórico ──
   { id:13, address:'Jr. Schell 150', district:'Miraflores', type:'Departamento', op:'Histórico', price:380000, cur:'$', area:80, beds:2, baths:2, park:1, floor:5, floors:10, age:8, features:['Ascensor','Balcón','Vista Mar','Seguridad 24/7'], gradient:'linear-gradient(135deg,#0ea5e9,#7dd3fc)', pin:{x:47,y:53}, val:[280,300,320,350,380], desc:'Departamento vendido hace 8 meses como referencia de mercado. Vista parcial al mar desde el balcón. Acabados modernos y bien conservado en una de las mejores zonas de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📋',
-    sun:{fechaVenta:'Sep 2024',valorUnit:4750,areaTerr:80,areaTech:76,areaLibre:4,areaOcup:74,depositos:0,estacVals:[18500,0,0,0],depVals:[0,0,0],rrpp:'Partida 07089234 · Zona Reg. IX – Lima'} },
+    sun:{fechaVenta:'Sep 2024',valorUnit:4750,areaTerr:80,areaTech:76,areaLibre:4,areaOcup:74,depositos:0,estacVals:[18500,0,0,0],depVals:[0,0,0,0],rrpp:'Partida 07089234 · Zona Reg. IX – Lima'} },
   { id:14, address:'Calle Los Ficus 890', district:'La Molina', type:'Casa', op:'Histórico', price:920000, cur:'$', area:320, beds:5, baths:4, park:3, floor:1, floors:2, age:10, features:['Piscina','Jardín','Terraza','Gimnasio','Seguridad 24/7','Vista Jardín','Estacionamiento 2'], gradient:'linear-gradient(135deg,#34d399,#6ee7b7)', pin:{x:82,y:60}, val:[650,720,780,860,920], desc:'Gran casa familiar en exclusiva urbanización de La Molina. Transacción cerrada hace 6 meses. Jardín con piscina y área de parrilla. Referencia premium del mercado residencial alto.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏰',
-    sun:{fechaVenta:'Nov 2024',valorUnit:2875,areaTerr:450,areaTech:320,areaLibre:130,areaOcup:310,depositos:1,estacVals:[22000,22000,22000,0],depVals:[8000,0,0],rrpp:'Partida 12045678 · Zona Reg. IX – Lima'} },
+    sun:{fechaVenta:'Nov 2024',valorUnit:2875,areaTerr:450,areaTech:320,areaLibre:130,areaOcup:310,depositos:1,estacVals:[22000,22000,22000,0],depVals:[8000,0,0,0],rrpp:'Partida 12045678 · Zona Reg. IX – Lima'} },
   { id:15, address:'Av. Huaylas 350', district:'Chorrillos', type:'Terreno', op:'Histórico', price:95000, cur:'$', area:180, beds:0, baths:0, park:0, floor:0, floors:0, age:0, features:['Vista Mar','Zona Comercio'], gradient:'linear-gradient(135deg,#fbbf24,#f59e0b)', pin:{x:40,y:86}, val:[60,70,78,88,95], desc:'Terreno a pasos del mar de Chorrillos. Transacción de referencia cerrada hace 5 meses. Uso mixto permitido. Acceso a avenida principal y redes de servicios instaladas.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'🏖️',
-    sun:{fechaVenta:'Dic 2024',valorUnit:528,areaTerr:180,areaTech:0,areaLibre:180,areaOcup:0,depositos:0,estacVals:[0,0,0,0],depVals:[0,0,0],rrpp:'Partida 04123890 · Zona Reg. IX – Lima'} },
+    sun:{fechaVenta:'Dic 2024',valorUnit:528,areaTerr:180,areaTech:0,areaLibre:180,areaOcup:0,depositos:0,estacVals:[0,0,0,0],depVals:[0,0,0,0],rrpp:'Partida 04123890 · Zona Reg. IX – Lima'} },
   { id:16, address:'Calle Alcanfores 480', district:'Miraflores', type:'Departamento', op:'Histórico', price:520000, cur:'$', area:90, beds:2, baths:2, park:1, floor:7, floors:12, age:6, features:['Ascensor','Amoblado','Vista Mar','Balcón','Seguridad 24/7'], gradient:'linear-gradient(135deg,#7dd3fc,#38bdf8)', pin:{x:45,y:51}, val:[380,410,450,490,520], desc:'Transacción histórica de referencia. Departamento con vista al mar vendido hace 4 meses. Excelente indicador para valorizar propiedades similares en la zona costera de Miraflores.', owner:'Archivo Reco', phone:'01-***-0000', bank:false, isNew:false, emoji:'📊',
-    sun:{fechaVenta:'Ene 2025',valorUnit:5778,areaTerr:90,areaTech:87,areaLibre:3,areaOcup:85,depositos:1,estacVals:[20000,0,0,0],depVals:[7500,0,0],rrpp:'Partida 07156234 · Zona Reg. IX – Lima'} },
+    sun:{fechaVenta:'Ene 2025',valorUnit:5778,areaTerr:90,areaTech:87,areaLibre:3,areaOcup:85,depositos:1,estacVals:[20000,0,0,0],depVals:[7500,0,0,0],rrpp:'Partida 07156234 · Zona Reg. IX – Lima'} },
 
   // ── Más oficinas ──
   { id:17, address:'Av. Javier Prado Este 4600', district:'La Molina', type:'Oficina', op:'Venta', price:420000, cur:'$', area:95, beds:0, baths:2, park:2, floor:8, floors:14, age:2, features:['Ascensor','Seguridad 24/7','Vista Ciudad','Zona Comercio','Zona Hospital'], gradient:'linear-gradient(135deg,#818cf8,#6366f1)', pin:{x:79,y:54}, val:[320,350,370,400,420], desc:'Oficina en edificio de última generación sobre Javier Prado Este. Planta libre, losa técnica y sistema BMS. Certificación LEED en trámite. Ideal para empresa de hasta 30 personas.', owner:'Corp. Prado SAC', phone:'01-***-4444', bank:false, isNew:true, emoji:'💼' },
@@ -1265,7 +1275,11 @@ function buildValChart(p){
   const max=Math.max(...p.val);
   const bars=p.val.map((v,i)=>{
     const h=Math.round((v/max)*52)+8;
-    return `<div class="val-bar" style="height:${h}px" title="${years[i]}: ${p.cur} ${v.toLocaleString()}K"></div>`;
+    const label=v>=1000?(v/1000).toFixed(0)+'K':v;
+    return `<div class="val-bar-wrap">
+      <div class="val-bar" style="height:${h}px"></div>
+      <div class="val-tip">${years[i]} · ${p.cur} ${label}</div>
+    </div>`;
   }).join('');
   const labels=years.map(y=>`<span class="val-label">${y}</span>`).join('');
   return `<div class="val-chart">
@@ -1308,6 +1322,7 @@ function buildSunarpPanel(p){
       ${sunField('📦','Valor depósito 1',fmt(s.depVals[0]))}
       ${sunField('📦','Valor depósito 2',fmt(s.depVals[1]))}
       ${sunField('📦','Valor depósito 3',fmt(s.depVals[2]))}
+      ${sunField('📦','Valor depósito 4',fmt(s.depVals[3]))}
     </div>
   </div>`;
 }
