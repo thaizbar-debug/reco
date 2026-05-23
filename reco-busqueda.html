@@ -1019,7 +1019,7 @@ function applyFilters(){
   renderPins(list);
 }
 
-function onSearch(v){ S.query=v; showSuggestions(v); applyFilters(); }
+function onSearch(v){ showSuggestions(v); }
 
 // ─────────────────────── AUTOCOMPLETE ───────────────────────
 let SG_DATA=[];
@@ -1037,7 +1037,7 @@ function boldMatch(text,q){
 }
 function showSuggestions(val){
   const el=document.getElementById('sgDrop');
-  if(!val||val.length<2){el.style.display='none';return;}
+  if(!val||val.length<1){el.style.display='none';return;}
   const q=val.toLowerCase();
   const hits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q)).slice(0,7);
   if(!hits.length){el.style.display='none';return;}
@@ -1061,7 +1061,10 @@ function hideSuggestions(){
 }
 function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
-  if(e.key==='Enter'){hideSuggestions();applyFilters();}
+  if(e.key==='Enter'){
+    S.query=document.getElementById('searchQ').value.trim();
+    hideSuggestions();applyFilters();
+  }
 }
 
 // ─────────────────────── SEGMENT CONTROLS ───────────────────────
