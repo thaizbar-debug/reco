@@ -214,8 +214,14 @@ header .spacer{flex:1}
 }
 .range-row input::placeholder{color:rgba(255,255,255,.35)}
 .range-sep{color:rgba(255,255,255,.4);font-size:.8rem}
-.bank-check{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.8);font-size:.8rem;cursor:pointer}
-.bank-check input{accent-color:var(--amber);width:15px;height:15px}
+.bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
+  border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
+.bank-check:hover{background:rgba(255,255,255,.2)}
+.bank-check input{accent-color:var(--amber);width:15px;height:15px;flex-shrink:0}
+.bank-check-text{display:flex;flex-direction:column}
+.bank-check-title{font-size:.8rem;font-weight:700;color:#fff}
+.bank-check-sub{font-size:.7rem;color:rgba(255,255,255,.65)}
 
 /* ══════════════ LAYOUT ══════════════ */
 .app-body{
@@ -648,7 +654,13 @@ header .spacer{flex:1}
       <button onclick="setBeds(this,4)">4+</button>
     </div>
 
-    <label class="bank-check"><input type="checkbox" id="bankOnly" onchange="applyFilters()"/> Solo banco</label>
+    <label class="bank-check">
+      <input type="checkbox" id="bankOnly" onchange="applyFilters()"/>
+      <span class="bank-check-text">
+        <span class="bank-check-title">🏦 Prop. de banco</span>
+        <span class="bank-check-sub">Remates y adjudicaciones</span>
+      </span>
+    </label>
 
     <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()">
       Más filtros <span class="adv-arrow">▼</span>
