@@ -965,7 +965,10 @@ function renderCards(list){
             <div class="card-price">${p.cur} ${fmtPrice(p.price)}</div>
             <div class="card-sqm">${p.cur} ${sqmPrice(p).toLocaleString()} / m²</div>
           </div>
-          <button class="card-detail-btn" onclick="event.stopPropagation();promptKey(${p.id})">🔑 Ver detalle</button>
+          ${p.op==='Histórico'
+            ?`<button class="card-detail-btn" onclick="event.stopPropagation();promptKey(${p.id})">🔑 Ver detalle</button>`
+            :`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail(${p.id})">Ver detalle</button>`
+          }
         </div>
       </div>
     </div>`).join('');
@@ -1246,15 +1249,15 @@ function openDetail(id){
         <div class="contact-row">
           <div class="contact-info">
             <div class="label">Propietario</div>
-            <div class="value">${S.keysLeft>0?p.owner:'••••••••'}</div>
-            <div class="phone">${S.keysLeft>0?'📞 '+p.phone:'Requiere 1 llave para ver'}</div>
+            <div class="value">${(p.op!=='Histórico'||S.keysLeft>0)?p.owner:'••••••••'}</div>
+            <div class="phone">${(p.op!=='Histórico'||S.keysLeft>0)?'📞 '+p.phone:'Requiere 1 llave para ver'}</div>
           </div>
-          ${S.keysLeft>0
+          ${(p.op!=='Histórico'||S.keysLeft>0)
             ?`<button class="btn-contact" onclick="toast('Llamando a ${p.owner}…')">📞 Contactar</button>`
             :`<button class="btn-contact" onclick="openModal()">🔑 Desbloquear</button>`
           }
         </div>
-        ${S.keysLeft===0?`<div class="key-warn">🔑 Necesitas al menos 1 llave para ver los datos del propietario y su teléfono.</div>`:''}
+        ${(p.op==='Histórico'&&S.keysLeft===0)?`<div class="key-warn">🔑 Necesitas al menos 1 llave para ver los datos de este registro histórico.</div>`:''}
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -1287,6 +1290,8 @@ function pinClick(id){
 }
 
 function promptKey(id){
+  const p=properties.find(x=>x.id===id);
+  if(!p||p.op!=='Histórico'){ openDetail(id); return; }
   if(S.keysLeft>0){ openDetail(id); }
   else { openModal(); }
 }
