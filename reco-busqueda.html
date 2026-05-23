@@ -232,6 +232,27 @@ header .spacer{flex:1}
 }
 /* recalculated by JS when adv panel opens */
 
+/* ══════════════ HISTÓRICO EXPLAINER ══════════════ */
+.hist-banner{
+  display:none;
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:20px 22px 0;flex-direction:column;gap:0;
+}
+.hist-banner.open{display:flex}
+.hist-tag{font-size:.68rem;font-weight:800;letter-spacing:1.2px;color:var(--blue);
+  display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.hist-tag::before{content:'';display:block;width:28px;height:2px;background:var(--blue)}
+.hist-headline{font-size:1.35rem;font-weight:900;color:var(--txt);line-height:1.2;margin-bottom:8px}
+.hist-headline em{color:var(--blue);font-style:italic}
+.hist-sub{font-size:.8rem;color:var(--muted);line-height:1.6;margin-bottom:18px;max-width:340px}
+.hist-compare{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);margin:0 -22px}
+.hist-col{padding:14px 16px;border-right:1px solid var(--border);font-size:.75rem}
+.hist-col:last-child{border-right:none;background:#eff6ff}
+.hist-col-label{font-size:.65rem;font-weight:800;letter-spacing:.9px;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.hist-col:last-child .hist-col-label{color:var(--blue)}
+.hist-col-body{color:var(--txt);line-height:1.5}
+.hist-col-body strong{font-weight:700}
+
 /* ══════════════ RESULTS PANEL ══════════════ */
 .results-panel{
   width:420px;min-width:320px;
@@ -738,6 +759,28 @@ header .spacer{flex:1}
 
   <!-- Results panel -->
   <div class="results-panel">
+
+    <!-- Histórico explainer banner -->
+    <div class="hist-banner" id="histBanner">
+      <div class="hist-tag">El diferenciador · Datos SUNARP procesados</div>
+      <div class="hist-headline">Histórico real de <em>ventas cerradas</em></div>
+      <div class="hist-sub">No precios de aviso. No estimaciones de portal. Transacciones efectivamente registradas en Registros Públicos, geocodificadas y normalizadas S/m².</div>
+      <div class="hist-compare">
+        <div class="hist-col">
+          <div class="hist-col-label">Portales tradicionales</div>
+          <div class="hist-col-body">Solo precios de <strong>publicación</strong>. Sesgo +12% a +18% sobre el cierre real.</div>
+        </div>
+        <div class="hist-col">
+          <div class="hist-col-label">Tasadores</div>
+          <div class="hist-col-body">Tasaciones puntuales caras (~S/350) sin visibilidad de la calle.</div>
+        </div>
+        <div class="hist-col">
+          <div class="hist-col-label">Reco</div>
+          <div class="hist-col-body"><strong>+847,000 transacciones reales</strong> desde 2018. Geocodificadas, depuradas y comparables en segundos.</div>
+        </div>
+      </div>
+    </div>
+
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
       <select class="sort-sel" id="sortSel" onchange="applyFilters()">
@@ -1147,7 +1190,9 @@ function handleSearchKey(e){
 function setOp(btn,val){
   document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  S.op=val; applyFilters();
+  S.op=val;
+  document.getElementById('histBanner').classList.toggle('open', val==='Histórico');
+  applyFilters();
 }
 function setBeds(btn,val){
   document.querySelectorAll('#bedsSeg button').forEach(b=>b.classList.remove('active'));
