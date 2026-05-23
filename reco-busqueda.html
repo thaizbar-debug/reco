@@ -214,8 +214,14 @@ header .spacer{flex:1}
 }
 .range-row input::placeholder{color:rgba(255,255,255,.35)}
 .range-sep{color:rgba(255,255,255,.4);font-size:.8rem}
-.bank-check{display:flex;align-items:center;gap:7px;color:rgba(255,255,255,.8);font-size:.8rem;cursor:pointer}
-.bank-check input{accent-color:var(--amber);width:15px;height:15px}
+.bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
+  background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
+  border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
+.bank-check:hover{background:rgba(255,255,255,.2)}
+.bank-check input{accent-color:var(--amber);width:15px;height:15px;flex-shrink:0}
+.bank-check-text{display:flex;flex-direction:column}
+.bank-check-title{font-size:.8rem;font-weight:700;color:#fff}
+.bank-check-sub{font-size:.7rem;color:rgba(255,255,255,.65)}
 
 /* ══════════════ LAYOUT ══════════════ */
 .app-body{
@@ -356,8 +362,8 @@ header .spacer{flex:1}
   position:absolute;bottom:50px;left:12px;z-index:500;
   background:#fff;border:1.5px solid var(--blue);border-radius:8px;
   color:var(--blue);font-size:.78rem;font-weight:700;
-  padding:6px 12px;cursor:pointer;box-shadow:var(--sh);
-  display:flex;align-items:center;gap:6px;transition:all .15s;
+  padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;transition:all .15s;
 }
 .radius-toggle:hover{background:var(--blue);color:#fff}
 .radius-toggle.active{background:var(--blue);color:#fff}
@@ -648,7 +654,13 @@ header .spacer{flex:1}
       <button onclick="setBeds(this,4)">4+</button>
     </div>
 
-    <label class="bank-check"><input type="checkbox" id="bankOnly" onchange="applyFilters()"/> Solo banco</label>
+    <label class="bank-check">
+      <input type="checkbox" id="bankOnly" onchange="applyFilters()"/>
+      <span class="bank-check-text">
+        <span class="bank-check-title">🏦 Prop. de banco</span>
+        <span class="bank-check-sub">Remates y adjudicaciones</span>
+      </span>
+    </label>
 
     <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()">
       Más filtros <span class="adv-arrow">▼</span>
@@ -745,7 +757,10 @@ header .spacer{flex:1}
   <div class="map-panel" id="mapPanel">
     <div id="realMap"></div>
 
-    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar por radio</button>
+    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
+      <span style="font-size:.82rem;font-weight:700">⬤ Buscar por radio</span>
+      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área en el mapa</span>
+    </button>
 
     <div class="radius-panel" id="radiusPanel">
       <div class="radius-hint" id="radiusHint">Haz clic en el mapa para centrar el área de búsqueda</div>
@@ -756,7 +771,6 @@ header .spacer{flex:1}
       <button class="radius-clear" onclick="clearRadius()">✕ Limpiar área</button>
     </div>
 
-    <div class="map-layer-info">📍 Lima Metropolitana · <strong id="pinCount">0</strong> propiedades</div>
   </div>
 </div>
 
@@ -1039,7 +1053,7 @@ function fmtPinPrice(p){
 }
 
 function renderPins(list){
-  document.getElementById('pinCount').textContent=list.length;
+  const pinCountEl=document.getElementById('pinCount'); if(pinCountEl) pinCountEl.textContent=list.length;
   if(!leafletMap) return;
 
   Object.values(leafletMarkers).forEach(m=>m.remove());
