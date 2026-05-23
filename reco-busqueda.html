@@ -353,7 +353,7 @@ header .spacer{flex:1}
 
 /* ── Radius search ── */
 .radius-toggle{
-  position:absolute;top:12px;left:12px;z-index:500;
+  position:absolute;bottom:50px;left:12px;z-index:500;
   background:#fff;border:1.5px solid var(--blue);border-radius:8px;
   color:var(--blue);font-size:.78rem;font-weight:700;
   padding:6px 12px;cursor:pointer;box-shadow:var(--sh);
@@ -362,7 +362,7 @@ header .spacer{flex:1}
 .radius-toggle:hover{background:var(--blue);color:#fff}
 .radius-toggle.active{background:var(--blue);color:#fff}
 .radius-panel{
-  position:absolute;top:50px;left:12px;z-index:500;
+  position:absolute;bottom:100px;left:12px;z-index:500;
   background:rgba(255,255,255,.96);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
   padding:12px 14px;width:220px;box-shadow:var(--sh2);
@@ -1042,9 +1042,8 @@ function renderPins(list){
   Object.values(leafletMarkers).forEach(m=>m.remove());
   leafletMarkers={};
 
-  const ids=new Set(list.map(p=>p.id));
   properties.forEach(p=>{
-    if(!ids.has(p.id)||!GEO[p.id]) return;
+    if(!GEO[p.id]) return;
     const isActive=S.selectedId===p.id;
     const price=fmtPinPrice(p);
     const icon=L.divIcon({
