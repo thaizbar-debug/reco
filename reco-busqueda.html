@@ -362,8 +362,8 @@ header .spacer{flex:1}
   position:absolute;bottom:50px;left:12px;z-index:500;
   background:#fff;border:1.5px solid var(--blue);border-radius:8px;
   color:var(--blue);font-size:.78rem;font-weight:700;
-  padding:6px 12px;cursor:pointer;box-shadow:var(--sh);
-  display:flex;align-items:center;gap:6px;transition:all .15s;
+  padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
+  display:flex;flex-direction:column;align-items:flex-start;gap:1px;transition:all .15s;
 }
 .radius-toggle:hover{background:var(--blue);color:#fff}
 .radius-toggle.active{background:var(--blue);color:#fff}
@@ -757,7 +757,10 @@ header .spacer{flex:1}
   <div class="map-panel" id="mapPanel">
     <div id="realMap"></div>
 
-    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar en zona</button>
+    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
+      <span style="font-size:.82rem;font-weight:700">⬤ Buscar por radio</span>
+      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área en el mapa</span>
+    </button>
 
     <div class="radius-panel" id="radiusPanel">
       <div class="radius-hint" id="radiusHint">Haz clic en el mapa para centrar el área de búsqueda</div>
