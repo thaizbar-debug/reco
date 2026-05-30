@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Reco — Valores reales de inmuebles en Lima</title>
+<meta name="description" content="2,664 propiedades con precios reales de SUNARP. Compra, alquila o consulta históricos en Lima Metropolitana."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0E1117;--ink-2:#2A2F3A;--ink-3:#555B6A;--ink-4:#8E94A0;
+  --paper:#F5F3EF;--paper-2:#EDEAE4;--white:#FDFCFA;
+  --green:#1A6B4A;--green-bg:#E8F4EE;--green-mid:#3DB07A;
+  --red:#9B2020;--red-bg:#FAEAEA;
+  --amber:#8B5E0A;--amber-bg:#FDF3E3;
+  --teal:#0891b2;--teal-2:#06b6d4;--teal-dark:#0e7490;
+  --accent:#1A4FBF;--accent-light:#EAF0FD;
+  --border:rgba(14,17,23,.1);--border-strong:rgba(14,17,23,.18);
+  --serif:'DM Serif Display',Georgia,serif;
+  --sans:'DM Sans',system-ui,sans-serif;
+  --r:10px;--r-lg:16px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --sh2:0 8px 32px rgba(0,0,0,.10);
+}
+html,body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:inherit}
+img{display:block}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+
+/* ── HEADER ── */
+header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(253,252,250,.96);backdrop-filter:blur(14px);
+  border-bottom:1px solid rgba(14,17,23,.08);
+  padding:0 5%;display:flex;align-items:center;gap:16px;height:64px;
+}
+.logo{font-family:var(--serif);font-size:22px;color:var(--ink);display:flex;align-items:center;gap:8px}
+.logo-badge{font-family:var(--sans);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--ink);color:var(--white);padding:2px 7px;border-radius:4px}
+.nav-links{display:flex;gap:2px;margin-left:12px}
+.nav-links a{padding:6px 13px;border-radius:7px;font-size:.85rem;font-weight:500;color:var(--ink-3);transition:background .12s,color .12s}
+.nav-links a:hover{background:var(--paper-2);color:var(--ink)}
+.hdr-spacer{flex:1}
+.btn-hdr-pub{background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;border:none;padding:9px 20px;border-radius:var(--r);font-size:.85rem;font-weight:700;transition:opacity .12s}
+.btn-hdr-pub:hover{opacity:.88}
+
+/* ── TRUST STRIP ── */
+.trust-strip{background:var(--ink);color:rgba(255,255,255,.85);padding:10px 5%;font-size:.78rem;display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:7px}
+.trust-dot{width:5px;height:5px;background:var(--green-mid);border-radius:50%;animation:tpulse 2s ease-in-out infinite;flex-shrink:0}
+@keyframes tpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.trust-strip strong{color:#fff;font-weight:600}
+
+/* ── HERO ── */
+.hero{
+  background:var(--white);border-bottom:1px solid var(--border);
+  padding:68px 5% 52px;
+  display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;
+  max-width:1260px;margin:0 auto;
+}
+.hero-eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--teal);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.hero-eyebrow::before{content:'';display:block;width:24px;height:1.5px;background:var(--teal)}
+.hero h1{font-family:var(--serif);font-size:clamp(2.2rem,5vw,3.4rem);line-height:1.06;margin-bottom:16px;letter-spacing:-.01em}
+.hero h1 em{font-style:italic;color:var(--teal)}
+.hero-sub{font-size:1.05rem;color:var(--ink-3);margin-bottom:28px;line-height:1.65;max-width:520px}
+.search-box{background:var(--paper);border:1.5px solid var(--border-strong);border-radius:var(--r-lg);padding:5px 5px 5px 18px;display:flex;align-items:center;gap:8px;transition:border-color .2s,box-shadow .2s}
+.search-box:focus-within{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
+.search-box input{flex:1;border:none;background:none;font-family:var(--sans);font-size:.93rem;color:var(--ink);outline:none;padding:10px 0}
+.search-box input::placeholder{color:var(--ink-4)}
+.btn-search{background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;border:none;border-radius:10px;padding:11px 24px;font-family:var(--sans);font-size:.85rem;font-weight:700;white-space:nowrap;transition:opacity .12s}
+.btn-search:hover{opacity:.9}
+.search-hints{display:flex;align-items:center;gap:7px;margin-top:13px;flex-wrap:wrap}
+.sh-label{font-size:.75rem;color:var(--ink-4)}
+.hint-chip{font-size:.75rem;color:var(--ink-2);background:var(--paper-2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;cursor:pointer;transition:all .12s}
+.hint-chip:hover{background:var(--paper);border-color:#94a3b8}
+
+/* ── PREVIEW CARD ── */
+.preview-card{background:var(--paper);border:1px solid var(--border);border-radius:20px;padding:24px}
+.preview-tag{display:inline-flex;align-items:center;gap:7px;font-size:.65rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-4);margin-bottom:14px}
+.live-dot{width:6px;height:6px;background:var(--green-mid);border-radius:50%;animation:tpulse 2s ease-in-out infinite;flex-shrink:0}
+.preview-addr{font-family:var(--serif);font-size:1.3rem;margin-bottom:3px}
+.preview-meta{font-size:.75rem;color:var(--ink-4);margin-bottom:18px}
+.prev-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.prev-cell{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:center;transition:border-color .15s,box-shadow .15s}
+.prev-cell:hover{border-color:var(--teal);box-shadow:0 4px 14px rgba(8,145,178,.12)}
+.prev-cell.accent{background:var(--accent-light);border-color:rgba(26,79,191,.2)}
+.prev-cell.accent:hover{border-color:var(--accent)}
+.prev-n{font-family:var(--serif);font-size:1.7rem;line-height:1.1;margin-bottom:3px}
+.prev-l{font-size:.68rem;color:var(--ink-4)}
+.prev-cell.accent .prev-l{color:var(--accent)}
+.btn-full{display:block;width:100%;margin-top:4px;background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff;border:none;border-radius:10px;padding:13px;font-family:var(--sans);font-size:.88rem;font-weight:700;text-align:center;transition:opacity .12s}
+.btn-full:hover{opacity:.9}
+
+/* ── DIFF BAR ── */
+.diff-bar{display:grid;grid-template-columns:repeat(4,1fr);background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.diff-cell{padding:22px 20px;border-right:1px solid var(--border)}
+.diff-cell:last-child{border-right:none}
+.diff-icon{font-size:1.1rem;margin-bottom:9px;display:block;color:var(--teal)}
+.diff-cell h4{font-size:.88rem;font-weight:700;margin-bottom:5px;color:var(--ink)}
+.diff-cell p{font-size:.78rem;color:var(--ink-3);line-height:1.55}
+.diff-vs{font-size:.7rem;color:var(--ink-4);margin-top:7px;font-style:italic}
+
+/* ── SECTIONS ── */
+.section{padding:64px 5%;max-width:1260px;margin:0 auto}
+.section-full{padding:64px 5%}
+.section-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+.section-tag{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--teal-dark);background:#ecfeff;border:1px solid #a5f3fc;padding:3px 12px;border-radius:99px;display:inline-block;margin-bottom:7px}
+.section-title{font-family:var(--serif);font-size:clamp(1.35rem,3vw,1.9rem);color:var(--ink)}
+.section-sub{font-size:.88rem;color:var(--ink-3);margin-top:5px;max-width:520px;line-height:1.65}
+.section-link{font-size:.8rem;color:var(--teal);font-weight:600;white-space:nowrap;transition:opacity .12s}
+.section-link:hover{opacity:.7}
+
+/* ── SIGNALS ── */
+.signals-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.signal-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;position:relative;overflow:hidden}
+.signal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.signal-card.buy::before{background:var(--green-mid)}
+.signal-card.watch::before{background:#e8b84b}
+.signal-card.hot::before{background:var(--red)}
+.sig-label{font-size:.65rem;font-weight:700;letter-spacing:.07em;display:inline-block;padding:3px 9px;border-radius:4px;margin-bottom:13px;text-transform:uppercase}
+.sig-label.buy{background:var(--green-bg);color:var(--green)}
+.sig-label.watch{background:var(--amber-bg);color:var(--amber)}
+.sig-label.hot{background:var(--red-bg);color:var(--red)}
+.sig-district{font-family:var(--serif);font-size:1.5rem;margin-bottom:6px}
+.sig-text{font-size:.82rem;color:var(--ink-3);line-height:1.6;margin-bottom:13px}
+.sig-stats{display:flex;gap:18px;font-size:.7rem;color:var(--ink-4);border-top:1px solid var(--border);padding-top:11px}
+.sig-stats strong{color:var(--ink);font-weight:600;display:block;font-size:.88rem;font-family:var(--serif)}
+
+/* ── PROP CARDS ── */
+.props-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.prop-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;transition:box-shadow .2s,transform .2s,border-color .2s;cursor:pointer}
+.prop-card:hover{box-shadow:var(--sh2);transform:translateY(-2px);border-color:#a5f3fc}
+.prop-img{height:165px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;position:relative;overflow:hidden}
+.prop-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 45%,rgba(0,0,0,.32))}
+.prop-badges{position:absolute;bottom:10px;left:10px;display:flex;gap:6px;z-index:1}
+.pbadge{padding:3px 9px;border-radius:99px;font-size:.68rem;font-weight:700;backdrop-filter:blur(4px)}
+.pbadge-op{background:rgba(8,145,178,.88);color:#fff}
+.pbadge-type{background:rgba(253,252,250,.9);color:var(--teal-dark)}
+.pbadge-sunarp{background:rgba(245,158,11,.9);color:#fff}
+.prop-body{padding:15px}
+.prop-addr{font-weight:700;font-size:.9rem;margin-bottom:2px}
+.prop-dist{font-size:.75rem;color:var(--ink-4);margin-bottom:9px;display:flex;align-items:center;gap:4px}
+.prop-specs{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap}
+.prop-spec{font-size:.75rem;color:var(--ink-3);display:flex;align-items:center;gap:3px}
+.prop-bottom{display:flex;align-items:center;justify-content:space-between}
+.prop-price{font-size:1rem;font-weight:900;color:var(--teal)}
+.prop-sqm{font-size:.68rem;color:var(--ink-4);margin-top:2px}
+.prop-cta{background:var(--paper);border:1.5px solid var(--border);color:var(--teal);padding:6px 13px;border-radius:7px;font-size:.73rem;font-weight:700;transition:background .12s,border-color .12s}
+.prop-cta:hover{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* ── HOW IT WORKS ── */
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.how-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:30px 26px;transition:box-shadow .2s,border-color .2s}
+.how-card:hover{box-shadow:var(--sh2);border-color:#a5f3fc}
+.how-num{font-family:var(--serif);font-size:2.8rem;color:var(--paper-2);line-height:1;margin-bottom:12px}
+.how-card h3{font-size:.98rem;font-weight:700;margin-bottom:7px}
+.how-card p{font-size:.84rem;color:var(--ink-3);line-height:1.65}
+.how-tag{display:inline-block;margin-top:14px;padding:3px 12px;border-radius:99px;font-size:.72rem;font-weight:700}
+.tag-free{background:#dcfce7;color:#15803d}
+.tag-ad{background:#fef3c7;color:#92400e}
+
+/* ── TRUST STATS ── */
+.trust-section{background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:48px 5%}
+.trust-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;max-width:1260px;margin:0 auto}
+.trust-stat{padding:18px 12px}
+.trust-number{font-family:var(--serif);font-size:2.4rem;margin-bottom:6px;color:var(--ink)}
+.trust-label{font-size:.75rem;color:var(--ink-4);line-height:1.4}
+
+/* ── SUNARP EXPLAINER ── */
+.sunarp-section{background:linear-gradient(160deg,var(--teal-dark) 0%,var(--teal) 55%,var(--teal-2) 100%);padding:68px 5%}
+.sunarp-inner{max-width:1260px;margin:0 auto}
+.sunarp-inner .section-tag{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.25)}
+.sunarp-inner .section-title{color:#fff}
+.sunarp-inner .section-sub{color:rgba(255,255,255,.8);max-width:600px;margin-top:8px}
+.sunarp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:44px}
+.sunarp-card{background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.18);border-radius:var(--r-lg);padding:28px 24px;backdrop-filter:blur(8px);transition:background .15s}
+.sunarp-card:hover{background:rgba(255,255,255,.18)}
+.sunarp-icon{font-size:2rem;margin-bottom:14px}
+.sunarp-card h3{font-size:1rem;font-weight:700;color:#fff;margin-bottom:8px}
+.sunarp-card p{font-size:.84rem;color:rgba(255,255,255,.78);line-height:1.65}
+
+/* ── SERVICES ── */
+.services-bg{background:var(--paper-2)}
+.svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.svc-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:24px 18px;text-align:center;cursor:pointer;transition:all .15s}
+.svc-card:hover{transform:translateY(-3px);border-color:var(--teal);box-shadow:0 10px 24px rgba(8,145,178,.1)}
+.svc-icon{font-size:2.2rem;margin-bottom:12px}
+.svc-card h3{font-size:.9rem;font-weight:700;margin-bottom:5px}
+.svc-card p{font-size:.78rem;color:var(--ink-3);line-height:1.55}
+
+/* ── B2B STRIP ── */
+.b2b-strip{background:var(--ink);padding:52px 5%;display:flex;align-items:center;justify-content:space-between;gap:28px;flex-wrap:wrap}
+.b2b-left h3{font-family:var(--serif);font-size:1.6rem;color:#fff;margin-bottom:8px}
+.b2b-left p{font-size:.88rem;color:rgba(255,255,255,.65);max-width:480px;line-height:1.6}
+.b2b-logos{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.b2b-pill{font-size:.7rem;font-weight:500;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.18);padding:5px 12px;border-radius:20px}
+.btn-b2b{background:var(--white);color:var(--ink);border:none;border-radius:8px;padding:13px 26px;font-family:var(--sans);font-size:.88rem;font-weight:700;transition:opacity .12s;flex-shrink:0}
+.btn-b2b:hover{opacity:.88}
+
+/* ── PUBLISH CTA ── */
+.pub-section{background:var(--paper-2);padding:68px 5%}
+.pub-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:920px;margin:0 auto}
+.pub-card{background:var(--white);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:34px 28px;text-align:center;transition:box-shadow .2s,border-color .2s}
+.pub-card:hover{box-shadow:var(--sh2);border-color:#a5f3fc}
+.pub-icon{font-size:2.5rem;margin-bottom:14px}
+.pub-card h3{font-size:1.05rem;font-weight:800;margin-bottom:9px}
+.pub-card p{font-size:.84rem;color:var(--ink-3);line-height:1.6;margin-bottom:20px}
+.pub-feats{list-style:none;text-align:left;margin-bottom:22px;display:flex;flex-direction:column;gap:8px}
+.pub-feats li{font-size:.8rem;color:var(--ink-3);display:flex;align-items:center;gap:8px}
+.pub-feats li::before{content:'✓';color:var(--teal);font-weight:800;flex-shrink:0}
+.pub-price{font-size:1.5rem;font-weight:900;color:var(--teal);margin-bottom:4px}
+.pub-note{font-size:.73rem;color:var(--ink-4);margin-bottom:18px}
+.btn-pub{display:flex;align-items:center;justify-content:center;width:100%;padding:13px;border-radius:var(--r);font-size:.88rem;font-weight:800;border:none;transition:opacity .12s}
+.btn-pub:hover{opacity:.88}
+.btn-pub-teal{background:linear-gradient(135deg,var(--teal),var(--teal-2));color:#fff}
+.btn-pub-amber{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff}
+.pub-card.gold{border-color:#fcd34d;border-width:2px}
+
+/* ── FOOTER ── */
+footer{background:#0f172a;color:rgba(255,255,255,.65);padding:52px 5% 32px}
+.footer-inner{max-width:1260px;margin:0 auto}
+.footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.footer-brand{font-family:var(--serif);font-size:1.3rem;color:#fff;margin-bottom:12px}
+.footer-brand p{font-size:.82rem;line-height:1.65;max-width:280px;color:rgba(255,255,255,.55);margin-top:10px;font-family:var(--sans)}
+.footer-col h4{font-size:.72rem;font-weight:700;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-col ul li a{font-size:.82rem;color:rgba(255,255,255,.5);transition:color .12s}
+.footer-col ul li a:hover{color:#fff}
+.footer-bottom{border-top:1px solid rgba(255,255,255,.07);padding-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:.73rem;color:rgba(255,255,255,.4)}
+.footer-legal{display:flex;gap:18px}
+.footer-legal a{font-size:.73rem;color:rgba(255,255,255,.4);transition:color .12s}
+.footer-legal a:hover{color:#fff}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;padding:48px 5% 40px;gap:32px}
+  .signals-grid,.how-grid,.sunarp-grid,.svc-grid{grid-template-columns:1fr 1fr}
+  .diff-bar,.trust-grid{grid-template-columns:1fr 1fr}
+  .diff-cell{border-bottom:1px solid var(--border)}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .pub-grid{grid-template-columns:1fr}
+  .b2b-strip{flex-direction:column;text-align:center}
+  .nav-links{display:none}
+}
+@media(max-width:520px){
+  .signals-grid,.how-grid,.svc-grid,.pub-grid{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr}
+  .trust-grid{grid-template-columns:1fr 1fr}
+  .diff-bar{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;text-align:center}
+  .sunarp-grid{grid-template-columns:1fr}
+}
+
+/* ── VIEW ALL ── */
+.view-all-wrap{text-align:center;margin-top:34px}
+.btn-view-all{display:inline-flex;align-items:center;gap:8px;background:var(--white);border:1.5px solid var(--border);color:var(--ink);padding:12px 28px;border-radius:var(--r-lg);font-size:.88rem;font-weight:700;transition:all .12s}
+.btn-view-all:hover{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 4px 16px rgba(8,145,178,.3)}
+</style>
+</head>
+<body>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="logo">reco <span class="logo-badge">PE</span></div>
+  <nav class="nav-links">
+    <a href="Versión final Thaiz.html#buy">Comprar</a>
+    <a href="Versión final Thaiz.html#rent">Alquilar</a>
+    <a href="Versión final Thaiz.html#historico">Histórico</a>
+    <a href="#">Servicios</a>
+    <a href="#">Nosotros</a>
+  </nav>
+  <div class="hdr-spacer"></div>
+  <button class="btn-hdr-pub" onclick="window.location='Versión final Thaiz.html'">Publicar inmueble</button>
+</header>
+
+<!-- ══ TRUST STRIP ══ -->
+<div class="trust-strip">
+  <div class="trust-item"><div class="trust-dot"></div>Datos verificados · <strong>&nbsp;Registros Públicos SUNARP</strong></div>
+  <div class="trust-item"><div class="trust-dot"></div><strong>2,664</strong>&nbsp;propiedades reales</div>
+  <div class="trust-item"><div class="trust-dot"></div><strong>1,622</strong>&nbsp;fotos · <strong>1,597</strong>&nbsp;partidas PDF</div>
+  <div class="trust-item">Actualizado&nbsp;<strong>Mayo 2026</strong></div>
+</div>
+
+<!-- ══ HERO ══ -->
+<div style="background:var(--white);border-bottom:1px solid var(--border)">
+<div class="hero">
+  <div>
+    <div class="hero-eyebrow">Inteligencia de mercado inmobiliario</div>
+    <h1>¿Esta propiedad vale <em>lo que piden</em>?</h1>
+    <p class="hero-sub">Explora 2,664 propiedades con precios reales de SUNARP — transacciones cerradas, no precios de aviso. Lima Metropolitana, 43 distritos.</p>
+    <div class="search-box">
+      <input type="text" id="heroQ" placeholder="Dirección, distrito o tipo de propiedad…" onkeydown="if(event.key==='Enter')goSearch()"/>
+      <button class="btn-search" onclick="goSearch()">Buscar</button>
+    </div>
+    <div class="search-hints">
+      <span class="sh-label">Prueba:</span>
+      <span class="hint-chip" onclick="goTo('buy')">Comprar en Miraflores</span>
+      <span class="hint-chip" onclick="goTo('rent')">Alquilar departamento</span>
+      <span class="hint-chip" onclick="goTo('historico')">Histórico SUNARP</span>
+      <span class="hint-chip" onclick="goTo('buy')">San Isidro</span>
+      <span class="hint-chip" onclick="goTo('buy')">La Molina</span>
+    </div>
+  </div>
+
+  <div class="preview-card">
+    <div class="preview-tag"><span class="live-dot"></span>Plataforma en vivo · 2,664 propiedades</div>
+    <div class="preview-addr">Reco Intelligence</div>
+    <div class="preview-meta">Lima Metropolitana · 43 distritos · SUNARP + data real</div>
+    <div class="prev-grid">
+      <div class="prev-cell" onclick="goTo('buy')">
+        <div class="prev-n">791</div>
+        <div class="prev-l">En venta</div>
+      </div>
+      <div class="prev-cell" onclick="goTo('rent')">
+        <div class="prev-n">123</div>
+        <div class="prev-l">En alquiler</div>
+      </div>
+      <div class="prev-cell" onclick="goTo('historico')">
+        <div class="prev-n">1,750</div>
+        <div class="prev-l">Histórico</div>
+      </div>
+      <div class="prev-cell accent" onclick="goTo('historico')">
+        <div class="prev-n">1,597</div>
+        <div class="prev-l">Con PDF SUNARP</div>
+      </div>
+    </div>
+    <a href="Versión final Thaiz.html" class="btn-full">Explorar propiedades →</a>
+  </div>
+</div>
+</div>
+
+<!-- ══ DIFF BAR ══ -->
+<div class="diff-bar">
+  <div class="diff-cell">
+    <span class="diff-icon">●</span>
+    <h4>Precios SUNARP reales</h4>
+    <p>No usamos avisos: usamos los precios a los que se cerraron las operaciones en Registros Públicos.</p>
+    <div class="diff-vs">vs. portales que muestran lo que el vendedor pide</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">◐</span>
+    <h4>2,664 propiedades</h4>
+    <p>Fotos de Google Drive, PDFs de partidas registrales, áreas y valor por m² calculado.</p>
+    <div class="diff-vs">vs. fichas incompletas sin respaldo</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">◆</span>
+    <h4>Histórico verificado</h4>
+    <p>1,750 transacciones con fecha de venta, precio y área inscritas en Registros Públicos.</p>
+    <div class="diff-vs">vs. estimaciones sin sustento</div>
+  </div>
+  <div class="diff-cell">
+    <span class="diff-icon">▲</span>
+    <h4>Búsqueda por zona</h4>
+    <p>Filtra por radio o dibuja un perímetro en el mapa. Resumen de valor/m² por área automático.</p>
+    <div class="diff-vs">vs. listas sin contexto geográfico</div>
+  </div>
+</div>
+
+<!-- ══ TRUST STATS ══ -->
+<div class="trust-section">
+  <div class="trust-grid">
+    <div class="trust-stat"><div class="trust-number">2,664</div><div class="trust-label">Propiedades en plataforma</div></div>
+    <div class="trust-stat"><div class="trust-number">1,622</div><div class="trust-label">Registros SUNARP con foto</div></div>
+    <div class="trust-stat"><div class="trust-number">1,597</div><div class="trust-label">Partidas registrales PDF</div></div>
+    <div class="trust-stat"><div class="trust-number">43</div><div class="trust-label">Distritos con cobertura</div></div>
+  </div>
+</div>
+
+<!-- ══ AI SIGNALS ══ -->
+<div style="background:var(--white);border-bottom:1px solid var(--border)">
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">Señales de mercado · Mayo 2026</div>
+      <h2 class="section-title">Cómo se mueve Lima hoy</h2>
+      <p class="section-sub">Distritos con datos reales de transacciones cerradas y valor por m².</p>
+    </div>
+    <a href="Versión final Thaiz.html" class="section-link">Ver mapa completo →</a>
+  </div>
+  <div class="signals-grid">
+    <div class="signal-card buy">
+      <span class="sig-label buy">● Oportunidad</span>
+      <div class="sig-district">Jesús María</div>
+      <p class="sig-text">Precio en percentil bajo histórico. Buena liquidez y absorción creciente. Zona con proyectos de transporte en desarrollo.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 4,860</strong>/m²</div>
+        <div><strong>+3.5%</strong> YoY</div>
+        <div><strong>7.1%</strong> yield</div>
+      </div>
+    </div>
+    <div class="signal-card watch">
+      <span class="sig-label watch">◐ Watchlist</span>
+      <div class="sig-district">Barranco</div>
+      <p class="sig-text">Inventario en alza, días en mercado incrementando. Buen momento para negociar duro en departamentos 2-dorm.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 5,890</strong>/m²</div>
+        <div><strong>−2.4%</strong> YoY</div>
+        <div><strong>68d</strong> en venta</div>
+      </div>
+    </div>
+    <div class="signal-card hot">
+      <span class="sig-label hot">▲ Sobrevaluado</span>
+      <div class="sig-district">San Isidro</div>
+      <p class="sig-text">Pricing en máximos históricos. Los compradores pagan ~9% sobre comparables cerrados registrados en SUNARP.</p>
+      <div class="sig-stats">
+        <div><strong>S/ 8,610</strong>/m²</div>
+        <div><strong>+1.1%</strong> YoY</div>
+        <div><strong>5.2%</strong> yield</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ PROPIEDADES DESTACADAS ══ -->
+<div style="background:var(--paper);border-bottom:1px solid var(--border)">
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">En venta</div>
+      <h2 class="section-title">Propiedades destacadas</h2>
+      <p class="section-sub">Muestra de lo que encontrarás en la plataforma.</p>
+    </div>
+    <a href="Versión final Thaiz.html" class="section-link">Ver catálogo →</a>
+  </div>
+  <div class="props-grid">
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+        <span>🏙️</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-op">Venta</span>
+          <span class="pbadge pbadge-type">Departamento</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Av. Pardo 540</div>
+        <div class="prop-dist">📍 Miraflores · Piso 8</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 85 m²</span>
+          <span class="prop-spec">🛏 3</span>
+          <span class="prop-spec">🚿 2</span>
+          <span class="prop-spec">🚗 1</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">$ 450,000</div><div class="prop-sqm">$ 5,294 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#4facfe,#00f2fe)">
+        <span>🏠</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-op">Venta</span>
+          <span class="pbadge pbadge-type">Casa</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Calle Berlín 385</div>
+        <div class="prop-dist">📍 Miraflores · Casa independiente</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 210 m²</span>
+          <span class="prop-spec">🛏 4</span>
+          <span class="prop-spec">🚿 3</span>
+          <span class="prop-spec">🚗 2</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">$ 1,200,000</div><div class="prop-sqm">$ 5,714 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+        <span>🏛️</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-sunarp">🏛 SUNARP</span>
+          <span class="pbadge pbadge-type">Departamento</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Av. Santa Cruz 855</div>
+        <div class="prop-dist">📍 Miraflores · Histórico</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 110 m²</span>
+          <span class="prop-spec">🛏 3</span>
+          <span class="prop-spec">🚿 3</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">S/ 1,870,000</div><div class="prop-sqm">S/ 17,000 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#43e97b,#38f9d7)">
+        <span>🏢</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-op" style="background:rgba(6,182,212,.88)">Alquiler</span>
+          <span class="pbadge pbadge-type">Oficina</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Av. Rivera Navarrete 765</div>
+        <div class="prop-dist">📍 San Isidro · Piso 12</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 120 m²</span>
+          <span class="prop-spec">🚿 2</span>
+          <span class="prop-spec">🚗 2</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">S/ 8,500 / mes</div><div class="prop-sqm">S/ 70.8 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#fa709a,#fee140)">
+        <span>🌟</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-op">Venta</span>
+          <span class="pbadge pbadge-type">Departamento</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Av. Caminos del Inca 1200</div>
+        <div class="prop-dist">📍 Surco · Piso 6/18</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 78 m²</span>
+          <span class="prop-spec">🛏 3</span>
+          <span class="prop-spec">🚿 2</span>
+          <span class="prop-spec">🚗 1</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">$ 320,000</div><div class="prop-sqm">$ 4,102 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="prop-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="prop-img" style="background:linear-gradient(135deg,#a18cd1,#fbc2eb)">
+        <span>🏗️</span>
+        <div class="prop-badges">
+          <span class="pbadge pbadge-op">Venta</span>
+          <span class="pbadge pbadge-type">Terreno</span>
+        </div>
+      </div>
+      <div class="prop-body">
+        <div class="prop-addr">Av. Primavera 1800</div>
+        <div class="prop-dist">📍 La Molina · Terreno</div>
+        <div class="prop-specs">
+          <span class="prop-spec">📐 450 m²</span>
+        </div>
+        <div class="prop-bottom">
+          <div><div class="prop-price">$ 850,000</div><div class="prop-sqm">$ 1,889 / m²</div></div>
+          <button class="prop-cta">Ver detalle</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="view-all-wrap">
+    <a href="Versión final Thaiz.html" class="btn-view-all">Ver las 2,664 propiedades →</a>
+  </div>
+</div>
+</div>
+
+<!-- ══ CÓMO FUNCIONA ══ -->
+<div style="background:var(--white);border-bottom:1px solid var(--border)">
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">¿Cómo funciona?</div>
+      <h2 class="section-title">Decisión con data, en 3 pasos</h2>
+    </div>
+  </div>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">01</div>
+      <h3>Busca por dirección o zona</h3>
+      <p>Ingresa la dirección, urbanización o distrito que te interesa. Activa el filtro de radio o dibuja un perímetro para comparar precios en una zona específica.</p>
+      <span class="how-tag tag-free">Siempre gratis</span>
+    </div>
+    <div class="how-card">
+      <div class="how-num">02</div>
+      <h3>Compara con valor/m² real</h3>
+      <p>Para propiedades históricas ves el valor por metro cuadrado calculado desde el precio SUNARP dividido entre el área techada — sin cochera, sin depósito.</p>
+      <span class="how-tag tag-free">Siempre gratis</span>
+    </div>
+    <div class="how-card">
+      <div class="how-num">03</div>
+      <h3>Abre el detalle y negocia</h3>
+      <p>El panel de detalle muestra área ocupada, área techada, partida SUNARP, fotos reales y todos los datos que necesitas para negociar con fundamento.</p>
+      <span class="how-tag tag-ad">Con 1 anuncio</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ SUNARP EXPLAINER ══ -->
+<div class="sunarp-section">
+  <div class="sunarp-inner">
+    <div class="section-header">
+      <div>
+        <div class="section-tag">Registros Públicos · SUNARP</div>
+        <h2 class="section-title">Valor real, no precio de lista</h2>
+        <p class="section-sub">La sección Histórico muestra transacciones inscritas en SUNARP: el precio al que realmente se transfirió el inmueble, no lo que alguien pedía.</p>
+      </div>
+    </div>
+    <div class="sunarp-grid">
+      <div class="sunarp-card">
+        <div class="sunarp-icon">📋</div>
+        <h3>Partida registral PDF</h3>
+        <p>Cada propiedad histórica tiene su partida en PDF vinculada. Áreas, propietarios anteriores y fecha de transferencia, directo de Registros Públicos.</p>
+      </div>
+      <div class="sunarp-card">
+        <div class="sunarp-icon">📐</div>
+        <h3>Valor/m² calculado</h3>
+        <p>Si hay área ocupada: precio ÷ 1.1 ÷ área ocupada. Si no, precio ÷ área techada. El divisor de 1.1 descuenta la ganancia de capital estimada.</p>
+      </div>
+      <div class="sunarp-card">
+        <div class="sunarp-icon">🗺️</div>
+        <h3>Resumen por zona</h3>
+        <p>Activa el filtro de radio o polígono y automáticamente aparece una tabla resumen con dirección, tipo, área y valor/m² de las propiedades dentro.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SERVICIOS ══ -->
+<div class="services-bg" style="border-bottom:1px solid var(--border)">
+<div class="section">
+  <div class="section-header">
+    <div>
+      <div class="section-tag">Servicios Reco</div>
+      <h2 class="section-title">Todo para tu vivienda</h2>
+      <p class="section-sub">Desde buscar y publicar hasta pagar tu alquiler o contratar mantenimiento.</p>
+    </div>
+    <a href="Versión final Thaiz.html" class="section-link">Ver todos →</a>
+  </div>
+  <div class="svc-grid">
+    <div class="svc-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="svc-icon">🔍</div>
+      <h3>Buscar inmuebles</h3>
+      <p>Comprar, alquilar o consultar históricos. Filtros avanzados y mapa interactivo.</p>
+    </div>
+    <div class="svc-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="svc-icon">📝</div>
+      <h3>Publicar inmueble</h3>
+      <p>Sube tu propiedad en minutos. Gratis para publicación estándar.</p>
+    </div>
+    <div class="svc-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="svc-icon">📐</div>
+      <h3>Tasaciones REPEV</h3>
+      <p>Express S/149 · Virtual S/349 · Presencial S/590. Informes con validez legal.</p>
+    </div>
+    <div class="svc-card" onclick="window.location='Versión final Thaiz.html'">
+      <div class="svc-icon">🏦</div>
+      <h3>Financiamiento</h3>
+      <p>Compara TCEA de todos los bancos peruanos. Simula tu cuota hipotecaria.</p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ B2B STRIP ══ -->
+<div class="b2b-strip">
+  <div class="b2b-left">
+    <h3>¿Eres banco, tasador o desarrollador?</h3>
+    <p>API de valorización, integraciones SUNARP en vivo y reportes en lote para tu equipo de originación hipotecaria.</p>
+    <div class="b2b-logos">
+      <span class="b2b-pill">Banca</span>
+      <span class="b2b-pill">Fondos inmobiliarios</span>
+      <span class="b2b-pill">Tasadores REPEV</span>
+      <span class="b2b-pill">Desarrolladores</span>
+    </div>
+  </div>
+  <button class="btn-b2b" onclick="window.location='Versión final Thaiz.html'">Ver planes →</button>
+</div>
+
+<!-- ══ PUBLICAR CTA ══ -->
+<div class="pub-section">
+  <div style="max-width:1260px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:40px">
+      <div class="section-tag">Para propietarios</div>
+      <h2 class="section-title" style="font-family:var(--serif);font-size:clamp(1.4rem,3vw,2rem);margin-top:8px">¿Tienes un inmueble para vender o alquilar?</h2>
+      <p style="font-size:.88rem;color:var(--ink-3);margin-top:8px">Publica gratis o destaca tu propiedad para llegar a más compradores.</p>
+    </div>
+    <div class="pub-grid">
+      <div class="pub-card">
+        <div class="pub-icon">📝</div>
+        <h3>Publicación estándar</h3>
+        <p>Tu inmueble aparece en el buscador con toda la información: precio, área, dormitorios, fotos y contacto directo.</p>
+        <ul class="pub-feats">
+          <li>Aparece en resultados de búsqueda</li>
+          <li>Visible en el mapa interactivo</li>
+          <li>Contacto directo con interesados</li>
+          <li>Estadísticas básicas de visitas</li>
+        </ul>
+        <div class="pub-price">Gratis</div>
+        <div class="pub-note">Sin comisión por venta</div>
+        <button class="btn-pub btn-pub-teal" onclick="window.location='Versión final Thaiz.html'">Publicar mi inmueble</button>
+      </div>
+      <div class="pub-card gold">
+        <div class="pub-icon">⭐</div>
+        <h3>Portada destacada</h3>
+        <p>Tu inmueble aparece en los primeros resultados del buscador con badge ⭐ Destacado y mayor visibilidad.</p>
+        <ul class="pub-feats">
+          <li>Primeros resultados en búsquedas</li>
+          <li>Badge "Destacado" en el mapa</li>
+          <li>Estadísticas avanzadas y leads</li>
+          <li>Soporte prioritario</li>
+          <li>Sin permanencia mínima</li>
+        </ul>
+        <div class="pub-price">S/ 149 / mes</div>
+        <div class="pub-note">Cancela cuando quieras</div>
+        <button class="btn-pub btn-pub-amber" onclick="window.location='Versión final Thaiz.html'">Destacar mi inmueble ⭐</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">reco</div>
+        <p class="footer-brand" style="font-family:var(--sans)">La plataforma de valores inmobiliarios más completa de Lima. Información de venta, alquiler e históricos de precios reales de SUNARP.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Explorar</h4>
+        <ul>
+          <li><a href="Versión final Thaiz.html">Buscar inmuebles</a></li>
+          <li><a href="Versión final Thaiz.html">Departamentos</a></li>
+          <li><a href="Versión final Thaiz.html">Casas</a></li>
+          <li><a href="Versión final Thaiz.html">Terrenos</a></li>
+          <li><a href="Versión final Thaiz.html">Histórico de precios</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Propietarios</h4>
+        <ul>
+          <li><a href="Versión final Thaiz.html">Publicar inmueble</a></li>
+          <li><a href="Versión final Thaiz.html">Portada destacada</a></li>
+          <li><a href="Versión final Thaiz.html">Valorizar mi inmueble</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Empresa</h4>
+        <ul>
+          <li><a href="#">Nosotros</a></li>
+          <li><a href="#">Anunciarse</a></li>
+          <li><a href="#">Contacto</a></li>
+          <li><a href="#">Blog</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Reco · Lima, Perú · VANET DATA S.A.C. RUC 20553966800</p>
+      <div class="footer-legal">
+        <a href="#">Términos de uso</a>
+        <a href="#">Privacidad</a>
+        <a href="#">Libro de Reclamaciones</a>
+        <a href="#">FAQs</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+function goSearch(){
+  const q=document.getElementById('heroQ').value.trim();
+  window.location='Versión final Thaiz.html'+(q?'#q='+encodeURIComponent(q):'');
+}
+function goTo(mode){
+  const map={buy:'#buy',rent:'#rent',historico:'#historico'};
+  window.location='Versión final Thaiz.html'+(map[mode]||'');
+}
+document.getElementById('heroQ').addEventListener('keydown',e=>{if(e.key==='Enter')goSearch();});
+</script>
+</body>
+</html>
