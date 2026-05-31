@@ -165,6 +165,39 @@ header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,2
 .btn-ad:hover{opacity:.88;transform:translateY(-1px)}
 .ad-url{font-size:.72rem;color:#a16207;font-weight:600}
 
+/* MODAL ANUNCIARSE */
+.anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
+.anun-overlay.open{opacity:1;pointer-events:all}
+.anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+.anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
+.anun-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.anun-close{background:none;border:1.5px solid var(--border);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0;color:var(--muted);transition:background .12s}
+.anun-close:hover{background:var(--light)}
+.anun-title{font-size:1.5rem;font-weight:900;letter-spacing:-.3px;line-height:1.1}
+.anun-title em{font-style:normal;color:var(--blue)}
+.anun-sub{font-size:.92rem;color:var(--muted);line-height:1.6;margin-top:6px}
+.anun-stats{display:flex;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin:22px 0 0}
+.anun-stat{flex:1;padding:14px 20px;text-align:center;border-right:1px solid var(--border)}
+.anun-stat:last-child{border-right:none}
+.anun-stat-n{font-size:1.3rem;font-weight:900;color:var(--blue);display:block}
+.anun-stat-l{font-size:.72rem;color:var(--muted);margin-top:2px}
+.anun-body{padding:24px 28px 0}
+.anun-formats-title{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.anun-formats{display:flex;flex-direction:column;gap:10px}
+.anun-fmt{display:flex;align-items:flex-start;gap:14px;padding:16px;border:1.5px solid var(--border);border-radius:12px;transition:border-color .14s,background .14s}
+.anun-fmt:hover{border-color:#a5f3fc;background:#f0fdfe}
+.anun-fmt-icon{font-size:1.6rem;flex-shrink:0;line-height:1;margin-top:2px}
+.anun-fmt-name{font-size:.88rem;font-weight:800;color:var(--txt);margin-bottom:4px}
+.anun-fmt-desc{font-size:.82rem;color:var(--muted);line-height:1.55}
+.anun-cta{padding:24px 28px 28px}
+.anun-cta-text{font-size:.9rem;color:var(--muted);margin-bottom:16px;line-height:1.55}
+.anun-cta-text strong{color:var(--txt)}
+.anun-btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn-wsp{display:inline-flex;align-items:center;gap:8px;background:#25d366;color:#fff;border:none;padding:11px 22px;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;transition:opacity .12s}
+.btn-wsp:hover{opacity:.88}
+.btn-mail{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);color:var(--txt);padding:11px 22px;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;transition:background .12s}
+.btn-mail:hover{background:var(--light)}
+
 /* FOOTER */
 footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 .footer-inner{max-width:1160px;margin:0 auto}
@@ -201,7 +234,7 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
   </div>
   <div class="nav-right">
     <button class="btn-pub" onclick="location.href='Versión final Thaiz.html#publish'">Publicar inmueble</button>
-    <button class="btn-ghost" onclick="window.location='Versión final Thaiz.html'">Anunciarse</button>
+    <button class="btn-ghost" onclick="openAnun()">Anunciarse</button>
     <button class="btn-ingresar" onclick="window.location='Versión final Thaiz.html'">Ingresar</button>
   </div>
 </header>
@@ -547,6 +580,64 @@ function goSearch(){
   window.location='Versión final Thaiz.html'+(q?'#q='+encodeURIComponent(q):'');
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
+function openAnun(){document.getElementById('anunOverlay').classList.add('open');document.body.style.overflow='hidden';}
+function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');document.body.style.overflow='';}
+document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun();});
 </script>
+
+<!-- MODAL ANUNCIARSE -->
+<div class="anun-overlay" id="anunOverlay">
+  <div class="anun-modal">
+    <div class="anun-head">
+      <div>
+        <div class="anun-title">Llega a quienes buscan<br><em>inmuebles en Lima</em></div>
+        <div class="anun-sub">Reco conecta a compradores, vendedores, tasadores y financieras con datos reales del mercado. Tu marca, en el momento exacto de la decisión.</div>
+      </div>
+      <button class="anun-close" onclick="closeAnun()">✕</button>
+    </div>
+
+    <div class="anun-stats">
+      <div class="anun-stat"><span class="anun-stat-n">800+</span><span class="anun-stat-l">Usuarios activos</span></div>
+      <div class="anun-stat"><span class="anun-stat-n">Lima</span><span class="anun-stat-l">Mercado objetivo</span></div>
+      <div class="anun-stat"><span class="anun-stat-n">ABC1</span><span class="anun-stat-l">Perfil socioeconómico</span></div>
+    </div>
+
+    <div class="anun-body">
+      <div class="anun-formats-title">Formatos disponibles</div>
+      <div class="anun-formats">
+        <div class="anun-fmt">
+          <div class="anun-fmt-icon">🏷️</div>
+          <div>
+            <div class="anun-fmt-name">Card de Marca</div>
+            <div class="anun-fmt-desc">Tu empresa destacada en la homepage, visible para todos los visitantes. Formato similar al de Apoyo Consultoría — logo, descripción, llamada a la acción y link directo.</div>
+          </div>
+        </div>
+        <div class="anun-fmt">
+          <div class="anun-fmt-icon">🔝</div>
+          <div>
+            <div class="anun-fmt-name">Propiedad o Proyecto Destacado</div>
+            <div class="anun-fmt-desc">Tu inmueble o proyecto al tope de los resultados de búsqueda con etiqueta "Destacado". Ideal para inmobiliarias y constructoras con proyectos en Lima.</div>
+          </div>
+        </div>
+        <div class="anun-fmt">
+          <div class="anun-fmt-icon">📍</div>
+          <div>
+            <div class="anun-fmt-name">Patrocinio por Zona</div>
+            <div class="anun-fmt-desc">Tu marca aparece cuando alguien busca en el distrito o urbanización que te interesa. Segmentación exacta, audiencia de alta intención de compra.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="anun-cta">
+      <div class="anun-cta-text"><strong>¿Te interesa?</strong> Escríbenos y armamos una propuesta a tu medida. Sin tarifas fijas — cada campaña se cotiza según el formato, duración y zona.</div>
+      <div class="anun-btns">
+        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank">💬 WhatsApp</a>
+        <a class="btn-mail" href="mailto:anuncios@reco.pe?subject=Cotización%20publicidad%20Reco">✉️ anuncios@reco.pe</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
