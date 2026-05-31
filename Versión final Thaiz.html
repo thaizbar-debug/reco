@@ -264,7 +264,7 @@ header .spacer{flex:1}
 .adv-toggle-btn{
   background:none;border:none;color:rgba(255,255,255,.7);
   font-size:.8rem;display:flex;align-items:center;gap:5px;
-  padding:6px 2px;margin-left:auto;transition:color .12s;
+  padding:6px 2px;transition:color .12s;
 }
 .adv-toggle-btn:hover{color:#fff}
 .adv-arrow{transition:transform .2s;display:inline-block}
@@ -326,6 +326,23 @@ header .spacer{flex:1}
 .price-input-sep{color:rgba(255,255,255,.4);font-size:.9rem;padding-bottom:8px}
 .price-apply-btn{width:100%;padding:9px;background:var(--amber);border:none;border-radius:10px;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;letter-spacing:.3px}
 .price-apply-btn:hover{opacity:.85}
+.gate-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 20px}
+.gate-trio-col{background:var(--light);border:1.5px solid var(--border);border-radius:14px;padding:18px 14px;display:flex;flex-direction:column;gap:8px}
+.gate-trio-col-accent{border-color:var(--blue);background:#eef4ff}
+.gate-trio-icon{font-size:1.8rem;line-height:1}
+.gate-trio-title{font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--blue);line-height:1.2}
+.gate-trio-body{font-size:.88rem;color:var(--txt);line-height:1.5}
+.detail-ad-wrap{margin-top:20px;border-top:1px solid var(--border);padding-top:12px}
+.detail-ad-badge{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.detail-ad-card{display:block;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-decoration:none;color:var(--txt);transition:box-shadow .15s}
+.detail-ad-card:hover{box-shadow:var(--sh2)}
+.detail-ad-img{width:100%;height:100px;object-fit:cover;display:block}
+.detail-ad-body{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.detail-ad-logo{height:28px;width:auto;flex-shrink:0;object-fit:contain}
+.detail-ad-text{flex:1;min-width:0}
+.detail-ad-title{font-size:.82rem;font-weight:700;color:var(--txt)}
+.detail-ad-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+.detail-ad-cta{font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap;flex-shrink:0}
 .bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
   background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
   border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
@@ -374,6 +391,32 @@ header .spacer{flex:1}
   transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow:hidden}
 .hist-modal.open{transform:translate(-50%,-50%);opacity:1;pointer-events:all}
 .hist-modal-close{position:absolute;top:14px;right:16px;background:var(--light);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer}
+.hist-modal-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.hmt-col{padding:32px 22px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:12px}
+.hmt-col:last-child{border-right:none}
+.hmt-col-accent{background:#eef4ff}
+.hmt-icon{font-size:2.4rem;line-height:1}
+.hmt-title{font-size:.88rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--blue);line-height:1.25}
+.hmt-body{font-size:.95rem;color:var(--txt);line-height:1.6}
+
+/* ── Area summary bar + detail modal ── */
+.area-summary-bar{background:var(--light);border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.area-summary-stats{display:flex;align-items:center;gap:0;flex:1;min-width:0}
+.area-stat{display:flex;flex-direction:column;gap:1px;padding:0 14px}
+.area-stat:first-child{padding-left:0}
+.area-stat-val{font-size:1rem;font-weight:800;color:var(--txt);white-space:nowrap}
+.area-stat-lbl{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.area-stat-sep{width:1px;background:var(--border);height:32px;flex-shrink:0}
+.area-ver-mas-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;transition:opacity .15s}
+.area-ver-mas-btn:hover{opacity:.85}
+.area-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600;opacity:0;pointer-events:none;transition:opacity .22s}
+.area-modal-ov.open{opacity:1;pointer-events:all}
+.area-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-44%);opacity:0;pointer-events:none;width:min(720px,95vw);max-height:80vh;background:#fff;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.22);z-index:601;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow:hidden;display:flex;flex-direction:column}
+.area-modal.open{transform:translate(-50%,-50%);opacity:1;pointer-events:all}
+.area-modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.area-modal-title{font-size:1rem;font-weight:800;color:var(--txt)}
+.area-modal-close{background:var(--light);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer}
+.area-modal-body{overflow-y:auto;padding:16px 20px 20px;flex:1}
 
 /* ── Summary table (Histórico + spatial filter) ── */
 .sum-wrap{padding:0 0 8px}
@@ -957,10 +1000,12 @@ header .spacer{flex:1}
       </span>
     </label>
 
-    <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
-    <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()">
-      Más filtros <span class="adv-arrow">▼</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()" style="margin-left:0">
+        Más filtros <span class="adv-arrow">▼</span>
+      </button>
+    </div>
   </div>
 
   <!-- Advanced panel -->
@@ -1156,25 +1201,32 @@ header .spacer{flex:1}
 <div class="hist-modal-ov" id="histModalOv" onclick="closeHistModal()"></div>
 <div class="hist-modal" id="histModal">
   <button class="hist-modal-close" onclick="closeHistModal()">✕</button>
-  <div style="padding:32px 28px 0">
-    <div class="hist-tag">Registros Públicos · SUNARP</div>
-    <div class="hist-headline">Valor real,<br><em>no precio de lista</em></div>
-    <div class="hist-sub">Un inmueble tiene precio y tiene valor — y no siempre coinciden. El precio lo fija quien vende. El valor lo determina el mercado y lo certifica SUNARP al momento de inscribir la transferencia en Registros Públicos.</div>
-  </div>
-  <div class="hist-compare" style="margin:0">
-    <div class="hist-col">
-      <div class="hist-col-label">Tasadores y peritos</div>
-      <div class="hist-col-body">Sustenta tu informe de tasación con el <strong>valor real inscrito</strong> en Registros Públicos, no con portales ni estimaciones.</div>
+  <div class="hist-modal-trio">
+    <div class="hmt-col">
+      <div class="hmt-icon">📐</div>
+      <div class="hmt-title">Tasadores y peritos</div>
+      <div class="hmt-body">Sustenta tu informe con el <strong>valor real inscrito</strong> en Registros Públicos, no con portales ni estimaciones.</div>
     </div>
-    <div class="hist-col">
-      <div class="hist-col-label">Bancos y financieras</div>
-      <div class="hist-col-body">Valida el valor del inmueble con datos <strong>oficiales SUNARP</strong> antes de aprobar una hipoteca o un crédito.</div>
+    <div class="hmt-col">
+      <div class="hmt-icon">🏦</div>
+      <div class="hmt-title">Bancos y financieras</div>
+      <div class="hmt-body">Valida el valor del inmueble con datos <strong>oficiales SUNARP</strong> antes de aprobar una hipoteca.</div>
     </div>
-    <div class="hist-col">
-      <div class="hist-col-label">Propietarios e inversores</div>
-      <div class="hist-col-body">Conoce cuánto <strong>vale realmente</strong> tu inmueble según el mercado, más allá del precio que te ofrecen.</div>
+    <div class="hmt-col hmt-col-accent">
+      <div class="hmt-icon">📈</div>
+      <div class="hmt-title">Propietarios e inversores</div>
+      <div class="hmt-body">Conoce cuánto <strong>vale realmente</strong> tu inmueble según el mercado.</div>
     </div>
   </div>
+</div>
+
+<div class="area-modal-ov" id="areaModalOv" onclick="closeAreaModal()"></div>
+<div class="area-modal" id="areaModal">
+  <div class="area-modal-head">
+    <div class="area-modal-title">Detalle de propiedades en el área</div>
+    <button class="area-modal-close" onclick="closeAreaModal()">✕</button>
+  </div>
+  <div class="area-modal-body" id="areaModalBody"></div>
 </div>
 
 <div class="pub-modal-overlay" id="pubOverlay" onclick="closePublish()"></div>
@@ -10296,6 +10348,7 @@ async function loadData(){
     buildSuggestions();
     applyFilters();
     if(leafletMap) renderPins(getFiltered());
+    applyHashNav();
 
   } catch(err){
     console.error('Error cargando datos:', err);
@@ -12985,6 +13038,7 @@ function loadDemoData(){
   _resetPriceSliders();
   applyFilters();
   if(leafletMap) renderPins(getFiltered());
+  applyHashNav();
 } // fin loadDemoData
 
 // ─────────────────────── STATE ───────────────────────
@@ -13086,27 +13140,67 @@ function _pinColor(type){
   return '#0891b2';
 }
 
-function renderHistTable(list){
+function _shortAddr(addr){
+  const first=addr.split(',')[0].trim();
+  return first.length>48?first.slice(0,48)+'…':first;
+}
+let _histTableList=[];
+
+function _buildHistTableHtml(list){
   const rows=list.map(p=>{
     const sqm=sqmPriceNet(p);
     const area=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;
-    const col=_pinColor(p.type);
-    return `<tr onclick="openDetail('${p.id}')">
-      <td><div class="sum-addr">${p.address}</div><div class="sum-dist">📍 ${p.district}</div></td>
-      <td style="white-space:nowrap"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px"></span>${p.type}</td>
+    return `<tr onclick="closeAreaModal();openDetail('${p.id}')">
+      <td><div class="sum-addr">${_shortAddr(p.address)}</div><div class="sum-dist">📍 ${p.district}</div></td>
+      <td style="white-space:nowrap">${p.type}</td>
       <td style="white-space:nowrap">${area>0?area+' m²':'—'}</td>
       <td>${sqm>0?`<span class="sum-price">${p.cur} ${sqm.toLocaleString()}/m²</span>`:'<span class="sum-muted">—</span>'}</td>
     </tr>`;
   }).join('');
+  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&sqmPriceNet(p)>0;});
+  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
+  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+sqmPriceNet(p),0)/validRows.length):0;
+  const avgCur=validRows.length?validRows[0].cur:'$';
+  const tfoot=validRows.length?`<tfoot><tr style="background:#f0f7ff;font-weight:700;border-top:2px solid var(--blue)">
+    <td colspan="2" style="padding:9px 10px;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--blue)">Promedio · ${validRows.length} propiedades</td>
+    <td style="white-space:nowrap;padding:9px 10px">${avgArea} m²</td>
+    <td style="padding:9px 10px"><span class="sum-price">${avgCur} ${avgSqm.toLocaleString()}/m²</span></td>
+  </tr></tfoot>`:'';
+  return `<div class="sum-table-scroll"><table class="sum-table">
+    <thead><tr><th>Dirección</th><th>Tipo</th><th>Área</th><th>Valor/m²</th></tr></thead>
+    <tbody>${rows}</tbody>${tfoot}
+  </table></div>`;
+}
 
-  return `<div class="sum-wrap">
-    <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--blue);text-transform:uppercase;padding:14px 12px 6px;display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--blue)"></span>Resumen del área</div>
-    <div class="sum-table-scroll"><table class="sum-table">
-      <thead><tr><th>Dirección</th><th>Tipo</th><th>Área</th><th>Valor/m²</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>
-    <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:18px 12px 6px;border-top:1px solid var(--border);margin-top:4px;display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--border)"></span>Propiedades</div>
-  </div>`;
+function openAreaModal(){
+  document.getElementById('areaModalBody').innerHTML=_buildHistTableHtml(_histTableList);
+  document.getElementById('areaModalOv').classList.add('open');
+  document.getElementById('areaModal').classList.add('open');
+}
+function closeAreaModal(){
+  document.getElementById('areaModalOv').classList.remove('open');
+  document.getElementById('areaModal').classList.remove('open');
+}
+
+function renderHistTable(list){
+  _histTableList=list;
+  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&sqmPriceNet(p)>0;});
+  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
+  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+sqmPriceNet(p),0)/validRows.length):0;
+  const avgCur=validRows.length?validRows[0].cur:'$';
+
+  return `<div class="area-summary-bar">
+    <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--blue);text-transform:uppercase;display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--blue)"></span>Resumen del área · ${list.length} propiedades</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div class="area-summary-stats">
+        <div class="area-stat"><div class="area-stat-val">${avgArea} m²</div><div class="area-stat-lbl">Área promedio</div></div>
+        <div class="area-stat-sep"></div>
+        <div class="area-stat"><div class="area-stat-val" style="color:var(--blue)">${avgCur} ${avgSqm.toLocaleString()}/m²</div><div class="area-stat-lbl">Valor promedio/m²</div></div>
+      </div>
+      <button class="area-ver-mas-btn" onclick="openAreaModal()">Ver detalle →</button>
+    </div>
+  </div>
+  <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--border)"></span>Propiedades</div>`;
 }
 
 function renderCards(list){
@@ -13434,9 +13528,10 @@ function onSearch(v){
 let SG_DATA=[];
 function buildSuggestions(){
   const districts=[...new Set(properties.map(p=>p.district))];
+  const distSet=new Set(districts.map(d=>d.toLowerCase()));
   SG_DATA=[
     ...districts.map(d=>({icon:'📍',label:d,sub:'Distrito'})),
-    ...properties.map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type}))
+    ...properties.filter(p=>!distSet.has(p.address.toLowerCase())).map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type}))
   ];
 }
 function boldMatch(text,q){
@@ -13444,23 +13539,29 @@ function boldMatch(text,q){
   if(i<0)return text;
   return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
 }
+function _sgItemHtml(s,val){
+  return `<div class="sg-item" onmousedown="pickSuggestion('${s.label.replace(/'/g,"\\'")}')">
+    <span class="sg-ico">${s.icon}</span>
+    <span class="sg-txt">
+      <span class="sg-main">${boldMatch(s.label,val)}</span>
+      <span class="sg-sub">${s.sub}</span>
+    </span>
+  </div>`;
+}
 function _propHtml(hits,val){
   if(!hits.length) return '';
-  return `<div class="sg-section">Propiedades</div>`+hits.map(s=>`
-    <div class="sg-item" onmousedown="pickSuggestion('${s.label.replace(/'/g,"\\'")}')">
-      <span class="sg-ico">${s.icon}</span>
-      <span class="sg-txt">
-        <span class="sg-main">${boldMatch(s.label,val)}</span>
-        <span class="sg-sub">${s.sub}</span>
-      </span>
-    </div>`).join('');
+  return `<div class="sg-section">Propiedades</div>`+hits.map(s=>_sgItemHtml(s,val)).join('');
 }
 function showSuggestions(val){
   const el=document.getElementById('sgDrop');
   if(!val||val.length<1){el.style.display='none';return;}
   const q=val.toLowerCase();
-  const hits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q)).slice(0,5);
-  const body=_propHtml(hits,val);
+  const allHits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q));
+  const distHits=allHits.filter(s=>s.sub==='Distrito').slice(0,3);
+  const propHits=allHits.filter(s=>s.sub!=='Distrito').slice(0,4);
+  let body='';
+  if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtml(s,val)).join('');
+  if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtml(s,val)).join('');
   if(!body){el.style.display='none';return;}
   el.innerHTML=body;
   el.style.display='block';
@@ -13497,6 +13598,28 @@ function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
   document.getElementById('sgDrop').style.display='none';
   S.query=val; applyFilters();
+  const vl=val.toLowerCase().trim();
+  const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
+  if(isDistrict) _flyToDistrictGeo(val);
+}
+
+async function _flyToDistrictGeo(district){
+  if(!leafletMap) return;
+  try{
+    const q=encodeURIComponent(district+', Lima, Perú');
+    const url=`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&addressdetails=0&accept-language=es`;
+    const res=await fetch(url);
+    const data=await res.json();
+    if(!data.length) return;
+    const r=data[0];
+    if(r.boundingbox){
+      const [s,n,w,e]=r.boundingbox.map(Number);
+      const bounds=L.latLngBounds([[s,w],[n,e]]);
+      if(bounds.isValid()) leafletMap.flyToBounds(bounds,{padding:[30,30],duration:1.2});
+    } else {
+      leafletMap.flyTo([parseFloat(r.lat),parseFloat(r.lon)],14,{duration:1.2});
+    }
+  }catch(e){}
 }
 function pickGeoResult(lat,lng,label){
   document.getElementById('searchQ').value='';
@@ -13708,6 +13831,7 @@ function resetAll(){
 
 // ─────────────────────── DETAIL PANEL ───────────────────────
 function buildValChart(p){
+  if(p.op!=='Histórico'||!p.val||!p.val.length||Math.max(...p.val)<=0) return '';
   const years=['2021','2022','2023','2024','2025'];
   const max=Math.max(...p.val);
   const bars=p.val.map((v,i)=>{
@@ -13863,7 +13987,22 @@ function openDetail(id){
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Inmueble guardado ❤️')">❤️ Guardar</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
-        <button style="flex:1;background:var(--accent);border:none;padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:700;color:#fff;cursor:pointer" onclick="openFullReport('${p.id}')">${p.op==='Histórico'?'📋 Ver informe':'📊 Ver análisis'}</button>
+        ${p.op==='Histórico'?`<button style="flex:1;background:var(--accent);border:none;padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:700;color:#fff;cursor:pointer" onclick="openFullReport('${p.id}')">📋 Ver informe</button>`:''}
+      </div>
+
+      <div class="detail-ad-wrap">
+        <div class="detail-ad-badge">Publicidad</div>
+        <a href="https://www.apoyoconsultoria.com/" target="_blank" class="detail-ad-card">
+          <img src="https://www.apoyoconsultoria.com/wp-content/uploads/2026/01/apoyo-edificio-1-scaled.png" alt="Apoyo Consultoría" class="detail-ad-img" onerror="this.style.display='none'"/>
+          <div class="detail-ad-body">
+            <img src="https://www.apoyoconsultoria.com/wp-content/uploads/2021/01/logo-apoyo.png" alt="Apoyo" class="detail-ad-logo" onerror="this.style.display='none'"/>
+            <div class="detail-ad-text">
+              <div class="detail-ad-title">Valuación profesional de inmuebles</div>
+              <div class="detail-ad-sub">Tasaciones · Peritajes · Consultoría inmobiliaria</div>
+            </div>
+            <span class="detail-ad-cta">Ver más →</span>
+          </div>
+        </a>
       </div>
     </div>`;
 
@@ -13893,19 +14032,22 @@ function showGatePanel(p){
       </div>
     </div>
     <div class="detail-gate">
-      <div class="gate-icon">${has?'🔑':'🔒'}</div>
-      <div class="gate-title">${has?'Desbloquear informe':'Informe bloqueado'}</div>
-      <div class="gate-desc">
-        ${has
-          ?`Usa 1 llave para acceder al informe completo de valuación con todos los datos registrales.`
-          :`Necesitas llaves para acceder al informe completo de valuación con datos registrales.`
-        }
-      </div>
-      <div class="gate-features">
-        <div class="gate-feat"><span>📋</span><span>Partida registral SUNARP</span></div>
-        <div class="gate-feat"><span>📈</span><span>Historial de valorización</span></div>
-        <div class="gate-feat"><span>💰</span><span>Valor tasado por m²</span></div>
-        <div class="gate-feat"><span>👤</span><span>Propietario registrado</span></div>
+      <div class="gate-trio">
+        <div class="gate-trio-col">
+          <div class="gate-trio-icon">📐</div>
+          <div class="gate-trio-title">Tasadores y peritos</div>
+          <div class="gate-trio-body">Sustenta tu informe con el <strong>valor real inscrito</strong> en Registros Públicos, no con portales ni estimaciones.</div>
+        </div>
+        <div class="gate-trio-col">
+          <div class="gate-trio-icon">🏦</div>
+          <div class="gate-trio-title">Bancos y financieras</div>
+          <div class="gate-trio-body">Valida el valor con datos <strong>oficiales SUNARP</strong> antes de aprobar una hipoteca o crédito.</div>
+        </div>
+        <div class="gate-trio-col gate-trio-col-accent">
+          <div class="gate-trio-icon">📈</div>
+          <div class="gate-trio-title">Propietarios e inversores</div>
+          <div class="gate-trio-body">Conoce cuánto <strong>vale realmente</strong> tu inmueble según el mercado.</div>
+        </div>
       </div>
       <div class="gate-keys-row">
         ${has
@@ -14699,10 +14841,27 @@ function _pubBulkSubmit(n,cost){
 
 
 // ─────────────────────── INIT ───────────────────────
+function applyHashNav(){
+  const h = window._hashNav || '';
+  window._hashNav = '';
+  if(!h) return;
+  if(h.startsWith('#op=')){
+    const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
+    const label = labelMap[h.slice(4).toLowerCase()];
+    if(label){
+      const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+      if(btn) btn.click();
+    }
+  } else if(h === '#publish'){
+    setTimeout(openPublish, 400);
+  }
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
   initMap();
   recalcBody();
   window.addEventListener('resize',recalcBody);
+  window._hashNav = window.location.hash;
   loadData();
 });
 </script>
