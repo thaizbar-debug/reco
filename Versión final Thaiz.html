@@ -269,6 +269,8 @@ header .spacer{flex:1}
 .adv-toggle-btn:hover{color:#fff}
 .adv-arrow{transition:transform .2s;display:inline-block}
 .adv-toggle-btn.open .adv-arrow{transform:rotate(180deg)}
+.clear-filters-btn{background:none;border:1.5px solid rgba(255,255,255,.3);color:rgba(255,255,255,.75);font-size:.78rem;font-weight:600;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap}
+.clear-filters-btn:hover{border-color:rgba(255,255,255,.7);color:#fff}
 
 .adv-panel{
   display:none;
@@ -296,6 +298,34 @@ header .spacer{flex:1}
 }
 .range-row input::placeholder{color:rgba(255,255,255,.35)}
 .range-sep{color:rgba(255,255,255,.4);font-size:.8rem}
+.adv-layout{display:flex;gap:16px;align-items:flex-start}
+.adv-left{flex:1;min-width:0}
+.adv-right{width:330px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
+.price-tabs{display:flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px;margin-bottom:10px;gap:2px}
+.price-tab{flex:1;background:none;border:none;color:rgba(255,255,255,.6);font-size:.78rem;font-weight:600;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center}
+.price-tab.active{background:rgba(255,255,255,.22);color:#fff}
+.price-cur-row{display:flex;justify-content:flex-end;margin-bottom:8px}
+.cur-toggle{display:flex;background:rgba(255,255,255,.1);border-radius:7px;padding:2px;gap:2px}
+.cur-btn{background:none;border:none;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:5px;cursor:pointer;font-family:inherit;transition:all .15s}
+.cur-btn.active{background:rgba(255,255,255,.25);color:#fff}
+.price-histogram{display:flex;align-items:flex-end;gap:1px;height:54px;margin-bottom:3px}
+.price-hist-bar{flex:1;border-radius:2px 2px 0 0;background:rgba(255,255,255,.2);min-height:2px;transition:background .1s}
+.price-hist-bar.in-range{background:var(--amber)}
+.dual-slider-wrap{position:relative;height:24px;margin:0 0 3px}
+.dual-slider-wrap input[type=range]{position:absolute;top:50%;transform:translateY(-50%);width:100%;height:4px;-webkit-appearance:none;appearance:none;background:transparent;outline:none;pointer-events:none}
+.dual-slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.4);cursor:pointer;pointer-events:all}
+.slider-track-bg{position:absolute;top:50%;transform:translateY(-50%);height:4px;width:100%;background:rgba(255,255,255,.18);border-radius:2px;pointer-events:none}
+.slider-track-fill{position:absolute;height:4px;background:var(--amber);border-radius:2px;top:50%;transform:translateY(-50%);pointer-events:none}
+.slider-bounds{display:flex;justify-content:space-between;font-size:.7rem;color:rgba(255,255,255,.5);margin-bottom:10px}
+.price-inputs-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:10px}
+.price-input-group{flex:1;display:flex;flex-direction:column;gap:4px}
+.price-input-group label{font-size:.7rem;color:rgba(255,255,255,.55);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin:0;display:block}
+.price-input-group input{width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:.82rem;outline:none;font-family:inherit;box-sizing:border-box}
+.price-input-group input::placeholder{color:rgba(255,255,255,.3)}
+.price-input-group input:focus{border-color:rgba(255,255,255,.5)}
+.price-input-sep{color:rgba(255,255,255,.4);font-size:.9rem;padding-bottom:8px}
+.price-apply-btn{width:100%;padding:9px;background:var(--amber);border:none;border-radius:10px;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .15s;letter-spacing:.3px}
+.price-apply-btn:hover{opacity:.85}
 .bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
   background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
   border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
@@ -849,20 +879,18 @@ header .spacer{flex:1}
 
 <!-- ══════ HEADER ══════ -->
 <header>
-  <a href="landing.html" style="display:flex;align-items:center;gap:7px;padding:6px 12px;border-radius:var(--r);color:var(--muted);font-size:.82rem;font-weight:600;transition:background .12s;text-decoration:none" onmouseover="this.style.background='var(--light)'" onmouseout="this.style.background='transparent'">← Inicio</a>
   <div class="logo" style="cursor:pointer" onclick="window.location='landing.html'">
     <img src="data:image/png;base64,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" alt="reco" style="height:36px;width:auto"/>
   </div>
 
   <div class="spacer"></div>
 
-  <div class="nav-phone">📞 <a href="tel:+5101232-3232">(51) 01 232-3232</a></div>
+  <button class="btn-publish" onclick="openPublish()">Publicar inmueble</button>
 
   <div class="keys-badge" onclick="openModal()">
     🔑 Mis llaves <span class="count" id="keyCount">0</span>
   </div>
 
-  <button class="btn-publish" onclick="openPublish()">Publicar inmueble</button>
   <button class="btn-buy-keys" onclick="openModal()">🛒 Comprar llaves</button>
 
   <div class="user-wrap">
@@ -897,7 +925,6 @@ header .spacer{flex:1}
   </div>
 
   <div class="filters-row">
-    <span class="f-label">Operación:</span>
     <div class="seg" id="opSeg">
       <button class="active" onclick="setOp(this,'Venta')">Comprar</button>
       <button onclick="setOp(this,'Alquiler')">Alquilar</button>
@@ -916,9 +943,9 @@ header .spacer{flex:1}
     <span class="f-label">Dorms:</span>
     <div class="beds-group" id="bedsSeg">
       <button class="active" onclick="setBeds(this,0)">Todos</button>
-      <button onclick="setBeds(this,1)">1+</button>
-      <button onclick="setBeds(this,2)">2+</button>
-      <button onclick="setBeds(this,3)">3+</button>
+      <button onclick="setBeds(this,1)">1</button>
+      <button onclick="setBeds(this,2)">2</button>
+      <button onclick="setBeds(this,3)">3</button>
       <button onclick="setBeds(this,4)">4+</button>
     </div>
 
@@ -930,6 +957,7 @@ header .spacer{flex:1}
       </span>
     </label>
 
+    <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
     <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()">
       Más filtros <span class="adv-arrow">▼</span>
     </button>
@@ -937,74 +965,108 @@ header .spacer{flex:1}
 
   <!-- Advanced panel -->
   <div class="adv-panel" id="advPanel">
-    <div class="adv-grid">
-      <div class="adv-block">
-        <label>Baños</label>
-        <div class="adv-chips" id="bathsChips">
-          <span class="adv-chip" data-val="1" onclick="toggleAdv_baths(this)">1+</span>
-          <span class="adv-chip" data-val="2" onclick="toggleAdv_baths(this)">2+</span>
-          <span class="adv-chip" data-val="3" onclick="toggleAdv_baths(this)">3+</span>
+    <div class="adv-layout">
+      <!-- LEFT: chips filters -->
+      <div class="adv-left">
+        <div class="adv-grid">
+          <div class="adv-block">
+            <label>Baños</label>
+            <div class="adv-chips" id="bathsChips">
+              <span class="adv-chip" data-val="1" onclick="toggleAdv_baths(this)">1</span>
+              <span class="adv-chip" data-val="2" onclick="toggleAdv_baths(this)">2</span>
+              <span class="adv-chip" data-val="3" onclick="toggleAdv_baths(this)">3+</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Estacionamiento</label>
+            <div class="adv-chips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 1')">1</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 2')">2+</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Depósito</label>
+            <div class="adv-chips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 1')">1</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 2')">2+</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Características</label>
+            <div class="adv-chips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Ascensor')">Ascensor</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Pet friendly')">Pet friendly</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Amoblado')">Amoblado</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Seguridad 24/7')">Seguridad 24/7</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Vista</label>
+            <div class="adv-chips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Mar')">Mar</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Ciudad')">Ciudad</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Jardín')">Jardín</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Zona cercana</label>
+            <div class="adv-chips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Metro')">Metro</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Hospital')">Hospital</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Universidad')">Universidad</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Comercio')">Comercio</span>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Área m² (mín)</label>
+            <div class="range-row">
+              <input type="number" id="minArea" placeholder="Ej: 60" oninput="applyFilters()"/>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="adv-block">
-        <label>Estacionamiento</label>
-        <div class="adv-chips">
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 1')">1+</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 2')">2+</span>
+      <!-- RIGHT: price -->
+      <div class="adv-right">
+        <div class="adv-block adv-price-block">
+          <div class="price-tabs">
+            <button class="price-tab active" id="tabPrecio" onclick="setPriceTab('precio')">Precio</button>
+            <button class="price-tab" id="tabSqm" onclick="setPriceTab('sqm')">Valor por m²</button>
+          </div>
+          <div class="price-cur-row">
+            <div class="cur-toggle">
+              <button class="cur-btn active" id="curSoles" onclick="setCurrency('soles')">S/</button>
+              <button class="cur-btn" id="curDolar" onclick="setCurrency('dolar')">US$</button>
+            </div>
+          </div>
+          <div class="price-histogram" id="priceHistogram"></div>
+          <div class="dual-slider-wrap">
+            <div class="slider-track-bg"></div>
+            <div class="slider-track-fill" id="sliderFill"></div>
+            <input type="range" id="minPriceSlider" min="0" max="5000000" step="50000" value="0" oninput="onDualSlider()"/>
+            <input type="range" id="maxPriceSlider" min="0" max="5000000" step="50000" value="5000000" oninput="onDualSlider()"/>
+          </div>
+          <div class="slider-bounds">
+            <span id="sliderMinBound">S/ 0</span>
+            <span id="sliderMaxBound">S/ 5M+</span>
+          </div>
+          <div class="price-inputs-row">
+            <div class="price-input-group">
+              <label>Mín</label>
+              <input type="text" id="minPriceInput" placeholder="Sin mín" onblur="onPriceInputBlur()"/>
+            </div>
+            <span class="price-input-sep">—</span>
+            <div class="price-input-group">
+              <label>Máx</label>
+              <input type="text" id="maxPriceInput" placeholder="Sin máx" onblur="onPriceInputBlur()"/>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="adv-block">
-        <label>Depósito</label>
-        <div class="adv-chips">
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 1')">1+</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 2')">2+</span>
-        </div>
-      </div>
-      <div class="adv-block">
-        <label>Precio mín / máx (S/)</label>
-        <div class="range-row">
-          <input type="number" id="minPrice" placeholder="Mín" oninput="applyFilters()"/>
-          <span class="range-sep">—</span>
-          <input type="number" id="maxPrice" placeholder="Máx" oninput="applyFilters()"/>
-        </div>
-      </div>
-      <div class="adv-block">
-        <label>Área m² (mín)</label>
-        <div class="range-row">
-          <input type="number" id="minArea" placeholder="Ej: 60" oninput="applyFilters()"/>
-        </div>
-      </div>
-      <div class="adv-block">
-        <label>Características</label>
-        <div class="adv-chips">
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Ascensor')">Ascensor</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Pet friendly')">Pet friendly</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Amoblado')">Amoblado</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Seguridad 24/7')">Seguridad 24/7</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
-        </div>
-      </div>
-      <div class="adv-block">
-        <label>Vista</label>
-        <div class="adv-chips">
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Mar')">Mar</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Ciudad')">Ciudad</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Jardín')">Jardín</span>
-        </div>
-      </div>
-      <div class="adv-block">
-        <label>Zona cercana</label>
-        <div class="adv-chips">
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Metro')">Metro</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Hospital')">Hospital</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Universidad')">Universidad</span>
-          <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Comercio')">Comercio</span>
-        </div>
-      </div>
-    </div>
+    </div><!-- end adv-layout -->
   </div>
 </div>
 
@@ -12919,6 +12981,8 @@ function loadDemoData(){
   properties.forEach(p=>{ if(p.lat!=null && p.lng!=null) GEO[p.id]=[p.lat,p.lng]; });
 
   buildSuggestions();
+  buildPriceHistogram();
+  _resetPriceSliders();
   applyFilters();
   if(leafletMap) renderPins(getFiltered());
 } // fin loadDemoData
@@ -12926,7 +12990,7 @@ function loadDemoData(){
 // ─────────────────────── STATE ───────────────────────
 const S = {
   query:'', op:'Venta', type:'all', beds:0, baths:0,
-  minPrice:0, maxPrice:Infinity, minArea:0,
+  minPrice:0, maxPrice:Infinity, minArea:0, minSqm:0, maxSqm:Infinity,
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
@@ -12949,6 +13013,9 @@ function getFiltered(){
     if(S.minPrice>0 && p.price<S.minPrice) return false;
     if(S.maxPrice<Infinity && p.price>S.maxPrice) return false;
     if(S.minArea>0 && p.area<S.minArea) return false;
+    const sqm=p.area>0?Math.round(p.price/p.area):0;
+    if(S.minSqm>0 && sqm<S.minSqm) return false;
+    if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0){
       const estacFeats=S.features.filter(f=>/^Estacionamiento \d+$/.test(f));
@@ -13351,9 +13418,6 @@ function applyFilters(){
   S.bankOnly=document.getElementById('bankOnly').checked;
   S.sort=document.getElementById('sortSel').value;
 
-  const minP=parseFloat(document.getElementById('minPrice').value)||0;
-  const maxP=parseFloat(document.getElementById('maxPrice').value)||Infinity;
-  S.minPrice=minP; S.maxPrice=maxP;
   S.minArea=parseFloat(document.getElementById('minArea').value)||0;
 
   const list=getFiltered();
@@ -13364,8 +13428,6 @@ function applyFilters(){
 let _geoTimer=null;
 function onSearch(v){
   showSuggestions(v);
-  clearTimeout(_geoTimer);
-  if(v&&v.length>=3) _geoTimer=setTimeout(()=>_fetchGeo(v),380);
 }
 
 // ─────────────────────── AUTOCOMPLETE ───────────────────────
@@ -13398,8 +13460,7 @@ function showSuggestions(val){
   if(!val||val.length<1){el.style.display='none';return;}
   const q=val.toLowerCase();
   const hits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q)).slice(0,5);
-  const geoPlaceholder=val.length>=3?`<div class="sg-geo-loading" id="sgGeo">🔍 Buscando ubicaciones…</div>`:'';
-  const body=_propHtml(hits,val)+geoPlaceholder;
+  const body=_propHtml(hits,val);
   if(!body){el.style.display='none';return;}
   el.innerHTML=body;
   el.style.display='block';
@@ -13506,18 +13567,142 @@ function recalcBody(){
   document.getElementById('appBody').style.top=(60+hero)+'px';
 }
 
-function resetAll(){
-  document.getElementById('searchQ').value='';
+let _priceCur='soles';
+let _priceTab='precio';
+const PRICE_CFG={
+  precio:{soles:{min:0,max:5000000,step:50000,sym:'S/'},dolar:{min:0,max:1500000,step:15000,sym:'US$'}},
+  sqm:  {soles:{min:0,max:20000,  step:500,  sym:'S/'},dolar:{min:0,max:6000,   step:200,  sym:'US$'}}
+};
+function _pcfg(){return PRICE_CFG[_priceTab][_priceCur];}
+
+function fmtVal(v,cfg){
+  const s=cfg.sym;
+  if(v>=1000000) return s+' '+(v/1000000).toFixed(1)+'M';
+  if(v>=1000)    return s+' '+Math.round(v/1000)+'K';
+  return s+' '+v.toLocaleString();
+}
+
+function setPriceTab(tab){
+  _priceTab=tab;
+  document.getElementById('tabPrecio').classList.toggle('active',tab==='precio');
+  document.getElementById('tabSqm').classList.toggle('active',tab==='sqm');
+  _resetPriceSliders();
+  buildPriceHistogram();
+}
+
+function setCurrency(cur){
+  _priceCur=cur;
+  document.getElementById('curSoles').classList.toggle('active',cur==='soles');
+  document.getElementById('curDolar').classList.toggle('active',cur==='dolar');
+  _resetPriceSliders();
+  buildPriceHistogram();
+}
+
+function _resetPriceSliders(){
+  const cfg=_pcfg();
+  const minEl=document.getElementById('minPriceSlider');
+  const maxEl=document.getElementById('maxPriceSlider');
+  minEl.min=cfg.min; minEl.max=cfg.max; minEl.step=cfg.step; minEl.value=cfg.min;
+  maxEl.min=cfg.min; maxEl.max=cfg.max; maxEl.step=cfg.step; maxEl.value=cfg.max;
+  document.getElementById('minPriceInput').value='';
+  document.getElementById('maxPriceInput').value='';
+  _updateSliderUI();
+}
+
+function _updateSliderUI(){
+  const cfg=_pcfg();
+  const minV=parseFloat(document.getElementById('minPriceSlider').value);
+  const maxV=parseFloat(document.getElementById('maxPriceSlider').value);
+  const range=cfg.max-cfg.min;
+  const pct1=(minV-cfg.min)/range*100;
+  const pct2=(maxV-cfg.min)/range*100;
+  const fill=document.getElementById('sliderFill');
+  fill.style.left=pct1+'%';
+  fill.style.width=(pct2-pct1)+'%';
+  document.getElementById('sliderMinBound').textContent=fmtVal(cfg.min,cfg);
+  document.getElementById('sliderMaxBound').textContent=fmtVal(cfg.max,cfg)+'+';
+  document.querySelectorAll('#priceHistogram .price-hist-bar').forEach((bar,i,arr)=>{
+    const bp=i/arr.length*100;
+    bar.classList.toggle('in-range',bp>=pct1&&bp<=pct2);
+  });
+}
+
+function onDualSlider(){
+  const minEl=document.getElementById('minPriceSlider');
+  const maxEl=document.getElementById('maxPriceSlider');
+  let minV=parseFloat(minEl.value);
+  let maxV=parseFloat(maxEl.value);
+  if(minV>maxV){minV=maxV;minEl.value=minV;}
+  const cfg=_pcfg();
+  document.getElementById('minPriceInput').value=minV>cfg.min?fmtVal(minV,cfg):'';
+  document.getElementById('maxPriceInput').value=maxV<cfg.max?fmtVal(maxV,cfg):'';
+  _updateSliderUI();
+  // real-time filter, mutually exclusive
+  if(_priceTab==='precio'){
+    S.minPrice=minV>cfg.min?minV:0; S.maxPrice=maxV<cfg.max?maxV:Infinity;
+    S.minSqm=0; S.maxSqm=Infinity;
+  } else {
+    S.minSqm=minV>cfg.min?minV:0; S.maxSqm=maxV<cfg.max?maxV:Infinity;
+    S.minPrice=0; S.maxPrice=Infinity;
+  }
+  applyFilters();
+}
+
+function onPriceInputBlur(){
+  const cfg=_pcfg();
+  const parseInput=id=>{
+    const raw=document.getElementById(id).value.replace(/[^\d.]/g,'');
+    return raw?parseFloat(raw):null;
+  };
+  const minV=parseInput('minPriceInput')??cfg.min;
+  const maxV=parseInput('maxPriceInput')??cfg.max;
+  document.getElementById('minPriceSlider').value=Math.min(minV,cfg.max);
+  document.getElementById('maxPriceSlider').value=Math.max(Math.min(maxV,cfg.max),minV);
+  _updateSliderUI();
+}
+
+function clearFilters(){
   document.getElementById('typeSel').value='all';
   document.getElementById('bankOnly').checked=false;
-  document.getElementById('minPrice').value='';
-  document.getElementById('maxPrice').value='';
   document.getElementById('minArea').value='';
+  _resetPriceSliders();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,features:[],bankOnly:false});
+  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  applyFilters();
+}
+
+function buildPriceHistogram(){
+  if(!properties||!properties.length) return;
+  const cfg=_pcfg();
+  const BUCKETS=20;
+  const counts=new Array(BUCKETS).fill(0);
+  properties.forEach(p=>{
+    const val=_priceTab==='sqm'&&p.area>0?Math.round(p.price/p.area):p.price;
+    const idx=Math.floor((val-cfg.min)/(cfg.max-cfg.min)*BUCKETS);
+    if(idx>=0&&idx<BUCKETS) counts[idx]++;
+  });
+  const maxCount=Math.max(...counts,1);
+  document.getElementById('priceHistogram').innerHTML=counts.map(c=>{
+    const h=Math.max(Math.round((c/maxCount)*100),c>0?4:0);
+    return `<div class="price-hist-bar in-range" style="height:${h}%"></div>`;
+  }).join('');
+  _updateSliderUI();
+}
+
+function resetAll(){
+  document.getElementById('searchQ').value='';
+  document.getElementById('typeSel').value='all';
+  document.getElementById('bankOnly').checked=false;
+  document.getElementById('minArea').value='';
+  _resetPriceSliders();
+  document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
+  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
+  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
+  advFeats.clear();
+  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
