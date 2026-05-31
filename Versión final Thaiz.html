@@ -919,6 +919,13 @@ header .spacer{flex:1}
 </style>
 </head>
 <body>
+<script>
+if(location.hash==='#publish'){
+  var _pubCover=document.createElement('div');
+  _pubCover.style.cssText='position:fixed;inset:0;background:#fff;z-index:398;';
+  document.documentElement.appendChild(_pubCover);
+}
+</script>
 
 <!-- ══════ HEADER ══════ -->
 <header>
@@ -14494,6 +14501,7 @@ function openPublish(){
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
   document.body.style.overflow='hidden';
+  if(window._pubCover){window._pubCover.remove();window._pubCover=null;}
   renderPublish();
 }
 function closePublish(){
