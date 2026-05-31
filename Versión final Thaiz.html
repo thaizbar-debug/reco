@@ -14844,16 +14844,12 @@ function _pubBulkSubmit(n,cost){
 function applyHashNav(){
   const h = window._hashNav || '';
   window._hashNav = '';
-  if(!h) return;
-  if(h.startsWith('#op=')){
-    const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
-    const label = labelMap[h.slice(4).toLowerCase()];
-    if(label){
-      const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
-      if(btn) btn.click();
-    }
-  } else if(h === '#publish'){
-    setTimeout(openPublish, 400);
+  if(!h || !h.startsWith('#op=')) return;
+  const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
+  const label = labelMap[h.slice(4).toLowerCase()];
+  if(label){
+    const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+    if(btn) btn.click();
   }
 }
 
@@ -14862,6 +14858,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   recalcBody();
   window.addEventListener('resize',recalcBody);
   window._hashNav = window.location.hash;
+  if(window._hashNav === '#publish') openPublish();
   loadData();
 });
 </script>
