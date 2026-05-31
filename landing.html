@@ -434,7 +434,7 @@ const FEATURED=[
   };
   const baths = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
   document.getElementById('featuredGrid').innerHTML = FEATURED.map(p => `
-    <div class="prop-card" onclick="location.href='Versión final Thaiz.html#q=${encodeURIComponent(p.address)}'">
+    <div class="prop-card" onclick="location.href='Versión final Thaiz.html#prop=${encodeURIComponent(p.id)}'">
       <div class="prop-img" style="background:${p.gradient}"><span>${p.emoji}</span>
         <div class="prop-badges"><span class="pbadge pb-venta">Venta</span><span class="pbadge pb-type">${p.type}</span></div>
       </div>

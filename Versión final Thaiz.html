@@ -14852,12 +14852,17 @@ function _pubBulkSubmit(n,cost){
 function applyHashNav(){
   const h = window._hashNav || '';
   window._hashNav = '';
-  if(!h || !h.startsWith('#op=')) return;
-  const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
-  const label = labelMap[h.slice(4).toLowerCase()];
-  if(label){
-    const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
-    if(btn) btn.click();
+  if(!h) return;
+  if(h.startsWith('#op=')){
+    const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
+    const label = labelMap[h.slice(4).toLowerCase()];
+    if(label){
+      const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+      if(btn) btn.click();
+    }
+  } else if(h.startsWith('#prop=')){
+    const id = decodeURIComponent(h.slice(6));
+    if(id) openDetail(id);
   }
 }
 
