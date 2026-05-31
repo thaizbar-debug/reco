@@ -922,7 +922,7 @@ header .spacer{flex:1}
 <script>
 if(location.hash==='#publish'){
   var _pubCover=document.createElement('div');
-  _pubCover.style.cssText='position:fixed;inset:0;background:#fff;z-index:398;';
+  _pubCover.style.cssText='position:fixed;inset:0;background:#fff;z-index:9999;';
   document.documentElement.appendChild(_pubCover);
 }
 </script>
@@ -10356,6 +10356,7 @@ async function loadData(){
     applyFilters();
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
+    _applyLandingHash();
 
   } catch(err){
     console.error('Error cargando datos:', err);
@@ -13046,6 +13047,7 @@ function loadDemoData(){
   applyFilters();
   if(leafletMap) renderPins(getFiltered());
   applyHashNav();
+  _applyLandingHash();
 } // fin loadDemoData
 
 // ─────────────────────── STATE ───────────────────────
@@ -13529,6 +13531,8 @@ function applyFilters(){
 let _geoTimer=null;
 function onSearch(v){
   showSuggestions(v);
+  clearTimeout(_geoTimer);
+  if(v&&v.length>=3) _geoTimer=setTimeout(()=>_fetchGeo(v),500);
 }
 
 // ─────────────────────── AUTOCOMPLETE ───────────────────────
@@ -13569,9 +13573,8 @@ function showSuggestions(val){
   let body='';
   if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtml(s,val)).join('');
   if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtml(s,val)).join('');
-  if(!body){el.style.display='none';return;}
-  el.innerHTML=body;
-  el.style.display='block';
+  el.innerHTML=body+'<div id="sgGeo"></div>';
+  el.style.display=body?'block':'none';
 }
 async function _fetchGeo(q){
   const el=document.getElementById('sgGeo');
@@ -13587,7 +13590,7 @@ async function _fetchGeo(q){
       return {label,sub,lat:parseFloat(r.lat),lng:parseFloat(r.lon)};
     });
     const drop=document.getElementById('sgDrop');
-    if(!drop||drop.style.display==='none') return;
+    if(!drop) return;
     const secHtml=`<div class="sg-section">Ubicaciones en el mapa</div>`
       +items.map(r=>`
         <div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
@@ -13599,6 +13602,7 @@ async function _fetchGeo(q){
         </div>`).join('');
     if(el) el.outerHTML=secHtml;
     else drop.insertAdjacentHTML('beforeend',secHtml);
+    drop.style.display='block';
   }catch(e){if(el)el.remove();}
 }
 function pickSuggestion(val){
@@ -14501,7 +14505,7 @@ function openPublish(){
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
   document.body.style.overflow='hidden';
-  if(window._pubCover){window._pubCover.remove();window._pubCover=null;}
+  if(window._pubCover){const _c=window._pubCover;window._pubCover=null;setTimeout(()=>_c.remove(),350);}
   renderPublish();
 }
 function closePublish(){
@@ -14872,8 +14876,31 @@ document.addEventListener('DOMContentLoaded',()=>{
   window.addEventListener('resize',recalcBody);
   window._hashNav = window.location.hash;
   if(window._hashNav === '#publish') openPublish();
-  loadData();
+  loadData(); // applyHashNav called inside loadData after data ready
 });
+
+function _applyLandingHash(){
+  const h=window.location.hash;
+  if(!h) return;
+  if(h.startsWith('#q=')){
+    const q=decodeURIComponent(h.slice(3));
+    if(q){
+      document.getElementById('searchQ').value=q;
+      S.query=q;
+      applyFilters();
+      const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===q.toLowerCase()&&s.sub==='Distrito');
+      if(isDistrict) _flyToDistrictGeo(q);
+    }
+  } else if(h.startsWith('#geo=')){
+    const parts=h.slice(5).split(',');
+    if(parts.length>=2){
+      const lat=parseFloat(parts[0]);
+      const lng=parseFloat(parts[1]);
+      const label=parts.length>2?decodeURIComponent(parts.slice(2).join(',')):'';
+      if(!isNaN(lat)&&!isNaN(lng)) pickGeoResult(lat,lng,label);
+    }
+  }
+}
 </script>
 <!-- ══ FULL REPORT OVERLAY ══════════════════════════════════ -->
 <div id="frOverlay">
