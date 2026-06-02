@@ -1,0 +1,186 @@
+{
+  "metadata": {
+    "fuente": "MEF - Ministerio de Economía y Finanzas del Perú",
+    "resolucion": "RM N°255-2025-EF/15",
+    "vigencia": "01/01/2025 - 31/12/2025",
+    "moneda": "USD/m²",
+    "tipo_cambio_ref": 3.75,
+    "nota": "Valores de referencia para autoavalúo. Valor de mercado puede diferir significativamente."
+  },
+  "lima_zonas": {
+    "Miraflores_zona_A": {
+      "valor_usd_m2": 1820,
+      "uso": "Residencial alta densidad",
+      "distrito": "Miraflores",
+      "zona_arancel": "A1"
+    },
+    "Miraflores_zona_B": {
+      "valor_usd_m2": 1420,
+      "uso": "Residencial media densidad",
+      "distrito": "Miraflores",
+      "zona_arancel": "A2"
+    },
+    "San_Isidro_financiero": {
+      "valor_usd_m2": 2100,
+      "uso": "Comercial/Oficinas",
+      "distrito": "San Isidro",
+      "zona_arancel": "A1"
+    },
+    "San_Isidro_residencial": {
+      "valor_usd_m2": 1680,
+      "uso": "Residencial alta densidad",
+      "distrito": "San Isidro",
+      "zona_arancel": "A1"
+    },
+    "Barranco_malecon": {
+      "valor_usd_m2": 1250,
+      "uso": "Residencial",
+      "distrito": "Barranco",
+      "zona_arancel": "A2"
+    },
+    "Barranco_interior": {
+      "valor_usd_m2": 980,
+      "uso": "Residencial media densidad",
+      "distrito": "Barranco",
+      "zona_arancel": "B1"
+    },
+    "San_Borja_central": {
+      "valor_usd_m2": 1350,
+      "uso": "Residencial alta densidad",
+      "distrito": "San Borja",
+      "zona_arancel": "B1"
+    },
+    "Surco_chacarilla": {
+      "valor_usd_m2": 1180,
+      "uso": "Residencial baja densidad",
+      "distrito": "Santiago de Surco",
+      "zona_arancel": "B1"
+    },
+    "Surco_monterrico": {
+      "valor_usd_m2": 1090,
+      "uso": "Residencial media densidad",
+      "distrito": "Santiago de Surco",
+      "zona_arancel": "B2"
+    },
+    "Surco_surco_viejo": {
+      "valor_usd_m2": 820,
+      "uso": "Residencial media densidad",
+      "distrito": "Santiago de Surco",
+      "zona_arancel": "B2"
+    },
+    "La_Molina_central": {
+      "valor_usd_m2": 980,
+      "uso": "Residencial baja densidad",
+      "distrito": "La Molina",
+      "zona_arancel": "B1"
+    },
+    "La_Molina_rinconada": {
+      "valor_usd_m2": 1150,
+      "uso": "Residencial baja densidad",
+      "distrito": "La Molina",
+      "zona_arancel": "B1"
+    },
+    "San_Miguel_central": {
+      "valor_usd_m2": 780,
+      "uso": "Residencial media densidad",
+      "distrito": "San Miguel",
+      "zona_arancel": "C1"
+    },
+    "Jesus_Maria_central": {
+      "valor_usd_m2": 820,
+      "uso": "Residencial alta densidad",
+      "distrito": "Jesús María",
+      "zona_arancel": "C1"
+    },
+    "Magdalena_central": {
+      "valor_usd_m2": 760,
+      "uso": "Residencial media densidad",
+      "distrito": "Magdalena del Mar",
+      "zona_arancel": "C1"
+    },
+    "Pueblo_Libre_central": {
+      "valor_usd_m2": 720,
+      "uso": "Residencial media densidad",
+      "distrito": "Pueblo Libre",
+      "zona_arancel": "C1"
+    },
+    "Lince_central": {
+      "valor_usd_m2": 780,
+      "uso": "Residencial alta densidad",
+      "distrito": "Lince",
+      "zona_arancel": "C1"
+    },
+    "Surquillo_central": {
+      "valor_usd_m2": 680,
+      "uso": "Residencial media densidad",
+      "distrito": "Surquillo",
+      "zona_arancel": "C2"
+    },
+    "Chorrillos_central": {
+      "valor_usd_m2": 580,
+      "uso": "Residencial media densidad",
+      "distrito": "Chorrillos",
+      "zona_arancel": "C2"
+    },
+    "Chorrillos_villa": {
+      "valor_usd_m2": 420,
+      "uso": "Residencial baja densidad",
+      "distrito": "Chorrillos",
+      "zona_arancel": "D1"
+    },
+    "Ate_vitarte_central": {
+      "valor_usd_m2": 480,
+      "uso": "Residencial/Industria",
+      "distrito": "Ate",
+      "zona_arancel": "D1"
+    },
+    "Ate_salamanca": {
+      "valor_usd_m2": 620,
+      "uso": "Residencial media densidad",
+      "distrito": "Ate",
+      "zona_arancel": "C2"
+    },
+    "Los_Olivos_central": {
+      "valor_usd_m2": 520,
+      "uso": "Residencial/Comercial",
+      "distrito": "Los Olivos",
+      "zona_arancel": "D1"
+    },
+    "Brena_central": {
+      "valor_usd_m2": 680,
+      "uso": "Residencial alta densidad",
+      "distrito": "Breña",
+      "zona_arancel": "C1"
+    },
+    "La_Victoria_central": {
+      "valor_usd_m2": 580,
+      "uso": "Comercial/Residencial",
+      "distrito": "La Victoria",
+      "zona_arancel": "C2"
+    },
+    "Rimac_central": {
+      "valor_usd_m2": 480,
+      "uso": "Residencial media densidad",
+      "distrito": "Rímac",
+      "zona_arancel": "D1"
+    },
+    "San_Juan_Lurigancho_central": {
+      "valor_usd_m2": 380,
+      "uso": "Residencial media densidad",
+      "distrito": "San Juan de Lurigancho",
+      "zona_arancel": "D2"
+    },
+    "Villa_El_Salvador_central": {
+      "valor_usd_m2": 280,
+      "uso": "Residencial baja densidad",
+      "distrito": "Villa El Salvador",
+      "zona_arancel": "D2"
+    },
+    "Callao_bellavista": {
+      "valor_usd_m2": 520,
+      "uso": "Residencial/Puerto",
+      "distrito": "Bellavista",
+      "zona_arancel": "D1"
+    }
+  }
+}
