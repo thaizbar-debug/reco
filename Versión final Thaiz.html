@@ -2705,9 +2705,11 @@ function buildSunarpPanel(p, partidas){
   const fmt=v=>v>0?cur+' '+Number(v).toLocaleString():(cur+' 0');
   const fmtUsd=v=>v>0?'$ '+Number(v).toLocaleString():'$ 0';
 
+  const rrppCode=s.rrpp||p.id;
+  const rrppSearchUrl=`https://www.google.com/search?q=${encodeURIComponent(rrppCode+' SUNARP partida registral')}`;
   const partidasHTML=partidas.length
     ? partidas.map(({url,label})=>`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> ${label} (PDF)</a>`).join('')
-    : `<div class="sun-rrpp"><strong>Partida registral</strong><span>${s.rrpp||p.id}</span></div>`;
+    : `<a href="${rrppSearchUrl}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);text-decoration:none"><span>🔍</span> Partida ${rrppCode}</a>`;
 
   // Filtrar estacionamientos/depósitos con valor > 0
   const estacItems=s.estacVals.map((v,i)=>v>0?sunField('🚗',`Estacionamiento ${i+1}`,fmt(v)):'').join('');
@@ -3051,10 +3053,16 @@ function openFullReport(id){
     const fmtUsd = v => v>0 ? `$ ${fmtN(v)}` : '—';
     const estItems = s.estacVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>🚗 Estacionamiento ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
     const depItems = s.depVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>📦 Depósito ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
-    const pdfBtns = partidas.map(({url,label})=>`
-      <a href="${url}" target="_blank" class="fr-pdf-btn">
-        <span>📄</span> ${label} (PDF)
-      </a>`).join('');
+    const frRrppCode = s.rrpp || p.id;
+    const frRrppSearch = `https://www.google.com/search?q=${encodeURIComponent(frRrppCode+' SUNARP partida registral')}`;
+    const pdfBtns = partidas.length
+      ? partidas.map(({url,label})=>`
+          <a href="${url}" target="_blank" class="fr-pdf-btn">
+            <span>📄</span> ${label} (PDF)
+          </a>`).join('')
+      : `<a href="${frRrppSearch}" target="_blank" class="fr-pdf-btn">
+           <span>🔍</span> Partida ${frRrppCode}
+         </a>`;
     return `
     <div class="fr-sec fr-sec-sunarp">
       <h2 class="fr-sec-title">📋 Ficha SUNARP <small>· datos registrales</small></h2>
@@ -3070,7 +3078,7 @@ function openFullReport(id){
           ${s.areaTech>0?`<div class="fr-sun-row"><span>🏗️ Área techada</span><strong>${s.areaTech} m²</strong></div>`:''}
           ${s.areaLibre>0?`<div class="fr-sun-row"><span>🌿 Área libre</span><strong>${s.areaLibre} m²</strong></div>`:''}
           ${s.areaOcup>0?`<div class="fr-sun-row"><span>📏 Área ocupada</span><strong>${s.areaOcup} m²</strong></div>`:''}
-          <div class="fr-sun-row"><span>🔖 Partida registral</span><strong style="font-size:.78rem">${s.rrpp}</strong></div>
+          <div class="fr-sun-row"><span>🔖 Partida registral</span><strong style="font-size:.78rem">${frRrppCode}</strong></div>
         </div>
         <div class="fr-sun-col">
           <div class="fr-sun-col-title">Valores de la transacción</div>
@@ -3081,7 +3089,7 @@ function openFullReport(id){
           ${estItems}${depItems}
         </div>
       </div>
-      ${pdfBtns ? `<div class="fr-pdf-btns">${pdfBtns}</div>` : ''}
+      <div class="fr-pdf-btns">${pdfBtns}</div>
     </div>`;
   })() : '';
 
