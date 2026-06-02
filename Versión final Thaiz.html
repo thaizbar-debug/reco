@@ -1819,7 +1819,7 @@ async function loadData(){
     properties = data.properties || [];
     GEO = {};
     properties.forEach(p=>{
-      if(p.lat!==null && p.lng!==null) GEO[p.id]=[p.lat, p.lng];
+      if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
     });
     buildSuggestions();
     buildPriceHistogram();
@@ -2356,7 +2356,7 @@ function applyFilters(){
 
   const list=getFiltered();
   renderCards(list);
-  renderPins(list);
+  try{ renderPins(list); }catch(e){ console.warn('[reco] renderPins error:', e.message); }
 }
 
 let _geoTimer=null;
