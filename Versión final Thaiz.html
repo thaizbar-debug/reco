@@ -1084,10 +1084,10 @@ body.show-home{overflow:auto;height:auto}
 #homeView .ad-url{font-size:.72rem;color:#a16207;font-weight:600}
 
 /* MODAL ANUNCIARSE */
-#homeView .anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
-#homeView .anun-overlay.open{opacity:1;pointer-events:all}
+.anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
+.anun-overlay.open{opacity:1;pointer-events:all}
 #homeView .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
-#homeView .anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
+.anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
 #homeView .anun-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 #homeView .anun-close{background:none;border:1.5px solid var(--border);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0;color:var(--muted);transition:background .12s}
 #homeView .anun-close:hover{background:var(--light)}
