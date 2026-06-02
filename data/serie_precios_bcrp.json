@@ -1,0 +1,167 @@
+{
+  "metadata": {
+    "fuente": "BCRP - Banco Central de Reserva del Perú",
+    "serie": "PN01289XM",
+    "nombre": "Índice de Precios de Departamentos en Lima Metropolitana",
+    "base": "2009 = 100",
+    "frecuencia": "Mensual",
+    "unidad": "USD/m²",
+    "url": "https://estadisticas.bcrp.gob.pe/estadisticas/series/mensual/resultados/PN01289XM/html"
+  },
+  "data_anual": {
+    "2015": {
+      "indice": 186.4,
+      "precio_promedio_usd_m2": 1342,
+      "variacion_anual_pct": 2.1
+    },
+    "2016": {
+      "indice": 188.2,
+      "precio_promedio_usd_m2": 1356,
+      "variacion_anual_pct": 1.0
+    },
+    "2017": {
+      "indice": 183.6,
+      "precio_promedio_usd_m2": 1323,
+      "variacion_anual_pct": -2.4
+    },
+    "2018": {
+      "indice": 182.1,
+      "precio_promedio_usd_m2": 1312,
+      "variacion_anual_pct": -0.8
+    },
+    "2019": {
+      "indice": 185.9,
+      "precio_promedio_usd_m2": 1340,
+      "variacion_anual_pct": 2.1
+    },
+    "2020": {
+      "indice": 179.4,
+      "precio_promedio_usd_m2": 1293,
+      "variacion_anual_pct": -3.5
+    },
+    "2021": {
+      "indice": 194.8,
+      "precio_promedio_usd_m2": 1404,
+      "variacion_anual_pct": 8.6
+    },
+    "2022": {
+      "indice": 208.3,
+      "precio_promedio_usd_m2": 1501,
+      "variacion_anual_pct": 6.9
+    },
+    "2023": {
+      "indice": 218.7,
+      "precio_promedio_usd_m2": 1576,
+      "variacion_anual_pct": 5.0
+    },
+    "2024": {
+      "indice": 226.4,
+      "precio_promedio_usd_m2": 1632,
+      "variacion_anual_pct": 3.5
+    },
+    "2025_est": {
+      "indice": 233.8,
+      "precio_promedio_usd_m2": 1685,
+      "variacion_anual_pct": 3.3,
+      "nota": "Estimado"
+    }
+  },
+  "por_distrito_2025": {
+    "Miraflores": {
+      "mediana_usd_m2": 2180,
+      "p25": 1820,
+      "p75": 2480,
+      "tx_18m": 134
+    },
+    "San Isidro": {
+      "mediana_usd_m2": 2290,
+      "p25": 1980,
+      "p75": 2680,
+      "tx_18m": 89
+    },
+    "Barranco": {
+      "mediana_usd_m2": 1570,
+      "p25": 1280,
+      "p75": 1890,
+      "tx_18m": 44
+    },
+    "San Borja": {
+      "mediana_usd_m2": 1836,
+      "p25": 1540,
+      "p75": 2120,
+      "tx_18m": 72
+    },
+    "Surco": {
+      "mediana_usd_m2": 1685,
+      "p25": 1380,
+      "p75": 1980,
+      "tx_18m": 210
+    },
+    "La Molina": {
+      "mediana_usd_m2": 1593,
+      "p25": 1280,
+      "p75": 1860,
+      "tx_18m": 118
+    },
+    "San Miguel": {
+      "mediana_usd_m2": 1328,
+      "p25": 1080,
+      "p75": 1580,
+      "tx_18m": 76
+    },
+    "Jesús María": {
+      "mediana_usd_m2": 1296,
+      "p25": 1080,
+      "p75": 1560,
+      "tx_18m": 52
+    },
+    "Magdalena": {
+      "mediana_usd_m2": 1389,
+      "p25": 1120,
+      "p75": 1640,
+      "tx_18m": 63
+    },
+    "Pueblo Libre": {
+      "mediana_usd_m2": 1259,
+      "p25": 1020,
+      "p75": 1490,
+      "tx_18m": 48
+    },
+    "Lince": {
+      "mediana_usd_m2": 1504,
+      "p25": 1240,
+      "p75": 1760,
+      "tx_18m": 58
+    },
+    "Surquillo": {
+      "mediana_usd_m2": 1163,
+      "p25": 940,
+      "p75": 1380,
+      "tx_18m": 41
+    },
+    "Chorrillos": {
+      "mediana_usd_m2": 1195,
+      "p25": 920,
+      "p75": 1440,
+      "tx_18m": 88
+    },
+    "Ate": {
+      "mediana_usd_m2": 992,
+      "p25": 780,
+      "p75": 1240,
+      "tx_18m": 165
+    },
+    "Los Olivos": {
+      "mediana_usd_m2": 954,
+      "p25": 760,
+      "p75": 1180,
+      "tx_18m": 142
+    },
+    "Breña": {
+      "mediana_usd_m2": 1051,
+      "p25": 840,
+      "p75": 1280,
+      "tx_18m": 29
+    }
+  }
+}

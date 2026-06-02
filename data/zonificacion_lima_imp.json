@@ -1,0 +1,260 @@
+{
+  "metadata": {
+    "fuente": "IMP - Instituto Metropolitano de Planificación de Lima",
+    "instrumento": "Plan de Desarrollo Metropolitano Lima-Callao 2040",
+    "ordenanza_base": "N°2040-2021/MML",
+    "url_geoportal": "https://geoportal.imp.gob.pe/",
+    "url_visor": "http://imp.gob.pe/index.php/planificacion-territorial",
+    "nota": "Los parámetros urbanísticos definitivos se verifican en la municipalidad distrital"
+  },
+  "tipos_zonificacion": {
+    "RDB": {
+      "nombre": "Residencial de Densidad Baja",
+      "densidad_neta_hab_ha": 330,
+      "area_lote_min_m2": 300,
+      "frente_min_m": 10,
+      "altura_max_pisos": 3,
+      "usos_compatibles": [
+        "Unifamiliar",
+        "Bifamiliar",
+        "Equipamiento vecinal"
+      ],
+      "coeficiente_edificacion": 1.2,
+      "porcentaje_area_libre": 35,
+      "distritos_tipicos": [
+        "La Molina",
+        "Surco (zonas)",
+        "Las Casuarinas"
+      ]
+    },
+    "RDM": {
+      "nombre": "Residencial de Densidad Media",
+      "densidad_neta_hab_ha": 1300,
+      "area_lote_min_m2": 160,
+      "frente_min_m": 8,
+      "altura_max_pisos": 8,
+      "usos_compatibles": [
+        "Multifamiliar",
+        "Conjunto residencial",
+        "Comercio vecinal"
+      ],
+      "coeficiente_edificacion": 2.8,
+      "porcentaje_area_libre": 30,
+      "distritos_tipicos": [
+        "Miraflores (interior)",
+        "San Borja",
+        "Surco"
+      ]
+    },
+    "RDA": {
+      "nombre": "Residencial de Densidad Alta",
+      "densidad_neta_hab_ha": 2250,
+      "area_lote_min_m2": 450,
+      "frente_min_m": 15,
+      "altura_max_pisos": 15,
+      "usos_compatibles": [
+        "Multifamiliar",
+        "Conjunto residencial",
+        "Comercio"
+      ],
+      "coeficiente_edificacion": 3.5,
+      "porcentaje_area_libre": 35,
+      "distritos_tipicos": [
+        "Miraflores (av. principales)",
+        "San Isidro",
+        "Jesús María"
+      ]
+    },
+    "C2": {
+      "nombre": "Comercio Vecinal",
+      "usos_permitidos": [
+        "Tiendas",
+        "Farmacias",
+        "Minimarkets",
+        "Restaurantes < 100m²"
+      ],
+      "altura_max_pisos": 5,
+      "area_lote_min_m2": 90,
+      "coeficiente_edificacion": 2.1,
+      "porcentaje_area_libre": 20
+    },
+    "C3": {
+      "nombre": "Comercio Sectorial",
+      "usos_permitidos": [
+        "Supermercados",
+        "Tiendas por departamentos",
+        "Bancos",
+        "Restaurantes"
+      ],
+      "altura_max_pisos": 8,
+      "area_lote_min_m2": 300,
+      "coeficiente_edificacion": 3.5,
+      "porcentaje_area_libre": 20
+    },
+    "C5": {
+      "nombre": "Comercio Metropolitano",
+      "usos_permitidos": [
+        "Centros comerciales",
+        "Hoteles",
+        "Oficinas",
+        "Cines",
+        "Todo comercio"
+      ],
+      "altura_max_pisos": 20,
+      "area_lote_min_m2": 2500,
+      "coeficiente_edificacion": 7.0,
+      "porcentaje_area_libre": 30,
+      "distritos_tipicos": [
+        "San Isidro (financiero)",
+        "Miraflores (Larco-Pardo)",
+        "Surco (Jockey)"
+      ]
+    },
+    "I1": {
+      "nombre": "Industria Elemental y Complementaria",
+      "usos_permitidos": [
+        "Talleres artesanales",
+        "Depósitos pequeños"
+      ],
+      "altura_max_pisos": 3,
+      "coeficiente_edificacion": 2.0
+    },
+    "I2": {
+      "nombre": "Industria Liviana",
+      "usos_permitidos": [
+        "Fábricas pequeñas y medianas",
+        "Depósitos",
+        "Almacenes"
+      ],
+      "altura_max_pisos": 5,
+      "coeficiente_edificacion": 3.0,
+      "distritos_tipicos": [
+        "Ate (Huachipa)",
+        "Los Olivos (industrial)",
+        "Villa El Salvador"
+      ]
+    },
+    "ZRP": {
+      "nombre": "Zona de Recreación Pública",
+      "usos_permitidos": [
+        "Parques",
+        "Plazas",
+        "Estadios",
+        "Parques temáticos"
+      ],
+      "construccion_permitida_pct": 5,
+      "nota": "No edificable salvo equipamiento recreativo"
+    },
+    "OU": {
+      "nombre": "Otros Usos",
+      "usos_permitidos": [
+        "Equipamiento especial",
+        "Embajadas",
+        "Clubes",
+        "Instituciones"
+      ],
+      "nota": "Parámetros según proyecto específico"
+    },
+    "ZHR": {
+      "nombre": "Zona de Habilitación Recreacional",
+      "usos_permitidos": [
+        "Clubes de playa",
+        "Hoteles de playa",
+        "Condominios vacacionales"
+      ],
+      "altura_max_pisos": 4,
+      "nota": "Balnearios del sur: Punta Hermosa, San Bartolo, Santa María"
+    }
+  },
+  "distritos_zonificacion_predominante": {
+    "Miraflores": {
+      "zonas_principales": [
+        "RDA",
+        "C5",
+        "C3",
+        "RDM"
+      ],
+      "caracteristica": "Alta densidad costera. C5 en ejes Larco-Arequipa-Pardo.",
+      "restriccion_especial": "Zona de Riesgo Costero en malecón — restricción de altura"
+    },
+    "San Isidro": {
+      "zonas_principales": [
+        "C5",
+        "RDA",
+        "RDB"
+      ],
+      "caracteristica": "Polo financiero en Canaval y Paz Soldán. Residencial exclusivo en El Golf.",
+      "restriccion_especial": "El Golf: protección de bosque El Olivar — sin demoliciones"
+    },
+    "Santiago de Surco": {
+      "zonas_principales": [
+        "RDB",
+        "RDM",
+        "C3",
+        "C5"
+      ],
+      "caracteristica": "Mixto. Chacarilla: RDB. Monterrico: RDM-RDA. Jockey: C5.",
+      "restriccion_especial": "Zona de Ladera: restricción de altura en quebradas"
+    },
+    "La Molina": {
+      "zonas_principales": [
+        "RDB"
+      ],
+      "caracteristica": "Exclusivamente residencial baja densidad. Sin industria.",
+      "restriccion_especial": "Protección de zona de recarga acuífera. Alturas máx 3 pisos."
+    },
+    "Barranco": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "ZRP"
+      ],
+      "caracteristica": "Bohemio. Protección patrimonial en casonas republicanas.",
+      "restriccion_especial": "Zona Monumental — demoliciones requieren autorización MML"
+    },
+    "Ate": {
+      "zonas_principales": [
+        "I2",
+        "RDM",
+        "C2"
+      ],
+      "caracteristica": "Corredor industrial Huachipa-Ate. Residencial en Salamanca.",
+      "restriccion_especial": "Zona industrial no compatible con residencial nuevo"
+    },
+    "Los Olivos": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "I1"
+      ],
+      "caracteristica": "En consolidación. Crecimiento comercial en av. Universitaria.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Jesús María": {
+      "zonas_principales": [
+        "RDA",
+        "C2"
+      ],
+      "caracteristica": "Alta densidad. Cercano a centros de salud (Hospital del Ejército).",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Chorrillos": {
+      "zonas_principales": [
+        "RDM",
+        "ZRP",
+        "C2"
+      ],
+      "caracteristica": "Mixto costero. Villa María del Triunfo limítrofe.",
+      "restriccion_especial": "Zona costera con riesgo de tsunami nivel 2"
+    },
+    "San Juan de Lurigancho": {
+      "zonas_principales": [
+        "RDM",
+        "I1",
+        "C2"
+      ],
+      "caracteristica": "Distrito más poblado de Lima. Alta densidad en proceso.",
+      "restriccion_especial": "Laderas de quebrada: zona de riesgo sísmico S3-S4"
+    }
+  }
+}
