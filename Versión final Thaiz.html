@@ -2739,8 +2739,9 @@ function buildSunarpPanel(p, partidas){
 }
 
 function openDetail(id){
+  console.log('[reco] openDetail called:', id);
   const p=properties.find(x=>x.id===id);
-  if(!p) return;
+  if(!p){ console.log('[reco] property not found:', id); return; }
   S.selectedId=id;
   applyFilters();
 
@@ -3978,7 +3979,9 @@ function _applyLandingHash(){
   overflow-y:auto;
   transform:translateY(100%);
   transition:transform .35s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
 }
+#frOverlay.open{pointer-events:auto;}
 #frOverlay.open{transform:translateY(0)}
 
 /* NAV */
