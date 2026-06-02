@@ -3401,6 +3401,13 @@ function openFullReport(id){
     </div>`;
   })() : '';
 
+  // ── Zonificación referencial (solo Histórico) ────────────────
+  const zonifFullHTML = isHist ? `
+    <div class="fr-sec">
+      <h2 class="fr-sec-title">🗺️ Zonificación referencial <small>· uso de suelo</small></h2>
+      ${renderZonifCard(p)}
+    </div>` : '';
+
   // ── Simulador hipotecario (solo Venta) ───────────────────────
   const simHTML = !isHist && !isAlq ? `
     <div class="fr-sidebar-card">
@@ -3500,6 +3507,7 @@ function openFullReport(id){
 
         ${photoGalleryHTML}
         ${sunHTML}
+        ${zonifFullHTML}
         ${ctxHTML}
         ${scoreHTML}
 
