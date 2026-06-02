@@ -2749,13 +2749,13 @@ function openDetail(id){
   const dpid = 'dp_' + p.id.replace(/[^a-zA-Z0-9]/g,'_');
 
   // Header: carrusel fullwidth con título superpuesto
-  const photosJSON = JSON.stringify(photos).replace(/'/g,"\\'");
+  _detailPhotos[dpid] = photos;
   const headerInner = photos.length
     ? `
       <div class="cimg-track" id="cimgt-${dpid}" style="position:absolute;inset:0;display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);">
         ${photos.map(u=>`<div style="flex:0 0 100%;height:100%;overflow:hidden;"><img src="${u}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join('')}
       </div>
-      <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(${photosJSON},_cimgIdx['${dpid}']||0)"></div>
+      <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(_detailPhotos['${dpid}'],_cimgIdx['${dpid}']||0)"></div>
       ${photos.length>1?`
         <button class="cimg-arr cimg-arr-l" style="z-index:3" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})">‹</button>
         <button class="cimg-arr cimg-arr-r" style="z-index:3;right:52px" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})">›</button>
@@ -3277,6 +3277,7 @@ document.addEventListener('touchend', e => {
 
 // ─────────────────────── MINI-CARRUSEL CARDS ─────────────────
 const _cimgIdx = {};
+const _detailPhotos = {};
 function cimgMove(pid, dir, total){
   _cimgIdx[pid] = ((_cimgIdx[pid]||0) + dir + total) % total;
   _cimgApply(pid, total);
