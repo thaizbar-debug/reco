@@ -2295,10 +2295,12 @@ function renderPins(list){
   leafletMarkers={};
 
   const z=leafletMap.getZoom();
+  const bounds=leafletMap.getBounds().pad(0.15);
 
   if(z>=14){
     list.forEach(p=>{
       if(!GEO[p.id]) return;
+      if(!bounds.contains(GEO[p.id])) return;
       const isActive=S.selectedId===p.id;
       const price=fmtPinPrice(p);
       const icon=L.divIcon({className:'',html:`<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-bubble">${p.cur}${price}</div><div class="lf-tail"></div></div>`,iconSize:[60,36],iconAnchor:[6,36]});
