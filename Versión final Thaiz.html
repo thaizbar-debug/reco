@@ -2531,8 +2531,11 @@ function clearPoi(){
 const _DATA_BASE = (typeof DATA_URL==='string') ? DATA_URL.replace(/properties\.json.*$/,'') : 'data/';
 // Distritos con catastro disponible (clave = distrito normalizado → slug de archivo).
 const CATASTRO_FILES = {
-  'callao':'callao',
-  'surquillo':'surquillo'
+  'barranco':'barranco','brena':'brena','callao':'callao','jesus maria':'jesus-maria',
+  'lince':'lince','magdalena del mar':'magdalena-del-mar','pueblo libre':'pueblo-libre',
+  'punta hermosa':'punta-hermosa','punta negra':'punta-negra','rimac':'rimac',
+  'san bartolo':'san-bartolo','san borja':'san-borja','san isidro':'san-isidro',
+  'san luis':'san-luis','surquillo':'surquillo'
 };
 let catastroLayer=null;
 const _catastroLoaded=new Set();
