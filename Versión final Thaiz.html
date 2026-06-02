@@ -1738,6 +1738,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()" title="Tiempo de traslado">🚗 Traslado</button>
       <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()" title="Establecimientos cercanos">📍 Cerca de ti</button>
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()" title="Ver Street View de Google">👁️ Street View</button>
+      <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()" title="Catastro de lotes (Lima Metropolitana)">📐 Catastro</button>
     </div>
 
     <div class="mtool-panel" id="commutePanel">
@@ -1752,6 +1753,13 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="poi-chips" id="poiChips"></div>
       <div class="mtool-hint">Se ubican alrededor del centro del mapa actual.</div>
       <button class="mtool-clear" onclick="clearPoi()">✕ Quitar marcadores</button>
+    </div>
+
+    <div class="mtool-panel" id="catastroPanel">
+      <div class="mtool-panel-row"><b>📐 Catastro de lotes</b></div>
+      <div class="mtool-hint" id="catastroHint">Activa el catastro y acércate a un distrito disponible.</div>
+      <div class="mtool-hint" style="font-size:.68rem">Lima Metropolitana · se carga por distrito al acercar el mapa (zoom ≥ 14).</div>
+      <button class="mtool-clear" onclick="clearCatastro()">✕ Quitar lotes</button>
     </div>
 
   </div>
@@ -1969,6 +1977,7 @@ const S = {
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, svMode:false,
+  catastroOn:false,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
 
@@ -2211,7 +2220,7 @@ function initMap(){
   }).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
   leafletMap.on('dblclick',onMapDblClick);
-  leafletMap.on('zoomend moveend',()=>renderPins(getFiltered()));
+  leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
 }
 
 // ─────────────────────── RADIUS SEARCH ───────────────────────
@@ -2515,6 +2524,98 @@ function clearPoi(){
   Object.values(poiMarkers).forEach(a=>a.forEach(m=>m.remove()));
   poiMarkers={};
   buildPoiChips();
+}
+
+// ── Catastro (lotes por distrito, carga bajo demanda) ─────────
+// Base de datos remota (misma carpeta que properties.json en GitHub).
+const _DATA_BASE = (typeof DATA_URL==='string') ? DATA_URL.replace(/properties\.json.*$/,'') : 'data/';
+// Distritos con catastro disponible (clave = distrito normalizado → slug de archivo).
+const CATASTRO_FILES = {
+  'callao':'callao',
+  'surquillo':'surquillo'
+};
+let catastroLayer=null;
+const _catastroLoaded=new Set();
+const _catastroLoading=new Set();
+
+function _catastroSlug(dist){ const n=_normDist(dist); return CATASTRO_FILES[n]||null; }
+
+async function _gunzipJson(resp){
+  // Descompresión nativa (DecompressionStream); fallback a respuesta sin comprimir.
+  if(typeof DecompressionStream!=='undefined' && resp.body){
+    const ds=new DecompressionStream('gzip');
+    const txt=await new Response(resp.body.pipeThrough(ds)).text();
+    return JSON.parse(txt);
+  }
+  return JSON.parse(await resp.text());
+}
+
+function _renderCatastroFC(fc){
+  if(!leafletMap) return;
+  if(!catastroLayer){ catastroLayer=L.layerGroup().addTo(leafletMap); }
+  L.geoJSON(fc,{
+    style:{color:'#0e7490',weight:.6,opacity:.55,fill:true,fillColor:'#0891b2',fillOpacity:.05},
+    interactive:false
+  }).addTo(catastroLayer);
+}
+
+async function loadCatastroFor(dist){
+  const slug=_catastroSlug(dist);
+  if(!slug || _catastroLoaded.has(slug) || _catastroLoading.has(slug)) return;
+  _catastroLoading.add(slug);
+  try{
+    const url=_DATA_BASE+'catastro/'+slug+'.geojson.gz';
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const fc=await _gunzipJson(resp);
+    _catastroLoaded.add(slug);
+    _renderCatastroFC(fc);
+    _catastroHint();
+  }catch(e){
+    console.warn('Catastro no disponible para',dist,e&&e.message);
+  }finally{ _catastroLoading.delete(slug); }
+}
+
+// Distritos visibles ahora mismo (según propiedades filtradas dentro del viewport).
+function _catastroVisibleDistricts(){
+  if(!leafletMap) return [];
+  const b=leafletMap.getBounds&&leafletMap.getBounds();
+  const set=new Set();
+  getFiltered().forEach(p=>{
+    const g=GEO[p.id];
+    if(!g) return;
+    if(b && !b.contains(L.latLng(g))) return;
+    if(_catastroSlug(p.district)) set.add(p.district);
+  });
+  return [...set];
+}
+
+function _catastroAuto(){
+  if(!S.catastroOn) return;
+  const z=leafletMap?leafletMap.getZoom():0;
+  if(z<14){ _catastroHint('Acércate (zoom) para ver los lotes del catastro.'); return; }
+  const dists=_catastroVisibleDistricts().slice(0,3); // límite de seguridad
+  dists.forEach(loadCatastroFor);
+  if(!dists.length) _catastroHint('No hay catastro para el distrito en vista.');
+}
+
+function _catastroHint(msg){
+  const el=document.getElementById('catastroHint'); if(!el) return;
+  if(msg){ el.textContent=msg; return; }
+  el.textContent=_catastroLoaded.size?('Lotes cargados: '+_catastroLoaded.size+' distrito(s).'):'Activa el catastro y acércate a un distrito disponible.';
+}
+
+function toggleCatastro(){
+  S.catastroOn=!S.catastroOn;
+  document.getElementById('catastroToggle').classList.toggle('active',S.catastroOn);
+  document.getElementById('catastroPanel').classList.toggle('open',S.catastroOn);
+  if(S.catastroOn){ _catastroHint(); _catastroAuto(); }
+  else if(catastroLayer){ catastroLayer.clearLayers(); }
+}
+function clearCatastro(){
+  if(catastroLayer) catastroLayer.clearLayers();
+  _catastroLoaded.clear();
+  _catastroHint();
 }
 
 // ── Street View (Google) ──────────────────────────────────────
