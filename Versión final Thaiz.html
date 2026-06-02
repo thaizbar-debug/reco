@@ -2494,7 +2494,7 @@ function setOp(btn,val){
   document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.op=val;
-  document.getElementById('histBanner').classList.toggle('open', val==='Histórico');
+  if(val==='Histórico') openHistModal();
   applyFilters();
 }
 function setBeds(btn,val){
