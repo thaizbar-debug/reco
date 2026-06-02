@@ -508,6 +508,16 @@ header .spacer{flex:1}
   display:flex;gap:4px;z-index:2;}
 .cimg-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;}
 .cimg-dot.on{background:#fff;}
+#photoLightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:3000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+#photoLightbox.open{opacity:1;pointer-events:all;}
+.lb-img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px;display:block;}
+.lb-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:1.1rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.lb-close:hover{background:rgba(255,255,255,.35);}
+.lb-arr{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);border:none;color:#fff;font-size:1.8rem;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.lb-arr:hover{background:rgba(255,255,255,.35);}
+.lb-arr-l{left:16px;}.lb-arr-r{right:16px;}
+.lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;font-weight:600;background:rgba(0,0,0,.5);padding:4px 14px;border-radius:99px;white-space:nowrap;}
+.lb-photo-hint{position:absolute;inset:0;cursor:zoom-in;}
 .card-badges{position:absolute;bottom:8px;left:8px;display:flex;gap:5px;z-index:2;}
 .badge{
   padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:700;
@@ -2739,11 +2749,13 @@ function openDetail(id){
   const dpid = 'dp_' + p.id.replace(/[^a-zA-Z0-9]/g,'_');
 
   // Header: carrusel fullwidth con título superpuesto
+  const photosJSON = JSON.stringify(photos).replace(/'/g,"\\'");
   const headerInner = photos.length
     ? `
       <div class="cimg-track" id="cimgt-${dpid}" style="position:absolute;inset:0;display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);">
         ${photos.map(u=>`<div style="flex:0 0 100%;height:100%;overflow:hidden;"><img src="${u}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join('')}
       </div>
+      <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(${photosJSON},_cimgIdx['${dpid}']||0)"></div>
       ${photos.length>1?`
         <button class="cimg-arr cimg-arr-l" style="z-index:3" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})">‹</button>
         <button class="cimg-arr cimg-arr-r" style="z-index:3;right:52px" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})">›</button>
@@ -3283,6 +3295,39 @@ function _cimgApply(pid, total){
   const hcurr = document.getElementById('dh-curr-'+pid);
   if(hcurr) hcurr.textContent = idx+1;
 }
+let _lbPhotos=[], _lbIdx=0;
+function openLightbox(photos, startIdx){
+  _lbPhotos=photos; _lbIdx=startIdx||0;
+  _lbRender();
+  document.getElementById('photoLightbox').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeLightbox(){
+  document.getElementById('photoLightbox').classList.remove('open');
+  document.body.style.overflow='';
+}
+function lbMove(dir){
+  _lbIdx=(_lbIdx+dir+_lbPhotos.length)%_lbPhotos.length;
+  _lbRender();
+}
+function _lbRender(){
+  document.getElementById('lbImg').src=_lbPhotos[_lbIdx];
+  document.getElementById('lbCurr').textContent=_lbIdx+1;
+  document.getElementById('lbTotal').textContent=_lbPhotos.length;
+  const multi=_lbPhotos.length>1;
+  document.getElementById('lbPrev').style.display=multi?'':'none';
+  document.getElementById('lbNext').style.display=multi?'':'none';
+}
+document.addEventListener('keydown',function(e){
+  const lb=document.getElementById('photoLightbox');
+  if(!lb.classList.contains('open')) return;
+  if(e.key==='Escape') closeLightbox();
+  else if(e.key==='ArrowRight') lbMove(1);
+  else if(e.key==='ArrowLeft') lbMove(-1);
+});
+document.getElementById('photoLightbox').addEventListener('click',function(e){
+  if(e.target===this) closeLightbox();
+});
 let toastTimer;
 function toast(msg){
   const t=document.getElementById('toast');
@@ -3900,6 +3945,13 @@ function _applyLandingHash(){
 }
 </script>
 <!-- ══ FULL REPORT OVERLAY ══════════════════════════════════ -->
+<div id="photoLightbox">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <button class="lb-arr lb-arr-l" id="lbPrev" onclick="lbMove(-1)">‹</button>
+  <img id="lbImg" class="lb-img" src="" alt="">
+  <button class="lb-arr lb-arr-r" id="lbNext" onclick="lbMove(1)">›</button>
+  <div class="lb-counter"><span id="lbCurr">1</span> / <span id="lbTotal">1</span></div>
+</div>
 <div id="frOverlay">
   <!-- contenido generado dinámicamente por openFullReport() -->
 </div>
