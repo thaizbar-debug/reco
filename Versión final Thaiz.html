@@ -3758,7 +3758,7 @@ function goToApp(hash){
     _tab=tab;
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     el.classList.add('active');
-    const ph={comprar:'¿En qué distrito o urbanización buscas?',alquilar:'¿Dónde quieres alquilar?',historicos:'¿A cuánto se vendió un inmueble en Lima?'};
+    const ph={comprar:'¿En qué distrito o urbanización buscas?',alquilar:'¿Dónde quieres alquilar?',historicos:'¿A cuánto se vendió un inmueble? Busca por dirección'};
     document.getElementById('heroQ').placeholder=ph[tab];
   }
   function goTab(tab){
