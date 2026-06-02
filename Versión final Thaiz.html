@@ -3326,8 +3326,10 @@ document.addEventListener('keydown',function(e){
   else if(e.key==='ArrowRight') lbMove(1);
   else if(e.key==='ArrowLeft') lbMove(-1);
 });
-document.getElementById('photoLightbox').addEventListener('click',function(e){
-  if(e.target===this) closeLightbox();
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('photoLightbox').addEventListener('click',function(e){
+    if(e.target===this) closeLightbox();
+  });
 });
 let toastTimer;
 function toast(msg){
