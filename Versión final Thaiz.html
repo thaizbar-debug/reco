@@ -1165,9 +1165,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <span class="line">Conoce el precio real.</span>
     </h1>
     <div class="tab-row">
-      <button class="tab active" onclick="goToApp('#op=venta')">Comprar</button>
-      <button class="tab" onclick="goToApp('#op=alquiler')">Alquilar</button>
-      <button class="tab" onclick="goToApp('#op=historico')">Históricos</button>
+      <button class="tab active" id="tab-comprar" onclick="setTab('comprar',this)">Comprar</button>
+      <button class="tab" id="tab-alquilar" onclick="setTab('alquilar',this)">Alquilar</button>
+      <button class="tab" id="tab-historicos" onclick="setTab('historicos',this)">Históricos</button>
     </div>
     <div class="search-wrap">
       <div class="search-box">
@@ -1757,26 +1757,41 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
 // Genera URL de imagen desde Drive — usa lh3.googleusercontent.com que funciona como img src
 function driveImg(fileId){
-  // Intentamos primero thumbnail (funciona sin login si el archivo es público)
-  return `https://drive.google.com/thumbnail?id=${fileId}&sz=w800`;
+  return `https://lh3.googleusercontent.com/d/${fileId}=w800`;
 }
 // Genera URL de vista de PDF desde Drive
 function drivePdf(fileId){ return `https://drive.google.com/file/d/${fileId}/view`; }
 
 // Devuelve arrays de fotos (hasta 8) y PDFs (hasta 3) para una propiedad
-function driveAssets(id){
-  // Usar el número inicial del id como clave (ej: '1-TI01-24' → '1')
+function driveAssets(p){
+  const id = (typeof p === 'object' && p !== null) ? p.id : p;
+  const op = (typeof p === 'object' && p !== null) ? p.op : null;
   const numId = String(id).match(/^(\d+)/)?.[1] || String(id);
-  const entry = DRIVE_FILES[numId] || DRIVE_FILES[String(id)] || {};
-  const photos   = ['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8']
-                   .map(k=>entry[k]).filter(Boolean).map(driveImg);
-  const partidas = ['pdf1','pdf2','pdf3']
-                   .map(k=>entry[k]).filter(Boolean).map(drivePdf);
+  const suffix = op === 'Histórico' ? 'His' : op === 'Alquiler' ? 'Alq' : op === 'Venta' ? 'Com' : null;
+  const typedKey = suffix ? (numId + '-' + suffix) : null;
+  const entry = (typedKey && DRIVE_FILES[typedKey]) || {};
+
+  const photos = ['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8']
+                 .map(k=>entry[k]).filter(Boolean).map(driveImg);
+
+  // Structured PDF buttons for histórico: [{url, label}, ...]
+  const partidas = [];
+  if(entry.pdf_main) partidas.push({url: drivePdf(entry.pdf_main), label: 'Partida'});
+  Object.keys(entry).filter(k=>k.startsWith('pdf_dep_')).sort().forEach(k=>{
+    partidas.push({url: drivePdf(entry[k]), label: 'Partida depósito'});
+  });
+  Object.keys(entry).filter(k=>k.startsWith('pdf_est_')).sort().forEach(k=>{
+    partidas.push({url: drivePdf(entry[k]), label: 'Partida estacionamiento'});
+  });
+  Object.keys(entry).filter(k=>k.startsWith('pdf_serv_')).sort().forEach(k=>{
+    partidas.push({url: drivePdf(entry[k]), label: 'Partida servicio'});
+  });
+
   return { photos, partidas };
 }
 
 
-const DATA_URL = 'https://raw.githubusercontent.com/thaizbar-debug/reco/main/data/properties.json';
+const DATA_URL = 'http://localhost:8080/data/properties.json';
 let DRIVE_FILES = {};
 
 async function loadData(){
@@ -2029,7 +2044,7 @@ function renderCards(list){
   const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
 
   el.innerHTML=tablePrefix+list.map(p=>{
-    const cardAssets=driveAssets(p.id);
+    const cardAssets=driveAssets(p);
     const photos=cardAssets.photos;
     const pid=p.id.replace(/[^a-zA-Z0-9]/g,'_');
     const slides = photos.length
@@ -2668,7 +2683,7 @@ function buildSunarpPanel(p, partidas){
   const fmtUsd=v=>v>0?'$ '+Number(v).toLocaleString():'$ 0';
 
   const partidasHTML=partidas.length
-    ? partidas.map((url,i)=>`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> Ver partida ${i+1} (PDF)</a>`).join('')
+    ? partidas.map(({url,label})=>`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> ${label} (PDF)</a>`).join('')
     : `<div class="sun-rrpp"><strong>Partida registral</strong><span>${s.rrpp||p.id}</span></div>`;
 
   // Filtrar estacionamientos/depósitos con valor > 0
@@ -2719,7 +2734,7 @@ function openDetail(id){
   }
 
   const sqm=sqmPriceNet(p);
-  const assets=driveAssets(p.id);
+  const assets=driveAssets(p);
   const photos=assets.photos;
   const dpid = 'dp_' + p.id.replace(/[^a-zA-Z0-9]/g,'_');
 
@@ -2918,7 +2933,7 @@ function openFullReport(id){
   const p = properties.find(x=>x.id===id);
   if(!p) return;
 
-  const assets = driveAssets(id);
+  const assets = driveAssets(p);
   const photos  = assets.photos;
   const partidas = p.sun ? (assets.partidas.length ? assets.partidas : []) : [];
 
@@ -3010,9 +3025,9 @@ function openFullReport(id){
     const fmtUsd = v => v>0 ? `$ ${fmtN(v)}` : '—';
     const estItems = s.estacVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>🚗 Estacionamiento ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
     const depItems = s.depVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>📦 Depósito ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
-    const pdfBtns = partidas.map((url,i)=>`
+    const pdfBtns = partidas.map(({url,label})=>`
       <a href="${url}" target="_blank" class="fr-pdf-btn">
-        <span>📄</span> Ver partida registral ${i>0?i+1:''} (PDF)
+        <span>📄</span> ${label} (PDF)
       </a>`).join('');
     return `
     <div class="fr-sec fr-sec-sunarp">
@@ -3743,7 +3758,7 @@ function goToApp(hash){
     _tab=tab;
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
     el.classList.add('active');
-    const ph={comprar:'¿En qué distrito o urbanización buscas?',alquilar:'¿Dónde quieres alquilar?',historicos:'¿A cuánto se vendió en esta zona? Busca por dirección'};
+    const ph={comprar:'¿En qué distrito o urbanización buscas?',alquilar:'¿Dónde quieres alquilar?',historicos:'¿A cuánto se vendió un inmueble en Lima?'};
     document.getElementById('heroQ').placeholder=ph[tab];
   }
   function goTab(tab){
@@ -3811,10 +3826,15 @@ function goToApp(hash){
   function goSearch(){
     const q=document.getElementById('heroQ').value.trim();
     document.getElementById('sgDropLanding').style.display='none';
+    const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
+    const op=opMap[_tab]||'venta';
+    goToApp('#op='+op);
     if(_lastGeoL){
-      goToApp(`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`);
-    } else {
-      goToApp(q?'#q='+encodeURIComponent(q):'');
+      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`;
+      if(typeof _applyLandingHash==='function')_applyLandingHash();
+    } else if(q){
+      window.location.hash='#q='+encodeURIComponent(q);
+      if(typeof _applyLandingHash==='function')_applyLandingHash();
     }
   }
   document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
