@@ -1,0 +1,607 @@
+{
+  "metadata": {
+    "fuente": "IMP - Instituto Metropolitano de Planificación de Lima",
+    "instrumento": "Plan de Desarrollo Metropolitano Lima-Callao 2040",
+    "ordenanza_base": "N°2040-2021/MML",
+    "url_geoportal": "https://geoportal.imp.gob.pe/",
+    "url_visor": "http://imp.gob.pe/index.php/planificacion-territorial",
+    "nota": "Los parámetros urbanísticos definitivos se verifican en la municipalidad distrital",
+    "cobertura": "Lima Metropolitana y Callao (zonificación predominante referencial por distrito). Las provincias fuera de Lima-Callao no están incluidas."
+  },
+  "tipos_zonificacion": {
+    "RDB": {
+      "nombre": "Residencial de Densidad Baja",
+      "densidad_neta_hab_ha": 330,
+      "area_lote_min_m2": 300,
+      "frente_min_m": 10,
+      "altura_max_pisos": 3,
+      "usos_compatibles": [
+        "Unifamiliar",
+        "Bifamiliar",
+        "Equipamiento vecinal"
+      ],
+      "coeficiente_edificacion": 1.2,
+      "porcentaje_area_libre": 35,
+      "distritos_tipicos": [
+        "La Molina",
+        "Surco (zonas)",
+        "Las Casuarinas"
+      ]
+    },
+    "RDM": {
+      "nombre": "Residencial de Densidad Media",
+      "densidad_neta_hab_ha": 1300,
+      "area_lote_min_m2": 160,
+      "frente_min_m": 8,
+      "altura_max_pisos": 8,
+      "usos_compatibles": [
+        "Multifamiliar",
+        "Conjunto residencial",
+        "Comercio vecinal"
+      ],
+      "coeficiente_edificacion": 2.8,
+      "porcentaje_area_libre": 30,
+      "distritos_tipicos": [
+        "Miraflores (interior)",
+        "San Borja",
+        "Surco"
+      ]
+    },
+    "RDA": {
+      "nombre": "Residencial de Densidad Alta",
+      "densidad_neta_hab_ha": 2250,
+      "area_lote_min_m2": 450,
+      "frente_min_m": 15,
+      "altura_max_pisos": 15,
+      "usos_compatibles": [
+        "Multifamiliar",
+        "Conjunto residencial",
+        "Comercio"
+      ],
+      "coeficiente_edificacion": 3.5,
+      "porcentaje_area_libre": 35,
+      "distritos_tipicos": [
+        "Miraflores (av. principales)",
+        "San Isidro",
+        "Jesús María"
+      ]
+    },
+    "C2": {
+      "nombre": "Comercio Vecinal",
+      "usos_permitidos": [
+        "Tiendas",
+        "Farmacias",
+        "Minimarkets",
+        "Restaurantes < 100m²"
+      ],
+      "altura_max_pisos": 5,
+      "area_lote_min_m2": 90,
+      "coeficiente_edificacion": 2.1,
+      "porcentaje_area_libre": 20
+    },
+    "C3": {
+      "nombre": "Comercio Sectorial",
+      "usos_permitidos": [
+        "Supermercados",
+        "Tiendas por departamentos",
+        "Bancos",
+        "Restaurantes"
+      ],
+      "altura_max_pisos": 8,
+      "area_lote_min_m2": 300,
+      "coeficiente_edificacion": 3.5,
+      "porcentaje_area_libre": 20
+    },
+    "C5": {
+      "nombre": "Comercio Metropolitano",
+      "usos_permitidos": [
+        "Centros comerciales",
+        "Hoteles",
+        "Oficinas",
+        "Cines",
+        "Todo comercio"
+      ],
+      "altura_max_pisos": 20,
+      "area_lote_min_m2": 2500,
+      "coeficiente_edificacion": 7,
+      "porcentaje_area_libre": 30,
+      "distritos_tipicos": [
+        "San Isidro (financiero)",
+        "Miraflores (Larco-Pardo)",
+        "Surco (Jockey)"
+      ]
+    },
+    "I1": {
+      "nombre": "Industria Elemental y Complementaria",
+      "usos_permitidos": [
+        "Talleres artesanales",
+        "Depósitos pequeños"
+      ],
+      "altura_max_pisos": 3,
+      "coeficiente_edificacion": 2
+    },
+    "I2": {
+      "nombre": "Industria Liviana",
+      "usos_permitidos": [
+        "Fábricas pequeñas y medianas",
+        "Depósitos",
+        "Almacenes"
+      ],
+      "altura_max_pisos": 5,
+      "coeficiente_edificacion": 3,
+      "distritos_tipicos": [
+        "Ate (Huachipa)",
+        "Los Olivos (industrial)",
+        "Villa El Salvador"
+      ]
+    },
+    "ZRP": {
+      "nombre": "Zona de Recreación Pública",
+      "usos_permitidos": [
+        "Parques",
+        "Plazas",
+        "Estadios",
+        "Parques temáticos"
+      ],
+      "construccion_permitida_pct": 5,
+      "nota": "No edificable salvo equipamiento recreativo"
+    },
+    "OU": {
+      "nombre": "Otros Usos",
+      "usos_permitidos": [
+        "Equipamiento especial",
+        "Embajadas",
+        "Clubes",
+        "Instituciones"
+      ],
+      "nota": "Parámetros según proyecto específico"
+    },
+    "ZHR": {
+      "nombre": "Zona de Habilitación Recreacional",
+      "usos_permitidos": [
+        "Clubes de playa",
+        "Hoteles de playa",
+        "Condominios vacacionales"
+      ],
+      "altura_max_pisos": 4,
+      "nota": "Balnearios del sur: Punta Hermosa, San Bartolo, Santa María"
+    }
+  },
+  "distritos_zonificacion_predominante": {
+    "Miraflores": {
+      "zonas_principales": [
+        "RDA",
+        "C5",
+        "C3",
+        "RDM"
+      ],
+      "caracteristica": "Alta densidad costera. C5 en ejes Larco-Arequipa-Pardo.",
+      "restriccion_especial": "Zona de Riesgo Costero en malecón — restricción de altura"
+    },
+    "San Isidro": {
+      "zonas_principales": [
+        "C5",
+        "RDA",
+        "RDB"
+      ],
+      "caracteristica": "Polo financiero en Canaval y Paz Soldán. Residencial exclusivo en El Golf.",
+      "restriccion_especial": "El Golf: protección de bosque El Olivar — sin demoliciones"
+    },
+    "Santiago de Surco": {
+      "zonas_principales": [
+        "RDB",
+        "RDM",
+        "C3",
+        "C5"
+      ],
+      "caracteristica": "Mixto. Chacarilla: RDB. Monterrico: RDM-RDA. Jockey: C5.",
+      "restriccion_especial": "Zona de Ladera: restricción de altura en quebradas"
+    },
+    "La Molina": {
+      "zonas_principales": [
+        "RDB"
+      ],
+      "caracteristica": "Exclusivamente residencial baja densidad. Sin industria.",
+      "restriccion_especial": "Protección de zona de recarga acuífera. Alturas máx 3 pisos."
+    },
+    "Barranco": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "ZRP"
+      ],
+      "caracteristica": "Bohemio. Protección patrimonial en casonas republicanas.",
+      "restriccion_especial": "Zona Monumental — demoliciones requieren autorización MML"
+    },
+    "Ate": {
+      "zonas_principales": [
+        "I2",
+        "RDM",
+        "C2"
+      ],
+      "caracteristica": "Corredor industrial Huachipa-Ate. Residencial en Salamanca.",
+      "restriccion_especial": "Zona industrial no compatible con residencial nuevo"
+    },
+    "Los Olivos": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "I1"
+      ],
+      "caracteristica": "En consolidación. Crecimiento comercial en av. Universitaria.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Jesús María": {
+      "zonas_principales": [
+        "RDA",
+        "C2"
+      ],
+      "caracteristica": "Alta densidad. Cercano a centros de salud (Hospital del Ejército).",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Chorrillos": {
+      "zonas_principales": [
+        "RDM",
+        "ZRP",
+        "C2"
+      ],
+      "caracteristica": "Mixto costero. Villa María del Triunfo limítrofe.",
+      "restriccion_especial": "Zona costera con riesgo de tsunami nivel 2"
+    },
+    "San Juan de Lurigancho": {
+      "zonas_principales": [
+        "RDM",
+        "I1",
+        "C2"
+      ],
+      "caracteristica": "Distrito más poblado de Lima. Alta densidad en proceso.",
+      "restriccion_especial": "Laderas de quebrada: zona de riesgo sísmico S3-S4"
+    },
+    "Surquillo": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "C2"
+      ],
+      "caracteristica": "Densificación residencial-comercial. Ejes Angamos y Tomás Marsano.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Cercado de Lima": {
+      "zonas_principales": [
+        "RDM",
+        "C5",
+        "ZHR",
+        "C3"
+      ],
+      "caracteristica": "Centro Histórico (ZHR) y ejes comerciales C5 (Abancay/La Colmena). Industria en Av. Argentina.",
+      "restriccion_especial": "Centro Histórico (Patrimonio UNESCO): intervenciones reguladas por PROLIMA/MML"
+    },
+    "San Borja": {
+      "zonas_principales": [
+        "RDM",
+        "RDA",
+        "C3"
+      ],
+      "caracteristica": "Residencial consolidado de densidad media-alta. Ejes Aviación, San Luis y Javier Prado.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "San Miguel": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "C2"
+      ],
+      "caracteristica": "Residencial de densidad media. Comercio en Av. La Marina y Universitaria.",
+      "restriccion_especial": "Costa Verde (acantilado): restricción de edificación en el borde"
+    },
+    "La Victoria": {
+      "zonas_principales": [
+        "RDM",
+        "C5",
+        "I1",
+        "C3"
+      ],
+      "caracteristica": "Mixto intenso. Comercio mayorista en Gamarra (C5) e industria liviana.",
+      "restriccion_especial": "Gamarra: tratamiento especial de comercio, tránsito y seguridad"
+    },
+    "Carabayllo": {
+      "zonas_principales": [
+        "RDM",
+        "RDB",
+        "I2"
+      ],
+      "caracteristica": "Lima Norte en expansión. Residencial y corredor industrial.",
+      "restriccion_especial": "Zonas de expansión: verificar habilitación urbana vigente"
+    },
+    "Pueblo Libre": {
+      "zonas_principales": [
+        "RDM",
+        "C3"
+      ],
+      "caracteristica": "Residencial tradicional de densidad media. Zona monumental en Av. San Martín.",
+      "restriccion_especial": "Áreas monumentales: intervenciones reguladas"
+    },
+    "Lince": {
+      "zonas_principales": [
+        "RDM",
+        "RDA",
+        "C3"
+      ],
+      "caracteristica": "Alta densificación residencial. Ejes Arequipa y Petit Thouars.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Magdalena del Mar": {
+      "zonas_principales": [
+        "RDM",
+        "RDA",
+        "C3"
+      ],
+      "caracteristica": "Densificación residencial costera. Ejes Brasil y Sucre.",
+      "restriccion_especial": "Costa Verde (acantilado): restricción en el borde"
+    },
+    "Breña": {
+      "zonas_principales": [
+        "RDM",
+        "C3"
+      ],
+      "caracteristica": "Residencial de densidad media consolidado. Comercio en Brasil y Venezuela.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "San Martín de Porres": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "I2"
+      ],
+      "caracteristica": "Lima Norte. Residencial y corredor industrial (Panamericana/Tomás Valle).",
+      "restriccion_especial": "Ejes industriales no compatibles con residencial nuevo"
+    },
+    "Comas": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "RDB"
+      ],
+      "caracteristica": "Lima Norte consolidado. Comercio en Av. Túpac Amaru.",
+      "restriccion_especial": "Laderas: restricción de altura y habilitación"
+    },
+    "San Luis": {
+      "zonas_principales": [
+        "RDM",
+        "I1",
+        "C2"
+      ],
+      "caracteristica": "Residencial de densidad media con bolsa industrial (Av. Circunvalación).",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Lurín": {
+      "zonas_principales": [
+        "I2",
+        "RDB",
+        "RDM"
+      ],
+      "caracteristica": "Lima Sur. Corredor industrial (Macrópolis), valle agrícola y balnearios.",
+      "restriccion_especial": "Valle agrícola y Santuario de Pachacámac: protección"
+    },
+    "El Agustino": {
+      "zonas_principales": [
+        "RDM",
+        "I1",
+        "C2"
+      ],
+      "caracteristica": "Residencial de densidad media e industria (Av. Nicolás Ayllón).",
+      "restriccion_especial": "Cerro El Agustino: restricción en laderas"
+    },
+    "Rímac": {
+      "zonas_principales": [
+        "RDM",
+        "ZHR",
+        "C3"
+      ],
+      "caracteristica": "Residencial tradicional. Zona monumental (margen derecha del Centro Histórico).",
+      "restriccion_especial": "Patrimonio: intervenciones reguladas por PROLIMA"
+    },
+    "Puente Piedra": {
+      "zonas_principales": [
+        "RDM",
+        "RDB",
+        "I2"
+      ],
+      "caracteristica": "Lima Norte en expansión. Residencial e industria.",
+      "restriccion_especial": "Zonas de expansión: verificar habilitación urbana"
+    },
+    "Villa El Salvador": {
+      "zonas_principales": [
+        "RDB",
+        "I2",
+        "C2"
+      ],
+      "caracteristica": "Lima Sur. Parque industrial y residencial planificado.",
+      "restriccion_especial": "Parque Industrial: uso industrial consolidado"
+    },
+    "Villa María del Triunfo": {
+      "zonas_principales": [
+        "RDM",
+        "RDB",
+        "I1"
+      ],
+      "caracteristica": "Lima Sur. Residencial e industria (Nueva Esperanza/José Gálvez).",
+      "restriccion_especial": "Laderas: restricción de habilitación urbana"
+    },
+    "Santa Anita": {
+      "zonas_principales": [
+        "RDM",
+        "I2",
+        "C3"
+      ],
+      "caracteristica": "Residencial, Mercado Mayorista y zona industrial (Carretera Central).",
+      "restriccion_especial": "Zona industrial y de mercado: tránsito pesado"
+    },
+    "Chaclacayo": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Residencial de baja densidad campestre (valle del Rímac).",
+      "restriccion_especial": "Quebradas y fajas marginales: riesgo por huaicos"
+    },
+    "Punta Hermosa": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario del sur. Residencial de baja densidad y recreación.",
+      "restriccion_especial": "Borde costero: restricción de edificación"
+    },
+    "Pachacámac": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP",
+        "OU"
+      ],
+      "caracteristica": "Valle y zona arqueológica. Residencial campestre de baja densidad.",
+      "restriccion_especial": "Santuario Arqueológico de Pachacámac: protección estricta"
+    },
+    "Cieneguilla": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Residencial campestre de baja densidad (valle de Lurín).",
+      "restriccion_especial": "Fajas marginales del río: riesgo y restricción"
+    },
+    "Ancón": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario del norte. Residencial de baja densidad y zona de reserva.",
+      "restriccion_especial": "Borde costero y reserva: restricción"
+    },
+    "San Juan de Miraflores": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "RDB"
+      ],
+      "caracteristica": "Lima Sur consolidado. Comercio en Av. Los Héroes y Pista Nueva.",
+      "restriccion_especial": "Laderas (Pamplona Alta): restricción de habilitación"
+    },
+    "Santa Rosa": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario del norte. Residencial de baja densidad.",
+      "restriccion_especial": "Borde costero: restricción de edificación"
+    },
+    "Independencia": {
+      "zonas_principales": [
+        "RDM",
+        "C5",
+        "C3"
+      ],
+      "caracteristica": "Lima Norte. Gran comercio (Mega Plaza, Av. Túpac Amaru).",
+      "restriccion_especial": "Laderas del cerro: restricción de habilitación"
+    },
+    "Lurigancho": {
+      "zonas_principales": [
+        "RDM",
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Valle del Rímac (Chosica/Huachipa). Residencial campestre e industria.",
+      "restriccion_especial": "Quebradas: alto riesgo por huaicos — restricción en cauces"
+    },
+    "Pucusana": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Caleta y balneario del sur. Residencial de baja densidad.",
+      "restriccion_especial": "Bahía y borde costero: restricción"
+    },
+    "San Bartolo": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario del sur. Residencial de baja densidad.",
+      "restriccion_especial": "Borde costero: restricción de edificación"
+    },
+    "Punta Negra": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario del sur. Residencial de baja densidad.",
+      "restriccion_especial": "Borde costero: restricción de edificación"
+    },
+    "Santa María del Mar": {
+      "zonas_principales": [
+        "RDB",
+        "ZRP"
+      ],
+      "caracteristica": "Balneario exclusivo del sur. Residencial de baja densidad.",
+      "restriccion_especial": "Borde costero: restricción de edificación"
+    },
+    "Callao": {
+      "zonas_principales": [
+        "RDM",
+        "C3",
+        "I2"
+      ],
+      "caracteristica": "Portuario-industrial y residencial. Zona Monumental (Callao antiguo).",
+      "restriccion_especial": "Zona portuaria y aeroportuaria: restricciones por seguridad y ruido"
+    },
+    "La Perla": {
+      "zonas_principales": [
+        "RDM",
+        "RDB"
+      ],
+      "caracteristica": "Residencial consolidado de densidad media frente al mar.",
+      "restriccion_especial": "Borde costero (acantilado): restricción"
+    },
+    "Bellavista": {
+      "zonas_principales": [
+        "RDM",
+        "C3"
+      ],
+      "caracteristica": "Residencial de densidad media. Comercio en Av. Colonial y Faucett.",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "La Punta": {
+      "zonas_principales": [
+        "RDB",
+        "ZHR"
+      ],
+      "caracteristica": "Residencial de baja densidad. Balneario histórico y zona monumental.",
+      "restriccion_especial": "Zona Monumental y borde costero: protección patrimonial"
+    },
+    "Ventanilla": {
+      "zonas_principales": [
+        "RDM",
+        "RDB",
+        "I2"
+      ],
+      "caracteristica": "Callao Norte en expansión. Residencial, industria y refinería.",
+      "restriccion_especial": "Humedales de Ventanilla y zona industrial: protección/riesgo"
+    },
+    "Carmen de la Legua Reynoso": {
+      "zonas_principales": [
+        "RDM",
+        "I1"
+      ],
+      "caracteristica": "Residencial de densidad media e industria liviana (Av. Argentina).",
+      "restriccion_especial": "Sin restricciones especiales significativas"
+    },
+    "Mi Perú": {
+      "zonas_principales": [
+        "RDM",
+        "RDB"
+      ],
+      "caracteristica": "Callao Norte. Residencial en consolidación.",
+      "restriccion_especial": "Zonas de expansión: verificar habilitación urbana"
+    }
+  }
+}
