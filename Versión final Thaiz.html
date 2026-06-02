@@ -1930,6 +1930,13 @@ function getFiltered(){
   else if(sort==='price_desc') list.sort((a,b)=>b.price-a.price);
   else if(sort==='area_desc') list.sort((a,b)=>b.area-a.area);
   else if(sort==='new') list.sort((a,b)=>a.age-b.age);
+  // Comprar y Alquiler: con foto primero (sort estable, preserva orden interno)
+  list.sort((a,b)=>{
+    if(a.op==='Histórico'||b.op==='Histórico') return 0;
+    const aHas=driveAssets(a).photos.length>0?0:1;
+    const bHas=driveAssets(b).photos.length>0?0:1;
+    return aHas-bHas;
+  });
   return list;
 }
 
