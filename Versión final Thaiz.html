@@ -4387,7 +4387,13 @@ function _pFeat(feat,checked){
   if(checked){if(!_pd.features.includes(feat))_pd.features.push(feat);}
   else{_pd.features=_pd.features.filter(f=>f!==feat);}
 }
-function _pChip(el,feat){ el.classList.toggle('on'); _pFeat(feat, el.classList.contains('on')); }
+function _pChip(el,feat){
+  el.classList.toggle('on');
+  const on=el.classList.contains('on');
+  _pFeat(feat, on);
+  // Sincroniza etiquetas duplicadas entre grupos (p. ej. Piscina en Generales y Ambientes)
+  document.querySelectorAll('.pub-feat-chip').forEach(c=>{ if(c.textContent===feat) c.classList.toggle('on',on); });
+}
 function _pSingleChip(el,group,it){
   const already=el.classList.contains('on');
   el.parentElement.querySelectorAll('.pub-feat-chip').forEach(c=>c.classList.remove('on'));
