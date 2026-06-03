@@ -148,6 +148,10 @@ header .spacer{flex:1}
 .pub-feat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;margin-top:8px;max-height:260px;overflow-y:auto;padding-right:2px}
 .pub-feat-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);cursor:pointer;padding:5px 8px;border-radius:6px;transition:background .1s}
 .pub-feat-item:hover{background:var(--light)}
+.pub-feat-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pub-feat-chip{border:1.5px solid var(--border);background:#fff;color:var(--txt);font-size:12px;font-weight:600;padding:5px 11px;border-radius:99px;cursor:pointer;transition:all .12s}
+.pub-feat-chip:hover{border-color:var(--blue);color:var(--blue)}
+.pub-feat-chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .pub-feat-item input{accent-color:#2563eb;width:14px;height:14px;flex-shrink:0}
 .pub-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
 .pub-drop-zone:hover,.pub-drop-zone.drag{border-color:#2563eb;background:#eff6ff}
@@ -306,6 +310,11 @@ header .spacer{flex:1}
 .range-sep{color:rgba(255,255,255,.4);font-size:.8rem}
 .adv-layout{display:flex;gap:16px;align-items:flex-start}
 .adv-left{flex:1;min-width:0}
+/* Grupos de etiquetas (Más Filtros): ancho completo y separador superior */
+.adv-grp{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.12)}
+.adv-grp:first-child{margin-top:0;padding-top:0;border-top:none}
+#advLeftDyn .adv-grid{margin-bottom:2px}
+.range-row input{min-width:0}
 .adv-right{width:330px;flex-shrink:0;display:flex;flex-direction:column;gap:14px}
 .price-tabs{display:flex;background:rgba(255,255,255,.1);border-radius:10px;padding:3px;margin-bottom:10px;gap:2px}
 .price-tab{flex:1;background:none;border:none;color:rgba(255,255,255,.6);font-size:.78rem;font-weight:600;padding:6px 8px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;text-align:center}
@@ -504,6 +513,11 @@ header .spacer{flex:1}
 .res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .res-list .p-card{margin-bottom:0}
 .res-list .empty,.res-list .res-span{grid-column:1/-1}
+/* 1 por fila → tarjeta horizontal (miniatura a la derecha) */
+.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;align-items:stretch}
+.res-list.cols-1 .card-img{width:190px;height:auto;min-height:128px;flex:0 0 190px}
+.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+@media(max-width:1100px){ .res-list.cols-1 .card-img{width:150px;flex-basis:150px} }
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -603,7 +617,7 @@ header .spacer{flex:1}
 .pill-btn:hover{background:#e2e8f0;border-color:#94a3b8}
 
 /* ══════════════ MAP PANEL ══════════════ */
-.map-panel{flex:1;position:relative;overflow:hidden}
+.map-panel{flex:1 1 50%;min-width:0;position:relative;overflow:hidden}
 #realMap{width:100%;height:100%}
 
 /* Leaflet pin */
@@ -763,6 +777,7 @@ header .spacer{flex:1}
   width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:13px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
+.poi-ctr{font-size:26px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
 #realMap.commute-mode,#realMap.sv-mode{cursor:crosshair !important}
 #realMap.commute-mode .leaflet-interactive,#realMap.sv-mode .leaflet-interactive{cursor:crosshair !important}
 
@@ -1646,71 +1661,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <!-- Advanced panel -->
   <div class="adv-panel" id="advPanel">
     <div class="adv-layout">
-      <!-- LEFT: chips filters -->
+      <!-- LEFT: campos y etiquetas (se generan según la sección) -->
       <div class="adv-left">
-        <div class="adv-grid">
-          <div class="adv-block">
-            <label>Baños</label>
-            <div class="adv-chips" id="bathsChips">
-              <span class="adv-chip" data-val="1" onclick="toggleAdv_baths(this)">1</span>
-              <span class="adv-chip" data-val="2" onclick="toggleAdv_baths(this)">2</span>
-              <span class="adv-chip" data-val="3" onclick="toggleAdv_baths(this)">3+</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Estacionamiento</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 1')">1</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 2')">2+</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Depósito</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 1')">1</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 2')">2+</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Características</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Ascensor')">Ascensor</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Pet friendly')">Pet friendly</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Amoblado')">Amoblado</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Seguridad 24/7')">Seguridad 24/7</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Vista</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Mar')">Mar</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Ciudad')">Ciudad</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Jardín')">Jardín</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Zona cercana</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Metro')">Metro</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Hospital')">Hospital</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Universidad')">Universidad</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Comercio')">Comercio</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>Área m² (mín)</label>
-            <div class="range-row">
-              <input type="number" id="minArea" placeholder="Ej: 60" oninput="applyFilters()"/>
-            </div>
-          </div>
-        </div>
+        <div id="advLeftDyn"></div>
       </div>
       <!-- RIGHT: price -->
-      <div class="adv-right">
+      <div class="adv-right" id="advRight">
         <div class="adv-block adv-price-block">
           <div class="price-tabs">
             <button class="price-tab active" id="tabPrecio" onclick="setPriceTab('precio')">Precio</button>
@@ -2044,12 +2000,15 @@ async function loadData(){
     DRIVE_FILES = data.drive || {};
     properties = data.properties || [];
     GEO = {};
+    _DATA_FIELDS=new Set();
     properties.forEach(p=>{
       if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
+      for(const k in p) _DATA_FIELDS.add(k);
     });
     buildSuggestions();
     buildPriceHistogram();
     _resetPriceSliders();
+    buildAdvFilters();
     applyFilters();
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
@@ -2101,7 +2060,7 @@ function pickGradient(tipo){
 // ─────────────────────── STATE ───────────────────────
 const S = {
   query:'', op:'Venta', type:'all', beds:0, baths:0,
-  minPrice:0, maxPrice:Infinity, minArea:0, minSqm:0, maxSqm:Infinity,
+  minPrice:0, maxPrice:Infinity, minSqm:0, maxSqm:Infinity,
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
@@ -2111,8 +2070,32 @@ const S = {
   poiRadius:800,
   cols:1, maxPanel:null,
   catastroOn:false,
+  // Campos adicionales (Excel) — solo Comprar/Alquiler
+  park:0, minAreaTechada:0, maxAreaTechada:Infinity, minAreaTerreno:0, maxAreaTerreno:Infinity,
+  minFloors:0, minFloor:0, maxFloor:Infinity, maxAge:Infinity,
+  estado:[], ascensor:false, amoblado:false, petFriendly:false,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
+
+// ═══════════ TAXONOMÍA UNIFICADA (Excel) — Publicar + Más Filtros ═══════════
+// Grupos de etiquetas almacenadas en p.features.
+//  · mode 'and': el inmueble debe tener TODAS las marcadas.
+//  · mode 'or' : coincide con CUALQUIERA (Accesos/Zonas/Vistas son excluyentes por inmueble).
+//  · pub 'single': en Publicar es selección única; 'multi': varias.
+const FEAT_GROUPS=[
+  {key:'generales', label:'Etiquetas generales', mode:'and', pub:'multi', items:['Cuarto de servicio','Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador','Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado','Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente','Propiedad Eco-amigable o Sostenible','Propiedad de Playa']},
+  {key:'ambientes', label:'Ambientes', mode:'and', pub:'multi', items:['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje','Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work','Piscina','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes','Canchas deportivas','Gimnasio','Juegos infantiles','Acceso para personas con movilidad reducida','Estacionamiento para visitas']},
+  {key:'vistas', label:'Vistas', mode:'or', pub:'multi', items:['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje']},
+  {key:'accesos', label:'Accesos', mode:'or', pub:'single', items:['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón']},
+  {key:'zonas', label:'Zonas', mode:'or', pub:'single', items:['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación']},
+];
+const ESTADOS=['En proyecto','En construcción','Construido'];
+// Claves de campo realmente presentes en la data cargada (para tolerar columnas
+// del Excel que aún no estén pobladas: el filtro queda inerte hasta que existan).
+let _DATA_FIELDS=new Set();
+// Helpers tolerantes para áreas (Excel trae terreno y techada; `area` legado = techada).
+function _areaTechada(p){ return p.areaTechada!=null?p.areaTechada:(p.area!=null?p.area:null); }
+function _areaTerreno(p){ return p.areaTerreno!=null?p.areaTerreno:null; }
 
 // ─────────────────────── FILTERS ───────────────────────
 function getFiltered(){
@@ -2125,26 +2108,38 @@ function getFiltered(){
     if(S.type!=='all' && p.type!==S.type) return false;
     if(S.beds>0 && p.beds<S.beds) return false;
     if(S.baths>0 && p.baths<S.baths) return false;
+    if(S.park>0 && parkCount(p)<S.park) return false;
     if(S.minPrice>0 && p.price<S.minPrice) return false;
     if(S.maxPrice<Infinity && p.price>S.maxPrice) return false;
-    if(S.minArea>0 && p.area<S.minArea) return false;
+    // Área techada (con respaldo en `area` legado)
+    const _at=_areaTechada(p);
+    if(S.minAreaTechada>0 && (_at==null||_at<S.minAreaTechada)) return false;
+    if(S.maxAreaTechada<Infinity && _at!=null && _at>S.maxAreaTechada) return false;
+    // Área de terreno (solo si la data la trae)
+    if(_DATA_FIELDS.has('areaTerreno')){
+      const _ate=_areaTerreno(p);
+      if(S.minAreaTerreno>0 && (_ate==null||_ate<S.minAreaTerreno)) return false;
+      if(S.maxAreaTerreno<Infinity && _ate!=null && _ate>S.maxAreaTerreno) return false;
+    }
+    if(S.minFloors>0 && (p.floors||0)<S.minFloors) return false;
+    if(S.minFloor>0 && (p.floor||0)<S.minFloor) return false;
+    if(S.maxFloor<Infinity && (p.floor||0)>S.maxFloor) return false;
+    if(S.maxAge<Infinity && (p.age==null?Infinity:p.age)>S.maxAge) return false;
+    if(_DATA_FIELDS.has('estado') && S.estado.length>0 && !S.estado.includes(p.estado)) return false;
+    if(_DATA_FIELDS.has('ascensor') && S.ascensor && p.ascensor!==true) return false;
+    if(_DATA_FIELDS.has('amoblado') && S.amoblado && p.amoblado!==true) return false;
+    if(_DATA_FIELDS.has('petFriendly') && S.petFriendly && p.petFriendly!==true) return false;
     const sqm=p.area>0?Math.round(p.price/p.area):0;
     if(S.minSqm>0 && sqm<S.minSqm) return false;
     if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
-    if(S.features.length>0){
-      const estacFeats=S.features.filter(f=>/^Estacionamiento \d+$/.test(f));
-      const depFeats=S.features.filter(f=>/^Depósito \d+$/.test(f));
-      const otherFeats=S.features.filter(f=>!/^Estacionamiento \d+$/.test(f)&&!/^Depósito \d+$/.test(f));
-      if(otherFeats.length>0 && !otherFeats.every(f=>p.features.includes(f))) return false;
-      if(estacFeats.length>0){
-        const minPark=Math.max(...estacFeats.map(f=>parseInt(f.split(' ')[1])||1));
-        if(parkCount(p)<minPark) return false;
-      }
-      if(depFeats.length>0){
-        const minDep=Math.max(...depFeats.map(f=>parseInt(f.split(' ')[1])||1));
-        if(depCount(p)<minDep) return false;
-      }
+    // Etiquetas por grupo: AND en generales/ambientes, OR en vistas/accesos/zonas.
+    const pf=p.features||[];
+    for(const g of FEAT_GROUPS){
+      const sel=g.items.filter(it=>advFeats.has(it));
+      if(!sel.length) continue;
+      if(g.mode==='and'){ if(!sel.every(it=>pf.includes(it))) return false; }
+      else { if(!sel.some(it=>pf.includes(it))) return false; }
     }
     if(S.radiusCenter && GEO[p.id]){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
@@ -2582,21 +2577,20 @@ function _haversineKm(aLat,aLng,bLat,bLng){
   const x=Math.sin(dLat/2)**2 + Math.cos(aLat*r)*Math.cos(bLat*r)*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
-// Estimación sincrónica de respaldo (mientras OSRM responde o si falla la red).
+// Estimación sincrónica (factor de rodeo según el modo sobre la distancia recta).
 function _commuteEstMin(c, geo, mode){
-  const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
+  const detour = mode==='walk'?1.2 : mode==='bike'?1.25 : 1.3;
+  const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*detour;
   return Math.max(1, Math.round(km/(COMMUTE_SPEED[mode]||24)*60));
 }
-// Minutos de viaje a una propiedad: usa el tiempo REAL cacheado de OSRM si existe.
-// Para auto devuelve la duración real; para a pie/bici deriva del trayecto real
-// por carretera a la velocidad del modo.
+// Minutos de viaje a una propiedad.
+//  · Auto: duración REAL de OSRM por la red vial (si está cacheada).
+//  · A pie / bici: estimación por distancia recta a la velocidad del modo
+//    (no se deriva de la red de autos, que daría tiempos inflados).
 function commuteMinTo(c, geo, id){
-  if(c && c.times && id!=null){
+  if(c && c.mode==='drive' && c.times && id!=null){
     const t=c.times.get(id);
-    if(t){
-      if(c.mode==='drive') return t.drive;
-      return Math.max(1, Math.round(t.dist/(COMMUTE_SPEED[c.mode]||COMMUTE_SPEED.walk)*60));
-    }
+    if(t) return t.drive;
   }
   return _commuteEstMin(c, geo, (c&&c.mode)||'drive');
 }
@@ -2694,17 +2688,21 @@ function drawCommute(){
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo de viaje real por carretera.'; return; }
+  const drive=S.commute.mode==='drive';
   const modeTxt=S.commute.mode==='walk'?'caminando':S.commute.mode==='bike'?'en bici':'en auto';
   const n=getFiltered().length;
-  if(S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
-  el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+' (ruta real OSRM).';
+  if(drive && S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
+  const fuente= drive ? ' (ruta real OSRM)' : ' (estimado)';
+  el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+fuente+'.';
 }
-// Tooltip de tiempo real sobre cada pin cuando hay un destino activo.
+// Tooltip de tiempo sobre cada pin cuando hay un destino activo.
+// Tiempo real (ruta OSRM) cuando está cacheado; si no, estimación marcada con «~».
 function _attachCommuteTip(marker,p){
   if(!S.commute || !GEO[p.id]) return;
   const min=commuteMinTo(S.commute,GEO[p.id],p.id);
+  const real=S.commute.mode==='drive' && !!(S.commute.times && S.commute.times.has(p.id));
   const e=S.commute.mode==='walk'?'🚶':S.commute.mode==='bike'?'🚴':'🚗';
-  marker.bindTooltip(e+' '+min+' min a tu destino',{direction:'top',offset:[0,-30],className:'commute-tip'});
+  marker.bindTooltip(e+' '+(real?'':'~')+min+' min a tu destino',{direction:'top',offset:[0,-30],className:'commute-tip'});
 }
 function clearCommute(){
   _commuteReqId++;   // cancela cualquier cálculo OSRM en curso
@@ -2734,20 +2732,39 @@ const POI_CATS={
 let poiMarkers={};      // cat → [markers]
 let _poiLoading={};     // cat → bool (consulta Overpass en curso)
 let _poiCenter=null;    // {lat,lng}: centro activo de la búsqueda
+let poiCenterMarker=null, poiCenterCircle=null;
+// Dibuja el pin + círculo que indican el centro y radio de la búsqueda.
+function _poiDrawCenter(){
+  if(!leafletMap||!_poiCenter) return;
+  const ll=[_poiCenter.lat,_poiCenter.lng], rad=S.poiRadius||800;
+  if(poiCenterMarker){ poiCenterMarker.setLatLng(ll); }
+  else { poiCenterMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="poi-ctr">📍</div>',iconSize:[30,30],iconAnchor:[15,28]}),zIndexOffset:600}).addTo(leafletMap); }
+  if(poiCenterCircle){ poiCenterCircle.setLatLng(ll); poiCenterCircle.setRadius(rad); }
+  else { poiCenterCircle=L.circle(ll,{radius:rad,color:'#0891b2',weight:1.5,dashArray:'5 5',fillColor:'#0891b2',fillOpacity:.05}).addTo(leafletMap); }
+}
+function _poiClearCenter(){
+  if(poiCenterMarker){ poiCenterMarker.remove(); poiCenterMarker=null; }
+  if(poiCenterCircle){ poiCenterCircle.remove(); poiCenterCircle=null; }
+}
 function togglePoiPanel(){
   const panel=document.getElementById('poiPanel');
   const open=!panel.classList.contains('open');
   panel.classList.toggle('open',open);
   document.getElementById('poiToggle').classList.toggle('active',open);
   if(open){
-    if(!_poiCenter && leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; }
+    // Centra la búsqueda en lo que el usuario está viendo ahora mismo.
+    if(leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; _poiDrawCenter(); }
+    if(leafletMap && leafletMap.getZoom()<13) toast('🔍 Acércate al barrio que te interese para ver establecimientos cercanos');
     buildPoiChips();
+  } else {
+    _poiClearCenter();
   }
 }
 function setPoiRadius(val){
   S.poiRadius=parseInt(val);
   const lbl=document.getElementById('poiRadiusLabel');
   if(lbl) lbl.textContent = val>=1000?(val/1000).toFixed(val%1000?1:0)+' km':val+' m';
+  _poiDrawCenter();
   // Recargar las categorías activas con el nuevo radio.
   const active=Object.keys(poiMarkers);
   active.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
@@ -2971,6 +2988,7 @@ function detailNearby(id){
   if(leafletMap) leafletMap.setView(c,16,{animate:true,duration:.5});
   // Centrar la búsqueda de POIs en esta propiedad y recargar las categorías activas.
   _poiCenter={lat:c[0],lng:c[1]};
+  _poiDrawCenter();
   const reload=Object.keys(poiMarkers);
   reload.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
   reload.forEach(k=>loadPoi(k));
@@ -3048,11 +3066,12 @@ function renderPins(list){
 // ─────────────────────── APPLY FILTERS ───────────────────────
 function applyFilters(){
   S.query=document.getElementById('searchQ').value.trim();
+  const _prevType=S.type;
   S.type=document.getElementById('typeSel').value;
   S.bankOnly=document.getElementById('bankOnly').checked;
   S.sort=document.getElementById('sortSel').value;
-
-  S.minArea=parseFloat(document.getElementById('minArea').value)||0;
+  // Si el Tipo cambió desde la barra superior, refresca los chips del panel.
+  if(_prevType!==S.type){ const h=document.getElementById('advLeftDyn'); if(h&&h.innerHTML) buildAdvFilters(); }
 
   const list=getFiltered();
   renderCards(list);
@@ -3199,6 +3218,9 @@ function setOp(btn,val){
   S.selectedId=null;
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
+  // Históricos: su Más Filtros solo tiene Tipo de propiedad → limpiar el resto.
+  if(val==='Histórico') _clearAdvState();
+  buildAdvFilters();
   if(val==='Histórico') openHistModal();
   applyFilters();
 }
@@ -3207,19 +3229,75 @@ function setBeds(btn,val){
   btn.classList.add('active');
   S.beds=val; applyFilters();
 }
-function toggleAdv_baths(chip){
-  const val=parseInt(chip.dataset.val);
-  chip.classList.toggle('on');
-  S.baths=chip.classList.contains('on')?val:0;
-  applyFilters();
-}
 
+// ─────────── MÁS FILTROS: panel dinámico (Comprar/Alquiler/Históricos) ───────────
 const advFeats=new Set();
-function toggleAdvFeat(chip,feat){
-  chip.classList.toggle('on');
-  if(chip.classList.contains('on')) advFeats.add(feat); else advFeats.delete(feat);
-  S.features=[...advFeats];
-  applyFilters();
+function _esc(s){ return String(s).replace(/'/g,"\\'"); }
+function _numRange(lblA,minKey,maxKey,phMin,phMax){
+  const minV=S[minKey]>0?S[minKey]:'';
+  const maxV=S[maxKey]<Infinity?S[maxKey]:'';
+  return `<div class="adv-block"><label>${lblA}</label><div class="range-row">
+    <input type="number" min="0" placeholder="${phMin||'mín'}" value="${minV}" oninput="_advNum('${minKey}',this.value)">
+    <input type="number" min="0" placeholder="${phMax||'máx'}" value="${maxV}" oninput="_advNum('${maxKey}',this.value)"></div></div>`;
+}
+function _minChips(label,key,opts){
+  return `<div class="adv-block"><label>${label}</label><div class="adv-chips">`+
+    opts.map(([v,t])=>`<span class="adv-chip${S[key]===v?' on':''}" onclick="_advMin('${key}',${v})">${t}</span>`).join('')+
+    `</div></div>`;
+}
+function _typeChipsHTML(){
+  const types=['Departamento','Casa','Terreno','Oficina','Local comercial','Otros'];
+  return `<div class="adv-block"><label>Tipo de propiedad</label><div class="adv-chips">`+
+    `<span class="adv-chip${S.type==='all'?' on':''}" onclick="_advType('all')">Todos</span>`+
+    types.map(t=>`<span class="adv-chip${S.type===t?' on':''}" onclick="_advType('${t}')">${t}</span>`).join('')+
+    `</div></div>`;
+}
+function buildAdvFilters(){
+  const host=document.getElementById('advLeftDyn'); if(!host) return;
+  const right=document.getElementById('advRight');
+  // Históricos: solo Tipo de propiedad.
+  if(S.op==='Histórico'){
+    host.innerHTML=`<div class="adv-grid">${_typeChipsHTML()}</div>`;
+    if(right) right.style.display='none';
+    return;
+  }
+  if(right) right.style.display='';
+  let h=`<div class="adv-grid">`;
+  h+=_typeChipsHTML();
+  h+=_minChips('Baños','baths',[[1,'1'],[2,'2'],[3,'3+']]);
+  h+=_minChips('Estacionamientos','park',[[1,'1'],[2,'2'],[3,'3+']]);
+  h+=_numRange('Área techada (m²)','minAreaTechada','maxAreaTechada');
+  h+=_numRange('Área de terreno (m²)','minAreaTerreno','maxAreaTerreno');
+  h+=`<div class="adv-block"><label>N° de pisos (mín)</label><div class="range-row"><input type="number" min="0" placeholder="Ej: 5" value="${S.minFloors>0?S.minFloors:''}" oninput="_advNum('minFloors',this.value)"></div></div>`;
+  h+=_numRange('Piso','minFloor','maxFloor');
+  h+=`<div class="adv-block"><label>Antigüedad máx. (años)</label><div class="range-row"><input type="number" min="0" placeholder="Ej: 10" value="${S.maxAge<Infinity?S.maxAge:''}" oninput="_advNum('maxAge',this.value)"></div></div>`;
+  h+=`<div class="adv-block"><label>Estado</label><div class="adv-chips">`+ESTADOS.map(e=>`<span class="adv-chip${S.estado.includes(e)?' on':''}" onclick="_advEstado('${_esc(e)}')">${e}</span>`).join('')+`</div></div>`;
+  h+=`<div class="adv-block"><label>Comodidades</label><div class="adv-chips">
+    <span class="adv-chip${S.ascensor?' on':''}" onclick="_advBool('ascensor')">Ascensor</span>
+    <span class="adv-chip${S.amoblado?' on':''}" onclick="_advBool('amoblado')">Amoblado</span>
+    <span class="adv-chip${S.petFriendly?' on':''}" onclick="_advBool('petFriendly')">Pet friendly</span></div></div>`;
+  h+=`</div>`;
+  // Grupos de etiquetas
+  FEAT_GROUPS.forEach(g=>{
+    h+=`<div class="adv-block adv-grp"><label>${g.label}</label><div class="adv-chips">`+
+      g.items.map(it=>`<span class="adv-chip${advFeats.has(it)?' on':''}" onclick="_advFeat('${_esc(it)}')">${it}</span>`).join('')+
+      `</div></div>`;
+  });
+  host.innerHTML=h;
+  setTimeout(recalcBody,60);
+}
+function _advType(t){ S.type=t; const sel=document.getElementById('typeSel'); if(sel) sel.value=t; buildAdvFilters(); applyFilters(); }
+function _advMin(key,val){ S[key]=(S[key]===val?0:val); buildAdvFilters(); applyFilters(); }
+function _advNum(key,val){ const n=parseFloat(val); S[key]=(val===''||isNaN(n))?(key.indexOf('max')===0?Infinity:0):n; applyFilters(); }
+function _advEstado(e){ const i=S.estado.indexOf(e); if(i>=0)S.estado.splice(i,1); else S.estado.push(e); buildAdvFilters(); applyFilters(); }
+function _advBool(key){ S[key]=!S[key]; buildAdvFilters(); applyFilters(); }
+function _advFeat(it){ if(advFeats.has(it))advFeats.delete(it); else advFeats.add(it); S.features=[...advFeats]; buildAdvFilters(); applyFilters(); }
+function _clearAdvState(){
+  advFeats.clear();
+  Object.assign(S,{baths:0,park:0,minAreaTechada:0,maxAreaTechada:Infinity,minAreaTerreno:0,maxAreaTerreno:Infinity,
+    minFloors:0,minFloor:0,maxFloor:Infinity,maxAge:Infinity,estado:[],ascensor:false,amoblado:false,petFriendly:false,
+    minPrice:0,maxPrice:Infinity,minSqm:0,maxSqm:Infinity,features:[]});
+  if(typeof _resetPriceSliders==='function') _resetPriceSliders();
 }
 
 function toggleAdv(){
@@ -3227,6 +3305,7 @@ function toggleAdv(){
   const b=document.getElementById('advBtn');
   const open=p.classList.toggle('open');
   b.classList.toggle('open',open);
+  if(open){ const h=document.getElementById('advLeftDyn'); if(h&&!h.innerHTML) buildAdvFilters(); }
   setTimeout(recalcBody,250);
 }
 
@@ -3332,13 +3411,10 @@ function onPriceInputBlur(){
 function clearFilters(){
   document.getElementById('typeSel').value='all';
   document.getElementById('bankOnly').checked=false;
-  document.getElementById('minArea').value='';
-  _resetPriceSliders();
-  document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
+  _clearAdvState();
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
-  advFeats.clear();
-  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{type:'all',beds:0,bankOnly:false});
+  buildAdvFilters();
   applyFilters();
 }
 
@@ -3364,13 +3440,11 @@ function resetAll(){
   document.getElementById('searchQ').value='';
   document.getElementById('typeSel').value='all';
   document.getElementById('bankOnly').checked=false;
-  document.getElementById('minArea').value='';
-  _resetPriceSliders();
+  _clearAdvState();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
-  advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'all',type:'all',beds:0,bankOnly:false});
+  buildAdvFilters();
   applyFilters();
 }
 
@@ -4113,23 +4187,34 @@ function toast(msg){
 // ─────────────────────── PUBLISH ───────────────────────
 let _ps=1,_pubTab='single',pubMap=null,pubMarker=null,_pubGeoTimer=null;
 let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
-         hideExact:false,currency:'USD',price:'',area:'',
-         beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+         hideExact:false,currency:'USD',price:'',areaTechada:'',areaTerreno:'',
+         beds:0,baths:0,parking:0,floor:0,floors:0,age:0,estado:'',
+         ascensor:false,amoblado:false,petFriendly:false,acceso:'',zona:'',
          features:[],title:'',desc:'',photos:[]};
 const _SUGG=481000;
-const _PUB_FEATS=['Balcón','Terraza','Piscina','Gimnasio','Jardín','Patio','Sótano','Depósito',
-  'Vista a calle','Vista a parque','Vista al mar','Vista al campo',
-  'Armario/Closet','Walk-in Closet','Cuarto de servicio','Baño de servicio',
-  'Área de lavandería','Aire Acondicionado','Jacuzzi','Zona de Parrilla (BBQ)',
-  'Sauna/Spa','Áreas verdes','Salón de usos múltiples','Recepción','Conserje',
-  'Intercomunicador','Estacionamiento para visitas','Acceso para personas con movilidad reducida',
-  'Canchas deportivas','Juegos infantiles','Sala de juegos','Oficinas/Co-work'];
+// Etiquetas agrupadas (mismos campos que Más Filtros). Generales/Ambientes/Vistas
+// son selección múltiple; Accesos y Zonas son selección única por inmueble.
+function _pubFeatGroupsHTML(){
+  return FEAT_GROUPS.map(g=>{
+    const single=(g.pub==='single');
+    const chips=g.items.map(it=>{
+      const on = single ? (g.key==='accesos'?_pd.acceso:_pd.zona)===it : _pd.features.includes(it);
+      const handler = single
+        ? `_pSingleChip(this,'${g.key}','${_esc(it)}')`
+        : `_pChip(this,'${_esc(it)}')`;
+      return `<span class="pub-feat-chip${on?' on':''}" onclick="${handler}">${it}</span>`;
+    }).join('');
+    return `<h3 style="margin-top:18px">${g.label}${single?' <span style="font-weight:400;color:var(--muted);font-size:12px">(elige uno)</span>':''}</h3>
+      <div class="pub-feat-chips">${chips}</div>`;
+  }).join('');
+}
 
 function openPublish(){
   _ps=1;_pubTab='single';
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
-       hideExact:false,currency:'USD',price:'',area:'',
-       beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+       hideExact:false,currency:'USD',price:'',areaTechada:'',areaTerreno:'',
+       beds:0,baths:0,parking:0,floor:0,floors:0,age:0,estado:'',
+       ascensor:false,amoblado:false,petFriendly:false,acceso:'',zona:'',
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
@@ -4210,8 +4295,16 @@ function _rps(){
               <option value="PEN"${_pd.currency==='PEN'?' selected':''}>S/ Soles</option>
             </select>
           </div>
-          <div><label>Área (m²) <span style="color:var(--red)">*</span></label>
-            <input type="number" min="1" value="${_pd.area}" oninput="_pd.area=this.value" placeholder="Ej: 85">
+          <div><label>Área techada (m²) <span style="color:var(--red)">*</span></label>
+            <input type="number" min="1" value="${_pd.areaTechada}" oninput="_pd.areaTechada=this.value" placeholder="Ej: 85">
+          </div>
+        </div>
+        <div class="pub-field row">
+          <div><label>Área de terreno (m²)</label>
+            <input type="number" min="0" value="${_pd.areaTerreno}" oninput="_pd.areaTerreno=this.value" placeholder="Ej: 120">
+          </div>
+          <div><label>Estado</label>
+            <select oninput="_pd.estado=this.value"><option value=""${_pd.estado===''?' selected':''}>—</option>${ESTADOS.map(e=>`<option${_pd.estado===e?' selected':''}>${e}</option>`).join('')}</select>
           </div>
         </div>
         <div class="pub-field">
@@ -4227,10 +4320,12 @@ function _rps(){
           <div><label>Pisos del edificio</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
         </div>
         <div class="pub-field"><label>Años de antigüedad <span style="font-weight:400;color:var(--muted)">(0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
-        <h3 style="margin-top:18px">✨ Extras y amenities</h3>
-        <div class="pub-feat-grid">
-          ${_PUB_FEATS.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+        <div class="pub-feat-grid" style="grid-template-columns:repeat(3,1fr);margin-top:12px">
+          <label class="pub-feat-item"><input type="checkbox" ${_pd.ascensor?'checked':''} onchange="_pBool('ascensor',this.checked)"> Ascensor</label>
+          <label class="pub-feat-item"><input type="checkbox" ${_pd.amoblado?'checked':''} onchange="_pBool('amoblado',this.checked)"> Amoblado</label>
+          <label class="pub-feat-item"><input type="checkbox" ${_pd.petFriendly?'checked':''} onchange="_pBool('petFriendly',this.checked)"> Pet friendly</label>
         </div>
+        ${_pubFeatGroupsHTML()}
       </div>
     </div>
     <div class="pub-actions">
@@ -4239,7 +4334,7 @@ function _rps(){
     </div>`;
     setTimeout(_pubMapInit,80);
   } else {
-    const pr=Number(_pd.price)||0,ar=Number(_pd.area)||1,dl=(pr-_SUGG)/_SUGG*100,nd=Math.max(8,Math.min(92,50+dl*1.6));
+    const pr=Number(_pd.price)||0,ar=Number(_pd.areaTechada)||1,dl=(pr-_SUGG)/_SUGG*100,nd=Math.max(8,Math.min(92,50+dl*1.6));
     body.innerHTML=`
     <div class="pub-grid">
       <div class="pub-card">
@@ -4276,7 +4371,7 @@ function _rps(){
         <div style="background:var(--light);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="font-weight:600">${_pd.op} · ${_pd.type}</div>
           <div style="color:var(--muted);margin-top:2px">📍 ${_pd.address||'—'}${_pd.district?', '+_pd.district:''}</div>
-          <div style="color:var(--muted);margin-top:2px">📐 ${_pd.area} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
+          <div style="color:var(--muted);margin-top:2px">📐 ${_pd.areaTechada} m² techada${_pd.areaTerreno?' · 🗺️ '+_pd.areaTerreno+' m² terreno':''}${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
@@ -4357,6 +4452,21 @@ function _pFeat(feat,checked){
   if(checked){if(!_pd.features.includes(feat))_pd.features.push(feat);}
   else{_pd.features=_pd.features.filter(f=>f!==feat);}
 }
+function _pChip(el,feat){
+  el.classList.toggle('on');
+  const on=el.classList.contains('on');
+  _pFeat(feat, on);
+  // Sincroniza etiquetas duplicadas entre grupos (p. ej. Piscina en Generales y Ambientes)
+  document.querySelectorAll('.pub-feat-chip').forEach(c=>{ if(c.textContent===feat) c.classList.toggle('on',on); });
+}
+function _pSingleChip(el,group,it){
+  const already=el.classList.contains('on');
+  el.parentElement.querySelectorAll('.pub-feat-chip').forEach(c=>c.classList.remove('on'));
+  if(!already) el.classList.add('on');
+  const val=already?'':it;
+  if(group==='accesos') _pd.acceso=val; else _pd.zona=val;
+}
+function _pBool(key,checked){ _pd[key]=checked; }
 function _pubHandleFiles(files){
   Array.from(files).forEach(file=>{
     if(!file.type.startsWith('image/'))return;
@@ -4376,7 +4486,7 @@ function _pn(){
   if(!_pd.address.trim())missing.push('dirección');
   if(!_pd.district.trim())missing.push('distrito');
   if(!_pd.price||Number(_pd.price)<=0)missing.push('precio');
-  if(!_pd.area||Number(_pd.area)<=0)missing.push('área (m²)');
+  if(!_pd.areaTechada||Number(_pd.areaTechada)<=0)missing.push('área techada (m²)');
   if(missing.length>0){toast('⚠️ Campos requeridos: '+missing.join(', '));return;}
   _ps=2;renderPublish();
 }
