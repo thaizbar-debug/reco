@@ -515,8 +515,8 @@ header .spacer{flex:1}
 .res-list .empty,.res-list .res-span{grid-column:1/-1}
 /* 1 por fila → tarjeta horizontal (miniatura a la derecha), altura fija para que
    el mini-carrusel (que usa height:100%) tenga un alto definido y se vea bien. */
-.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;height:150px}
-.res-list.cols-1 .card-img{width:210px;height:150px;flex:0 0 210px}
+.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;height:168px}
+.res-list.cols-1 .card-img{width:210px;height:168px;flex:0 0 210px}
 .res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
 @media(max-width:1100px){ .res-list.cols-1 .card-img{width:160px;flex-basis:160px} }
 
@@ -531,10 +531,16 @@ header .spacer{flex:1}
 .p-card.selected{border-color:var(--blue);box-shadow:0 0 0 2px rgba(8,145,178,.18)}
 
 .card-img{
-  height:110px;display:flex;align-items:center;justify-content:center;
+  height:150px;display:flex;align-items:center;justify-content:center;
   position:relative;font-size:2.5rem;
   overflow:hidden;
 }
+/* Chips de características en la tarjeta (igual que la referencia) */
+.card-feats{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.card-feat{font-size:.7rem;line-height:1.3;padding:3px 9px;border-radius:99px;
+  background:rgba(148,163,184,.16);color:var(--muted,#475569);
+  border:1px solid var(--border);white-space:nowrap;}
+.card-feat-more{font-weight:700;color:var(--blue,#0891b2);background:rgba(8,145,178,.1)}
 .card-img::after{
   content:'';position:absolute;inset:0;
   background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.4));
@@ -2359,6 +2365,10 @@ function renderCards(list){
             :`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`
           }
         </div>
+        ${(p.features&&p.features.length)?`<div class="card-feats">
+          ${p.features.slice(0,3).map(f=>`<span class="card-feat">${f}</span>`).join('')}
+          ${p.features.length>3?`<span class="card-feat card-feat-more">+${p.features.length-3}</span>`:''}
+        </div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2807,27 +2817,25 @@ function togglePoi(cat){
     loadPoi(cat);
   }
 }
+function _overpassOne(url, init, ms){
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, Object.assign({signal:ctrl.signal}, init||{}))
+    .then(r=>{ clearTimeout(to); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .catch(e=>{ clearTimeout(to); throw e; });
+}
 async function _overpassFetch(query){
-  let lastErr;
   const enc=encodeURIComponent(query);
-  for(const ep of OVERPASS_EPS){
-    // Por cada mirror: primero GET (?data=, sin preflight) y luego POST form-encoded.
-    const attempts=[
-      {url:ep+'?data='+enc},
-      {url:ep, init:{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+enc}}
-    ];
-    for(const a of attempts){
-      try{
-        const ctrl=new AbortController();
-        const to=setTimeout(()=>ctrl.abort(), 22000);
-        const r=await fetch(a.url, Object.assign({signal:ctrl.signal}, a.init||{}));
-        clearTimeout(to);
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        return await r.json();
-      }catch(e){ lastErr=e; console.warn('[reco] Overpass falló en '+ep+':', e&&e.message); }
-    }
+  // GET en paralelo a todos los mirrors: gana el primero que responda (≤15s).
+  try{
+    return await Promise.any(OVERPASS_EPS.map(ep=>_overpassOne(ep+'?data='+enc, null, 15000)));
+  }catch(_){ /* todos los GET fallaron → probamos POST */ }
+  try{
+    return await Promise.any(OVERPASS_EPS.map(ep=>_overpassOne(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+enc},15000)));
+  }catch(e){
+    console.warn('[reco] Overpass: todos los mirrors fallaron', e);
+    throw new Error('Overpass no disponible');
   }
-  throw lastErr||new Error('Overpass no disponible');
 }
 async function loadPoi(cat){
   const c=POI_CATS[cat]; if(!c || _poiLoading[cat]) return;
