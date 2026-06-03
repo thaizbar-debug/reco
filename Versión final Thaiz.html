@@ -513,11 +513,12 @@ header .spacer{flex:1}
 .res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .res-list .p-card{margin-bottom:0}
 .res-list .empty,.res-list .res-span{grid-column:1/-1}
-/* 1 por fila → tarjeta horizontal (miniatura a la derecha) */
-.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;align-items:stretch}
-.res-list.cols-1 .card-img{width:190px;height:auto;min-height:128px;flex:0 0 190px}
-.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-@media(max-width:1100px){ .res-list.cols-1 .card-img{width:150px;flex-basis:150px} }
+/* 1 por fila → tarjeta horizontal (miniatura a la derecha), altura fija para que
+   el mini-carrusel (que usa height:100%) tenga un alto definido y se vea bien. */
+.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;height:150px}
+.res-list.cols-1 .card-img{width:210px;height:150px;flex:0 0 210px}
+.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+@media(max-width:1100px){ .res-list.cols-1 .card-img{width:160px;flex-basis:160px} }
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
