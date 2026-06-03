@@ -7,6 +7,9 @@
 <title>Reco SAC — Búsqueda de Inmuebles</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1258,6 +1261,37 @@ body.show-home{overflow:auto;height:auto}
 @media(max-width:900px){#homeView .why-grid,#homeView .aud-grid{grid-template-columns:1fr 1fr}#homeView .ad-card{grid-template-columns:1fr}#homeView .ad-photo{min-height:200px}}
 @media(max-width:700px){#homeView header{grid-template-columns:1fr auto;padding:0 16px}#homeView .nav-left{display:none}#homeView .footer-grid{grid-template-columns:1fr 1fr}#homeView .hero-content{padding:0 5% 44px}}
 @media(max-width:560px){#homeView .why-grid,#homeView .aud-grid,#homeView .footer-grid{grid-template-columns:1fr}#homeView .footer-bottom{flex-direction:column;text-align:center}#homeView .tab{padding:7px 14px;font-size:.76rem}}
+
+/* ══ AUTH MODAL ══ */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.auth-overlay.open{display:flex}
+.auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
+.auth-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
+.auth-head{padding:28px 28px 0}
+.auth-logo{font-size:1.1rem;font-weight:800;color:var(--blue);margin-bottom:14px;letter-spacing:-.02em}
+.auth-tabs{display:flex;gap:0;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:0}
+.auth-tab{flex:1;padding:9px 16px;text-align:center;font-size:.82rem;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);border:none;font-family:inherit;transition:all .15s}
+.auth-tab.active{background:var(--blue);color:#fff}
+.auth-body{padding:20px 28px 28px}
+.auth-panel{display:none}
+.auth-panel.active{display:block}
+.auth-google-btn{width:100%;padding:11px;background:#fff;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-weight:600;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;font-family:inherit;transition:background .12s,border-color .12s;color:var(--txt)}
+.auth-google-btn:hover{background:var(--light);border-color:#94a3b8}
+.auth-divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.74rem;margin:14px 0}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-label{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+.auth-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;color:var(--txt);background:#fff;margin-bottom:12px;box-sizing:border-box}
+.auth-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.auth-forgot{font-size:.78rem;color:var(--blue);cursor:pointer;text-decoration:none;display:block;text-align:right;margin-top:-8px;margin-bottom:14px}
+.auth-submit{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit;transition:opacity .12s;margin-top:4px}
+.auth-submit:hover{opacity:.88}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed}
+.auth-error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 13px;font-size:.82rem;color:#dc2626;margin-bottom:12px;display:none}
+.auth-success{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 13px;font-size:.82rem;color:#16a34a;margin-bottom:12px;display:none}
+.auth-switch{font-size:.82rem;color:var(--muted);text-align:center;margin-top:18px}
+.auth-switch a{color:var(--blue);font-weight:600;cursor:pointer;text-decoration:none}
+.auth-panel-title{font-size:1.25rem;font-weight:800;color:var(--txt);margin-bottom:4px}
+.auth-panel-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -1287,7 +1321,8 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="nav-right">
     <button class="btn-pub" onclick="goToApp('#publish')">Publicar inmueble</button>
     <button class="btn-ghost" onclick="openAnun()">Anunciarse</button>
-    <button class="btn-ingresar" onclick="goToApp('')">Ingresar</button>
+    <button class="btn-ingresar" id="homeIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
+    <div id="homeUserWrap" style="display:none;align-items:center;position:relative"></div>
   </div>
 </header>
 
@@ -1535,19 +1570,20 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-buy-keys" onclick="openModal()">🛒 Comprar llaves</button>
 
-  <div class="user-wrap">
-    <button class="user-btn">MV</button>
+  <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
+  <div class="user-wrap" id="appUserWrap" style="display:none">
+    <button class="user-btn" id="appUserInitials">MV</button>
     <div class="user-dropdown">
       <div class="u-header">
-        <div class="u-name">Martina V.</div>
-        <div class="u-email">martina@correo-demo.com</div>
+        <div class="u-name" id="appUserName">Usuario</div>
+        <div class="u-email" id="appUserEmail">email</div>
       </div>
       <a href="#">👤 Mi perfil</a>
       <a href="#">🔍 Mis búsquedas guardadas</a>
       <a href="#">🔑 Historial de llaves</a>
       <a href="#">📋 Mis publicaciones</a>
       <hr/>
-      <a href="#">🚪 Cerrar sesión</a>
+      <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
     </div>
   </div>
 </header>
@@ -4864,6 +4900,272 @@ function _applyLandingHash(){
 .fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
 </style>
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <button class="auth-close" onclick="closeAuthModal()">✕</button>
+    <div class="auth-head">
+      <div class="auth-logo">reco</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="authTabLogin" onclick="switchAuthTab('login')">Ingresar</button>
+        <button class="auth-tab" id="authTabRegister" onclick="switchAuthTab('register')">Crear cuenta</button>
+      </div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-success" id="authSuccess"></div>
+
+      <!-- LOGIN -->
+      <div class="auth-panel active" id="panelLogin">
+        <p class="auth-panel-sub" style="margin-top:14px">Accede a tu histórico, llaves y alertas guardadas.</p>
+        <button class="auth-google-btn" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
+          Continuar con Google
+        </button>
+        <div class="auth-divider">o con email</div>
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="loginEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
+        <label class="auth-label">Contraseña</label>
+        <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
+        <a class="auth-forgot" onclick="switchAuthTab('forgot')">¿Olvidaste tu contraseña?</a>
+        <button class="auth-submit" id="loginBtn" onclick="signInWithEmail()">Ingresar</button>
+        <p class="auth-switch">¿Primera vez? <a onclick="switchAuthTab('register')">Crear cuenta gratis</a></p>
+      </div>
+
+      <!-- REGISTER -->
+      <div class="auth-panel" id="panelRegister">
+        <p class="auth-panel-sub" style="margin-top:14px">Tu primera consulta es <strong>gratis</strong> al registrarte.</p>
+        <button class="auth-google-btn" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
+          Registrarse con Google
+        </button>
+        <div class="auth-divider">o con email</div>
+        <label class="auth-label">Nombre completo</label>
+        <input class="auth-input" type="text" id="registerName" placeholder="Tu nombre" autocomplete="name"/>
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="registerEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
+        <label class="auth-label">Contraseña</label>
+        <input class="auth-input" type="password" id="registerPassword" placeholder="Mínimo 6 caracteres" autocomplete="new-password"/>
+        <label class="auth-label">Confirmar contraseña</label>
+        <input class="auth-input" type="password" id="registerPassword2" placeholder="Repite la contraseña" autocomplete="new-password"/>
+        <button class="auth-submit" id="registerBtn" onclick="registerWithEmail()">Crear cuenta</button>
+        <p class="auth-switch">¿Ya tienes cuenta? <a onclick="switchAuthTab('login')">Ingresar</a></p>
+      </div>
+
+      <!-- FORGOT PASSWORD -->
+      <div class="auth-panel" id="panelForgot">
+        <p class="auth-panel-sub" style="margin-top:14px">Escribe tu email y te enviaremos un enlace para restablecer tu contraseña.</p>
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="forgotEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
+        <button class="auth-submit" id="forgotBtn" onclick="sendPasswordReset()">Enviar enlace</button>
+        <p class="auth-switch"><a onclick="switchAuthTab('login')">← Volver a ingresar</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══ FIREBASE AUTH ═══════════════════════════════════════════════════
+   PASOS PARA ACTIVAR:
+   1. Ve a https://console.firebase.google.com
+   2. Crea un proyecto → Authentication → Sign-in method
+   3. Activa "Correo electrónico/contraseña" y "Google"
+   4. Ve a Project Settings → Your apps → Web → agrega una app web
+   5. Copia tu firebaseConfig y reemplaza los valores de abajo
+   ════════════════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCri1KjwpUKfYMhjYf0nPU9KD1LipVbh3M",
+  authDomain:        "reco-5a5dd.firebaseapp.com",
+  projectId:         "reco-5a5dd",
+  storageBucket:     "reco-5a5dd.firebasestorage.app",
+  messagingSenderId: "553146114942",
+  appId:             "1:553146114942:web:3dcba5bb9bd1276c6b892f"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+auth.languageCode = 'es';
+
+// ── Modal helpers ──────────────────────────────────────────────────
+function openAuthModal(tab) {
+  document.getElementById('authOverlay').classList.add('open');
+  switchAuthTab(tab || 'login');
+  clearAuthMessages();
+}
+function closeAuthModal() {
+  document.getElementById('authOverlay').classList.remove('open');
+  clearAuthMessages();
+}
+function switchAuthTab(tab) {
+  ['Login','Register','Forgot'].forEach(t => {
+    document.getElementById('panel' + t).classList.remove('active');
+  });
+  document.getElementById('panel' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+  document.getElementById('authTabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('authTabRegister').classList.toggle('active', tab === 'register');
+  clearAuthMessages();
+}
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('authSuccess').style.display = 'none';
+}
+function showAuthSuccess(msg) {
+  const el = document.getElementById('authSuccess');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('authError').style.display = 'none';
+}
+function clearAuthMessages() {
+  document.getElementById('authError').style.display = 'none';
+  document.getElementById('authSuccess').style.display = 'none';
+}
+function setAuthLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.disabled = loading;
+}
+
+// ── Google sign-in ─────────────────────────────────────────────────
+function signInWithGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(() => closeAuthModal())
+    .catch(e => showAuthError(friendlyError(e.code)));
+}
+
+// ── Email sign-in ──────────────────────────────────────────────────
+function signInWithEmail() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  if (!email || !pass) return showAuthError('Completa todos los campos.');
+  setAuthLoading('loginBtn', true);
+  auth.signInWithEmailAndPassword(email, pass)
+    .then(() => closeAuthModal())
+    .catch(e => showAuthError(friendlyError(e.code)))
+    .finally(() => setAuthLoading('loginBtn', false));
+}
+
+// ── Register ───────────────────────────────────────────────────────
+function registerWithEmail() {
+  const name  = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const pass  = document.getElementById('registerPassword').value;
+  const pass2 = document.getElementById('registerPassword2').value;
+  if (!name || !email || !pass) return showAuthError('Completa todos los campos.');
+  if (pass !== pass2) return showAuthError('Las contraseñas no coinciden.');
+  if (pass.length < 6) return showAuthError('La contraseña debe tener al menos 6 caracteres.');
+  setAuthLoading('registerBtn', true);
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(cred => cred.user.updateProfile({ displayName: name }))
+    .then(() => closeAuthModal())
+    .catch(e => showAuthError(friendlyError(e.code)))
+    .finally(() => setAuthLoading('registerBtn', false));
+}
+
+// ── Password reset ─────────────────────────────────────────────────
+function sendPasswordReset() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email) return showAuthError('Ingresa tu email.');
+  setAuthLoading('forgotBtn', true);
+  auth.sendPasswordResetEmail(email)
+    .then(() => showAuthSuccess('¡Enviado! Revisa tu bandeja de entrada.'))
+    .catch(e => showAuthError(friendlyError(e.code)))
+    .finally(() => setAuthLoading('forgotBtn', false));
+}
+
+// ── Friendly Spanish error messages ───────────────────────────────
+function friendlyError(code) {
+  const map = {
+    'auth/user-not-found':        'No existe una cuenta con ese email.',
+    'auth/wrong-password':        'Contraseña incorrecta.',
+    'auth/invalid-credential':    'Email o contraseña incorrectos.',
+    'auth/email-already-in-use':  'Ya existe una cuenta con ese email.',
+    'auth/invalid-email':         'El email no es válido.',
+    'auth/weak-password':         'La contraseña es muy débil (mínimo 6 caracteres).',
+    'auth/too-many-requests':     'Demasiados intentos. Intenta más tarde.',
+    'auth/popup-closed-by-user':  'Cerraste la ventana de Google.',
+    'auth/network-request-failed':'Error de conexión. Verifica tu internet.',
+  };
+  return map[code] || 'Ocurrió un error. Intenta de nuevo.';
+}
+
+// ── Auth state → update both headers ──────────────────────────────
+function _getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+auth.onAuthStateChanged(function(user) {
+  // Home header
+  const homeIngresarBtn = document.getElementById('homeIngresarBtn');
+  const homeUserWrap    = document.getElementById('homeUserWrap');
+  if (homeIngresarBtn && homeUserWrap) {
+    if (user) {
+      homeIngresarBtn.style.display = 'none';
+      homeUserWrap.style.display    = 'flex';
+      homeUserWrap.innerHTML = `
+        <div class="user-wrap" style="position:relative">
+          <button class="user-btn">${_getInitials(user.displayName || user.email)}</button>
+          <div class="user-dropdown">
+            <div class="u-header">
+              <div class="u-name">${user.displayName || user.email}</div>
+              <div class="u-email">${user.email}</div>
+            </div>
+            <a href="#">👤 Mi perfil</a>
+            <a href="#">🔍 Mis búsquedas guardadas</a>
+            <a href="#">🔑 Historial de llaves</a>
+            <hr/>
+            <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
+          </div>
+        </div>`;
+    } else {
+      homeIngresarBtn.style.display = '';
+      homeUserWrap.style.display    = 'none';
+    }
+  }
+
+  // App header
+  const appIngresarBtn = document.getElementById('appIngresarBtn');
+  const appUserWrap    = document.getElementById('appUserWrap');
+  if (appIngresarBtn && appUserWrap) {
+    if (user) {
+      appIngresarBtn.style.display = 'none';
+      appUserWrap.style.display    = '';
+      const nameEl    = document.getElementById('appUserName');
+      const emailEl   = document.getElementById('appUserEmail');
+      const initialsEl = document.getElementById('appUserInitials');
+      if (nameEl)     nameEl.textContent    = user.displayName || user.email;
+      if (emailEl)    emailEl.textContent   = user.email;
+      if (initialsEl) initialsEl.textContent = _getInitials(user.displayName || user.email);
+    } else {
+      appIngresarBtn.style.display = '';
+      appUserWrap.style.display    = 'none';
+    }
+  }
+});
+
+// ── Close modal on backdrop click ──────────────────────────────────
+document.getElementById('authOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeAuthModal();
+});
+
+// ── Enter key support ──────────────────────────────────────────────
+['loginEmail','loginPassword'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') signInWithEmail(); });
+});
+['registerName','registerEmail','registerPassword','registerPassword2'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') registerWithEmail(); });
+});
+const forgotEmailEl = document.getElementById('forgotEmail');
+if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendPasswordReset();
+});
+</script>
 
 </body>
 </html>
