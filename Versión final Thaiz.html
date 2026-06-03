@@ -449,24 +449,58 @@ header .spacer{flex:1}
 
 /* ══════════════ RESULTS PANEL ══════════════ */
 .results-panel{
-  width:420px;min-width:320px;
+  flex:1 1 50%;min-width:0;
   background:var(--surface);
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;
-  overflow:hidden;
+  overflow:hidden;position:relative;
 }
 .res-header{
   padding:12px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--surface);flex-shrink:0;
 }
-.res-count{font-size:.85rem;color:var(--muted);font-weight:500}
+.res-count{font-size:.85rem;color:var(--muted);font-weight:500;white-space:nowrap}
 .res-count strong{color:var(--txt);font-size:.95rem}
+.res-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.sort-wrap{display:flex;align-items:center;gap:6px}
+.sort-lbl{font-size:.78rem;color:var(--muted);font-weight:600}
 .sort-sel{
   background:var(--light);border:1px solid var(--border);
   padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
 }
-.res-list{overflow-y:auto;flex:1;padding:8px}
+/* Selector de columnas (1 fila · 2 medianos · 3 pequeños) */
+.view-toggle{display:flex;gap:2px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:2px}
+.vt-btn{display:flex;align-items:center;justify-content:center;width:30px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);transition:background .12s,color .12s}
+.vt-btn svg{display:block}
+.vt-btn:hover{color:var(--blue)}
+.vt-btn.active{background:var(--blue);color:#fff}
+/* Botón maximizar/minimizar panel (esquina superior interior, junto al centro) */
+.panel-max-btn{
+  width:32px;height:30px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;border:1.5px solid var(--border);border-radius:8px;
+  cursor:pointer;color:var(--txt);transition:all .15s;
+}
+.panel-max-btn:hover{border-color:var(--blue);color:var(--blue)}
+.map-panel .panel-max-btn{position:absolute;top:10px;left:10px;z-index:520;width:34px;height:34px;box-shadow:var(--sh)}
+.panel-max-btn .ico-max,.panel-max-btn .ico-min{display:flex;align-items:center;justify-content:center}
+.panel-max-btn .ico-min{display:none}
+/* Estado maximizado: un panel ocupa toda la pantalla */
+.app-body.max-list .map-panel{display:none}
+.app-body.max-list .results-panel{flex-basis:100%;border-right:none}
+.app-body.max-map .results-panel{display:none}
+.app-body.max-map .map-panel{flex-basis:100%}
+.app-body.max-list .results-panel .panel-max-btn .ico-max,
+.app-body.max-map .map-panel .panel-max-btn .ico-max{display:none}
+.app-body.max-list .results-panel .panel-max-btn .ico-min,
+.app-body.max-map .map-panel .panel-max-btn .ico-min{display:flex}
+.res-list{overflow-y:auto;flex:1;padding:8px;display:grid;gap:8px;align-content:start}
+.res-list.cols-1{grid-template-columns:1fr}
+.res-list.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.res-list .p-card{margin-bottom:0}
+.res-list .empty,.res-list .res-span{grid-column:1/-1}
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -614,6 +648,7 @@ header .spacer{flex:1}
 /* ── Radius search ── */
 .radius-toggle{
   position:absolute;bottom:50px;left:12px;z-index:500;
+  width:184px;box-sizing:border-box;
   background:#fff;border:1.5px solid var(--blue);border-radius:8px;
   color:var(--blue);font-size:.78rem;font-weight:700;
   padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
@@ -644,6 +679,7 @@ header .spacer{flex:1}
 /* ── Polygon search ── */
 .poly-toggle{
   position:absolute;bottom:100px;left:12px;z-index:500;
+  width:184px;box-sizing:border-box;
   background:#fff;border:1.5px solid #7c3aed;border-radius:8px;
   color:#7c3aed;font-size:.78rem;font-weight:700;
   padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
@@ -717,6 +753,8 @@ header .spacer{flex:1}
 }
 .poi-chip:hover{border-color:var(--pc,#0891b2)}
 .poi-chip.on{background:var(--pc,#0891b2);color:#fff;border-color:var(--pc,#0891b2)}
+.poi-chip.loading{opacity:.6;cursor:progress}
+.leaflet-tooltip.commute-tip{font-weight:700;color:#0e7490;border-color:#0891b2}
 .commute-dest{font-size:26px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.4))}
 .poi-mk{
   width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -1005,7 +1043,11 @@ header .spacer{flex:1}
 /* ══════════════ RESPONSIVE ══════════════ */
 @media(max-width:900px){
   .map-panel{display:none}
-  .results-panel{width:100%}
+  .results-panel{flex-basis:100%}
+  .map-panel .panel-max-btn,.results-panel .panel-max-btn{display:none}
+  .app-body.max-map .map-panel{display:block}
+  .app-body.max-map .results-panel{display:none}
+  .res-list.cols-3{grid-template-columns:repeat(2,minmax(0,1fr))}
   .detail-panel{width:100vw}
   .plans-grid{grid-template-columns:1fr 1fr}
   .nav-phone{display:none}
@@ -1701,15 +1743,34 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
-      <select class="sort-sel" id="sortSel" onchange="applyFilters()">
-        <option value="rel">Más relevante</option>
-        <option value="price_asc">Precio: menor a mayor</option>
-        <option value="price_desc">Precio: mayor a menor</option>
-        <option value="area_desc">Mayor área</option>
-        <option value="new">Más nuevos</option>
-      </select>
+      <div class="res-tools">
+        <div class="view-toggle" id="viewToggle">
+          <button class="vt-btn active" id="vt1" onclick="setCols(1)" title="Una propiedad por fila">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1" y="2.5" width="13" height="3.5" rx="1"/><rect x="1" y="9" width="13" height="3.5" rx="1"/></svg>
+          </button>
+          <button class="vt-btn" id="vt2" onclick="setCols(2)" title="Dos columnas">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1" y="1.5" width="5.5" height="12" rx="1"/><rect x="8.5" y="1.5" width="5.5" height="12" rx="1"/></svg>
+          </button>
+          <button class="vt-btn" id="vt3" onclick="setCols(3)" title="Tres columnas">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0.5" y="1.5" width="3.7" height="12" rx="1"/><rect x="5.65" y="1.5" width="3.7" height="12" rx="1"/><rect x="10.8" y="1.5" width="3.7" height="12" rx="1"/></svg>
+          </button>
+        </div>
+        <label class="sort-wrap"><span class="sort-lbl">Ordenar:</span>
+          <select class="sort-sel" id="sortSel" onchange="applyFilters()">
+            <option value="rel">Más relevante</option>
+            <option value="price_asc">Precio: menor a mayor</option>
+            <option value="price_desc">Precio: mayor a menor</option>
+            <option value="area_desc">Mayor área</option>
+            <option value="new">Más nuevos</option>
+          </select>
+        </label>
+        <button class="panel-max-btn" id="maxListBtn" onclick="toggleMax('list')" title="Maximizar lista de propiedades" aria-label="Maximizar lista">
+          <svg class="ico-max" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 6V2.5h3.5M11.5 2H15v3.5M15 11v3.5h-3.5M5.5 15H2v-3.5"/></svg>
+          <svg class="ico-min" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v3.5H2.5M15 6h-3.5V2.5M11 15v-3.5H15M2.5 11H6v3.5"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="res-list" id="resList">
+    <div class="res-list cols-1" id="resList">
       <!-- populated by JS -->
     </div>
   </div>
@@ -1717,6 +1778,11 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
     <div id="realMap"></div>
+
+    <button class="panel-max-btn" id="maxMapBtn" onclick="toggleMax('map')" title="Maximizar mapa" aria-label="Maximizar mapa">
+      <svg class="ico-max" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 6V2.5h3.5M11.5 2H15v3.5M15 11v3.5h-3.5M5.5 15H2v-3.5"/></svg>
+      <svg class="ico-min" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v3.5H2.5M15 6h-3.5V2.5M11 15v-3.5H15M2.5 11H6v3.5"/></svg>
+    </button>
 
     <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
       <span style="font-size:.82rem;font-weight:700">⬤ Buscar por radio</span>
@@ -1734,7 +1800,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <button class="poly-toggle" id="polyToggle" onclick="togglePolyMode()">
       <span style="font-size:.82rem;font-weight:700">⬟ Buscar por polígono</span>
-      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área libre en el mapa</span>
+      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área en el mapa</span>
     </button>
 
     <div class="poly-panel" id="polyPanel">
@@ -1754,15 +1820,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="mtool-panel" id="commutePanel">
       <div class="mtool-panel-row"><b>🚗 Tiempo de traslado</b><span id="commuteLabel">30 min</span></div>
+      <div class="poi-chips" id="commuteModes" style="margin:2px 0"></div>
       <input type="range" min="5" max="60" step="5" value="30" id="commuteSlider" oninput="updateCommute(this.value)"/>
-      <div class="mtool-hint" id="commuteInfo">Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.</div>
+      <div class="mtool-hint" id="commuteInfo">Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo de viaje real por carretera.</div>
       <button class="mtool-clear" onclick="clearCommute()">✕ Limpiar destino</button>
     </div>
 
     <div class="mtool-panel" id="poiPanel">
       <div class="mtool-panel-row"><b>📍 Establecimientos cerca</b></div>
+      <div class="mtool-panel-row" style="font-size:.76rem"><span style="color:var(--muted);font-weight:600">Radio de búsqueda</span><span id="poiRadiusLabel">800 m</span></div>
+      <input type="range" min="200" max="3000" step="100" value="800" id="poiRadius" oninput="setPoiRadius(this.value)"/>
       <div class="poi-chips" id="poiChips"></div>
-      <div class="mtool-hint">Se ubican alrededor del centro del mapa actual.</div>
+      <div class="mtool-hint">Datos reales de OpenStreetMap alrededor del centro del mapa (o de una propiedad). Toca una categoría.</div>
       <button class="mtool-clear" onclick="clearPoi()">✕ Quitar marcadores</button>
     </div>
 
@@ -2002,7 +2071,9 @@ const S = {
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
-  commuteMode:false, commute:null, svMode:false,
+  commuteMode:false, commute:null, commuteModeSel:'drive', svMode:false,
+  poiRadius:800,
+  cols:1, maxPanel:null,
   catastroOn:false,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
@@ -2047,7 +2118,7 @@ function getFiltered(){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
-      if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
+      if(commuteMinTo(S.commute, GEO[p.id], p.id) > S.commute.maxMin) return false;
     }
     return true;
   });
@@ -2167,6 +2238,27 @@ function renderHistTable(list){
   <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--border)"></span>Propiedades</div>`;
 }
 
+// ── Vista de columnas (1 fila · 2 medianos · 3 pequeños) ──────
+function setCols(n){
+  S.cols=n;
+  const el=document.getElementById('resList');
+  if(el) el.className='res-list cols-'+n;
+  [1,2,3].forEach(i=>document.getElementById('vt'+i)?.classList.toggle('active',i===n));
+}
+// ── Maximizar / minimizar un panel (lista o mapa) ─────────────
+function toggleMax(which){
+  const b=document.getElementById('appBody');
+  const cls='max-'+which;
+  const on=!b.classList.contains(cls);
+  b.classList.remove('max-list','max-map');
+  if(on) b.classList.add(cls);
+  S.maxPanel=on?which:null;
+  document.getElementById('maxListBtn')?.setAttribute('title', (S.maxPanel==='list'?'Restaurar vista dividida':'Maximizar lista de propiedades'));
+  document.getElementById('maxMapBtn')?.setAttribute('title', (S.maxPanel==='map'?'Restaurar vista dividida':'Maximizar mapa'));
+  // Leaflet necesita recalcular su tamaño tras cambiar el ancho del contenedor.
+  setTimeout(()=>{ if(leafletMap){ leafletMap.invalidateSize(); renderPins(getFiltered()); } }, 280);
+}
+
 function renderCards(list){
   const el=document.getElementById('resList');
   document.getElementById('resNum').textContent=list.length;
@@ -2185,7 +2277,7 @@ function renderCards(list){
   }
 
   const spatialActive=(S.radiusCenter)||(S.polyFinished&&S.polyPoints.length>=3);
-  const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
+  const tablePrefix=(S.op==='Histórico'&&spatialActive)?('<div class="res-span">'+renderHistTable(list)+'</div>'):'';
 
   el.innerHTML=tablePrefix+list.map(p=>{
     const cardAssets=driveAssets(p);
@@ -2245,8 +2337,10 @@ let leafletMap=null;
 let leafletMarkers={};
 
 function initMap(){
-  leafletMap=L.map('realMap',{zoomControl:true,attributionControl:true})
+  leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
+  // Controles de zoom (+/−) en la esquina inferior derecha.
+  L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     maxZoom:19
@@ -2436,18 +2530,90 @@ function _deactivateRadiusPoly(){
   if(S.polyMode){ _deactivatePoly(); }
 }
 
-// ── Tiempo de traslado (commute) ──────────────────────────────
-// Estimación: distancia en línea recta × 1.3 (factor de vías) a 24 km/h promedio en ciudad.
+// ── Tiempo de traslado (commute) — rutas reales por carretera (OSRM) ──────────
+// Motor de routing OSM: OSRM público (router.project-osrm.org). Calcula tiempos
+// de viaje REALES siguiendo la red vial (no la distancia en línea recta).
+// Usa el servicio /table (1 origen → muchas propiedades) para responder
+// "¿qué propiedades están a ≤ X min de mi trabajo?" de forma masiva y rápida.
+const OSRM_BASE='https://router.project-osrm.org';
+// Velocidades de respaldo por modo (km/h) para estimar mientras llega OSRM.
+const COMMUTE_SPEED={drive:24, walk:4.8, bike:15};
 let commuteMarker=null, commuteCircle=null;
+let _commuteReqId=0;   // token: descarta respuestas de un destino ya cambiado
 function _haversineKm(aLat,aLng,bLat,bLng){
   const R=6371, r=Math.PI/180;
   const dLat=(bLat-aLat)*r, dLng=(bLng-aLng)*r;
   const x=Math.sin(dLat/2)**2 + Math.cos(aLat*r)*Math.cos(bLat*r)*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
-function commuteMinTo(c, geo){
+// Estimación sincrónica de respaldo (mientras OSRM responde o si falla la red).
+function _commuteEstMin(c, geo, mode){
   const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
-  return Math.max(1, Math.round(km/24*60));
+  return Math.max(1, Math.round(km/(COMMUTE_SPEED[mode]||24)*60));
+}
+// Minutos de viaje a una propiedad: usa el tiempo REAL cacheado de OSRM si existe.
+// Para auto devuelve la duración real; para a pie/bici deriva del trayecto real
+// por carretera a la velocidad del modo.
+function commuteMinTo(c, geo, id){
+  if(c && c.times && id!=null){
+    const t=c.times.get(id);
+    if(t){
+      if(c.mode==='drive') return t.drive;
+      return Math.max(1, Math.round(t.dist/(COMMUTE_SPEED[c.mode]||COMMUTE_SPEED.walk)*60));
+    }
+  }
+  return _commuteEstMin(c, geo, (c&&c.mode)||'drive');
+}
+// Pide a OSRM los tiempos reales para las propiedades más cercanas al destino.
+async function computeCommuteTimes(){
+  if(!S.commute || !window.fetch) return;
+  const dest=S.commute, myReq=++_commuteReqId;
+  dest.times = dest.times || new Map();
+  dest.loading=true;
+  // Candidatos: las propiedades más próximas en línea recta (cota superior de
+  // ~50 km/h). Las que quedan fuera ya superan el umbral y se descartan solas.
+  const maxKm=Math.max(2,(dest.maxMin/60)*50*1.3);
+  const cands=properties
+    .map(p=>{ const g=GEO[p.id]; return g?{p,d:_haversineKm(dest.lat,dest.lng,g[0],g[1])}:null; })
+    .filter(o=>o && o.d<=maxKm && !dest.times.has(o.p.id))
+    .sort((a,b)=>a.d-b.d).slice(0,240).map(o=>o.p);
+  if(!cands.length){ dest.loading=false; _commuteInfo(); return; }
+  const CHUNK=80;
+  for(let i=0;i<cands.length;i+=CHUNK){
+    const batch=cands.slice(i,i+CHUNK);
+    const coords=[[dest.lng,dest.lat],...batch.map(p=>[GEO[p.id][1],GEO[p.id][0]])]
+      .map(c=>c[0].toFixed(6)+','+c[1].toFixed(6)).join(';');
+    try{
+      const url=`${OSRM_BASE}/table/v1/driving/${coords}?sources=0&annotations=duration,distance`;
+      const r=await fetch(url);
+      if(myReq!==_commuteReqId) return;           // destino cambió → abortar
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const j=await r.json();
+      const durs=j.durations&&j.durations[0], dists=j.distances&&j.distances[0];
+      batch.forEach((p,k)=>{
+        const sec=durs&&durs[k+1], m=dists&&dists[k+1];
+        if(sec!=null) dest.times.set(p.id,{drive:Math.max(1,Math.round(sec/60)), dist:(m!=null?m/1000:_haversineKm(dest.lat,dest.lng,GEO[p.id][0],GEO[p.id][1])*1.3)});
+      });
+    }catch(e){
+      console.warn('[reco] OSRM table error:', e&&e.message);
+      // Respaldo: estimación para este lote (no perder propiedades por un fallo).
+      batch.forEach(p=>{ if(!dest.times.has(p.id)){ const km=_haversineKm(dest.lat,dest.lng,GEO[p.id][0],GEO[p.id][1])*1.3; dest.times.set(p.id,{drive:Math.max(1,Math.round(km/24*60)),dist:km}); } });
+    }
+    if(myReq!==_commuteReqId) return;
+    applyFilters();   // refresco progresivo conforme llegan los lotes
+  }
+  dest.loading=false; _commuteInfo(); applyFilters();
+}
+function _buildCommuteModes(){
+  const wrap=document.getElementById('commuteModes'); if(!wrap) return;
+  const cur=(S.commute&&S.commute.mode)||S.commuteModeSel||'drive';
+  const modes=[['drive','🚗','Auto'],['walk','🚶','A pie'],['bike','🚴','Bici']];
+  wrap.innerHTML=modes.map(([k,e,l])=>`<button class="poi-chip${k===cur?' on':''}" style="--pc:#0891b2" onclick="setCommuteMode('${k}')">${e} ${l}</button>`).join('');
+}
+function setCommuteMode(mode){
+  S.commuteModeSel=mode;
+  if(S.commute) S.commute.mode=mode;   // walk/bike se derivan del trayecto cacheado
+  _buildCommuteModes(); drawCommute(); applyFilters(); _commuteInfo();
 }
 function toggleCommuteMode(){
   const on=!S.commuteMode;
@@ -2457,17 +2623,25 @@ function toggleCommuteMode(){
   document.getElementById('commuteToggle').classList.toggle('active',on);
   document.getElementById('commutePanel').classList.toggle('open',on);
   document.getElementById('realMap').classList.toggle('commute-mode',on);
+  if(on) _buildCommuteModes();
 }
 function setCommuteDest(latlng){
   const maxMin=parseInt(document.getElementById('commuteSlider').value||'30');
-  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin};
+  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, mode:S.commuteModeSel||'drive', times:new Map(), loading:true};
   drawCommute();
-  applyFilters();
+  _buildCommuteModes();
   _commuteInfo();
+  computeCommuteTimes();   // asíncrono: refresca el filtro al llegar las rutas
+  applyFilters();
 }
 function updateCommute(val){
   document.getElementById('commuteLabel').textContent=val+' min';
-  if(S.commute){ S.commute.maxMin=parseInt(val); drawCommute(); applyFilters(); _commuteInfo(); }
+  if(S.commute){
+    S.commute.maxMin=parseInt(val);
+    drawCommute(); _commuteInfo();
+    computeCommuteTimes();   // amplía el cálculo a los nuevos candidatos
+    applyFilters();
+  }
 }
 function drawCommute(){
   if(!S.commute || !leafletMap) return;
@@ -2475,17 +2649,29 @@ function drawCommute(){
   const icon=L.divIcon({className:'',html:'<div class="commute-dest">📍</div>',iconSize:[34,34],iconAnchor:[17,30]});
   commuteMarker=L.marker([S.commute.lat,S.commute.lng],{icon}).addTo(leafletMap);
   if(commuteCircle) commuteCircle.remove();
-  // Radio alcanzable aprox. (inverso de commuteMinTo): km = maxMin/60 × 24 ÷ 1.3
-  const km=(S.commute.maxMin/60)*24/1.3;
-  commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:1.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.06}).addTo(leafletMap);
+  // Círculo orientativo de alcance según el modo (el filtro real lo da OSRM).
+  const mode=S.commute.mode||'drive';
+  const km=(S.commute.maxMin/60)*(COMMUTE_SPEED[mode]||24)/1.3;
+  const col=mode==='walk'?'#15803D':mode==='bike'?'#b45309':'#0e7490';
+  commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:col,weight:1.5,dashArray:'6 5',fillColor:col,fillOpacity:.06}).addTo(leafletMap);
 }
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
-  if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.'; return; }
+  if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo de viaje real por carretera.'; return; }
+  const modeTxt=S.commute.mode==='walk'?'caminando':S.commute.mode==='bike'?'en bici':'en auto';
   const n=getFiltered().length;
-  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto (aprox.).';
+  if(S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
+  el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+' (ruta real OSRM).';
+}
+// Tooltip de tiempo real sobre cada pin cuando hay un destino activo.
+function _attachCommuteTip(marker,p){
+  if(!S.commute || !GEO[p.id]) return;
+  const min=commuteMinTo(S.commute,GEO[p.id],p.id);
+  const e=S.commute.mode==='walk'?'🚶':S.commute.mode==='bike'?'🚴':'🚗';
+  marker.bindTooltip(e+' '+min+' min a tu destino',{direction:'top',offset:[0,-30],className:'commute-tip'});
 }
 function clearCommute(){
+  _commuteReqId++;   // cancela cualquier cálculo OSRM en curso
   S.commute=null;
   if(commuteMarker){ commuteMarker.remove(); commuteMarker=null; }
   if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
@@ -2493,40 +2679,52 @@ function clearCommute(){
   applyFilters();
 }
 
-// ── Cerca de ti (establecimientos / POI) ──────────────────────
+// ── Cerca de ti — POIs reales de OpenStreetMap (Overpass API) ─────────────────
+// Consulta en vivo los puntos de interés de OSM (colegios, supermercados,
+// parques, salud, farmacias, restaurantes, bancos…) alrededor del centro del
+// mapa o de una propiedad, dentro de un radio configurable. Datos y nombres
+// reales — igual que hacen los portales inmobiliarios internacionales.
+const OVERPASS_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
 const POI_CATS={
-  colegios:{l:'Colegios',e:'🏫',c:'#2563EB'},
-  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A'},
-  parques:{l:'Parques',e:'🌳',c:'#15803D'},
-  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626'},
-  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C'},
-  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED'}
+  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',q:['node["amenity"="school"]','way["amenity"="school"]']},
+  universidades:{l:'Universidades',e:'🎓',c:'#1D4ED8',q:['node["amenity"="university"]','way["amenity"="university"]']},
+  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',q:['node["shop"="supermarket"]','way["shop"="supermarket"]']},
+  parques:{l:'Parques',e:'🌳',c:'#15803D',q:['way["leisure"="park"]','node["leisure"="park"]']},
+  salud:{l:'Salud',e:'🏥',c:'#DC2626',q:['node["amenity"~"^(hospital|clinic|doctors)$"]','way["amenity"~"^(hospital|clinic|doctors)$"]']},
+  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',q:['node["amenity"="pharmacy"]','way["amenity"="pharmacy"]']},
+  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',q:['node["amenity"~"^(restaurant|cafe|fast_food)$"]']},
+  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',q:['node["amenity"~"^(bank|atm)$"]','way["amenity"="bank"]']}
 };
-const POI_NAMES={
-  colegios:['I.E. San José','Colegio Santa María','Liceo Naval','Innova Schools','Colegio Markham'],
-  supermercados:['Plaza Vea','Wong','Metro','Vivanda','Tottus'],
-  parques:['Parque Kennedy','Parque El Olivar','Parque Reducto','Malecón','Parque Central'],
-  clinicas:['Clínica Internacional','Clínica Ricardo Palma','Clínica Delgado','Centro Médico','Clínica Anglo'],
-  restaurantes:['La Mar','Tanta','Pardos Chicken','La Lucha','El Mercado'],
-  bancos:['BCP','Interbank','BBVA','Scotiabank','BanBif']
-};
-let poiMarkers={};
-function _seedRand(seed){
-  let t=seed>>>0;
-  return function(){ t+=0x6D2B79F5; let x=Math.imul(t^(t>>>15),1|t); x^=x+Math.imul(x^(x>>>7),61|x); return((x^(x>>>14))>>>0)/4294967296; };
-}
+let poiMarkers={};      // cat → [markers]
+let _poiLoading={};     // cat → bool (consulta Overpass en curso)
+let _poiCenter=null;    // {lat,lng}: centro activo de la búsqueda
 function togglePoiPanel(){
   const panel=document.getElementById('poiPanel');
   const open=!panel.classList.contains('open');
   panel.classList.toggle('open',open);
   document.getElementById('poiToggle').classList.toggle('active',open);
-  if(open) buildPoiChips();
+  if(open){
+    if(!_poiCenter && leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; }
+    buildPoiChips();
+  }
+}
+function setPoiRadius(val){
+  S.poiRadius=parseInt(val);
+  const lbl=document.getElementById('poiRadiusLabel');
+  if(lbl) lbl.textContent = val>=1000?(val/1000).toFixed(val%1000?1:0)+' km':val+' m';
+  // Recargar las categorías activas con el nuevo radio.
+  const active=Object.keys(poiMarkers);
+  active.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
+  active.forEach(k=>loadPoi(k));
+  buildPoiChips();
 }
 function buildPoiChips(){
   const wrap=document.getElementById('poiChips'); if(!wrap) return;
   wrap.innerHTML=Object.keys(POI_CATS).map(k=>{
-    const c=POI_CATS[k]; const on=poiMarkers[k]?' on':'';
-    return `<button class="poi-chip${on}" style="--pc:${c.c}" onclick="togglePoi('${k}')">${c.e} ${c.l}</button>`;
+    const c=POI_CATS[k];
+    const on=poiMarkers[k]?' on':'', ld=_poiLoading[k]?' loading':'';
+    const cnt=poiMarkers[k]?` (${poiMarkers[k].length})`:'';
+    return `<button class="poi-chip${on}${ld}" style="--pc:${c.c}" onclick="togglePoi('${k}')">${_poiLoading[k]?'⏳':c.e} ${c.l}${cnt}</button>`;
   }).join('');
 }
 function togglePoi(cat){
@@ -2534,24 +2732,54 @@ function togglePoi(cat){
   if(poiMarkers[cat]){
     poiMarkers[cat].forEach(m=>m.remove());
     delete poiMarkers[cat];
+    buildPoiChips();
   } else {
-    const ctr=leafletMap.getCenter();
-    const c=POI_CATS[cat], nm=POI_NAMES[cat]||['Lugar'];
-    const seed=Math.floor((ctr.lat+ctr.lng)*1000)+cat.length*97;
-    const rnd=_seedRand(seed);
-    const n=6+Math.floor(rnd()*4), arr=[];
-    for(let i=0;i<n;i++){
-      const ang=rnd()*Math.PI*2, dist=(0.2+rnd()*1.3)/111;
-      const la=ctr.lat+Math.cos(ang)*dist;
-      const ln=ctr.lng+Math.sin(ang)*dist/Math.cos(ctr.lat*Math.PI/180);
+    loadPoi(cat);
+  }
+}
+async function _overpassFetch(query){
+  let lastErr;
+  for(const ep of OVERPASS_EPS){
+    try{
+      const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:query});
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return await r.json();
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr||new Error('Overpass no disponible');
+}
+async function loadPoi(cat){
+  const c=POI_CATS[cat]; if(!c || _poiLoading[cat]) return;
+  if(!_poiCenter && leafletMap){ const ct=leafletMap.getCenter(); _poiCenter={lat:ct.lat,lng:ct.lng}; }
+  const lat=_poiCenter.lat, lng=_poiCenter.lng, rad=S.poiRadius||800;
+  _poiLoading[cat]=true; buildPoiChips();
+  const parts=c.q.map(sel=>`${sel}(around:${rad},${lat.toFixed(6)},${lng.toFixed(6)});`).join('');
+  const query=`[out:json][timeout:25];(${parts});out center 80;`;
+  try{
+    const j=await _overpassFetch(query);
+    const seen=new Set(), arr=[];
+    (j.elements||[]).forEach(el=>{
+      const la=el.lat!=null?el.lat:(el.center&&el.center.lat);
+      const ln=el.lon!=null?el.lon:(el.center&&el.center.lon);
+      if(la==null||ln==null) return;
+      const name=(el.tags&&(el.tags.name||el.tags['name:es']))||c.l.replace(/s$/,'');
+      const key=name+'|'+la.toFixed(4)+'|'+ln.toFixed(4);
+      if(seen.has(key)) return; seen.add(key);
+      const dm=_haversineKm(lat,lng,la,ln)*1000;
+      const dTxt=dm>=1000?(dm/1000).toFixed(1)+' km':Math.round(dm)+' m';
       const icon=L.divIcon({className:'',html:`<div class="poi-mk" style="background:${c.c}">${c.e}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
       const m=L.marker([la,ln],{icon}).addTo(leafletMap);
-      m.bindTooltip(nm[i%nm.length],{direction:'top',offset:[0,-12]});
+      m.bindTooltip(`<b>${name}</b><br>${c.e} a ${dTxt}`,{direction:'top',offset:[0,-12]});
       arr.push(m);
-    }
+    });
     poiMarkers[cat]=arr;
+    if(!arr.length) toast(`Sin ${c.l.toLowerCase()} en ${rad>=1000?(rad/1000)+' km':rad+' m'}`);
+  }catch(e){
+    console.warn('[reco] Overpass error:', e&&e.message);
+    toast('No se pudo cargar establecimientos (Overpass). Reintenta.');
+  }finally{
+    _poiLoading[cat]=false; buildPoiChips();
   }
-  buildPoiChips();
 }
 function clearPoi(){
   Object.values(poiMarkers).forEach(a=>a.forEach(m=>m.remove()));
@@ -2705,6 +2933,11 @@ function detailNearby(id){
   const c=GEO[id]; if(!c){ toast('Esta propiedad no tiene ubicación en el mapa'); return; }
   closeDetail();
   if(leafletMap) leafletMap.setView(c,16,{animate:true,duration:.5});
+  // Centrar la búsqueda de POIs en esta propiedad y recargar las categorías activas.
+  _poiCenter={lat:c[0],lng:c[1]};
+  const reload=Object.keys(poiMarkers);
+  reload.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
+  reload.forEach(k=>loadPoi(k));
   const panel=document.getElementById('poiPanel');
   panel.classList.add('open');
   document.getElementById('poiToggle').classList.add('active');
@@ -2735,6 +2968,7 @@ function renderPins(list){
       const icon=L.divIcon({className:'',html:`<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-bubble">${p.cur}${price}</div><div class="lf-tail"></div></div>`,iconSize:[60,36],iconAnchor:[6,36]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
+      _attachCommuteTip(marker,p);
       leafletMarkers[p.id]=marker;
     });
     return;
@@ -2762,6 +2996,7 @@ function renderPins(list){
       const icon=L.divIcon({className:'',html:`<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-bubble">${p.cur}${price}</div><div class="lf-tail"></div></div>`,iconSize:[60,36],iconAnchor:[6,36]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
+      _attachCommuteTip(marker,p);
       leafletMarkers[p.id]=marker;
     }else{
       const sz=n<=5?'sm':n<=20?'md':n<=100?'lg':'xl';
