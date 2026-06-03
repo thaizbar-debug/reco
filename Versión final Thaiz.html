@@ -510,6 +510,11 @@ header .spacer{flex:1}
 .res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .res-list .p-card{margin-bottom:0}
 .res-list .empty,.res-list .res-span{grid-column:1/-1}
+/* 1 por fila → tarjeta horizontal (miniatura a la derecha) */
+.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;align-items:stretch}
+.res-list.cols-1 .card-img{width:190px;height:auto;min-height:128px;flex:0 0 190px}
+.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+@media(max-width:1100px){ .res-list.cols-1 .card-img{width:150px;flex-basis:150px} }
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -609,7 +614,7 @@ header .spacer{flex:1}
 .pill-btn:hover{background:#e2e8f0;border-color:#94a3b8}
 
 /* ══════════════ MAP PANEL ══════════════ */
-.map-panel{flex:1;position:relative;overflow:hidden}
+.map-panel{flex:1 1 50%;min-width:0;position:relative;overflow:hidden}
 #realMap{width:100%;height:100%}
 
 /* Leaflet pin */
@@ -769,6 +774,7 @@ header .spacer{flex:1}
   width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:13px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
+.poi-ctr{font-size:26px;line-height:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45))}
 #realMap.commute-mode,#realMap.sv-mode{cursor:crosshair !important}
 #realMap.commute-mode .leaflet-interactive,#realMap.sv-mode .leaflet-interactive{cursor:crosshair !important}
 
@@ -2535,21 +2541,20 @@ function _haversineKm(aLat,aLng,bLat,bLng){
   const x=Math.sin(dLat/2)**2 + Math.cos(aLat*r)*Math.cos(bLat*r)*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
-// Estimación sincrónica de respaldo (mientras OSRM responde o si falla la red).
+// Estimación sincrónica (factor de rodeo según el modo sobre la distancia recta).
 function _commuteEstMin(c, geo, mode){
-  const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
+  const detour = mode==='walk'?1.2 : mode==='bike'?1.25 : 1.3;
+  const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*detour;
   return Math.max(1, Math.round(km/(COMMUTE_SPEED[mode]||24)*60));
 }
-// Minutos de viaje a una propiedad: usa el tiempo REAL cacheado de OSRM si existe.
-// Para auto devuelve la duración real; para a pie/bici deriva del trayecto real
-// por carretera a la velocidad del modo.
+// Minutos de viaje a una propiedad.
+//  · Auto: duración REAL de OSRM por la red vial (si está cacheada).
+//  · A pie / bici: estimación por distancia recta a la velocidad del modo
+//    (no se deriva de la red de autos, que daría tiempos inflados).
 function commuteMinTo(c, geo, id){
-  if(c && c.times && id!=null){
+  if(c && c.mode==='drive' && c.times && id!=null){
     const t=c.times.get(id);
-    if(t){
-      if(c.mode==='drive') return t.drive;
-      return Math.max(1, Math.round(t.dist/(COMMUTE_SPEED[c.mode]||COMMUTE_SPEED.walk)*60));
-    }
+    if(t) return t.drive;
   }
   return _commuteEstMin(c, geo, (c&&c.mode)||'drive');
 }
@@ -2647,17 +2652,21 @@ function drawCommute(){
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo de viaje real por carretera.'; return; }
+  const drive=S.commute.mode==='drive';
   const modeTxt=S.commute.mode==='walk'?'caminando':S.commute.mode==='bike'?'en bici':'en auto';
   const n=getFiltered().length;
-  if(S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
-  el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+' (ruta real OSRM).';
+  if(drive && S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
+  const fuente= drive ? ' (ruta real OSRM)' : ' (estimado)';
+  el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+fuente+'.';
 }
-// Tooltip de tiempo real sobre cada pin cuando hay un destino activo.
+// Tooltip de tiempo sobre cada pin cuando hay un destino activo.
+// Tiempo real (ruta OSRM) cuando está cacheado; si no, estimación marcada con «~».
 function _attachCommuteTip(marker,p){
   if(!S.commute || !GEO[p.id]) return;
   const min=commuteMinTo(S.commute,GEO[p.id],p.id);
+  const real=S.commute.mode==='drive' && !!(S.commute.times && S.commute.times.has(p.id));
   const e=S.commute.mode==='walk'?'🚶':S.commute.mode==='bike'?'🚴':'🚗';
-  marker.bindTooltip(e+' '+min+' min a tu destino',{direction:'top',offset:[0,-30],className:'commute-tip'});
+  marker.bindTooltip(e+' '+(real?'':'~')+min+' min a tu destino',{direction:'top',offset:[0,-30],className:'commute-tip'});
 }
 function clearCommute(){
   _commuteReqId++;   // cancela cualquier cálculo OSRM en curso
@@ -2687,20 +2696,39 @@ const POI_CATS={
 let poiMarkers={};      // cat → [markers]
 let _poiLoading={};     // cat → bool (consulta Overpass en curso)
 let _poiCenter=null;    // {lat,lng}: centro activo de la búsqueda
+let poiCenterMarker=null, poiCenterCircle=null;
+// Dibuja el pin + círculo que indican el centro y radio de la búsqueda.
+function _poiDrawCenter(){
+  if(!leafletMap||!_poiCenter) return;
+  const ll=[_poiCenter.lat,_poiCenter.lng], rad=S.poiRadius||800;
+  if(poiCenterMarker){ poiCenterMarker.setLatLng(ll); }
+  else { poiCenterMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="poi-ctr">📍</div>',iconSize:[30,30],iconAnchor:[15,28]}),zIndexOffset:600}).addTo(leafletMap); }
+  if(poiCenterCircle){ poiCenterCircle.setLatLng(ll); poiCenterCircle.setRadius(rad); }
+  else { poiCenterCircle=L.circle(ll,{radius:rad,color:'#0891b2',weight:1.5,dashArray:'5 5',fillColor:'#0891b2',fillOpacity:.05}).addTo(leafletMap); }
+}
+function _poiClearCenter(){
+  if(poiCenterMarker){ poiCenterMarker.remove(); poiCenterMarker=null; }
+  if(poiCenterCircle){ poiCenterCircle.remove(); poiCenterCircle=null; }
+}
 function togglePoiPanel(){
   const panel=document.getElementById('poiPanel');
   const open=!panel.classList.contains('open');
   panel.classList.toggle('open',open);
   document.getElementById('poiToggle').classList.toggle('active',open);
   if(open){
-    if(!_poiCenter && leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; }
+    // Centra la búsqueda en lo que el usuario está viendo ahora mismo.
+    if(leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; _poiDrawCenter(); }
+    if(leafletMap && leafletMap.getZoom()<13) toast('🔍 Acércate al barrio que te interese para ver establecimientos cercanos');
     buildPoiChips();
+  } else {
+    _poiClearCenter();
   }
 }
 function setPoiRadius(val){
   S.poiRadius=parseInt(val);
   const lbl=document.getElementById('poiRadiusLabel');
   if(lbl) lbl.textContent = val>=1000?(val/1000).toFixed(val%1000?1:0)+' km':val+' m';
+  _poiDrawCenter();
   // Recargar las categorías activas con el nuevo radio.
   const active=Object.keys(poiMarkers);
   active.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
@@ -2924,6 +2952,7 @@ function detailNearby(id){
   if(leafletMap) leafletMap.setView(c,16,{animate:true,duration:.5});
   // Centrar la búsqueda de POIs en esta propiedad y recargar las categorías activas.
   _poiCenter={lat:c[0],lng:c[1]};
+  _poiDrawCenter();
   const reload=Object.keys(poiMarkers);
   reload.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
   reload.forEach(k=>loadPoi(k));
