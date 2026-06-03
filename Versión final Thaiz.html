@@ -449,24 +449,58 @@ header .spacer{flex:1}
 
 /* ══════════════ RESULTS PANEL ══════════════ */
 .results-panel{
-  width:420px;min-width:320px;
+  flex:1 1 50%;min-width:0;
   background:var(--surface);
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;
-  overflow:hidden;
+  overflow:hidden;position:relative;
 }
 .res-header{
   padding:12px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
   background:var(--surface);flex-shrink:0;
 }
-.res-count{font-size:.85rem;color:var(--muted);font-weight:500}
+.res-count{font-size:.85rem;color:var(--muted);font-weight:500;white-space:nowrap}
 .res-count strong{color:var(--txt);font-size:.95rem}
+.res-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.sort-wrap{display:flex;align-items:center;gap:6px}
+.sort-lbl{font-size:.78rem;color:var(--muted);font-weight:600}
 .sort-sel{
   background:var(--light);border:1px solid var(--border);
   padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
 }
-.res-list{overflow-y:auto;flex:1;padding:8px}
+/* Selector de columnas (1 fila · 2 medianos · 3 pequeños) */
+.view-toggle{display:flex;gap:2px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:2px}
+.vt-btn{display:flex;align-items:center;justify-content:center;width:30px;height:26px;border:none;background:transparent;border-radius:6px;cursor:pointer;color:var(--muted);transition:background .12s,color .12s}
+.vt-btn svg{display:block}
+.vt-btn:hover{color:var(--blue)}
+.vt-btn.active{background:var(--blue);color:#fff}
+/* Botón maximizar/minimizar panel (esquina superior interior, junto al centro) */
+.panel-max-btn{
+  width:32px;height:30px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:#fff;border:1.5px solid var(--border);border-radius:8px;
+  cursor:pointer;color:var(--txt);transition:all .15s;
+}
+.panel-max-btn:hover{border-color:var(--blue);color:var(--blue)}
+.map-panel .panel-max-btn{position:absolute;top:10px;left:10px;z-index:520;width:34px;height:34px;box-shadow:var(--sh)}
+.panel-max-btn .ico-max,.panel-max-btn .ico-min{display:flex;align-items:center;justify-content:center}
+.panel-max-btn .ico-min{display:none}
+/* Estado maximizado: un panel ocupa toda la pantalla */
+.app-body.max-list .map-panel{display:none}
+.app-body.max-list .results-panel{flex-basis:100%;border-right:none}
+.app-body.max-map .results-panel{display:none}
+.app-body.max-map .map-panel{flex-basis:100%}
+.app-body.max-list .results-panel .panel-max-btn .ico-max,
+.app-body.max-map .map-panel .panel-max-btn .ico-max{display:none}
+.app-body.max-list .results-panel .panel-max-btn .ico-min,
+.app-body.max-map .map-panel .panel-max-btn .ico-min{display:flex}
+.res-list{overflow-y:auto;flex:1;padding:8px;display:grid;gap:8px;align-content:start}
+.res-list.cols-1{grid-template-columns:1fr}
+.res-list.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.res-list .p-card{margin-bottom:0}
+.res-list .empty,.res-list .res-span{grid-column:1/-1}
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -614,6 +648,7 @@ header .spacer{flex:1}
 /* ── Radius search ── */
 .radius-toggle{
   position:absolute;bottom:50px;left:12px;z-index:500;
+  width:184px;box-sizing:border-box;
   background:#fff;border:1.5px solid var(--blue);border-radius:8px;
   color:var(--blue);font-size:.78rem;font-weight:700;
   padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
@@ -644,6 +679,7 @@ header .spacer{flex:1}
 /* ── Polygon search ── */
 .poly-toggle{
   position:absolute;bottom:100px;left:12px;z-index:500;
+  width:184px;box-sizing:border-box;
   background:#fff;border:1.5px solid #7c3aed;border-radius:8px;
   color:#7c3aed;font-size:.78rem;font-weight:700;
   padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
@@ -1007,7 +1043,11 @@ header .spacer{flex:1}
 /* ══════════════ RESPONSIVE ══════════════ */
 @media(max-width:900px){
   .map-panel{display:none}
-  .results-panel{width:100%}
+  .results-panel{flex-basis:100%}
+  .map-panel .panel-max-btn,.results-panel .panel-max-btn{display:none}
+  .app-body.max-map .map-panel{display:block}
+  .app-body.max-map .results-panel{display:none}
+  .res-list.cols-3{grid-template-columns:repeat(2,minmax(0,1fr))}
   .detail-panel{width:100vw}
   .plans-grid{grid-template-columns:1fr 1fr}
   .nav-phone{display:none}
@@ -1703,15 +1743,34 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
-      <select class="sort-sel" id="sortSel" onchange="applyFilters()">
-        <option value="rel">Más relevante</option>
-        <option value="price_asc">Precio: menor a mayor</option>
-        <option value="price_desc">Precio: mayor a menor</option>
-        <option value="area_desc">Mayor área</option>
-        <option value="new">Más nuevos</option>
-      </select>
+      <div class="res-tools">
+        <div class="view-toggle" id="viewToggle">
+          <button class="vt-btn active" id="vt1" onclick="setCols(1)" title="Una propiedad por fila">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1" y="2.5" width="13" height="3.5" rx="1"/><rect x="1" y="9" width="13" height="3.5" rx="1"/></svg>
+          </button>
+          <button class="vt-btn" id="vt2" onclick="setCols(2)" title="Dos columnas">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="1" y="1.5" width="5.5" height="12" rx="1"/><rect x="8.5" y="1.5" width="5.5" height="12" rx="1"/></svg>
+          </button>
+          <button class="vt-btn" id="vt3" onclick="setCols(3)" title="Tres columnas">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="currentColor"><rect x="0.5" y="1.5" width="3.7" height="12" rx="1"/><rect x="5.65" y="1.5" width="3.7" height="12" rx="1"/><rect x="10.8" y="1.5" width="3.7" height="12" rx="1"/></svg>
+          </button>
+        </div>
+        <label class="sort-wrap"><span class="sort-lbl">Ordenar:</span>
+          <select class="sort-sel" id="sortSel" onchange="applyFilters()">
+            <option value="rel">Más relevante</option>
+            <option value="price_asc">Precio: menor a mayor</option>
+            <option value="price_desc">Precio: mayor a menor</option>
+            <option value="area_desc">Mayor área</option>
+            <option value="new">Más nuevos</option>
+          </select>
+        </label>
+        <button class="panel-max-btn" id="maxListBtn" onclick="toggleMax('list')" title="Maximizar lista de propiedades" aria-label="Maximizar lista">
+          <svg class="ico-max" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 6V2.5h3.5M11.5 2H15v3.5M15 11v3.5h-3.5M5.5 15H2v-3.5"/></svg>
+          <svg class="ico-min" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v3.5H2.5M15 6h-3.5V2.5M11 15v-3.5H15M2.5 11H6v3.5"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="res-list" id="resList">
+    <div class="res-list cols-1" id="resList">
       <!-- populated by JS -->
     </div>
   </div>
@@ -1719,6 +1778,11 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
     <div id="realMap"></div>
+
+    <button class="panel-max-btn" id="maxMapBtn" onclick="toggleMax('map')" title="Maximizar mapa" aria-label="Maximizar mapa">
+      <svg class="ico-max" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M2 6V2.5h3.5M11.5 2H15v3.5M15 11v3.5h-3.5M5.5 15H2v-3.5"/></svg>
+      <svg class="ico-min" width="17" height="17" viewBox="0 0 17 17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 2v3.5H2.5M15 6h-3.5V2.5M11 15v-3.5H15M2.5 11H6v3.5"/></svg>
+    </button>
 
     <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
       <span style="font-size:.82rem;font-weight:700">⬤ Buscar por radio</span>
@@ -1736,7 +1800,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <button class="poly-toggle" id="polyToggle" onclick="togglePolyMode()">
       <span style="font-size:.82rem;font-weight:700">⬟ Buscar por polígono</span>
-      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área libre en el mapa</span>
+      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área en el mapa</span>
     </button>
 
     <div class="poly-panel" id="polyPanel">
@@ -2009,6 +2073,7 @@ const S = {
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, commuteModeSel:'drive', svMode:false,
   poiRadius:800,
+  cols:1, maxPanel:null,
   catastroOn:false,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
@@ -2173,6 +2238,27 @@ function renderHistTable(list){
   <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--border)"></span>Propiedades</div>`;
 }
 
+// ── Vista de columnas (1 fila · 2 medianos · 3 pequeños) ──────
+function setCols(n){
+  S.cols=n;
+  const el=document.getElementById('resList');
+  if(el) el.className='res-list cols-'+n;
+  [1,2,3].forEach(i=>document.getElementById('vt'+i)?.classList.toggle('active',i===n));
+}
+// ── Maximizar / minimizar un panel (lista o mapa) ─────────────
+function toggleMax(which){
+  const b=document.getElementById('appBody');
+  const cls='max-'+which;
+  const on=!b.classList.contains(cls);
+  b.classList.remove('max-list','max-map');
+  if(on) b.classList.add(cls);
+  S.maxPanel=on?which:null;
+  document.getElementById('maxListBtn')?.setAttribute('title', (S.maxPanel==='list'?'Restaurar vista dividida':'Maximizar lista de propiedades'));
+  document.getElementById('maxMapBtn')?.setAttribute('title', (S.maxPanel==='map'?'Restaurar vista dividida':'Maximizar mapa'));
+  // Leaflet necesita recalcular su tamaño tras cambiar el ancho del contenedor.
+  setTimeout(()=>{ if(leafletMap){ leafletMap.invalidateSize(); renderPins(getFiltered()); } }, 280);
+}
+
 function renderCards(list){
   const el=document.getElementById('resList');
   document.getElementById('resNum').textContent=list.length;
@@ -2191,7 +2277,7 @@ function renderCards(list){
   }
 
   const spatialActive=(S.radiusCenter)||(S.polyFinished&&S.polyPoints.length>=3);
-  const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
+  const tablePrefix=(S.op==='Histórico'&&spatialActive)?('<div class="res-span">'+renderHistTable(list)+'</div>'):'';
 
   el.innerHTML=tablePrefix+list.map(p=>{
     const cardAssets=driveAssets(p);
@@ -2251,8 +2337,10 @@ let leafletMap=null;
 let leafletMarkers={};
 
 function initMap(){
-  leafletMap=L.map('realMap',{zoomControl:true,attributionControl:true})
+  leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
+  // Controles de zoom (+/−) en la esquina inferior derecha.
+  L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     maxZoom:19
