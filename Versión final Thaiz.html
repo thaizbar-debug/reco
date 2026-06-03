@@ -513,11 +513,12 @@ header .spacer{flex:1}
 .res-list.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .res-list .p-card{margin-bottom:0}
 .res-list .empty,.res-list .res-span{grid-column:1/-1}
-/* 1 por fila → tarjeta horizontal (miniatura a la derecha) */
-.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;align-items:stretch}
-.res-list.cols-1 .card-img{width:190px;height:auto;min-height:128px;flex:0 0 190px}
-.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
-@media(max-width:1100px){ .res-list.cols-1 .card-img{width:150px;flex-basis:150px} }
+/* 1 por fila → tarjeta horizontal (miniatura a la derecha), altura fija para que
+   el mini-carrusel (que usa height:100%) tenga un alto definido y se vea bien. */
+.res-list.cols-1 .p-card{display:flex;flex-direction:row-reverse;height:150px}
+.res-list.cols-1 .card-img{width:210px;height:150px;flex:0 0 210px}
+.res-list.cols-1 .card-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+@media(max-width:1100px){ .res-list.cols-1 .card-img{width:160px;flex-basis:160px} }
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -2066,7 +2067,7 @@ const S = {
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
-  commuteMode:false, commute:null, commuteModeSel:'drive', svMode:false,
+  commuteMode:false, commute:null, commuteModeSel:'drive', commutePeak:true, svMode:false,
   poiRadius:800,
   cols:1, maxPanel:null,
   catastroOn:false,
@@ -2569,6 +2570,9 @@ function _deactivateRadiusPoly(){
 const OSRM_BASE='https://router.project-osrm.org';
 // Velocidades de respaldo por modo (km/h) para estimar mientras llega OSRM.
 const COMMUTE_SPEED={drive:24, walk:4.8, bike:15};
+// Factor de congestión en hora punta para auto (Lima ~1.7×). Solo afecta al modo auto.
+const COMMUTE_PEAK_FACTOR=1.7;
+function _peakF(c){ return (c && c.peak && (!c.mode || c.mode==='drive')) ? COMMUTE_PEAK_FACTOR : 1; }
 let commuteMarker=null, commuteCircle=null;
 let _commuteReqId=0;   // token: descarta respuestas de un destino ya cambiado
 function _haversineKm(aLat,aLng,bLat,bLng){
@@ -2581,16 +2585,16 @@ function _haversineKm(aLat,aLng,bLat,bLng){
 function _commuteEstMin(c, geo, mode){
   const detour = mode==='walk'?1.2 : mode==='bike'?1.25 : 1.3;
   const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*detour;
-  return Math.max(1, Math.round(km/(COMMUTE_SPEED[mode]||24)*60));
+  return Math.max(1, Math.round(km/(COMMUTE_SPEED[mode]||24)*60*_peakF(c)));
 }
 // Minutos de viaje a una propiedad.
-//  · Auto: duración REAL de OSRM por la red vial (si está cacheada).
+//  · Auto: duración REAL de OSRM (flujo libre) × factor de hora punta si aplica.
 //  · A pie / bici: estimación por distancia recta a la velocidad del modo
 //    (no se deriva de la red de autos, que daría tiempos inflados).
 function commuteMinTo(c, geo, id){
   if(c && c.mode==='drive' && c.times && id!=null){
     const t=c.times.get(id);
-    if(t) return t.drive;
+    if(t) return Math.max(1, Math.round(t.drive*_peakF(c)));
   }
   return _commuteEstMin(c, geo, (c&&c.mode)||'drive');
 }
@@ -2638,11 +2642,23 @@ function _buildCommuteModes(){
   const wrap=document.getElementById('commuteModes'); if(!wrap) return;
   const cur=(S.commute&&S.commute.mode)||S.commuteModeSel||'drive';
   const modes=[['drive','🚗','Auto'],['walk','🚶','A pie'],['bike','🚴','Bici']];
-  wrap.innerHTML=modes.map(([k,e,l])=>`<button class="poi-chip${k===cur?' on':''}" style="--pc:#0891b2" onclick="setCommuteMode('${k}')">${e} ${l}</button>`).join('');
+  let h=modes.map(([k,e,l])=>`<button class="poi-chip${k===cur?' on':''}" style="--pc:#0891b2" onclick="setCommuteMode('${k}')">${e} ${l}</button>`).join('');
+  if(cur==='drive'){   // el tráfico solo afecta al auto
+    const peak=S.commute?S.commute.peak:S.commutePeak;
+    h+=`<span style="flex-basis:100%;height:0"></span>`;
+    h+=`<button class="poi-chip${peak?' on':''}" style="--pc:#b45309" onclick="setCommutePeak(true)">🚦 Hora punta</button>`;
+    h+=`<button class="poi-chip${!peak?' on':''}" style="--pc:#15803d" onclick="setCommutePeak(false)">🟢 Flujo libre</button>`;
+  }
+  wrap.innerHTML=h;
 }
 function setCommuteMode(mode){
   S.commuteModeSel=mode;
   if(S.commute) S.commute.mode=mode;   // walk/bike se derivan del trayecto cacheado
+  _buildCommuteModes(); drawCommute(); applyFilters(); _commuteInfo();
+}
+function setCommutePeak(on){
+  S.commutePeak=on;
+  if(S.commute) S.commute.peak=on;
   _buildCommuteModes(); drawCommute(); applyFilters(); _commuteInfo();
 }
 function toggleCommuteMode(){
@@ -2657,7 +2673,7 @@ function toggleCommuteMode(){
 }
 function setCommuteDest(latlng){
   const maxMin=parseInt(document.getElementById('commuteSlider').value||'30');
-  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, mode:S.commuteModeSel||'drive', times:new Map(), loading:true};
+  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, mode:S.commuteModeSel||'drive', peak:S.commutePeak!==false, times:new Map(), loading:true};
   drawCommute();
   _buildCommuteModes();
   _commuteInfo();
@@ -2681,7 +2697,8 @@ function drawCommute(){
   if(commuteCircle) commuteCircle.remove();
   // Círculo orientativo de alcance según el modo (el filtro real lo da OSRM).
   const mode=S.commute.mode||'drive';
-  const km=(S.commute.maxMin/60)*(COMMUTE_SPEED[mode]||24)/1.3;
+  const kmh=(COMMUTE_SPEED[mode]||24)/_peakF(S.commute);   // hora punta reduce el alcance
+  const km=(S.commute.maxMin/60)*kmh/1.3;
   const col=mode==='walk'?'#15803D':mode==='bike'?'#b45309':'#0e7490';
   commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:col,weight:1.5,dashArray:'6 5',fillColor:col,fillOpacity:.06}).addTo(leafletMap);
 }
@@ -2692,7 +2709,7 @@ function _commuteInfo(){
   const modeTxt=S.commute.mode==='walk'?'caminando':S.commute.mode==='bike'?'en bici':'en auto';
   const n=getFiltered().length;
   if(drive && S.commute.loading){ el.innerHTML='⏳ Calculando rutas reales (OSRM)… <b>'+n.toLocaleString('es-PE')+'</b> a ≤ '+S.commute.maxMin+' min '+modeTxt+'.'; return; }
-  const fuente= drive ? ' (ruta real OSRM)' : ' (estimado)';
+  const fuente= drive ? (S.commute.peak?' (auto en hora punta · OSRM + tráfico)':' (auto en flujo libre · OSRM)') : ' (estimado)';
   el.innerHTML='<b>'+n.toLocaleString('es-PE')+'</b> propiedades a ≤ '+S.commute.maxMin+' min '+modeTxt+fuente+'.';
 }
 // Tooltip de tiempo sobre cada pin cuando hay un destino activo.
@@ -2718,7 +2735,7 @@ function clearCommute(){
 // parques, salud, farmacias, restaurantes, bancos…) alrededor del centro del
 // mapa o de una propiedad, dentro de un radio configurable. Datos y nombres
 // reales — igual que hacen los portales inmobiliarios internacionales.
-const OVERPASS_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter'];
+const OVERPASS_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.private.coffee/api/interpreter'];
 const POI_CATS={
   colegios:{l:'Colegios',e:'🏫',c:'#2563EB',q:['node["amenity"="school"]','way["amenity"="school"]']},
   universidades:{l:'Universidades',e:'🎓',c:'#1D4ED8',q:['node["amenity"="university"]','way["amenity"="university"]']},
@@ -2792,12 +2809,23 @@ function togglePoi(cat){
 }
 async function _overpassFetch(query){
   let lastErr;
+  const enc=encodeURIComponent(query);
   for(const ep of OVERPASS_EPS){
-    try{
-      const r=await fetch(ep,{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:query});
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return await r.json();
-    }catch(e){ lastErr=e; }
+    // Por cada mirror: primero GET (?data=, sin preflight) y luego POST form-encoded.
+    const attempts=[
+      {url:ep+'?data='+enc},
+      {url:ep, init:{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+enc}}
+    ];
+    for(const a of attempts){
+      try{
+        const ctrl=new AbortController();
+        const to=setTimeout(()=>ctrl.abort(), 22000);
+        const r=await fetch(a.url, Object.assign({signal:ctrl.signal}, a.init||{}));
+        clearTimeout(to);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return await r.json();
+      }catch(e){ lastErr=e; console.warn('[reco] Overpass falló en '+ep+':', e&&e.message); }
+    }
   }
   throw lastErr||new Error('Overpass no disponible');
 }
@@ -2826,10 +2854,10 @@ async function loadPoi(cat){
       arr.push(m);
     });
     poiMarkers[cat]=arr;
-    if(!arr.length) toast(`Sin ${c.l.toLowerCase()} en ${rad>=1000?(rad/1000)+' km':rad+' m'}`);
+    if(!arr.length) toast(`Sin ${c.l.toLowerCase()} en ${rad>=1000?(rad/1000)+' km':rad+' m'} · prueba ampliar el radio`);
   }catch(e){
     console.warn('[reco] Overpass error:', e&&e.message);
-    toast('No se pudo cargar establecimientos (Overpass). Reintenta.');
+    toast('No se pudo conectar con OpenStreetMap (Overpass). Reintenta en unos segundos.');
   }finally{
     _poiLoading[cat]=false; buildPoiChips();
   }
