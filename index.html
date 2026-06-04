@@ -1581,7 +1581,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <option>Oficina</option>
     </select>
 
-    <span class="f-label">Dorms:</span>
+    <span class="f-label" id="dormsLabel">Dorms:</span>
     <div class="beds-group" id="bedsSeg">
       <button class="active" onclick="setBeds(this,0)">Todos</button>
       <button onclick="setBeds(this,1)">1</button>
@@ -1590,7 +1590,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button onclick="setBeds(this,4)">4+</button>
     </div>
 
-    <label class="bank-check">
+    <label class="bank-check" id="bankCheck">
       <input type="checkbox" id="bankOnly" onchange="applyFilters()"/>
       <span class="bank-check-text">
         <span class="bank-check-title">🏦 Prop. de banco</span>
@@ -3073,7 +3073,13 @@ function setOp(btn,val){
   S.selectedId=null;
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
-  if(val==='Histórico') openHistModal();
+  const isHist=val==='Histórico';
+  document.getElementById('dormsLabel').style.display=isHist?'none':'';
+  document.getElementById('bedsSeg').style.display=isHist?'none':'';
+  document.getElementById('bankCheck').style.display=isHist?'none':'';
+  document.getElementById('advBtn').style.display=isHist?'none':'';
+  if(isHist){document.getElementById('advPanel').classList.remove('open');}
+  if(isHist) openHistModal();
   applyFilters();
 }
 function setBeds(btn,val){
