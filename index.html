@@ -283,7 +283,10 @@ header .spacer{flex:1}
   background:rgba(0,0,0,.25);
   border:1px solid rgba(255,255,255,.1);
   border-radius:var(--r);padding:16px;margin-top:10px;
+  max-height:70vh;overflow-y:auto;
 }
+.adv-panel::-webkit-scrollbar{width:6px}
+.adv-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
 .adv-panel.open{display:block}
 .adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .adv-block label{display:block;color:rgba(255,255,255,.55);font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
@@ -295,6 +298,8 @@ header .spacer{flex:1}
   transition:background .1s,border-color .1s;
 }
 .adv-chip.on{background:var(--amber);border-color:var(--amber);color:#fff}
+.adv-tag-body{transition:max-height .25s ease,opacity .2s;max-height:500px;overflow:hidden}
+.adv-tag-body.collapsed{max-height:0;opacity:0;margin:0}
 .adv-chip:hover:not(.on){background:rgba(255,255,255,.18)}
 .range-row{display:flex;align-items:center;gap:6px}
 .range-row input{
@@ -1606,7 +1611,17 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="adv-layout">
       <!-- LEFT: chips filters -->
       <div class="adv-left">
-        <div class="adv-grid">
+        <!-- Row 1: Números básicos -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:16px">
+          <div class="adv-block">
+            <label>Dormitorios</label>
+            <div class="adv-chips" id="bedsChips2">
+              <span class="adv-chip" data-val="1" onclick="toggleAdv_beds2(this)">1</span>
+              <span class="adv-chip" data-val="2" onclick="toggleAdv_beds2(this)">2</span>
+              <span class="adv-chip" data-val="3" onclick="toggleAdv_beds2(this)">3</span>
+              <span class="adv-chip" data-val="4" onclick="toggleAdv_beds2(this)">4+</span>
+            </div>
+          </div>
           <div class="adv-block">
             <label>Baños</label>
             <div class="adv-chips" id="bathsChips">
@@ -1641,6 +1656,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
               <input type="number" id="maxAge" placeholder="Máx" oninput="applyFilters()" style="width:80px"/>
             </div>
           </div>
+        </div>
+        <!-- Row 2: Estado + Características + Áreas -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px">
           <div class="adv-block">
             <label>Estado</label>
             <div class="adv-chips" id="estadoChips">
@@ -1658,98 +1676,98 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
             </div>
           </div>
           <div class="adv-block">
-            <label>Área terreno m² (mín)</label>
-            <div class="range-row">
-              <input type="number" id="minAreaTerr" placeholder="Ej: 100" oninput="applyFilters()"/>
+            <label>Áreas m² (mín)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="range-row" style="flex:1"><input type="number" id="minAreaTerr" placeholder="Terreno" oninput="applyFilters()" style="width:100%"/></div>
+              <div class="range-row" style="flex:1"><input type="number" id="minArea" placeholder="Techada" oninput="applyFilters()" style="width:100%"/></div>
             </div>
           </div>
-          <div class="adv-block">
-            <label>Área techada m² (mín)</label>
-            <div class="range-row">
-              <input type="number" id="minArea" placeholder="Ej: 60" oninput="applyFilters()"/>
+        </div>
+        <!-- Row 3: Etiquetas colapsables -->
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🏷️ Etiquetas generales <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Baño de servicio')">Baño de servicio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Walk-in Closet')">Walk-in Closet</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Armario/Closet')">Armario/Closet</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Intercomunicador')">Intercomunicador</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jacuzzi')">Jacuzzi</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jardín')">Jardín</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Aire Acondicionado')">Aire Acondicionado</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Lujo o Exclusiva')">Lujo o Exclusiva</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Campo o Rural')">Campo o Rural</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Inteligente')">Inteligente</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Eco-amigable o Sostenible')">Eco-amigable</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Playa')">Playa</span>
+              </div>
             </div>
-          </div>
-          <div class="adv-block">
-            <label>🏷️ Etiquetas generales</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Baño de servicio')">Baño de servicio</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Walk-in Closet')">Walk-in Closet</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Armario/Closet')">Armario/Closet</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Intercomunicador')">Intercomunicador</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Jacuzzi')">Jacuzzi</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Jardín')">Jardín</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Aire Acondicionado')">Aire Acondicionado</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Lujo o Exclusiva')">Lujo o Exclusiva</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Campo o Rural')">Campo o Rural</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Inteligente')">Inteligente</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Eco-amigable o Sostenible')">Eco-amigable</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Playa')">Playa</span>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🏢 Etiquetas ambientes <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de cafetería')">Área de cafetería</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de lavandería')">Área de lavandería</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Patio')">Patio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área común')">Área común</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Recepción')">Recepción</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Conserje')">Conserje</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso a parque')">Acceso a parque</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona de Parrilla (BBQ)')">Zona de Parrilla (BBQ)</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sala de juegos')">Sala de juegos</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito')">Depósito</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Oficinas/Co-work')">Oficinas/Co-work</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina (edificio)')">Piscina (edificio)</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Salón de usos múltiples')">Salón de usos múltiples</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sauna/Spa')">Sauna/Spa</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sótano')">Sótano</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Áreas verdes')">Áreas verdes</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Canchas deportivas')">Canchas deportivas</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Juegos infantiles')">Juegos infantiles</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso para personas con movilidad reducida')">Movilidad reducida</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento para visitas')">Estac. visitas</span>
+              </div>
             </div>
-          </div>
-          <div class="adv-block">
-            <label>🏢 Etiquetas ambientes</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de cafetería')">Área de cafetería</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de lavandería')">Área de lavandería</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Patio')">Patio</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Área común')">Área común</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Recepción')">Recepción</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Conserje')">Conserje</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso a parque')">Acceso a parque</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona de Parrilla (BBQ)')">Zona de Parrilla (BBQ)</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Sala de juegos')">Sala de juegos</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito')">Depósito</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Oficinas/Co-work')">Oficinas/Co-work</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina (edificio)')">Piscina (edificio)</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Salón de usos múltiples')">Salón de usos múltiples</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Sauna/Spa')">Sauna/Spa</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Sótano')">Sótano</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Áreas verdes')">Áreas verdes</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Canchas deportivas')">Canchas deportivas</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Juegos infantiles')">Juegos infantiles</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso para personas con movilidad reducida')">Movilidad reducida</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento para visitas')">Estac. visitas</span>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">👁️ Etiquetas vistas <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a parque')">Vista a parque</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista al mar')">Vista al mar</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a calle')">Vista a calle</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista interior')">Vista interior</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a campo')">Vista a campo</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a paisaje')">Vista a paisaje</span>
+              </div>
             </div>
-          </div>
-          <div class="adv-block">
-            <label>👁️ Etiquetas vistas</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a parque')">Vista a parque</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista al mar')">Vista al mar</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a calle')">Vista a calle</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista interior')">Vista interior</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a campo')">Vista a campo</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a paisaje')">Vista a paisaje</span>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🛣️ Etiquetas accesos <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Calle')">Calle</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Avenida')">Avenida</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jirón')">Jirón</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Pasaje')">Pasaje</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Carretera')">Carretera</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Alameda')">Alameda</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Boulevard')">Boulevard</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Privado')">Privado</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Callejón')">Callejón</span>
+              </div>
             </div>
-          </div>
-          <div class="adv-block">
-            <label>🛣️ Etiquetas accesos</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Calle')">Calle</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Avenida')">Avenida</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Jirón')">Jirón</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Pasaje')">Pasaje</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Carretera')">Carretera</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Alameda')">Alameda</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Boulevard')">Boulevard</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Privado')">Privado</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Callejón')">Callejón</span>
-            </div>
-          </div>
-          <div class="adv-block">
-            <label>📍 Etiquetas zonas</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Residencial')">Residencial</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Comercial')">Comercial</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Industrial')">Industrial</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Rural')">Rural</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Mixta')">Mixta</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Semi-urbana')">Semi-urbana</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Conservación')">Conservación</span>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">📍 Etiquetas zonas <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Residencial')">Residencial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Comercial')">Comercial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Industrial')">Industrial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Rural')">Rural</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Mixta')">Mixta</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Semi-urbana')">Semi-urbana</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Conservación')">Conservación</span>
+              </div>
             </div>
           </div>
         </div>
@@ -3062,6 +3080,14 @@ function setBeds(btn,val){
   document.querySelectorAll('#bedsSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.beds=val; applyFilters();
+}
+function toggleAdv_beds2(chip){
+  const val=parseInt(chip.dataset.val);
+  document.querySelectorAll('#bedsChips2 .adv-chip').forEach(c=>{if(c!==chip)c.classList.remove('on')});
+  chip.classList.toggle('on');
+  S.beds=chip.classList.contains('on')?val:0;
+  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===S.beds)});
+  applyFilters();
 }
 function toggleAdv_baths(chip){
   const val=parseInt(chip.dataset.val);
