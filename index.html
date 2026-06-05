@@ -2382,12 +2382,13 @@ let leafletMap=null;
 let leafletMarkers={};
 
 function initMap(){
-  leafletMap=L.map('realMap',{zoomControl:true,attributionControl:true})
+  leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     maxZoom:19
   }).addTo(leafletMap);
+  L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
   leafletMap.on('dblclick',onMapDblClick);
   leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
