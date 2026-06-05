@@ -506,11 +506,14 @@ header .spacer{flex:1}
 .res-list.view-list .badge{font-size:.58rem;padding:2px 6px}
 .res-list.view-list .card-sqm{font-size:.68rem}
 /* ── View: 2 columnas ── */
-.res-list.view-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.res-list.view-2col .p-card{margin-bottom:0}
+.res-list.view-2col{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
+.res-list.view-2col .p-card{margin-bottom:0;display:block}
+.res-list.view-2col>.area-summary-bar,.res-list.view-3col>.area-summary-bar{grid-column:1/-1}
+.res-list.view-2col>div[style]{grid-column:1/-1}
+.res-list.view-3col>div[style]{grid-column:1/-1}
 /* ── View: 3 columnas ── */
-.res-list.view-3col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.res-list.view-3col .p-card{margin-bottom:0}
+.res-list.view-3col{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.res-list.view-3col .p-card{margin-bottom:0;display:block}
 .res-list.view-3col .card-img{height:90px}
 .res-list.view-3col .card-body{padding:8px 10px}
 .res-list.view-3col .card-addr{font-size:.8rem}
@@ -1882,17 +1885,6 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
-      <div class="view-toggle" id="viewToggle">
-        <button class="active" onclick="setViewMode('list',this)" title="Lista">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="3" rx="1"/><rect x="1" y="6" width="14" height="3" rx="1"/><rect x="1" y="11" width="14" height="3" rx="1"/></svg>
-        </button>
-        <button onclick="setViewMode('2col',this)" title="2 columnas">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-        </button>
-        <button onclick="setViewMode('3col',this)" title="3 columnas">
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="4" height="6" rx=".5"/><rect x="6" y="1" width="4" height="6" rx=".5"/><rect x="11" y="1" width="4" height="6" rx=".5"/><rect x="1" y="9" width="4" height="6" rx=".5"/><rect x="6" y="9" width="4" height="6" rx=".5"/><rect x="11" y="9" width="4" height="6" rx=".5"/></svg>
-        </button>
-      </div>
       <select class="sort-sel" id="sortSel" onchange="applyFilters()">
         <option value="rel">Más relevante</option>
         <option value="price_asc">Precio: menor a mayor</option>
@@ -1900,6 +1892,17 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <option value="area_desc">Mayor área</option>
         <option value="new">Más nuevos</option>
       </select>
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" onclick="setViewMode('list',this)" title="1 columna">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="16" height="3.5" rx="1"/><rect x="0" y="5" width="16" height="3.5" rx="1"/><rect x="0" y="10" width="16" height="3.5" rx="1"/></svg>
+        </button>
+        <button onclick="setViewMode('2col',this)" title="2 columnas">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="7" height="6" rx="1"/><rect x="9" y="0" width="7" height="6" rx="1"/><rect x="0" y="8" width="7" height="6" rx="1"/><rect x="9" y="8" width="7" height="6" rx="1"/></svg>
+        </button>
+        <button onclick="setViewMode('3col',this)" title="3 columnas">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="4.5" height="6" rx=".7"/><rect x="5.7" y="0" width="4.5" height="6" rx=".7"/><rect x="11.5" y="0" width="4.5" height="6" rx=".7"/><rect x="0" y="8" width="4.5" height="6" rx=".7"/><rect x="5.7" y="8" width="4.5" height="6" rx=".7"/><rect x="11.5" y="8" width="4.5" height="6" rx=".7"/></svg>
+        </button>
+      </div>
       <button class="panel-expand-btn" id="listExpandBtn" onclick="togglePanelView('list')" title="Expandir lista">⛶</button>
     </div>
     <div class="res-list view-list" id="resList">
