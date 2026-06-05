@@ -1437,7 +1437,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <div class="section-label">En venta</div>
         <h2 class="section-title" style="margin-top:6px">Propiedades destacadas</h2>
       </div>
-      <a href="javascript:void(0)" onclick="goToApp('')" class="sec-link">Ver las 791 en venta →</a>
+      <a href="javascript:void(0)" onclick="goToApp('')" class="sec-link">Ver las 644 en venta →</a>
     </div>
     <div class="props-grid" id="featuredGrid"></div>
     <div class="view-all-wrap">
@@ -2213,6 +2213,7 @@ function getFiltered(){
       if(!p.address.toLowerCase().includes(q) && !p.district.toLowerCase().includes(q)) return false;
     }
     if(S.op!=='all' && p.op!==S.op) return false;
+    if((p.op==='Venta'||p.op==='Alquiler') && driveAssets(p).photos.length===0) return false;
     if(S.type!=='all' && p.type!==S.type) return false;
     if(S.beds>0 && p.beds<S.beds) return false;
     if(S.baths>0 && p.baths<S.baths) return false;
