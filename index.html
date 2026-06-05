@@ -283,7 +283,10 @@ header .spacer{flex:1}
   background:rgba(0,0,0,.25);
   border:1px solid rgba(255,255,255,.1);
   border-radius:var(--r);padding:16px;margin-top:10px;
+  max-height:70vh;overflow-y:auto;
 }
+.adv-panel::-webkit-scrollbar{width:6px}
+.adv-panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
 .adv-panel.open{display:block}
 .adv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
 .adv-block label{display:block;color:rgba(255,255,255,.55);font-size:.72rem;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
@@ -295,6 +298,8 @@ header .spacer{flex:1}
   transition:background .1s,border-color .1s;
 }
 .adv-chip.on{background:var(--amber);border-color:var(--amber);color:#fff}
+.adv-tag-body{transition:max-height .25s ease,opacity .2s;max-height:500px;overflow:hidden}
+.adv-tag-body.collapsed{max-height:0;opacity:0;margin:0}
 .adv-chip:hover:not(.on){background:rgba(255,255,255,.18)}
 .range-row{display:flex;align-items:center;gap:6px}
 .range-row input{
@@ -458,9 +463,12 @@ header .spacer{flex:1}
   display:flex;flex-direction:column;
   overflow:hidden;
 }
+.app-body.map-full .results-panel{display:none}
+.app-body.list-full .results-panel{width:100%;min-width:0;flex:1}
+.app-body.list-full .map-panel{display:none}
 .res-header{
-  padding:12px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
   background:var(--surface);flex-shrink:0;
 }
 .res-count{font-size:.85rem;color:var(--muted);font-weight:500}
@@ -470,6 +478,47 @@ header .spacer{flex:1}
   padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
 }
 .res-list{overflow-y:auto;flex:1;padding:8px}
+/* View mode toggle */
+.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.view-toggle button{background:none;border:none;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:.82rem;line-height:1;transition:background .12s,color .12s}
+.view-toggle button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.view-toggle button:hover:not(.active){color:var(--txt)}
+/* Expand/collapse button */
+.panel-expand-btn{
+  background:var(--light);border:1px solid var(--border);border-radius:6px;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--muted);font-size:.78rem;flex-shrink:0;
+  transition:background .12s,color .12s;
+}
+.panel-expand-btn:hover{background:var(--surface);color:var(--blue)}
+/* ── View: Lista (1 col, horizontal cards) ── */
+.res-list.view-list .p-card{display:flex;flex-direction:row;margin-bottom:6px}
+.res-list.view-list .card-img{width:160px;height:100px;min-height:unset;flex-shrink:0}
+.res-list.view-list .card-body{flex:1;padding:6px 12px;display:flex;flex-direction:column;justify-content:center}
+.res-list.view-list .card-addr{font-size:.82rem;margin-bottom:1px;-webkit-line-clamp:1}
+.res-list.view-list .card-dist{font-size:.72rem}
+.res-list.view-list .card-specs{margin-bottom:4px;font-size:.75rem;gap:8px}
+.res-list.view-list .card-price{font-size:.9rem}
+.res-list.view-list .card-bottom{gap:8px}
+.res-list.view-list .card-detail-btn{font-size:.72rem;padding:4px 10px}
+.res-list.view-list .card-badges{position:absolute;bottom:4px;left:4px;top:auto;gap:3px}
+.res-list.view-list .badge{font-size:.58rem;padding:2px 6px}
+.res-list.view-list .card-sqm{font-size:.68rem}
+/* ── View: 2 columnas ── */
+.res-list.view-2col{display:grid!important;grid-template-columns:repeat(2,1fr);gap:8px}
+.res-list.view-2col .p-card{margin-bottom:0;display:block;width:auto;min-height:0}
+.res-list.view-2col .card-img{height:110px;width:auto;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:unset;min-height:110px}
+.res-list.view-2col .card-body{display:block;padding:11px 13px;flex:unset}
+.res-list.view-2col>.area-summary-bar,.res-list.view-3col>.area-summary-bar{grid-column:1/-1}
+.res-list.view-2col>div[style]{grid-column:1/-1}
+.res-list.view-3col>div[style]{grid-column:1/-1}
+/* ── View: 3 columnas ── */
+.res-list.view-3col{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
+.res-list.view-3col .p-card{margin-bottom:0;display:block;width:auto;min-height:0}
+.res-list.view-3col .card-img{height:90px;width:auto;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:unset;min-height:90px}
+.res-list.view-3col .card-body{display:block;padding:8px 10px;flex:unset}
+.res-list.view-3col .card-addr{font-size:.8rem}
+.res-list.view-3col .card-price{font-size:.92rem}
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -533,7 +582,7 @@ header .spacer{flex:1}
 .badge-type{background:rgba(255,255,255,.85);color:var(--blue)}
 
 .card-body{padding:11px 13px}
-.card-addr{font-weight:700;font-size:.88rem;margin-bottom:2px;color:var(--txt)}
+.card-addr{font-weight:700;font-size:.88rem;margin-bottom:2px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .card-dist{font-size:.78rem;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:4px}
 .card-specs{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap}
 .spec{display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--muted)}
@@ -1576,7 +1625,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <option>Oficina</option>
     </select>
 
-    <span class="f-label">Dorms:</span>
+    <span class="f-label" id="dormsLabel">Dorms:</span>
     <div class="beds-group" id="bedsSeg">
       <button class="active" onclick="setBeds(this,0)">Todos</button>
       <button onclick="setBeds(this,1)">1</button>
@@ -1585,7 +1634,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button onclick="setBeds(this,4)">4+</button>
     </div>
 
-    <label class="bank-check">
+    <label class="bank-check" id="bankCheck">
       <input type="checkbox" id="bankOnly" onchange="applyFilters()"/>
       <span class="bank-check-text">
         <span class="bank-check-title">🏦 Prop. de banco</span>
@@ -1606,7 +1655,17 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="adv-layout">
       <!-- LEFT: chips filters -->
       <div class="adv-left">
-        <div class="adv-grid">
+        <!-- Row 1: Números básicos -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-bottom:16px">
+          <div class="adv-block">
+            <label>Dormitorios</label>
+            <div class="adv-chips" id="bedsChips2">
+              <span class="adv-chip" data-val="1" onclick="toggleAdv_beds2(this)">1</span>
+              <span class="adv-chip" data-val="2" onclick="toggleAdv_beds2(this)">2</span>
+              <span class="adv-chip" data-val="3" onclick="toggleAdv_beds2(this)">3</span>
+              <span class="adv-chip" data-val="4" onclick="toggleAdv_beds2(this)">4+</span>
+            </div>
+          </div>
           <div class="adv-block">
             <label>Baños</label>
             <div class="adv-chips" id="bathsChips">
@@ -1616,53 +1675,143 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
             </div>
           </div>
           <div class="adv-block">
-            <label>Estacionamiento</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 1')">1</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento 2')">2+</span>
+            <label>Estacionamientos</label>
+            <div class="adv-chips" id="parkChips">
+              <span class="adv-chip" data-val="1" onclick="toggleAdv_park(this)">1</span>
+              <span class="adv-chip" data-val="2" onclick="toggleAdv_park(this)">2</span>
+              <span class="adv-chip" data-val="3" onclick="toggleAdv_park(this)">3+</span>
             </div>
           </div>
           <div class="adv-block">
-            <label>Depósito</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 1')">1</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito 2')">2+</span>
+            <label>Nro pisos</label>
+            <div class="range-row">
+              <input type="number" id="minFloors" placeholder="Mín" oninput="applyFilters()" style="width:80px"/>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Piso</label>
+            <div class="range-row">
+              <input type="number" id="minFloor" placeholder="Mín" oninput="applyFilters()" style="width:80px"/>
+            </div>
+          </div>
+          <div class="adv-block">
+            <label>Antigüedad (años)</label>
+            <div class="range-row">
+              <input type="number" id="maxAge" placeholder="Máx" oninput="applyFilters()" style="width:80px"/>
+            </div>
+          </div>
+        </div>
+        <!-- Row 2: Estado + Características + Áreas -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:16px">
+          <div class="adv-block">
+            <label>Estado</label>
+            <div class="adv-chips" id="estadoChips">
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'En proyecto')">En proyecto</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'En construcción')">En construcción</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Construido')">Construido</span>
             </div>
           </div>
           <div class="adv-block">
             <label>Características</label>
             <div class="adv-chips">
               <span class="adv-chip" onclick="toggleAdvFeat(this,'Ascensor')">Ascensor</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Pet friendly')">Pet friendly</span>
               <span class="adv-chip" onclick="toggleAdvFeat(this,'Amoblado')">Amoblado</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Seguridad 24/7')">Seguridad 24/7</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
+              <span class="adv-chip" onclick="toggleAdvFeat(this,'Pet friendly')">Pet friendly</span>
             </div>
           </div>
           <div class="adv-block">
-            <label>Vista</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Mar')">Mar</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Ciudad')">Ciudad</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista Jardín')">Jardín</span>
+            <label>Áreas m² (mín)</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div class="range-row" style="flex:1"><input type="number" id="minAreaTerr" placeholder="Terreno" oninput="applyFilters()" style="width:100%"/></div>
+              <div class="range-row" style="flex:1"><input type="number" id="minArea" placeholder="Techada" oninput="applyFilters()" style="width:100%"/></div>
             </div>
           </div>
-          <div class="adv-block">
-            <label>Zona cercana</label>
-            <div class="adv-chips">
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Metro')">Metro</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Hospital')">Hospital</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Universidad')">Universidad</span>
-              <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona Comercio')">Comercio</span>
+        </div>
+        <!-- Row 3: Etiquetas colapsables -->
+        <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:12px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🏷️ Etiquetas generales <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Baño de servicio')">Baño de servicio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Walk-in Closet')">Walk-in Closet</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Armario/Closet')">Armario/Closet</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Intercomunicador')">Intercomunicador</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jacuzzi')">Jacuzzi</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jardín')">Jardín</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Aire Acondicionado')">Aire Acondicionado</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Lujo o Exclusiva')">Lujo o Exclusiva</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Campo o Rural')">Campo o Rural</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Inteligente')">Inteligente</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad Eco-amigable o Sostenible')">Eco-amigable</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Playa')">Playa</span>
+              </div>
             </div>
-          </div>
-          <div class="adv-block">
-            <label>Área m² (mín)</label>
-            <div class="range-row">
-              <input type="number" id="minArea" placeholder="Ej: 60" oninput="applyFilters()"/>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🏢 Etiquetas ambientes <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de cafetería')">Área de cafetería</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de lavandería')">Área de lavandería</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Patio')">Patio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área común')">Área común</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Recepción')">Recepción</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Conserje')">Conserje</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso a parque')">Acceso a parque</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona de Parrilla (BBQ)')">Zona de Parrilla (BBQ)</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sala de juegos')">Sala de juegos</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito')">Depósito</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Oficinas/Co-work')">Oficinas/Co-work</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina (edificio)')">Piscina (edificio)</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Salón de usos múltiples')">Salón de usos múltiples</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sauna/Spa')">Sauna/Spa</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sótano')">Sótano</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Áreas verdes')">Áreas verdes</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Canchas deportivas')">Canchas deportivas</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Gimnasio')">Gimnasio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Juegos infantiles')">Juegos infantiles</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso para personas con movilidad reducida')">Movilidad reducida</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Estacionamiento para visitas')">Estac. visitas</span>
+              </div>
+            </div>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">👁️ Etiquetas vistas <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a parque')">Vista a parque</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista al mar')">Vista al mar</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a calle')">Vista a calle</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista interior')">Vista interior</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a campo')">Vista a campo</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a paisaje')">Vista a paisaje</span>
+              </div>
+            </div>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🛣️ Etiquetas accesos <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Calle')">Calle</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Avenida')">Avenida</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jirón')">Jirón</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Pasaje')">Pasaje</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Carretera')">Carretera</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Alameda')">Alameda</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Boulevard')">Boulevard</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Privado')">Privado</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Callejón')">Callejón</span>
+              </div>
+            </div>
+            <div class="adv-block">
+              <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">📍 Etiquetas zonas <span style="font-size:10px;opacity:.6">▼</span></label>
+              <div class="adv-chips adv-tag-body">
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Residencial')">Residencial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Comercial')">Comercial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Industrial')">Industrial</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Rural')">Rural</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Mixta')">Mixta</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Semi-urbana')">Semi-urbana</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Conservación')">Conservación</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1737,6 +1886,17 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" onclick="setViewMode('list',this)" title="1 columna">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="16" height="3.5" rx="1"/><rect x="0" y="5" width="16" height="3.5" rx="1"/><rect x="0" y="10" width="16" height="3.5" rx="1"/></svg>
+        </button>
+        <button onclick="setViewMode('2col',this)" title="2 columnas">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="7" height="6" rx="1"/><rect x="9" y="0" width="7" height="6" rx="1"/><rect x="0" y="8" width="7" height="6" rx="1"/><rect x="9" y="8" width="7" height="6" rx="1"/></svg>
+        </button>
+        <button onclick="setViewMode('3col',this)" title="3 columnas">
+          <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="4.5" height="6" rx=".7"/><rect x="5.7" y="0" width="4.5" height="6" rx=".7"/><rect x="11.5" y="0" width="4.5" height="6" rx=".7"/><rect x="0" y="8" width="4.5" height="6" rx=".7"/><rect x="5.7" y="8" width="4.5" height="6" rx=".7"/><rect x="11.5" y="8" width="4.5" height="6" rx=".7"/></svg>
+        </button>
+      </div>
       <select class="sort-sel" id="sortSel" onchange="applyFilters()">
         <option value="rel">Más relevante</option>
         <option value="price_asc">Precio: menor a mayor</option>
@@ -1744,14 +1904,16 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <option value="area_desc">Mayor área</option>
         <option value="new">Más nuevos</option>
       </select>
+      <button class="panel-expand-btn" id="listExpandBtn" onclick="togglePanelView('list')" title="Expandir lista">⛶</button>
     </div>
-    <div class="res-list" id="resList">
+    <div class="res-list view-list" id="resList">
       <!-- populated by JS -->
     </div>
   </div>
 
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
+    <button class="panel-expand-btn" id="mapExpandBtn" onclick="togglePanelView('map')" title="Expandir mapa" style="position:absolute;top:12px;left:12px;z-index:450">⛶</button>
     <div id="realMap"></div>
 
     <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
@@ -2032,8 +2194,9 @@ function pickGradient(tipo){
 
 // ─────────────────────── STATE ───────────────────────
 const S = {
-  query:'', op:'Venta', type:'all', beds:0, baths:0,
-  minPrice:0, maxPrice:Infinity, minArea:0, minSqm:0, maxSqm:Infinity,
+  query:'', op:'Venta', type:'all', beds:0, baths:0, minPark:0,
+  minPrice:0, maxPrice:Infinity, minArea:0, minAreaTerr:0, minSqm:0, maxSqm:Infinity,
+  minFloors:0, minFloor:0, maxAge:Infinity,
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
@@ -2057,24 +2220,18 @@ function getFiltered(){
     if(S.baths>0 && p.baths<S.baths) return false;
     if(S.minPrice>0 && p.price<S.minPrice) return false;
     if(S.maxPrice<Infinity && p.price>S.maxPrice) return false;
+    if(S.minPark>0 && parkCount(p)<S.minPark) return false;
     if(S.minArea>0 && p.area<S.minArea) return false;
+    if(S.minAreaTerr>0 && (p.areaTerr||0)<S.minAreaTerr) return false;
+    if(S.minFloors>0 && (p.floors||0)<S.minFloors) return false;
+    if(S.minFloor>0 && (p.floor||0)<S.minFloor) return false;
+    if(S.maxAge<Infinity && (p.age==null || p.age>S.maxAge)) return false;
     const sqm=p.area>0?Math.round(p.price/p.area):0;
     if(S.minSqm>0 && sqm<S.minSqm) return false;
     if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0){
-      const estacFeats=S.features.filter(f=>/^Estacionamiento \d+$/.test(f));
-      const depFeats=S.features.filter(f=>/^Depósito \d+$/.test(f));
-      const otherFeats=S.features.filter(f=>!/^Estacionamiento \d+$/.test(f)&&!/^Depósito \d+$/.test(f));
-      if(otherFeats.length>0 && !otherFeats.every(f=>p.features.includes(f))) return false;
-      if(estacFeats.length>0){
-        const minPark=Math.max(...estacFeats.map(f=>parseInt(f.split(' ')[1])||1));
-        if(parkCount(p)<minPark) return false;
-      }
-      if(depFeats.length>0){
-        const minDep=Math.max(...depFeats.map(f=>parseInt(f.split(' ')[1])||1));
-        if(depCount(p)<minDep) return false;
-      }
+      if(!S.features.every(f=>(p.features||[]).includes(f))) return false;
     }
     if(S.radiusCenter && GEO[p.id]){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
@@ -2238,42 +2395,7 @@ function renderCards(list){
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
       : '';
-    return `
-    <div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')">
-      <div class="card-img">
-        <div class="cimg-track" id="cimgt-${pid}">${slides}</div>
-        ${arrows}${dots}
-        <div class="card-badges">
-          <span class="badge badge-op">${p.op}</span>
-          <span class="badge badge-type">${p.type}</span>
-          ${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}
-          ${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}
-        </div>
-      </div>
-      <div class="card-body">
-        <div class="card-addr">${p.address}</div>
-        <div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div>
-        <div class="card-specs">
-          <span class="spec"><span>📐</span>${p.area} m²</span>
-          ${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}
-          ${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}
-          ${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}
-          ${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}
-        </div>
-        <div class="card-bottom">
-          <div>
-            <div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>
-            ${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}
-          </div>
-          ${p.op==='Histórico'
-            ? S.unlockedIds.has(p.id)
-              ?`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`
-              :`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`
-            :`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`
-          }
-        </div>
-      </div>
-    </div>`;
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-op">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}</div><div class="card-bottom"><div><div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}</div>${p.op==='Histórico'?S.unlockedIds.has(p.id)?`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`:`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`}</div></div></div>`;
   }).join('');
 }
 
@@ -2282,12 +2404,13 @@ let leafletMap=null;
 let leafletMarkers={};
 
 function initMap(){
-  leafletMap=L.map('realMap',{zoomControl:true,attributionControl:true})
+  leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
     attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
     maxZoom:19
   }).addTo(leafletMap);
+  L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
   leafletMap.on('dblclick',onMapDblClick);
   leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
@@ -2819,6 +2942,14 @@ function applyFilters(){
   S.sort=document.getElementById('sortSel').value;
 
   S.minArea=parseFloat(document.getElementById('minArea').value)||0;
+  const minATel=document.getElementById('minAreaTerr');
+  S.minAreaTerr=minATel?parseFloat(minATel.value)||0:0;
+  const minFlEl=document.getElementById('minFloors');
+  S.minFloors=minFlEl?parseFloat(minFlEl.value)||0:0;
+  const minFl2=document.getElementById('minFloor');
+  S.minFloor=minFl2?parseFloat(minFl2.value)||0:0;
+  const maxAgEl=document.getElementById('maxAge');
+  S.maxAge=maxAgEl&&maxAgEl.value?parseFloat(maxAgEl.value):Infinity;
 
   const list=getFiltered();
   renderCards(list);
@@ -2965,7 +3096,13 @@ function setOp(btn,val){
   S.selectedId=null;
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
-  if(val==='Histórico') openHistModal();
+  const isHist=val==='Histórico';
+  document.getElementById('dormsLabel').style.display=isHist?'none':'';
+  document.getElementById('bedsSeg').style.display=isHist?'none':'';
+  document.getElementById('bankCheck').style.display=isHist?'none':'';
+  document.getElementById('advBtn').style.display=isHist?'none':'';
+  if(isHist){document.getElementById('advPanel').classList.remove('open');}
+  if(isHist) openHistModal();
   applyFilters();
 }
 function setBeds(btn,val){
@@ -2973,10 +3110,51 @@ function setBeds(btn,val){
   btn.classList.add('active');
   S.beds=val; applyFilters();
 }
+// ── View modes & panel toggle ──
+let _viewMode='list';
+function setViewMode(mode,btn){
+  _viewMode=mode;
+  const rl=document.getElementById('resList');
+  rl.classList.remove('view-list','view-2col','view-3col');
+  if(mode==='list') rl.classList.add('view-list');
+  if(mode==='2col') rl.classList.add('view-2col');
+  if(mode==='3col') rl.classList.add('view-3col');
+  document.querySelectorAll('#viewToggle button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  applyFilters();
+}
+function togglePanelView(panel){
+  const body=document.getElementById('appBody');
+  if(panel==='list'){
+    if(body.classList.contains('list-full')){body.classList.remove('list-full');}
+    else{body.classList.remove('map-full');body.classList.add('list-full');}
+  }else{
+    if(body.classList.contains('map-full')){body.classList.remove('map-full');}
+    else{body.classList.remove('list-full');body.classList.add('map-full');}
+  }
+  setTimeout(()=>{if(leafletMap)leafletMap.invalidateSize();},100);
+}
+
+function toggleAdv_beds2(chip){
+  const val=parseInt(chip.dataset.val);
+  document.querySelectorAll('#bedsChips2 .adv-chip').forEach(c=>{if(c!==chip)c.classList.remove('on')});
+  chip.classList.toggle('on');
+  S.beds=chip.classList.contains('on')?val:0;
+  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===S.beds)});
+  applyFilters();
+}
 function toggleAdv_baths(chip){
   const val=parseInt(chip.dataset.val);
+  document.querySelectorAll('#bathsChips .adv-chip').forEach(c=>{if(c!==chip)c.classList.remove('on')});
   chip.classList.toggle('on');
   S.baths=chip.classList.contains('on')?val:0;
+  applyFilters();
+}
+function toggleAdv_park(chip){
+  const val=parseInt(chip.dataset.val);
+  document.querySelectorAll('#parkChips .adv-chip').forEach(c=>{if(c!==chip)c.classList.remove('on')});
+  chip.classList.toggle('on');
+  S.minPark=chip.classList.contains('on')?val:0;
   applyFilters();
 }
 
@@ -3099,12 +3277,16 @@ function clearFilters(){
   document.getElementById('typeSel').value='all';
   document.getElementById('bankOnly').checked=false;
   document.getElementById('minArea').value='';
+  const minATel=document.getElementById('minAreaTerr');if(minATel)minATel.value='';
+  const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
+  const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
+  const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
   _resetPriceSliders();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
@@ -3131,12 +3313,16 @@ function resetAll(){
   document.getElementById('typeSel').value='all';
   document.getElementById('bankOnly').checked=false;
   document.getElementById('minArea').value='';
+  const minATel=document.getElementById('minAreaTerr');if(minATel)minATel.value='';
+  const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
+  const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
+  const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
   _resetPriceSliders();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPrice:0,maxPrice:Infinity,minArea:0,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
@@ -3879,23 +4065,31 @@ function toast(msg){
 // ─────────────────────── PUBLISH ───────────────────────
 let _ps=1,_pubTab='single',pubMap=null,pubMarker=null,_pubGeoTimer=null;
 let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
-         hideExact:false,currency:'USD',price:'',area:'',
+         hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
          beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+         estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[]};
 const _SUGG=481000;
-const _PUB_FEATS=['Balcón','Terraza','Piscina','Gimnasio','Jardín','Patio','Sótano','Depósito',
-  'Vista a calle','Vista a parque','Vista al mar','Vista al campo',
-  'Armario/Closet','Walk-in Closet','Cuarto de servicio','Baño de servicio',
-  'Área de lavandería','Aire Acondicionado','Jacuzzi','Zona de Parrilla (BBQ)',
-  'Sauna/Spa','Áreas verdes','Salón de usos múltiples','Recepción','Conserje',
-  'Intercomunicador','Estacionamiento para visitas','Acceso para personas con movilidad reducida',
-  'Canchas deportivas','Juegos infantiles','Sala de juegos','Oficinas/Co-work'];
+const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
+  'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
+  'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
+  'Propiedad Eco-amigable o Sostenible','Propiedad de Playa'];
+const _PUB_FEATS_AMB=['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje',
+  'Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
+  'Piscina (edificio)','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
+  'Canchas deportivas','Gimnasio','Juegos infantiles',
+  'Acceso para personas con movilidad reducida','Estacionamiento para visitas'];
+const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje'];
+const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón'];
+const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
+const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
 
 function openPublish(){
   _ps=1;_pubTab='single';
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
-       hideExact:false,currency:'USD',price:'',area:'',
+       hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
        beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+       estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
@@ -3976,26 +4170,61 @@ function _rps(){
               <option value="PEN"${_pd.currency==='PEN'?' selected':''}>S/ Soles</option>
             </select>
           </div>
-          <div><label>Área (m²) <span style="color:var(--red)">*</span></label>
-            <input type="number" min="1" value="${_pd.area}" oninput="_pd.area=this.value" placeholder="Ej: 85">
+          <div><label>Precio de ${_pd.op==='Alquiler'?'alquiler mensual':'venta'} <span style="color:var(--red)">*</span></label>
+            <input type="number" min="1" value="${_pd.price}" oninput="_pd.price=this.value" placeholder="Ej: 185000">
           </div>
         </div>
-        <div class="pub-field">
-          <label>Precio de ${_pd.op==='Alquiler'?'alquiler mensual':'venta'} <span style="color:var(--red)">*</span></label>
-          <input type="number" min="1" value="${_pd.price}" oninput="_pd.price=this.value" placeholder="Ej: 185000">
+        <div class="pub-field row">
+          <div><label>Área terreno (m²)</label>
+            <input type="number" min="0" value="${_pd.areaTerr}" oninput="_pd.areaTerr=this.value" placeholder="Ej: 120">
+          </div>
+          <div><label>Área techada (m²) <span style="color:var(--red)">*</span></label>
+            <input type="number" min="1" value="${_pd.area}" oninput="_pd.area=this.value" placeholder="Ej: 85">
+          </div>
         </div>
         <h3 style="margin-top:18px">📐 Detalles</h3>
         <div class="pub-stp-row"><span class="stp-lbl">🛏 Dormitorios</span><div class="stp-ctrl"><button onclick="_pAdj('beds',-1)">−</button><span class="stp-val" id="pub_beds">${_pd.beds}</span><button onclick="_pAdj('beds',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚿 Baños</span><div class="stp-ctrl"><button onclick="_pAdj('baths',-1)">−</button><span class="stp-val" id="pub_baths">${_pd.baths}</span><button onclick="_pAdj('baths',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚗 Estacionamientos</span><div class="stp-ctrl"><button onclick="_pAdj('parking',-1)">−</button><span class="stp-val" id="pub_parking">${_pd.parking}</span><button onclick="_pAdj('parking',1)">+</button></div></div>
         <div class="pub-field row" style="margin-top:10px">
+          <div><label>Nro pisos</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
           <div><label>Piso del inmueble</label><input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value)"></div>
-          <div><label>Pisos del edificio</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
         </div>
-        <div class="pub-field"><label>Años de antigüedad <span style="font-weight:400;color:var(--muted)">(0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
-        <h3 style="margin-top:18px">✨ Extras y amenities</h3>
+        <div class="pub-field row">
+          <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
+          <div><label>Estado</label>
+            <select oninput="_pd.estado=this.value">
+              <option${_pd.estado==='En proyecto'?' selected':''}>En proyecto</option>
+              <option${_pd.estado==='En construcción'?' selected':''}>En construcción</option>
+              <option${_pd.estado==='Construido'?' selected':''}>Construido</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
+          <label class="pub-check"><input type="checkbox" ${_pd.ascensor?'checked':''} onchange="_pd.ascensor=this.checked"> Ascensor</label>
+          <label class="pub-check"><input type="checkbox" ${_pd.amoblado?'checked':''} onchange="_pd.amoblado=this.checked"> Amoblado</label>
+          <label class="pub-check"><input type="checkbox" ${_pd.petFriendly?'checked':''} onchange="_pd.petFriendly=this.checked"> Pet friendly</label>
+        </div>
+
+        <h3 style="margin-top:18px">🏷️ Etiquetas generales</h3>
         <div class="pub-feat-grid">
-          ${_PUB_FEATS.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_PUB_FEATS_GEN.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+        </div>
+        <h3 style="margin-top:14px">🏢 Etiquetas ambientes</h3>
+        <div class="pub-feat-grid">
+          ${_PUB_FEATS_AMB.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+        </div>
+        <h3 style="margin-top:14px">👁️ Etiquetas vistas</h3>
+        <div class="pub-feat-grid">
+          ${_PUB_FEATS_VISTA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+        </div>
+        <h3 style="margin-top:14px">🛣️ Etiquetas accesos</h3>
+        <div class="pub-feat-grid">
+          ${_PUB_FEATS_ACCESO.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+        </div>
+        <h3 style="margin-top:14px">📍 Etiquetas zonas</h3>
+        <div class="pub-feat-grid">
+          ${_PUB_FEATS_ZONA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
         </div>
       </div>
     </div>
