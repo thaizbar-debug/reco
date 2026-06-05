@@ -476,11 +476,10 @@ header .spacer{flex:1}
 .sort-sel{
   background:var(--light);border:1px solid var(--border);
   padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
-  margin-left:auto;
 }
 .res-list{overflow-y:auto;flex:1;padding:8px}
 /* View mode toggle */
-.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
 .view-toggle button{background:none;border:none;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:.82rem;line-height:1;transition:background .12s,color .12s}
 .view-toggle button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .view-toggle button:hover:not(.active){color:var(--txt)}
@@ -1885,13 +1884,6 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
-      <select class="sort-sel" id="sortSel" onchange="applyFilters()">
-        <option value="rel">Más relevante</option>
-        <option value="price_asc">Precio: menor a mayor</option>
-        <option value="price_desc">Precio: mayor a menor</option>
-        <option value="area_desc">Mayor área</option>
-        <option value="new">Más nuevos</option>
-      </select>
       <div class="view-toggle" id="viewToggle">
         <button class="active" onclick="setViewMode('list',this)" title="1 columna">
           <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="16" height="3.5" rx="1"/><rect x="0" y="5" width="16" height="3.5" rx="1"/><rect x="0" y="10" width="16" height="3.5" rx="1"/></svg>
@@ -1903,6 +1895,13 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <svg width="16" height="14" viewBox="0 0 16 14" fill="currentColor"><rect x="0" y="0" width="4.5" height="6" rx=".7"/><rect x="5.7" y="0" width="4.5" height="6" rx=".7"/><rect x="11.5" y="0" width="4.5" height="6" rx=".7"/><rect x="0" y="8" width="4.5" height="6" rx=".7"/><rect x="5.7" y="8" width="4.5" height="6" rx=".7"/><rect x="11.5" y="8" width="4.5" height="6" rx=".7"/></svg>
         </button>
       </div>
+      <select class="sort-sel" id="sortSel" onchange="applyFilters()">
+        <option value="rel">Más relevante</option>
+        <option value="price_asc">Precio: menor a mayor</option>
+        <option value="price_desc">Precio: mayor a menor</option>
+        <option value="area_desc">Mayor área</option>
+        <option value="new">Más nuevos</option>
+      </select>
       <button class="panel-expand-btn" id="listExpandBtn" onclick="togglePanelView('list')" title="Expandir lista">⛶</button>
     </div>
     <div class="res-list view-list" id="resList">
