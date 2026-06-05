@@ -462,10 +462,15 @@ header .spacer{flex:1}
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;
   overflow:hidden;
+  transition:width .3s ease,min-width .3s ease,flex .3s ease;
 }
+.app-body.map-full .results-panel{width:0;min-width:0;overflow:hidden;border:none}
+.app-body.list-full .results-panel{flex:1;width:auto;min-width:0}
+.app-body.list-full .map-panel{width:0;min-width:0;overflow:hidden}
+.app-body.map-full .map-panel{flex:1}
 .res-header{
   padding:12px 16px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
   background:var(--surface);flex-shrink:0;
 }
 .res-count{font-size:.85rem;color:var(--muted);font-weight:500}
@@ -475,6 +480,35 @@ header .spacer{flex:1}
   padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
 }
 .res-list{overflow-y:auto;flex:1;padding:8px}
+/* View mode toggle */
+.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.view-toggle button{background:none;border:none;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:.82rem;line-height:1;transition:background .12s,color .12s}
+.view-toggle button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.view-toggle button:hover:not(.active){color:var(--txt)}
+/* Expand/collapse buttons */
+.panel-toggle{
+  position:absolute;top:50%;z-index:450;
+  width:22px;height:44px;border-radius:0 8px 8px 0;
+  background:var(--surface);border:1px solid var(--border);border-left:none;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:.7rem;color:var(--muted);
+  box-shadow:2px 0 6px rgba(0,0,0,.08);transition:background .12s,color .12s;
+  transform:translateY(-50%);
+}
+.panel-toggle:hover{background:var(--light);color:var(--blue)}
+.panel-toggle.map-toggle{left:0;border-radius:8px 0 0 8px;border:1px solid var(--border);border-right:none;box-shadow:-2px 0 6px rgba(0,0,0,.08)}
+/* Grid view */
+.res-list.view-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.app-body.list-full .res-list.view-grid{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+/* Compact/list view */
+.res-list.view-compact .p-card{display:flex;flex-direction:row}
+.res-list.view-compact .card-img{width:120px;height:auto;min-height:90px;flex-shrink:0}
+.res-list.view-compact .card-body{flex:1;padding:8px 12px}
+.res-list.view-compact .card-addr{font-size:.82rem}
+.res-list.view-compact .card-specs{font-size:.72rem;gap:8px;margin-bottom:4px}
+.res-list.view-compact .card-price{font-size:.9rem}
+.res-list.view-compact .card-badges{gap:3px}
+.res-list.view-compact .badge{font-size:.58rem;padding:2px 6px}
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -1842,6 +1876,17 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="res-header">
       <div class="res-count"><strong id="resNum">—</strong> <span id="resLabel">propiedades</span></div>
+      <div class="view-toggle" id="viewToggle">
+        <button class="active" onclick="setViewMode('cards',this)" title="Tarjetas">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        </button>
+        <button onclick="setViewMode('grid',this)" title="Grilla">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="4" height="4" rx=".5"/><rect x="6" y="1" width="4" height="4" rx=".5"/><rect x="11" y="1" width="4" height="4" rx=".5"/><rect x="1" y="6" width="4" height="4" rx=".5"/><rect x="6" y="6" width="4" height="4" rx=".5"/><rect x="11" y="6" width="4" height="4" rx=".5"/><rect x="1" y="11" width="4" height="4" rx=".5"/><rect x="6" y="11" width="4" height="4" rx=".5"/><rect x="11" y="11" width="4" height="4" rx=".5"/></svg>
+        </button>
+        <button onclick="setViewMode('compact',this)" title="Compacto">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="14" height="3" rx="1"/><rect x="1" y="6" width="14" height="3" rx="1"/><rect x="1" y="11" width="14" height="3" rx="1"/></svg>
+        </button>
+      </div>
       <select class="sort-sel" id="sortSel" onchange="applyFilters()">
         <option value="rel">Más relevante</option>
         <option value="price_asc">Precio: menor a mayor</option>
@@ -1849,6 +1894,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <option value="area_desc">Mayor área</option>
         <option value="new">Más nuevos</option>
       </select>
+      <button class="panel-toggle" id="listExpandBtn" onclick="togglePanelView('list')" title="Expandir lista" style="position:static;transform:none;border:1px solid var(--border);border-radius:6px;width:28px;height:28px">⛶</button>
     </div>
     <div class="res-list" id="resList">
       <!-- populated by JS -->
@@ -1857,6 +1903,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
+    <button class="panel-toggle map-toggle" id="mapExpandBtn" onclick="togglePanelView('map')" title="Expandir mapa" style="position:absolute;top:12px;left:12px;z-index:450;width:28px;height:28px;border-radius:6px;border:1px solid var(--border);transform:none">⛶</button>
     <div id="realMap"></div>
 
     <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
@@ -3088,6 +3135,29 @@ function setBeds(btn,val){
   btn.classList.add('active');
   S.beds=val; applyFilters();
 }
+// ── View modes & panel toggle ──
+let _viewMode='cards';
+function setViewMode(mode,btn){
+  _viewMode=mode;
+  const rl=document.getElementById('resList');
+  rl.classList.remove('view-grid','view-compact');
+  if(mode==='grid') rl.classList.add('view-grid');
+  if(mode==='compact') rl.classList.add('view-compact');
+  document.querySelectorAll('#viewToggle button').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+function togglePanelView(panel){
+  const body=document.getElementById('appBody');
+  if(panel==='list'){
+    if(body.classList.contains('list-full')){body.classList.remove('list-full');}
+    else{body.classList.remove('map-full');body.classList.add('list-full');}
+  }else{
+    if(body.classList.contains('map-full')){body.classList.remove('map-full');}
+    else{body.classList.remove('list-full');body.classList.add('map-full');}
+  }
+  setTimeout(()=>{if(leafletMap)leafletMap.invalidateSize();},350);
+}
+
 function toggleAdv_beds2(chip){
   const val=parseInt(chip.dataset.val);
   document.querySelectorAll('#bedsChips2 .adv-chip').forEach(c=>{if(c!==chip)c.classList.remove('on')});
