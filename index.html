@@ -2267,7 +2267,11 @@ function getFiltered(){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
-      if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
+      if(S.commute.isoCoords && S.commute.isoCoords.length>2){
+        if(!pointInPolygon(GEO[p.id], S.commute.isoCoords.map(c=>({lat:c[0],lng:c[1]})))) return false;
+      } else {
+        if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
+      }
     }
     return true;
   });
@@ -2506,33 +2510,11 @@ function onMapClick(e){
   if(S.svMode){ openStreetView(e.latlng.lat,e.latlng.lng,'Street View'); return; }
   if(S.commuteMode){ setCommuteDest(e.latlng); return; }
   if(S.polyMode && !S.polyFinished){ addPolyPoint(e.latlng); return; }
-  if(S.radiusMode){
-    S.radiusCenter=e.latlng;
-    document.getElementById('radiusHint').textContent='Ajusta el radio con el slider';
-    drawRadiusCircle();
-    applyFilters();
-    return;
-  }
-  // Default: reverse geocoding via HERE
-  _reverseGeocode(e.latlng.lat, e.latlng.lng);
-}
-async function _reverseGeocode(lat,lng){
-  if(!HERE_API_KEY) return;
-  try{
-    const url=`https://revgeocode.search.hereapi.com/v1/revgeocode?at=${lat},${lng}&lang=es&apiKey=${HERE_API_KEY}`;
-    const res=await fetch(url);
-    if(!res.ok) return;
-    const j=await res.json();
-    const item=(j.items&&j.items[0]);
-    if(!item) return;
-    const addr=item.address&&item.address.label?item.address.label:'Dirección desconocida';
-    L.popup({closeButton:true,className:'revgeo-popup'})
-      .setLatLng([lat,lng])
-      .setContent(`<b>📍 Dirección</b><br>${addr}`)
-      .openOn(leafletMap);
-  }catch(e){
-    toast('No se pudo obtener la dirección (HERE Reverse Geocoding).');
-  }
+  if(!S.radiusMode) return;
+  S.radiusCenter=e.latlng;
+  document.getElementById('radiusHint').textContent='Ajusta el radio con el slider';
+  drawRadiusCircle();
+  applyFilters();
 }
 function onMapDblClick(e){
   if(S.polyMode && !S.polyFinished && S.polyPoints.length>=3){
@@ -2725,18 +2707,6 @@ function _decodeFlexPolyline(encoded){
   return result;
 }
 
-// Fetch real drive time from HERE Routing API
-async function _fetchHereRouteTime(originLat,originLng,destLat,destLng){
-  const url=`https://router.hereapi.com/v8/routes?transportMode=car&origin=${originLat},${originLng}&destination=${destLat},${destLng}&return=summary&apiKey=${HERE_API_KEY}`;
-  try{
-    const resp=await fetch(url);
-    if(!resp.ok) throw new Error('HERE Routing '+resp.status);
-    const data=await resp.json();
-    const sec=data.routes[0].sections[0].summary.duration;
-    return Math.max(1, Math.round(sec/60));
-  }catch(e){ console.warn('HERE Routing API error:',e); return null; }
-}
-
 // Fetch isoline (isochrone) polygon from HERE Isoline API
 async function _fetchHereIsoline(lat,lng,seconds){
   const url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=car&origin=${lat},${lng}&range[type]=time&range[values]=${seconds}&apiKey=${HERE_API_KEY}`;
@@ -2761,18 +2731,10 @@ function toggleCommuteMode(){
 
 async function setCommuteDest(latlng){
   const maxMin=parseInt(document.getElementById('commuteSlider').value||'30');
-  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, realMin:null, isoCoords:null};
-  drawCommute(); // draw marker + fallback circle immediately
+  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, isoCoords:null};
+  drawCommute();
   applyFilters();
   _commuteInfo();
-  // Fetch real route time (from map center to destination)
-  const center=leafletMap.getCenter();
-  const realMin=await _fetchHereRouteTime(center.lat,center.lng,latlng.lat,latlng.lng);
-  if(S.commute && realMin!==null){
-    S.commute.realMin=realMin;
-    _commuteInfo();
-  }
-  // Fetch isochrone
   await _fetchAndDrawIsoline();
 }
 
@@ -2780,10 +2742,12 @@ async function _fetchAndDrawIsoline(){
   if(!S.commute) return;
   const seconds=S.commute.maxMin*60;
   const coords=await _fetchHereIsoline(S.commute.lat,S.commute.lng,seconds);
-  if(!S.commute) return; // user may have cleared while waiting
+  if(!S.commute) return;
   if(coords && coords.length>2){
     S.commute.isoCoords=coords;
     _drawIsoLayer();
+    applyFilters();
+    _commuteInfo();
   }
 }
 
@@ -2830,13 +2794,8 @@ function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.'; return; }
   const n=getFiltered().length;
-  let txt=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto';
-  if(S.commute.realMin!==null){
-    txt+=' (ruta real al destino: '+S.commute.realMin+' min).';
-  } else {
-    txt+=' (aprox.).';
-  }
-  el.textContent=txt;
+  const method=S.commute.isoCoords?'':'(aprox.) ';
+  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto '+method+'del destino.';
 }
 
 function clearCommute(){
@@ -2969,8 +2928,8 @@ function toggleTraffic(){
     trafficLayer=null;
     btn.classList.remove('active');
   } else {
-    trafficLayer=L.tileLayer('https://traffic.maps.hereapi.com/v3/flow/mc/{z}/{x}/{y}/png?style=relative0&apiKey='+HERE_API_KEY,{
-      maxZoom:20, opacity:0.7
+    trafficLayer=L.tileLayer('https://traffic.maps.hereapi.com/v3/flow/mc/{z}/{x}/{y}/png8?style=relative&apiKey='+HERE_API_KEY,{
+      maxZoom:20, opacity:0.65, attribution:'© HERE Traffic'
     }).addTo(leafletMap);
     btn.classList.add('active');
   }
