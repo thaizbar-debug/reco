@@ -2213,7 +2213,7 @@ function getFiltered(){
       if(!p.address.toLowerCase().includes(q) && !p.district.toLowerCase().includes(q)) return false;
     }
     if(S.op!=='all' && p.op!==S.op) return false;
-    if((p.op==='Venta'||p.op==='Alquiler') && driveAssets(p).photos.length===0) return false;
+    if(driveAssets(p).photos.length===0) return false;
     if(S.type!=='all' && p.type!==S.type) return false;
     if(S.beds>0 && p.beds<S.beds) return false;
     if(S.baths>0 && p.baths<S.baths) return false;
