@@ -669,7 +669,7 @@ header .spacer{flex:1}
 /* ── Radius search ── */
 /* ── Radius / Polygon panels (opened from unified toolbar) ── */
 .radius-panel,.poly-panel{
-  position:absolute;top:12px;right:142px;z-index:501;
+  position:absolute;top:12px;right:195px;z-index:501;
   background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
   padding:12px 14px;width:248px;box-shadow:var(--sh2);
@@ -703,19 +703,26 @@ header .spacer{flex:1}
 .poly-undo-btn:hover{background:#fef3c7;color:#92400e;border-color:#f59e0b}
 
 /* ── Unified map toolbar (top-right) ── */
-.map-tools-tr{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+.map-tools-tr{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:stretch;width:175px}
 .mtool-btn{
   background:#fff;border:1.5px solid var(--border);border-radius:8px;
   color:var(--txt);font-size:.78rem;font-weight:700;
   padding:7px 12px;cursor:pointer;box-shadow:var(--sh);white-space:nowrap;transition:all .15s;
-  min-width:130px;text-align:left;
+  text-align:left;width:100%;box-sizing:border-box;
 }
 .mtool-btn:hover{border-color:var(--blue);color:var(--blue)}
 .mtool-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .mtool-sub{display:block;font-size:.65rem;font-weight:400;opacity:.7;margin-top:1px}
 .mtool-btn.active .mtool-sub{opacity:.85}
+.commute-modes{display:flex;gap:4px;flex-wrap:wrap}
+.commute-mode-btn{
+  background:#fff;border:1.5px solid var(--border);border-radius:6px;
+  font-size:.72rem;font-weight:600;padding:4px 9px;cursor:pointer;transition:all .12s;
+}
+.commute-mode-btn:hover{border-color:var(--blue);color:var(--blue)}
+.commute-mode-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .mtool-panel{
-  position:absolute;top:12px;right:142px;z-index:501;
+  position:absolute;top:12px;right:195px;z-index:501;
   background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
   padding:12px 14px;width:248px;box-shadow:var(--sh2);
@@ -1909,7 +1916,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="map-tools-tr" id="mapToolsTR">
       <button class="mtool-btn" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar por radio<span class="mtool-sub">Dibuja un área en el mapa</span></button>
       <button class="mtool-btn" id="polyToggle" onclick="togglePolyMode()">⬟ Buscar por polígono<span class="mtool-sub">Dibuja un área libre en el mapa</span></button>
-      <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()">🚗 Traslado<span class="mtool-sub">Tiempo de viaje en auto al destino</span></button>
+      <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()">🚗 Traslado<span class="mtool-sub">Tiempo de viaje al destino</span></button>
       <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Colegios, bancos, restaurantes…</span></button>
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()">👁️ Street View<span class="mtool-sub">Vista de calle de Google</span></button>
       <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en tiempo real</span></button>
@@ -1937,8 +1944,14 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="mtool-panel" id="commutePanel">
       <div class="mtool-panel-row"><b>🚗 Tiempo de traslado</b><span id="commuteLabel">30 min</span></div>
+      <div class="commute-modes" id="commuteModes">
+        <button class="commute-mode-btn active" data-mode="car" onclick="setCommuteTransport('car')">🚗 Auto</button>
+        <button class="commute-mode-btn" data-mode="bicycle" onclick="setCommuteTransport('bicycle')">🚲 Bicicleta</button>
+        <button class="commute-mode-btn" data-mode="pedestrian" onclick="setCommuteTransport('pedestrian')">🚶 Caminando</button>
+        <button class="commute-mode-btn" data-mode="bus" onclick="setCommuteTransport('bus')">🚌 Bus</button>
+      </div>
       <input type="range" min="5" max="60" step="5" value="30" id="commuteSlider" oninput="updateCommute(this.value)"/>
-      <div class="mtool-hint" id="commuteInfo">Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.</div>
+      <div class="mtool-hint" id="commuteInfo">Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo.</div>
       <button class="mtool-clear" onclick="clearCommute()">✕ Limpiar destino</button>
     </div>
 
@@ -2188,7 +2201,7 @@ const S = {
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
-  commuteMode:false, commute:null, svMode:false,
+  commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
   catastroOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
@@ -2644,8 +2657,10 @@ function _haversineKm(aLat,aLng,bLat,bLng){
 
 // Quick estimation for bulk property filtering (no API call)
 function commuteMinTo(c, geo){
+  const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
+  const spd=speeds[S.commuteTransport]||24;
   const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
-  return Math.max(1, Math.round(km/24*60));
+  return Math.max(1, Math.round(km/spd*60));
 }
 
 // HERE Flexible Polyline decoder (minimal implementation)
@@ -2669,7 +2684,9 @@ function _decodeFlexPolyline(encoded){
 
 // Fetch isoline (isochrone) polygon from HERE Isoline API
 async function _fetchHereIsoline(lat,lng,seconds){
-  const url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=car&origin=${lat},${lng}&range[type]=time&range[values]=${seconds}&apiKey=${HERE_API_KEY}`;
+  const mode=S.commuteTransport||'car';
+  const hereMode=mode==='bus'?'car':mode; // bus uses car isoline as approximation, HERE Isoline doesn't support 'bus' directly
+  const url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=${hereMode}&origin=${lat},${lng}&range[type]=time&range[values]=${seconds}&apiKey=${HERE_API_KEY}`;
   try{
     const resp=await fetch(url);
     if(!resp.ok) throw new Error('HERE Isoline '+resp.status);
@@ -2677,6 +2694,22 @@ async function _fetchHereIsoline(lat,lng,seconds){
     const encoded=data.isolines[0].polygons[0].outer;
     return _decodeFlexPolyline(encoded);
   }catch(e){ console.warn('HERE Isoline API error:',e); return null; }
+}
+
+const _COMMUTE_EMOJI={car:'🚗',bicycle:'🚲',pedestrian:'🚶',bus:'🚌'};
+function setCommuteTransport(mode){
+  S.commuteTransport=mode;
+  document.querySelectorAll('.commute-mode-btn').forEach(b=>b.classList.toggle('active',b.dataset.mode===mode));
+  const emoji=_COMMUTE_EMOJI[mode]||'🚗';
+  document.getElementById('commuteToggle').innerHTML=emoji+' Traslado<span class="mtool-sub">Tiempo de viaje al destino</span>';
+  if(S.commute){
+    S.commute.isoCoords=null;
+    drawCommute();
+    applyFilters();
+    _commuteInfo();
+    if(_commuteIsoDebounce) clearTimeout(_commuteIsoDebounce);
+    _commuteIsoDebounce=setTimeout(()=>{ _fetchAndDrawIsoline(); },300);
+  }
 }
 
 function toggleCommuteMode(){
@@ -2745,17 +2778,20 @@ function drawCommute(){
   } else {
     if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
     if(commuteCircle) commuteCircle.remove();
-    const km=(S.commute.maxMin/60)*24/1.3;
+    const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
+    const km=(S.commute.maxMin/60)*(speeds[S.commuteTransport]||24)/1.3;
     commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:1.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.06}).addTo(leafletMap);
   }
 }
 
+const _COMMUTE_LABELS={car:'en auto',bicycle:'en bicicleta',pedestrian:'caminando',bus:'en bus'};
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
-  if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.'; return; }
+  const modeLabel=_COMMUTE_LABELS[S.commuteTransport]||'en auto';
+  if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo '+modeLabel+'.'; return; }
   const n=getFiltered().length;
   const method=S.commute.isoCoords?'':'(aprox.) ';
-  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto '+method+'del destino.';
+  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min '+modeLabel+' '+method+'del destino.';
 }
 
 function clearCommute(){
@@ -2770,14 +2806,14 @@ function clearCommute(){
 
 // ── Cerca de ti — POIs via HERE Browse API ─────────
 const POI_CATS={
-  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',here:'600-6200-0062,600-6200-0061'},
+  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',here:'600-6200'},
   supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',here:'600-6300-0066'},
-  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510-0000'},
-  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',here:'800-8000-0159,800-8000-0158'},
-  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',here:'600-6400-0000'},
-  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',here:'100-1000-0000,100-1100-0000'},
-  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7010-0108,700-7010-0109'},
-  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100-0035,400-4100-0036,400-4100-0000'}
+  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510'},
+  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',here:'800-8000'},
+  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',here:'600-6400'},
+  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',here:'100-1000,100-1100'},
+  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7010'},
+  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100'}
 };
 let poiMarkers={};
 let _poiLoading={};
@@ -2842,7 +2878,7 @@ async function loadPoi(cat){
   if(!_poiCenter && leafletMap){ const ct=leafletMap.getCenter(); _poiCenter={lat:ct.lat,lng:ct.lng}; }
   const lat=_poiCenter.lat, lng=_poiCenter.lng, rad=S.poiRadius||800;
   _poiLoading[cat]=true; buildPoiChips();
-  const url=`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${c.here}&limit=20&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
+  const url=`https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${c.here}&limit=50&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
   try{
     const res=await fetch(url);
     if(!res.ok) throw new Error('HTTP '+res.status);
