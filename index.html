@@ -667,55 +667,26 @@ header .spacer{flex:1}
 }
 
 /* ── Radius search ── */
-.radius-toggle{
-  position:absolute;bottom:50px;left:12px;z-index:500;
-  background:#fff;border:1.5px solid var(--blue);border-radius:8px;
-  color:var(--blue);font-size:.78rem;font-weight:700;
-  padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
-  display:flex;flex-direction:column;align-items:flex-start;gap:1px;transition:all .15s;
-}
-.radius-toggle:hover{background:var(--blue);color:#fff}
-.radius-toggle.active{background:var(--blue);color:#fff}
-.radius-panel{
-  position:absolute;bottom:100px;left:12px;z-index:500;
-  background:rgba(255,255,255,.96);backdrop-filter:blur(8px);
+/* ── Radius / Polygon panels (opened from unified toolbar) ── */
+.radius-panel,.poly-panel{
+  position:absolute;top:12px;right:142px;z-index:501;
+  background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
-  padding:12px 14px;width:220px;box-shadow:var(--sh2);
+  padding:12px 14px;width:248px;box-shadow:var(--sh2);
   display:none;flex-direction:column;gap:8px;
 }
-.radius-panel.open{display:flex}
-.radius-hint{font-size:.75rem;color:var(--muted);line-height:1.4}
+.radius-panel.open,.poly-panel.open{display:flex}
+.radius-hint,.poly-hint{font-size:.75rem;color:var(--muted);line-height:1.4}
 .radius-slider-row{display:flex;align-items:center;gap:8px}
 .radius-slider-row input[type=range]{flex:1;accent-color:var(--blue)}
 .radius-km{font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap}
-.radius-clear{
+.radius-clear,.poly-clear{
   background:var(--bg);border:1px solid var(--border);border-radius:6px;
-  font-size:.75rem;color:var(--muted);padding:5px 8px;cursor:pointer;
-  transition:background .1s;
+  font-size:.75rem;color:var(--muted);padding:5px 8px;cursor:pointer;transition:background .1s;
 }
-.radius-clear:hover{background:#fee2e2;color:var(--red);border-color:var(--red)}
-#realMap.radius-mode{cursor:crosshair !important}
-#realMap.radius-mode .leaflet-interactive{cursor:crosshair !important}
-/* ── Polygon search ── */
-.poly-toggle{
-  position:absolute;bottom:100px;left:12px;z-index:500;
-  background:#fff;border:1.5px solid #7c3aed;border-radius:8px;
-  color:#7c3aed;font-size:.78rem;font-weight:700;
-  padding:7px 13px;cursor:pointer;box-shadow:var(--sh);
-  display:flex;flex-direction:column;align-items:flex-start;gap:1px;transition:all .15s;
-}
-.poly-toggle:hover{background:#7c3aed;color:#fff}
-.poly-toggle.active{background:#7c3aed;color:#fff}
-.radius-panel.open ~ .poly-toggle{display:none}
-.poly-panel{
-  position:absolute;bottom:154px;left:12px;z-index:500;
-  background:rgba(255,255,255,.96);backdrop-filter:blur(8px);
-  border:1px solid var(--border);border-radius:10px;
-  padding:12px 14px;width:220px;box-shadow:var(--sh2);
-  display:none;flex-direction:column;gap:8px;
-}
-.poly-panel.open{display:flex}
-.poly-hint{font-size:.75rem;color:var(--muted);line-height:1.4}
+.radius-clear:hover,.poly-clear:hover{background:#fee2e2;color:var(--red);border-color:var(--red)}
+#realMap.radius-mode,#realMap.poly-mode{cursor:crosshair !important}
+#realMap.radius-mode .leaflet-interactive,#realMap.poly-mode .leaflet-interactive{cursor:crosshair !important}
 .poly-finish-btn{
   background:#7c3aed;color:#fff;border:none;border-radius:6px;
   font-size:.75rem;font-weight:700;padding:7px 10px;cursor:pointer;
@@ -730,25 +701,19 @@ header .spacer{flex:1}
 }
 .poly-undo-btn.visible{display:block}
 .poly-undo-btn:hover{background:#fef3c7;color:#92400e;border-color:#f59e0b}
-.poly-clear{
-  background:var(--bg);border:1px solid var(--border);border-radius:6px;
-  font-size:.75rem;color:var(--muted);padding:5px 8px;cursor:pointer;
-  transition:background .1s;
-}
-.poly-clear:hover{background:#fee2e2;color:var(--red);border-color:var(--red)}
-#realMap.poly-mode{cursor:crosshair !important}
-#realMap.poly-mode .leaflet-interactive{cursor:crosshair !important}
 
-/* ── Map tools: Traslado / Cerca de ti / Street View ── */
+/* ── Unified map toolbar (top-right) ── */
 .map-tools-tr{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 .mtool-btn{
   background:#fff;border:1.5px solid var(--border);border-radius:8px;
   color:var(--txt);font-size:.78rem;font-weight:700;
   padding:7px 12px;cursor:pointer;box-shadow:var(--sh);white-space:nowrap;transition:all .15s;
+  min-width:130px;text-align:left;
 }
 .mtool-btn:hover{border-color:var(--blue);color:var(--blue)}
-#commuteToggle{background:#87CEEB;border-color:#87CEEB;color:#fff}
 .mtool-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.mtool-sub{display:block;font-size:.65rem;font-weight:400;opacity:.7;margin-top:1px}
+.mtool-btn.active .mtool-sub{opacity:.85}
 .mtool-panel{
   position:absolute;top:12px;right:142px;z-index:501;
   background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
@@ -1940,12 +1905,20 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <button class="panel-expand-btn" id="mapExpandBtn" onclick="togglePanelView('map')" title="Expandir mapa" style="position:absolute;top:12px;left:12px;z-index:450">⛶</button>
     <div id="realMap"></div>
 
-    <button class="radius-toggle" id="radiusToggle" onclick="toggleRadiusMode()">
-      <span style="font-size:.82rem;font-weight:700">⬤ Buscar por radio</span>
-      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área en el mapa</span>
-    </button>
+    <!-- Toolbar unificado (esquina superior derecha) -->
+    <div class="map-tools-tr" id="mapToolsTR">
+      <button class="mtool-btn" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar por radio<span class="mtool-sub">Dibuja un área en el mapa</span></button>
+      <button class="mtool-btn" id="polyToggle" onclick="togglePolyMode()">⬟ Buscar por polígono<span class="mtool-sub">Dibuja un área libre en el mapa</span></button>
+      <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()">🚗 Traslado<span class="mtool-sub">Tiempo de viaje en auto al destino</span></button>
+      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Colegios, bancos, restaurantes…</span></button>
+      <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()">👁️ Street View<span class="mtool-sub">Vista de calle de Google</span></button>
+      <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en tiempo real</span></button>
+      <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()">📐 Catastro<span class="mtool-sub">Lotes por distrito en Lima</span></button>
+    </div>
 
+    <!-- Paneles de herramientas (se abren a la izquierda del toolbar) -->
     <div class="radius-panel" id="radiusPanel">
+      <div class="mtool-panel-row"><b>⬤ Buscar por radio</b></div>
       <div class="radius-hint" id="radiusHint">Haz clic en el mapa para centrar el área de búsqueda</div>
       <div class="radius-slider-row">
         <input type="range" min="200" max="5000" step="100" value="1000" id="radiusSlider" oninput="updateRadius(this.value)"/>
@@ -1954,25 +1927,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="radius-clear" onclick="clearRadius()">✕ Limpiar área</button>
     </div>
 
-    <button class="poly-toggle" id="polyToggle" onclick="togglePolyMode()">
-      <span style="font-size:.82rem;font-weight:700">⬟ Buscar por polígono</span>
-      <span style="font-size:.7rem;opacity:.75;display:block;margin-top:1px">Dibuja un área libre en el mapa</span>
-    </button>
-
     <div class="poly-panel" id="polyPanel">
+      <div class="mtool-panel-row"><b>⬟ Buscar por polígono</b></div>
       <div class="poly-hint" id="polyHint">Haz clic en el mapa para agregar vértices</div>
       <button class="poly-finish-btn" id="polyFinishBtn" onclick="finishPoly()">✓ Cerrar y filtrar</button>
       <button class="poly-undo-btn" id="polyUndoBtn" onclick="undoPolyPoint()">↩ Deshacer último punto</button>
       <button class="poly-clear" onclick="clearPoly()">✕ Limpiar polígono</button>
-    </div>
-
-    <!-- Herramientas: Traslado · Cerca de ti · Street View -->
-    <div class="map-tools-tr" id="mapToolsTR">
-      <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()" title="Tiempo de traslado">🚗 Traslado</button>
-      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()" title="Establecimientos cercanos">📍 Cerca de ti</button>
-      <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()" title="Ver Street View de Google">👁️ Street View</button>
-      <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()" title="Tráfico en tiempo real">🚦 Tráfico</button>
-      <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()" title="Catastro de lotes (Lima Metropolitana)">📐 Catastro</button>
     </div>
 
     <div class="mtool-panel" id="commutePanel">
