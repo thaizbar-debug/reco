@@ -10,8 +10,11 @@
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<!-- Google Maps Places (configurable — poner tu API key en GOOGLE_MAPS_KEY) -->
-<script>const GOOGLE_MAPS_KEY='';</script>
+<!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
+<script>
+const HERE_API_KEY='';
+const GOOGLE_MAPS_KEY='';
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -3125,8 +3128,35 @@ function showSuggestions(val){
   el.innerHTML=body+geoPlaceholder;
   el.style.display=(body||showGeoLoading)?'block':'none';
 }
-// ─── Google Places Autocomplete (carga dinámica si hay key) ───
-let _gPlacesService=null, _gAutoService=null, _gGeocoder=null, _gReady=false;
+// ─── Geocodificación: HERE (principal) → Google (opcional) → Photon (fallback) ───
+
+// HERE Autocomplete — 250K req gratis/mes, datos propietarios
+async function _fetchHere(q){
+  if(!HERE_API_KEY) return [];
+  const url=`https://autocomplete.search.hereapi.com/v1/autocomplete?q=${encodeURIComponent(q)}&in=countryCode:PER&at=-12.05,-77.04&lang=es&limit=5&apiKey=${HERE_API_KEY}`;
+  const res=await fetch(url);
+  if(!res.ok) return [];
+  const data=await res.json();
+  if(!data.items||!data.items.length) return [];
+  return data.items.map(it=>({
+    label:it.title,
+    sub:it.address?(it.address.district||it.address.city||it.address.county||'Perú'):'Perú',
+    hereId:it.id,
+    src:'here'
+  }));
+}
+async function _geocodeHereId(hereId){
+  if(!HERE_API_KEY) return null;
+  const url=`https://lookup.search.hereapi.com/v1/lookup?id=${encodeURIComponent(hereId)}&apiKey=${HERE_API_KEY}`;
+  const res=await fetch(url);
+  if(!res.ok) return null;
+  const data=await res.json();
+  if(!data.position) return null;
+  return {lat:data.position.lat,lng:data.position.lng};
+}
+
+// Google Places Autocomplete (carga dinámica si hay key)
+let _gAutoService=null, _gGeocoder=null, _gReady=false;
 (function _loadGooglePlaces(){
   if(typeof GOOGLE_MAPS_KEY==='undefined'||!GOOGLE_MAPS_KEY) return;
   const s=document.createElement('script');
@@ -3139,20 +3169,18 @@ function _gPlacesInit(){
   _gGeocoder=new google.maps.Geocoder();
   _gReady=true;
 }
-// Google Places predictions → [{label, sub, placeId}]
 function _fetchGooglePlaces(q){
   return new Promise((resolve)=>{
     if(!_gReady||!_gAutoService){ resolve([]); return; }
     _gAutoService.getPlacePredictions({
-      input:q,
-      componentRestrictions:{country:'pe'},
-      types:['geocode','establishment']
+      input:q, componentRestrictions:{country:'pe'}, types:['geocode','establishment']
     },(preds,status)=>{
       if(status!==google.maps.places.PlacesServiceStatus.OK||!preds){ resolve([]); return; }
       resolve(preds.slice(0,5).map(p=>({
         label:p.structured_formatting.main_text,
         sub:p.structured_formatting.secondary_text||'Perú',
-        placeId:p.place_id
+        placeId:p.place_id,
+        src:'google'
       })));
     });
   });
@@ -3167,7 +3195,8 @@ function _geocodePlaceId(placeId){
     });
   });
 }
-// Photon (Komoot) — fallback gratuito, mejor fuzzy search que Nominatim
+
+// Photon (Komoot) — fallback gratuito sin key
 async function _fetchPhoton(q){
   const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=es&lat=-12.05&lon=-77.04`;
   const res=await fetch(url);
@@ -3178,31 +3207,32 @@ async function _fetchPhoton(q){
     const label=[p.name,p.street,p.housenumber].filter(Boolean).join(' ')||p.name||'Ubicación';
     const sub=[p.district,p.city,p.county,p.state].filter(Boolean).slice(0,2).join(', ')||'Perú';
     const [lng,lat]=f.geometry.coordinates;
-    return {label,sub,lat,lng};
+    return {label,sub,lat,lng,src:'photon'};
   });
+}
+
+// Cadena de búsqueda: HERE → Google → Photon
+async function _fetchGeoResults(q){
+  // 1. HERE (principal — datos propietarios, 250K gratis/mes)
+  if(HERE_API_KEY){
+    const hereResults=await _fetchHere(q);
+    if(hereResults.length) return hereResults;
+  }
+  // 2. Google Places (si está configurado)
+  if(_gReady){
+    const googleResults=await _fetchGooglePlaces(q);
+    if(googleResults.length) return googleResults;
+  }
+  // 3. Photon (fallback gratuito sin key)
+  return await _fetchPhoton(q);
 }
 
 let _geoFetchId=0;
 async function _fetchGeo(q){
   const fetchId=++_geoFetchId;
   try{
-    let items=[];
-    let isGoogle=false;
-    // Intentar Google Places primero (si hay key configurada)
-    if(_gReady){
-      const preds=await _fetchGooglePlaces(q);
-      if(fetchId!==_geoFetchId) return;
-      if(preds.length){
-        isGoogle=true;
-        items=preds;
-      }
-    }
-    // Fallback: Photon (Komoot) — mejor que Nominatim para Perú
-    if(!items.length){
-      const photonResults=await _fetchPhoton(q);
-      if(fetchId!==_geoFetchId) return;
-      items=photonResults;
-    }
+    const items=await _fetchGeoResults(q);
+    if(fetchId!==_geoFetchId) return;
     const el=document.getElementById('sgGeo');
     const drop=document.getElementById('sgDrop');
     if(!drop) return;
@@ -3211,10 +3241,15 @@ async function _fetchGeo(q){
       setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
       return;
     }
-    const secLabel=isGoogle?'Direcciones (Google)':'Ubicaciones en el mapa';
-    const secHtml=`<div class="sg-section">${secLabel}</div>`
+    const secHtml=`<div class="sg-section">Direcciones</div>`
       +items.map(r=>{
-        if(isGoogle){
+        if(r.src==='here'){
+          return `<div class="sg-item sg-geo" onmousedown="pickHereResult('${r.hereId}','${r.label.replace(/'/g,"\\'")}')">
+            <span class="sg-ico">📍</span>
+            <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
+          </div>`;
+        }
+        if(r.src==='google'){
           return `<div class="sg-item sg-geo" onmousedown="pickGoogleResult('${r.placeId}','${r.label.replace(/'/g,"\\'")}')">
             <span class="sg-ico">📍</span>
             <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
@@ -3234,23 +3269,34 @@ async function _fetchGeo(q){
     setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
   }
 }
-async function pickGoogleResult(placeId,label){
-  document.getElementById('searchQ').value='';
-  document.getElementById('sgDrop').style.display='none';
-  const loc=await _geocodePlaceId(placeId);
-  if(!loc){ toast('No se pudo obtener la ubicación'); return; }
+
+function _activateRadiusAt(lat,lng,label){
   S.query='';
   if(S.polyMode) _deactivatePoly();
   S.radiusMode=true;
-  S.radiusCenter=L.latLng(loc.lat,loc.lng);
+  S.radiusCenter=L.latLng(lat,lng);
   document.getElementById('radiusToggle').classList.add('active');
   document.getElementById('radiusPanel').classList.add('open');
   document.getElementById('realMap').classList.remove('radius-mode');
   document.getElementById('radiusHint').textContent='📍 '+label;
   document.getElementById('searchQ').placeholder='📍 '+label;
   drawRadiusCircle();
-  leafletMap.setView([loc.lat,loc.lng],16,{animate:true,duration:.6});
+  leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
   applyFilters();
+}
+async function pickHereResult(hereId,label){
+  document.getElementById('searchQ').value='';
+  document.getElementById('sgDrop').style.display='none';
+  const loc=await _geocodeHereId(hereId);
+  if(!loc){ toast('No se pudo obtener la ubicación'); return; }
+  _activateRadiusAt(loc.lat,loc.lng,label);
+}
+async function pickGoogleResult(placeId,label){
+  document.getElementById('searchQ').value='';
+  document.getElementById('sgDrop').style.display='none';
+  const loc=await _geocodePlaceId(placeId);
+  if(!loc){ toast('No se pudo obtener la ubicación'); return; }
+  _activateRadiusAt(loc.lat,loc.lng,label);
 }
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
@@ -3264,6 +3310,20 @@ function pickSuggestion(val){
 async function _flyToDistrictGeo(district){
   if(!leafletMap) return;
   try{
+    if(HERE_API_KEY){
+      const url=`https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&apiKey=${HERE_API_KEY}`;
+      const res=await fetch(url); const data=await res.json();
+      if(data.items&&data.items.length){
+        const it=data.items[0];
+        if(it.mapView){
+          const b=it.mapView;
+          leafletMap.flyToBounds([[b.south,b.west],[b.north,b.east]],{padding:[30,30],duration:1.2});
+        } else if(it.position){
+          leafletMap.flyTo([it.position.lat,it.position.lng],14,{duration:1.2});
+        }
+        return;
+      }
+    }
     const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&lat=-12.05&lon=-77.04`;
     const res=await fetch(url);
     const data=await res.json();
@@ -4876,18 +4936,8 @@ function goToApp(hash){
   async function _fetchGeoLanding(q){
     const fetchIdL=++_geoFetchIdL;
     try{
-      let items=[];
-      let isGoogle=false;
-      if(_gReady){
-        const preds=await _fetchGooglePlaces(q);
-        if(fetchIdL!==_geoFetchIdL) return;
-        if(preds.length){ isGoogle=true; items=preds; }
-      }
-      if(!items.length){
-        const photonResults=await _fetchPhoton(q);
-        if(fetchIdL!==_geoFetchIdL) return;
-        items=photonResults;
-      }
+      const items=await _fetchGeoResults(q);
+      if(fetchIdL!==_geoFetchIdL) return;
       const el=document.getElementById('sgGeoL');
       const drop=document.getElementById('sgDropLanding');
       if(!drop) return;
@@ -4896,10 +4946,12 @@ function goToApp(hash){
         setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
         return;
       }
-      const secLabel=isGoogle?'Direcciones (Google)':'Ubicaciones en el mapa';
-      const secHtml=`<div class="sg-section">${secLabel}</div>`
+      const secHtml=`<div class="sg-section">Direcciones</div>`
         +items.map(r=>{
-          if(isGoogle){
+          if(r.src==='here'){
+            return `<div class="sg-item sg-geo" onmousedown="pickHereLanding('${r.hereId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
+          }
+          if(r.src==='google'){
             return `<div class="sg-item sg-geo" onmousedown="pickGoogleLanding('${r.placeId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
           }
           return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
@@ -4911,6 +4963,12 @@ function goToApp(hash){
       if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
       setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
     }
+  }
+  async function pickHereLanding(hereId,label){
+    document.getElementById('heroQ').value=label;
+    document.getElementById('sgDropLanding').style.display='none';
+    const loc=await _geocodeHereId(hereId);
+    if(loc) _lastGeoL={lat:loc.lat,lng:loc.lng,label};
   }
   async function pickGoogleLanding(placeId,label){
     document.getElementById('heroQ').value=label;
