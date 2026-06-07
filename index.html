@@ -2509,7 +2509,7 @@ function togglePolyMode(){
   btn.classList.toggle('active',S.polyMode);
   panel.classList.toggle('open',S.polyMode);
   mapEl.classList.toggle('poly-mode',S.polyMode);
-  document.getElementById('radiusToggle').style.display=S.polyMode?'none':'';
+  // In unified toolbar, don't hide other buttons
   if(!S.polyMode){ clearPoly(); }
 }
 function _deactivatePoly(){
@@ -2517,7 +2517,7 @@ function _deactivatePoly(){
   document.getElementById('polyToggle').classList.remove('active');
   document.getElementById('polyPanel').classList.remove('open');
   document.getElementById('realMap').classList.remove('poly-mode');
-  document.getElementById('radiusToggle').style.display='';
+  // radiusToggle stays visible in unified toolbar
   clearPoly();
 }
 function addPolyPoint(latlng){
