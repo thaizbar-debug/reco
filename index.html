@@ -3054,24 +3054,33 @@ function showSuggestions(val){
   let body='';
   if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtml(s,val)).join('');
   if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtml(s,val)).join('');
-  el.innerHTML=body+'<div id="sgGeo"></div>';
-  el.style.display=body?'block':'none';
+  const showGeoLoading=val.length>=3;
+  const geoPlaceholder=showGeoLoading?'<div id="sgGeo"><div class="sg-geo-loading">Buscando ubicaciones…</div></div>':'<div id="sgGeo"></div>';
+  el.innerHTML=body+geoPlaceholder;
+  el.style.display=(body||showGeoLoading)?'block':'none';
 }
+let _geoFetchId=0;
 async function _fetchGeo(q){
-  const el=document.getElementById('sgGeo');
+  const fetchId=++_geoFetchId;
   try{
     const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+', Perú')}&format=json&limit=5&addressdetails=1&accept-language=es`;
     const res=await fetch(url);
+    if(fetchId!==_geoFetchId) return;
     const data=await res.json();
-    if(!data.length){if(el)el.remove();return;}
+    const el=document.getElementById('sgGeo');
+    const drop=document.getElementById('sgDrop');
+    if(!drop) return;
+    if(!data.length){
+      if(el) el.innerHTML='<div class="sg-geo-loading">No se encontraron ubicaciones</div>';
+      setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
+      return;
+    }
     const items=data.map(r=>{
       const parts=r.display_name.split(',');
       const label=parts.slice(0,2).join(',').trim();
       const sub=parts.slice(2,4).join(',').trim()||'Perú';
       return {label,sub,lat:parseFloat(r.lat),lng:parseFloat(r.lon)};
     });
-    const drop=document.getElementById('sgDrop');
-    if(!drop) return;
     const secHtml=`<div class="sg-section">Ubicaciones en el mapa</div>`
       +items.map(r=>`
         <div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
@@ -3084,7 +3093,11 @@ async function _fetchGeo(q){
     if(el) el.outerHTML=secHtml;
     else drop.insertAdjacentHTML('beforeend',secHtml);
     drop.style.display='block';
-  }catch(e){if(el)el.remove();}
+  }catch(e){
+    const el=document.getElementById('sgGeo');
+    if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
+    setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
+  }
 }
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
@@ -4699,31 +4712,44 @@ function goToApp(hash){
     let body='';
     if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtmlLanding(s,v)).join('');
     if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtmlLanding(s,v)).join('');
-    drop.innerHTML=body+'<div id="sgGeoL"></div>';
-    drop.style.display=body?'block':'none';
+    const showGeoLoadingL=v.length>=3;
+    const geoPlaceholderL=showGeoLoadingL?'<div id="sgGeoL"><div class="sg-geo-loading">Buscando ubicaciones…</div></div>':'<div id="sgGeoL"></div>';
+    drop.innerHTML=body+geoPlaceholderL;
+    drop.style.display=(body||showGeoLoadingL)?'block':'none';
     clearTimeout(_geoTimerL);
     if(v.length>=3) _geoTimerL=setTimeout(()=>_fetchGeoLanding(v),500);
   }
+  let _geoFetchIdL=0;
   async function _fetchGeoLanding(q){
-    const el=document.getElementById('sgGeoL');
+    const fetchIdL=++_geoFetchIdL;
     try{
       const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q+', Lima, Perú')}&format=json&limit=4&addressdetails=1&accept-language=es`;
-      const res=await fetch(url); const data=await res.json();
-      if(!data.length){if(el)el.remove();return;}
+      const res=await fetch(url);
+      if(fetchIdL!==_geoFetchIdL) return;
+      const data=await res.json();
+      const el=document.getElementById('sgGeoL');
+      const drop=document.getElementById('sgDropLanding');
+      if(!drop) return;
+      if(!data.length){
+        if(el) el.innerHTML='<div class="sg-geo-loading">No se encontraron ubicaciones</div>';
+        setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
+        return;
+      }
       const items=data.map(r=>{
         const parts=r.display_name.split(',');
         const label=parts.slice(0,2).join(',').trim();
         const sub=parts.slice(2,4).join(',').trim()||'Lima, Perú';
         return {label,sub,lat:parseFloat(r.lat),lng:parseFloat(r.lon),bb:r.boundingbox};
       });
-      const drop=document.getElementById('sgDropLanding');
-      if(!drop) return;
       const secHtml=`<div class="sg-section">Ubicaciones en el mapa</div>`
         +items.map(r=>`<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`).join('');
-      const geoEl=document.getElementById('sgGeoL');
-      if(geoEl) geoEl.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
+      if(el) el.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
       drop.style.display='block';
-    }catch(e){if(el)el.remove();}
+    }catch(e){
+      const el=document.getElementById('sgGeoL');
+      if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
+      setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
+    }
   }
   function pickLanding(val){
     document.getElementById('heroQ').value=val;
