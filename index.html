@@ -2263,9 +2263,11 @@ function getFiltered(){
 // ─────────────────────── RENDER CARDS ───────────────────────
 function fmtPrice(p){ return p>=1000000? (p/1000000).toFixed(1)+'M' : p>=1000? Math.round(p/1000)+'K' : p.toString(); }
 function sqmPrice(p){ return Math.round(p.price/p.area); }
-function isSqmEligible(p){ return p.op==='Histórico'; }
 function sqmPriceNet(p){
-  if(!isSqmEligible(p)) return 0;
+  if(p.op==='Venta') return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
+  return 0;
+}
+function histSqmNet(p){
   const price=getHistPropPrice(p);
   if(!(price>0)) return 0;
   const areaOcup=p.sun?.areaOcup||0;
@@ -2305,7 +2307,7 @@ let _histTableList=[];
 
 function _buildHistTableHtml(list){
   const rows=list.map(p=>{
-    const sqm=sqmPriceNet(p);
+    const sqm=histSqmNet(p);
     const area=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;
     return `<tr onclick="closeAreaModal();openDetail('${p.id}')">
       <td><div class="sum-addr">${_shortAddr(p.address)}</div><div class="sum-dist">📍 ${p.district}</div></td>
@@ -2314,9 +2316,9 @@ function _buildHistTableHtml(list){
       <td>${sqm>0?`<span class="sum-price">${p.cur} ${sqm.toLocaleString()}/m²</span>`:'<span class="sum-muted">—</span>'}</td>
     </tr>`;
   }).join('');
-  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&sqmPriceNet(p)>0;});
+  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
   const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
-  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+sqmPriceNet(p),0)/validRows.length):0;
+  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
   const avgCur=validRows.length?validRows[0].cur:'$';
   const tfoot=validRows.length?`<tfoot><tr style="background:#f0f7ff;font-weight:700;border-top:2px solid var(--blue)">
     <td colspan="2" style="padding:9px 10px;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:var(--blue)">Promedio · ${validRows.length} propiedades</td>
@@ -2341,9 +2343,9 @@ function closeAreaModal(){
 
 function renderHistTable(list){
   _histTableList=list;
-  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&sqmPriceNet(p)>0;});
+  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
   const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
-  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+sqmPriceNet(p),0)/validRows.length):0;
+  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
   const avgCur=validRows.length?validRows[0].cur:'$';
 
   return `<div class="area-summary-bar">
