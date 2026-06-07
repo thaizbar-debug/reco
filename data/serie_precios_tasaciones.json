@@ -1,0 +1,6925 @@
+{
+  "metadata": {
+    "fuente": "RECO - Tasaciones Históricas BVANET",
+    "descripcion": "Serie histórica de valor unitario de terreno por distrito basada en tasaciones profesionales",
+    "periodo": "2017-2024",
+    "unidad": "USD/m²",
+    "total_registros": 24064,
+    "total_distritos": 116,
+    "criterio_inclusion": "Mínimo 20 tasaciones y datos en al menos 3 años"
+  },
+  "distritos": {
+    "SANTIAGO DE SURCO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 1897,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 1969.36,
+          "n_tasaciones": 566,
+          "min": 45.0,
+          "max": 6500.0,
+          "p25": 1500.0,
+          "p75": 2180.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 2500.0,
+          "n_tasaciones": 1,
+          "min": 2500.0,
+          "max": 2500.0,
+          "var_pct": 38.9
+        },
+        "2019": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 2663.63,
+          "n_tasaciones": 218,
+          "min": 450.0,
+          "max": 128661.71,
+          "p25": 1500.0,
+          "p75": 2500.0,
+          "var_pct": -28.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 2023.26,
+          "n_tasaciones": 264,
+          "min": 2.0,
+          "max": 6000.0,
+          "p25": 1500.0,
+          "p75": 2200.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 1851.54,
+          "n_tasaciones": 377,
+          "min": 19.0,
+          "max": 6000.0,
+          "p25": 1450.0,
+          "p75": 2000.0,
+          "var_pct": -5.6
+        },
+        "2022": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 1764.1,
+          "n_tasaciones": 61,
+          "min": 400.0,
+          "max": 4000.0,
+          "p25": 1300.0,
+          "p75": 1900.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 3355.86,
+          "n_tasaciones": 353,
+          "min": 25.0,
+          "max": 310510.24,
+          "p25": 1450.0,
+          "p75": 2120.0,
+          "var_pct": 5.9
+        },
+        "2024": {
+          "mediana_usd_m2": 4200.0,
+          "promedio_usd_m2": 4200.0,
+          "n_tasaciones": 2,
+          "min": 3400.0,
+          "max": 5000.0,
+          "p25": 3400.0,
+          "p75": 5000.0,
+          "var_pct": 133.3
+        }
+      }
+    },
+    "MIRAFLORES": {
+      "departamento": "LIMA",
+      "total_tasaciones": 1303,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2800.0,
+          "promedio_usd_m2": 3431.34,
+          "n_tasaciones": 340,
+          "min": 300.0,
+          "max": 13200.0,
+          "p25": 2400.0,
+          "p75": 3700.0
+        },
+        "2018": {
+          "mediana_usd_m2": 3000.0,
+          "promedio_usd_m2": 3467.05,
+          "n_tasaciones": 21,
+          "min": 158.0,
+          "max": 7000.0,
+          "p25": 2450.0,
+          "p75": 3900.0,
+          "var_pct": 7.1
+        },
+        "2019": {
+          "mediana_usd_m2": 3300.0,
+          "promedio_usd_m2": 3477.97,
+          "n_tasaciones": 133,
+          "min": 170.0,
+          "max": 7100.0,
+          "p25": 2600.0,
+          "p75": 4000.0,
+          "var_pct": 10.0
+        },
+        "2020": {
+          "mediana_usd_m2": 3700.0,
+          "promedio_usd_m2": 3956.09,
+          "n_tasaciones": 167,
+          "min": 7.0,
+          "max": 10000.0,
+          "p25": 2700.0,
+          "p75": 5000.0,
+          "var_pct": 12.1
+        },
+        "2021": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 674.29,
+          "n_tasaciones": 7,
+          "min": 400.0,
+          "max": 1100.0,
+          "p25": 450.0,
+          "p75": 900.0,
+          "var_pct": -86.5
+        },
+        "2022": {
+          "mediana_usd_m2": 2750.0,
+          "promedio_usd_m2": 3434.47,
+          "n_tasaciones": 36,
+          "min": 16.0,
+          "max": 10000.0,
+          "p25": 2400.0,
+          "p75": 3400.0,
+          "var_pct": 450.0
+        },
+        "2023": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 766.0,
+          "n_tasaciones": 5,
+          "min": 400.0,
+          "max": 1000.0,
+          "p25": 570.0,
+          "p75": 960.0,
+          "var_pct": -67.3
+        },
+        "2024": {
+          "mediana_usd_m2": 6250.0,
+          "promedio_usd_m2": 6250.0,
+          "n_tasaciones": 2,
+          "min": 3700.0,
+          "max": 8800.0,
+          "p25": 3700.0,
+          "p75": 8800.0,
+          "var_pct": 594.4
+        }
+      }
+    },
+    "CERCADO DE LIMA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 1121,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1980.0,
+          "promedio_usd_m2": 3133.39,
+          "n_tasaciones": 267,
+          "min": 80.0,
+          "max": 16379.91,
+          "p25": 1260.0,
+          "p75": 3500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 2948.04,
+          "n_tasaciones": 23,
+          "min": 5.0,
+          "max": 11000.0,
+          "p25": 1250.0,
+          "p75": 3000.0,
+          "var_pct": -14.1
+        },
+        "2019": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 2276.58,
+          "n_tasaciones": 155,
+          "min": 110.0,
+          "max": 11000.0,
+          "p25": 1100.0,
+          "p75": 2700.0,
+          "var_pct": -17.6
+        },
+        "2020": {
+          "mediana_usd_m2": 1850.0,
+          "promedio_usd_m2": 2670.0,
+          "n_tasaciones": 118,
+          "min": 410.0,
+          "max": 12000.0,
+          "p25": 1100.0,
+          "p75": 2960.0,
+          "var_pct": 32.1
+        },
+        "2021": {
+          "mediana_usd_m2": 2200.0,
+          "promedio_usd_m2": 2650.95,
+          "n_tasaciones": 216,
+          "min": 200.0,
+          "max": 12000.0,
+          "p25": 1200.0,
+          "p75": 2850.0,
+          "var_pct": 18.9
+        },
+        "2022": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1978.33,
+          "n_tasaciones": 39,
+          "min": 465.0,
+          "max": 5700.0,
+          "p25": 1100.0,
+          "p75": 2400.0,
+          "var_pct": -40.9
+        },
+        "2023": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 2658.91,
+          "n_tasaciones": 302,
+          "min": 150.0,
+          "max": 14000.0,
+          "p25": 1200.0,
+          "p75": 3400.0,
+          "var_pct": 53.8
+        },
+        "2024": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1200.0,
+          "n_tasaciones": 1,
+          "min": 1200.0,
+          "max": 1200.0,
+          "var_pct": -40.0
+        }
+      }
+    },
+    "SAN ISIDRO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 819,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 3000.0,
+          "promedio_usd_m2": 3600.71,
+          "n_tasaciones": 251,
+          "min": 712.0,
+          "max": 10000.0,
+          "p25": 2400.0,
+          "p75": 4500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 4500.0,
+          "promedio_usd_m2": 5272.73,
+          "n_tasaciones": 11,
+          "min": 1700.0,
+          "max": 9000.0,
+          "p25": 3600.0,
+          "p75": 7500.0,
+          "var_pct": 50.0
+        },
+        "2019": {
+          "mediana_usd_m2": 3800.0,
+          "promedio_usd_m2": 3997.84,
+          "n_tasaciones": 88,
+          "min": 1500.0,
+          "max": 8000.0,
+          "p25": 3000.0,
+          "p75": 5000.0,
+          "var_pct": -15.6
+        },
+        "2020": {
+          "mediana_usd_m2": 3900.0,
+          "promedio_usd_m2": 3815.04,
+          "n_tasaciones": 173,
+          "min": 12.0,
+          "max": 8000.0,
+          "p25": 3000.0,
+          "p75": 4200.0,
+          "var_pct": 2.6
+        },
+        "2021": {
+          "mediana_usd_m2": 3150.0,
+          "promedio_usd_m2": 3423.72,
+          "n_tasaciones": 117,
+          "min": 11.5,
+          "max": 9815.0,
+          "p25": 2450.0,
+          "p75": 4000.0,
+          "var_pct": -19.2
+        },
+        "2022": {
+          "mediana_usd_m2": 3255.0,
+          "promedio_usd_m2": 3501.42,
+          "n_tasaciones": 24,
+          "min": 7.0,
+          "max": 7000.0,
+          "p25": 2500.0,
+          "p75": 4500.0,
+          "var_pct": 3.3
+        },
+        "2023": {
+          "mediana_usd_m2": 3250.0,
+          "promedio_usd_m2": 3774.35,
+          "n_tasaciones": 153,
+          "min": 190.0,
+          "max": 40000.0,
+          "p25": 2300.0,
+          "p75": 4200.0,
+          "var_pct": -0.2
+        },
+        "2024": {
+          "mediana_usd_m2": 3360.0,
+          "promedio_usd_m2": 3360.0,
+          "n_tasaciones": 2,
+          "min": 2500.0,
+          "max": 4220.0,
+          "p25": 2500.0,
+          "p75": 4220.0,
+          "var_pct": 3.4
+        }
+      }
+    },
+    "ATE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 807,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1344.04,
+          "n_tasaciones": 193,
+          "min": 60.0,
+          "max": 3800.0,
+          "p25": 1200.0,
+          "p75": 1600.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1110.0,
+          "n_tasaciones": 15,
+          "min": 500.0,
+          "max": 1700.0,
+          "p25": 700.0,
+          "p75": 1500.0,
+          "var_pct": -14.3
+        },
+        "2019": {
+          "mediana_usd_m2": 1150.0,
+          "promedio_usd_m2": 1590.8,
+          "n_tasaciones": 113,
+          "min": 6.0,
+          "max": 44600.0,
+          "p25": 600.0,
+          "p75": 1450.0,
+          "var_pct": -4.2
+        },
+        "2020": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 894.93,
+          "n_tasaciones": 113,
+          "min": 12.0,
+          "max": 2560.0,
+          "p25": 500.0,
+          "p75": 1300.0,
+          "var_pct": -30.4
+        },
+        "2021": {
+          "mediana_usd_m2": 765.0,
+          "promedio_usd_m2": 857.5,
+          "n_tasaciones": 171,
+          "min": 23.0,
+          "max": 2000.0,
+          "p25": 450.0,
+          "p75": 1300.0,
+          "var_pct": -4.4
+        },
+        "2022": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1258.0,
+          "n_tasaciones": 35,
+          "min": 390.0,
+          "max": 3250.0,
+          "p25": 950.0,
+          "p75": 1490.0,
+          "var_pct": 69.9
+        },
+        "2023": {
+          "mediana_usd_m2": 1075.0,
+          "promedio_usd_m2": 1044.51,
+          "n_tasaciones": 166,
+          "min": 145.0,
+          "max": 2300.0,
+          "p25": 680.0,
+          "p75": 1350.0,
+          "var_pct": -17.3
+        },
+        "2024": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1400.0,
+          "n_tasaciones": 1,
+          "min": 1400.0,
+          "max": 1400.0,
+          "var_pct": 30.2
+        }
+      }
+    },
+    "LA VICTORIA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 785,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1785.0,
+          "promedio_usd_m2": 3080.0,
+          "n_tasaciones": 116,
+          "min": 500.0,
+          "max": 18000.0,
+          "p25": 1400.0,
+          "p75": 3000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1501.54,
+          "n_tasaciones": 13,
+          "min": 720.0,
+          "max": 2500.0,
+          "p25": 1400.0,
+          "p75": 1600.0,
+          "var_pct": -21.6
+        },
+        "2019": {
+          "mediana_usd_m2": 2550.0,
+          "promedio_usd_m2": 11474.08,
+          "n_tasaciones": 76,
+          "min": 510.0,
+          "max": 575000.0,
+          "p25": 1600.0,
+          "p75": 4000.0,
+          "var_pct": 82.1
+        },
+        "2020": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 3889.46,
+          "n_tasaciones": 102,
+          "min": 240.0,
+          "max": 14500.0,
+          "p25": 1450.0,
+          "p75": 3500.0,
+          "var_pct": -21.6
+        },
+        "2021": {
+          "mediana_usd_m2": 1850.0,
+          "promedio_usd_m2": 3284.55,
+          "n_tasaciones": 155,
+          "min": 30.0,
+          "max": 16000.0,
+          "p25": 1450.0,
+          "p75": 3450.0,
+          "var_pct": -7.5
+        },
+        "2022": {
+          "mediana_usd_m2": 1675.0,
+          "promedio_usd_m2": 3340.83,
+          "n_tasaciones": 36,
+          "min": 1150.0,
+          "max": 13300.0,
+          "p25": 1500.0,
+          "p75": 4000.0,
+          "var_pct": -9.5
+        },
+        "2023": {
+          "mediana_usd_m2": 422.5,
+          "promedio_usd_m2": 498.93,
+          "n_tasaciones": 14,
+          "min": 120.0,
+          "max": 900.0,
+          "p25": 320.0,
+          "p75": 730.0,
+          "var_pct": -74.8
+        },
+        "2024": {
+          "mediana_usd_m2": 1870.0,
+          "promedio_usd_m2": 3420.0,
+          "n_tasaciones": 3,
+          "min": 1200.0,
+          "max": 7190.0,
+          "p25": 1200.0,
+          "p75": 7190.0,
+          "var_pct": 342.6
+        }
+      }
+    },
+    "LA MOLINA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 721,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1653.56,
+          "n_tasaciones": 184,
+          "min": 650.0,
+          "max": 11000.0,
+          "p25": 1100.0,
+          "p75": 1600.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 2322.22,
+          "n_tasaciones": 18,
+          "min": 850.0,
+          "max": 18000.0,
+          "p25": 1000.0,
+          "p75": 1700.0,
+          "var_pct": -14.3
+        },
+        "2019": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1979.03,
+          "n_tasaciones": 89,
+          "min": 400.0,
+          "max": 55874.0,
+          "p25": 1000.0,
+          "p75": 1500.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1283.66,
+          "n_tasaciones": 123,
+          "min": 580.0,
+          "max": 3000.0,
+          "p25": 950.0,
+          "p75": 1500.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1267.66,
+          "n_tasaciones": 162,
+          "min": 440.0,
+          "max": 3800.0,
+          "p25": 900.0,
+          "p75": 1400.0,
+          "var_pct": -8.3
+        },
+        "2022": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1620.26,
+          "n_tasaciones": 19,
+          "min": 580.0,
+          "max": 12110.0,
+          "p25": 815.0,
+          "p75": 1300.0,
+          "var_pct": -9.1
+        },
+        "2023": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 1,
+          "min": 700.0,
+          "max": 700.0,
+          "var_pct": -30.0
+        },
+        "2024": {
+          "mediana_usd_m2": 2650.0,
+          "promedio_usd_m2": 2650.0,
+          "n_tasaciones": 2,
+          "min": 2600.0,
+          "max": 2700.0,
+          "p25": 2600.0,
+          "p75": 2700.0,
+          "var_pct": 278.6
+        }
+      }
+    },
+    "SAN BORJA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 640,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 2077.79,
+          "n_tasaciones": 188,
+          "min": 1100.0,
+          "max": 4850.0,
+          "p25": 1710.0,
+          "p75": 2230.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 2390.74,
+          "n_tasaciones": 27,
+          "min": 1500.0,
+          "max": 4800.0,
+          "p25": 1700.0,
+          "p75": 3500.0,
+          "var_pct": 0.0
+        },
+        "2019": {
+          "mediana_usd_m2": 2312.5,
+          "promedio_usd_m2": 2552.99,
+          "n_tasaciones": 72,
+          "min": 1600.0,
+          "max": 4850.0,
+          "p25": 1800.0,
+          "p75": 3300.0,
+          "var_pct": 15.6
+        },
+        "2020": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2376.41,
+          "n_tasaciones": 109,
+          "min": 9.0,
+          "max": 5500.0,
+          "p25": 1800.0,
+          "p75": 2600.0,
+          "var_pct": -9.2
+        },
+        "2021": {
+          "mediana_usd_m2": 1900.0,
+          "promedio_usd_m2": 2112.87,
+          "n_tasaciones": 122,
+          "min": 1400.0,
+          "max": 4800.0,
+          "p25": 1700.0,
+          "p75": 2400.0,
+          "var_pct": -9.5
+        },
+        "2022": {
+          "mediana_usd_m2": 2005.0,
+          "promedio_usd_m2": 2407.05,
+          "n_tasaciones": 22,
+          "min": 1500.0,
+          "max": 4500.0,
+          "p25": 1800.0,
+          "p75": 2600.0,
+          "var_pct": 5.5
+        },
+        "2023": {
+          "mediana_usd_m2": 1865.0,
+          "promedio_usd_m2": 2047.7,
+          "n_tasaciones": 100,
+          "min": 210.0,
+          "max": 4040.0,
+          "p25": 1700.0,
+          "p75": 2450.0,
+          "var_pct": -7.0
+        }
+      }
+    },
+    "LINCE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 628,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1980.0,
+          "promedio_usd_m2": 2283.82,
+          "n_tasaciones": 114,
+          "min": 855.67,
+          "max": 4500.0,
+          "p25": 1640.0,
+          "p75": 2970.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2200.0,
+          "promedio_usd_m2": 2525.0,
+          "n_tasaciones": 8,
+          "min": 1500.0,
+          "max": 4000.0,
+          "p25": 1800.0,
+          "p75": 4000.0,
+          "var_pct": 11.1
+        },
+        "2019": {
+          "mediana_usd_m2": 2300.0,
+          "promedio_usd_m2": 2708.75,
+          "n_tasaciones": 40,
+          "min": 1650.0,
+          "max": 3500.0,
+          "p25": 2200.0,
+          "p75": 3500.0,
+          "var_pct": 4.5
+        },
+        "2020": {
+          "mediana_usd_m2": 4500.0,
+          "promedio_usd_m2": 3589.5,
+          "n_tasaciones": 121,
+          "min": 1500.0,
+          "max": 4650.0,
+          "p25": 2600.0,
+          "p75": 4500.0,
+          "var_pct": 95.7
+        },
+        "2021": {
+          "mediana_usd_m2": 3875.0,
+          "promedio_usd_m2": 3434.31,
+          "n_tasaciones": 198,
+          "min": 1350.0,
+          "max": 4650.0,
+          "p25": 2080.0,
+          "p75": 4500.0,
+          "var_pct": -13.9
+        },
+        "2022": {
+          "mediana_usd_m2": 4500.0,
+          "promedio_usd_m2": 3898.21,
+          "n_tasaciones": 28,
+          "min": 1450.0,
+          "max": 4650.0,
+          "p25": 3000.0,
+          "p75": 4500.0,
+          "var_pct": 16.1
+        },
+        "2023": {
+          "mediana_usd_m2": 2640.0,
+          "promedio_usd_m2": 3046.86,
+          "n_tasaciones": 118,
+          "min": 1450.0,
+          "max": 4750.0,
+          "p25": 2500.0,
+          "p75": 4000.0,
+          "var_pct": -41.3
+        },
+        "2024": {
+          "mediana_usd_m2": 2700.0,
+          "promedio_usd_m2": 2700.0,
+          "n_tasaciones": 1,
+          "min": 2700.0,
+          "max": 2700.0,
+          "var_pct": 2.3
+        }
+      }
+    },
+    "SAN MIGUEL": {
+      "departamento": "LIMA",
+      "total_tasaciones": 605,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1764.5,
+          "n_tasaciones": 160,
+          "min": 960.0,
+          "max": 4250.0,
+          "p25": 1350.0,
+          "p75": 1920.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1550.0,
+          "promedio_usd_m2": 1745.0,
+          "n_tasaciones": 10,
+          "min": 1000.0,
+          "max": 3300.0,
+          "p25": 1400.0,
+          "p75": 2000.0,
+          "var_pct": 3.3
+        },
+        "2019": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 3535.52,
+          "n_tasaciones": 61,
+          "min": 550.0,
+          "max": 36340.0,
+          "p25": 1400.0,
+          "p75": 1650.0,
+          "var_pct": -3.2
+        },
+        "2020": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1957.65,
+          "n_tasaciones": 83,
+          "min": 25.0,
+          "max": 10000.0,
+          "p25": 1400.0,
+          "p75": 2000.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 1650.0,
+          "promedio_usd_m2": 1912.54,
+          "n_tasaciones": 114,
+          "min": 4.5,
+          "max": 3700.0,
+          "p25": 1450.0,
+          "p75": 2600.0,
+          "var_pct": 10.0
+        },
+        "2022": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1613.53,
+          "n_tasaciones": 17,
+          "min": 1100.0,
+          "max": 3700.0,
+          "p25": 1200.0,
+          "p75": 1600.0,
+          "var_pct": -15.2
+        },
+        "2023": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1723.6,
+          "n_tasaciones": 157,
+          "min": 520.0,
+          "max": 3550.0,
+          "p25": 1350.0,
+          "p75": 1900.0,
+          "var_pct": 7.1
+        },
+        "2024": {
+          "mediana_usd_m2": 1840.0,
+          "promedio_usd_m2": 2013.33,
+          "n_tasaciones": 3,
+          "min": 900.0,
+          "max": 3300.0,
+          "p25": 900.0,
+          "p75": 3300.0,
+          "var_pct": 22.7
+        }
+      }
+    },
+    "CARABAYLLO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 556,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 380.0,
+          "promedio_usd_m2": 400.31,
+          "n_tasaciones": 77,
+          "min": 45.0,
+          "max": 890.0,
+          "p25": 300.0,
+          "p75": 450.0
+        },
+        "2018": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 424.0,
+          "n_tasaciones": 5,
+          "min": 300.0,
+          "max": 650.0,
+          "p25": 350.0,
+          "p75": 420.0,
+          "var_pct": 5.3
+        },
+        "2019": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 40732.13,
+          "n_tasaciones": 52,
+          "min": 120.0,
+          "max": 2099196.0,
+          "p25": 300.0,
+          "p75": 450.0,
+          "var_pct": -12.5
+        },
+        "2020": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 330.48,
+          "n_tasaciones": 115,
+          "min": 110.0,
+          "max": 630.0,
+          "p25": 300.0,
+          "p75": 350.0,
+          "var_pct": -14.3
+        },
+        "2021": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 348.09,
+          "n_tasaciones": 118,
+          "min": 80.0,
+          "max": 1300.0,
+          "p25": 300.0,
+          "p75": 360.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 290.0,
+          "promedio_usd_m2": 346.79,
+          "n_tasaciones": 14,
+          "min": 150.0,
+          "max": 850.0,
+          "p25": 190.0,
+          "p75": 450.0,
+          "var_pct": -3.3
+        },
+        "2023": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 421.98,
+          "n_tasaciones": 174,
+          "min": 55.0,
+          "max": 2200.0,
+          "p25": 280.0,
+          "p75": 450.0,
+          "var_pct": 37.9
+        },
+        "2024": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 550.0,
+          "n_tasaciones": 1,
+          "min": 550.0,
+          "max": 550.0,
+          "var_pct": 37.5
+        }
+      }
+    },
+    "TRUJILLO": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 553,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1300.0,
+          "n_tasaciones": 1,
+          "min": 1300.0,
+          "max": 1300.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": -23.1
+        },
+        "2020": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 450.0,
+          "n_tasaciones": 1,
+          "min": 450.0,
+          "max": 450.0,
+          "var_pct": -55.0
+        },
+        "2021": {
+          "mediana_usd_m2": 415.0,
+          "promedio_usd_m2": 382.5,
+          "n_tasaciones": 4,
+          "min": 130.0,
+          "max": 570.0,
+          "p25": 290.0,
+          "p75": 570.0,
+          "var_pct": -7.8
+        },
+        "2022": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 825.97,
+          "n_tasaciones": 31,
+          "min": 60.0,
+          "max": 1600.0,
+          "p25": 450.0,
+          "p75": 1300.0,
+          "var_pct": 92.8
+        },
+        "2023": {
+          "mediana_usd_m2": 990.0,
+          "promedio_usd_m2": 990.0,
+          "n_tasaciones": 2,
+          "min": 880.0,
+          "max": 1100.0,
+          "p25": 880.0,
+          "p75": 1100.0,
+          "var_pct": 23.8
+        },
+        "2024": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1300.0,
+          "n_tasaciones": 2,
+          "min": 1300.0,
+          "max": 1300.0,
+          "p25": 1300.0,
+          "p75": 1300.0,
+          "var_pct": 31.3
+        }
+      }
+    },
+    "PUEBLO LIBRE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 512,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 2090.43,
+          "n_tasaciones": 164,
+          "min": 20.0,
+          "max": 4000.0,
+          "p25": 1500.0,
+          "p75": 2520.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 1853.0,
+          "n_tasaciones": 10,
+          "min": 1400.0,
+          "max": 2500.0,
+          "p25": 1650.0,
+          "p75": 2000.0,
+          "var_pct": 0.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1875.0,
+          "promedio_usd_m2": 2180.56,
+          "n_tasaciones": 36,
+          "min": 1200.0,
+          "max": 4300.0,
+          "p25": 1600.0,
+          "p75": 2700.0,
+          "var_pct": 4.2
+        },
+        "2020": {
+          "mediana_usd_m2": 2250.0,
+          "promedio_usd_m2": 2133.38,
+          "n_tasaciones": 71,
+          "min": 200.0,
+          "max": 3800.0,
+          "p25": 1600.0,
+          "p75": 2500.0,
+          "var_pct": 20.0
+        },
+        "2021": {
+          "mediana_usd_m2": 2400.0,
+          "promedio_usd_m2": 2231.0,
+          "n_tasaciones": 120,
+          "min": 15.0,
+          "max": 4000.0,
+          "p25": 1650.0,
+          "p75": 2700.0,
+          "var_pct": 6.7
+        },
+        "2022": {
+          "mediana_usd_m2": 2650.0,
+          "promedio_usd_m2": 2523.75,
+          "n_tasaciones": 24,
+          "min": 1200.0,
+          "max": 3550.0,
+          "p25": 2100.0,
+          "p75": 3000.0,
+          "var_pct": 10.4
+        },
+        "2023": {
+          "mediana_usd_m2": 530.0,
+          "promedio_usd_m2": 530.0,
+          "n_tasaciones": 1,
+          "min": 530.0,
+          "max": 530.0,
+          "var_pct": -80.0
+        },
+        "2024": {
+          "mediana_usd_m2": 3750.0,
+          "promedio_usd_m2": 3750.0,
+          "n_tasaciones": 1,
+          "min": 3750.0,
+          "max": 3750.0,
+          "var_pct": 607.5
+        }
+      }
+    },
+    "SAN JUAN DE LURIGANCHO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 506,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 930.0,
+          "promedio_usd_m2": 930.0,
+          "n_tasaciones": 1,
+          "min": 930.0,
+          "max": 930.0
+        },
+        "2018": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 672.5,
+          "n_tasaciones": 8,
+          "min": 380.0,
+          "max": 1000.0,
+          "p25": 700.0,
+          "p75": 750.0,
+          "var_pct": -24.7
+        },
+        "2019": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 1057.53,
+          "n_tasaciones": 73,
+          "min": 300.0,
+          "max": 20110.0,
+          "p25": 550.0,
+          "p75": 900.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 670.0,
+          "promedio_usd_m2": 766.03,
+          "n_tasaciones": 58,
+          "min": 10.0,
+          "max": 3000.0,
+          "p25": 500.0,
+          "p75": 900.0,
+          "var_pct": -4.3
+        },
+        "2021": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 737.1,
+          "n_tasaciones": 94,
+          "min": 12.0,
+          "max": 1960.0,
+          "p25": 500.0,
+          "p75": 900.0,
+          "var_pct": 4.5
+        },
+        "2022": {
+          "mediana_usd_m2": 665.0,
+          "promedio_usd_m2": 661.67,
+          "n_tasaciones": 12,
+          "min": 400.0,
+          "max": 1000.0,
+          "p25": 500.0,
+          "p75": 900.0,
+          "var_pct": -5.0
+        },
+        "2023": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 1430.67,
+          "n_tasaciones": 167,
+          "min": 95.0,
+          "max": 107766.9,
+          "p25": 600.0,
+          "p75": 1000.0,
+          "var_pct": 20.3
+        },
+        "2024": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 632.5,
+          "n_tasaciones": 4,
+          "min": 580.0,
+          "max": 650.0,
+          "p25": 650.0,
+          "p75": 650.0,
+          "var_pct": -18.8
+        }
+      }
+    },
+    "CHORRILLOS": {
+      "departamento": "LIMA",
+      "total_tasaciones": 491,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 1049.48,
+          "n_tasaciones": 142,
+          "min": 180.0,
+          "max": 5000.0,
+          "p25": 750.0,
+          "p75": 1130.0
+        },
+        "2018": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 816.67,
+          "n_tasaciones": 6,
+          "min": 500.0,
+          "max": 1000.0,
+          "p25": 600.0,
+          "p75": 1000.0,
+          "var_pct": -5.3
+        },
+        "2019": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 5969.18,
+          "n_tasaciones": 64,
+          "min": 172.58,
+          "max": 306750.0,
+          "p25": 800.0,
+          "p75": 1400.0,
+          "var_pct": 11.1
+        },
+        "2020": {
+          "mediana_usd_m2": 915.0,
+          "promedio_usd_m2": 938.03,
+          "n_tasaciones": 76,
+          "min": 320.0,
+          "max": 2000.0,
+          "p25": 800.0,
+          "p75": 1000.0,
+          "var_pct": -8.5
+        },
+        "2021": {
+          "mediana_usd_m2": 920.0,
+          "promedio_usd_m2": 924.09,
+          "n_tasaciones": 99,
+          "min": 160.0,
+          "max": 2000.0,
+          "p25": 800.0,
+          "p75": 1000.0,
+          "var_pct": 0.5
+        },
+        "2022": {
+          "mediana_usd_m2": 840.0,
+          "promedio_usd_m2": 1029.67,
+          "n_tasaciones": 15,
+          "min": 460.0,
+          "max": 2800.0,
+          "p25": 665.0,
+          "p75": 1170.0,
+          "var_pct": -8.7
+        },
+        "2023": {
+          "mediana_usd_m2": 840.0,
+          "promedio_usd_m2": 888.03,
+          "n_tasaciones": 89,
+          "min": 70.0,
+          "max": 2400.0,
+          "p25": 700.0,
+          "p75": 1000.0,
+          "var_pct": 0.0
+        }
+      }
+    },
+    "SURQUILLO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 491,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 2209.16,
+          "n_tasaciones": 166,
+          "min": 290.0,
+          "max": 5500.0,
+          "p25": 1800.0,
+          "p75": 2500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2700.0,
+          "promedio_usd_m2": 2731.82,
+          "n_tasaciones": 11,
+          "min": 1700.0,
+          "max": 5500.0,
+          "p25": 1800.0,
+          "p75": 3000.0,
+          "var_pct": 35.0
+        },
+        "2019": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 6289.92,
+          "n_tasaciones": 68,
+          "min": 1400.0,
+          "max": 279539.75,
+          "p25": 1800.0,
+          "p75": 2400.0,
+          "var_pct": -25.9
+        },
+        "2020": {
+          "mediana_usd_m2": 2250.0,
+          "promedio_usd_m2": 3042.54,
+          "n_tasaciones": 63,
+          "min": 1200.0,
+          "max": 22000.0,
+          "p25": 2000.0,
+          "p75": 2900.0,
+          "var_pct": 12.5
+        },
+        "2021": {
+          "mediana_usd_m2": 2150.0,
+          "promedio_usd_m2": 2361.94,
+          "n_tasaciones": 98,
+          "min": 1100.0,
+          "max": 4300.0,
+          "p25": 2000.0,
+          "p75": 3000.0,
+          "var_pct": -4.4
+        },
+        "2022": {
+          "mediana_usd_m2": 2275.0,
+          "promedio_usd_m2": 2300.0,
+          "n_tasaciones": 14,
+          "min": 1100.0,
+          "max": 3100.0,
+          "p25": 1800.0,
+          "p75": 3000.0,
+          "var_pct": 5.8
+        },
+        "2023": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2263.14,
+          "n_tasaciones": 69,
+          "min": 1.65,
+          "max": 3900.0,
+          "p25": 1800.0,
+          "p75": 2800.0,
+          "var_pct": -7.7
+        },
+        "2024": {
+          "mediana_usd_m2": 1900.0,
+          "promedio_usd_m2": 1900.0,
+          "n_tasaciones": 2,
+          "min": 1800.0,
+          "max": 2000.0,
+          "p25": 1800.0,
+          "p75": 2000.0,
+          "var_pct": -9.5
+        }
+      }
+    },
+    "SAN MARTIN DE PORRES": {
+      "departamento": "LIMA",
+      "total_tasaciones": 435,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 942.53,
+          "n_tasaciones": 89,
+          "min": 45.0,
+          "max": 3600.0,
+          "p25": 600.0,
+          "p75": 1000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 955.56,
+          "n_tasaciones": 9,
+          "min": 500.0,
+          "max": 2000.0,
+          "p25": 700.0,
+          "p75": 1050.0,
+          "var_pct": 0.0
+        },
+        "2019": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 913.26,
+          "n_tasaciones": 46,
+          "min": 480.0,
+          "max": 2650.0,
+          "p25": 700.0,
+          "p75": 1000.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 887.59,
+          "n_tasaciones": 54,
+          "min": 450.0,
+          "max": 2000.0,
+          "p25": 660.0,
+          "p75": 900.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 849.67,
+          "n_tasaciones": 75,
+          "min": 100.0,
+          "max": 2400.0,
+          "p25": 700.0,
+          "p75": 950.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 780.0,
+          "promedio_usd_m2": 821.15,
+          "n_tasaciones": 13,
+          "min": 300.0,
+          "max": 1500.0,
+          "p25": 700.0,
+          "p75": 850.0,
+          "var_pct": -2.5
+        },
+        "2023": {
+          "mediana_usd_m2": 830.0,
+          "promedio_usd_m2": 906.1,
+          "n_tasaciones": 146,
+          "min": 160.0,
+          "max": 4410.0,
+          "p25": 700.0,
+          "p75": 1000.0,
+          "var_pct": 6.4
+        },
+        "2024": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 630.0,
+          "n_tasaciones": 3,
+          "min": 390.0,
+          "max": 1000.0,
+          "p25": 390.0,
+          "p75": 1000.0,
+          "var_pct": -39.8
+        }
+      }
+    },
+    "MAGDALENA DEL MAR": {
+      "departamento": "LIMA",
+      "total_tasaciones": 426,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2150.0,
+          "promedio_usd_m2": 3292.98,
+          "n_tasaciones": 108,
+          "min": 1000.0,
+          "max": 83472.03,
+          "p25": 1740.0,
+          "p75": 3500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 2070.0,
+          "n_tasaciones": 10,
+          "min": 1500.0,
+          "max": 4000.0,
+          "p25": 1600.0,
+          "p75": 2000.0,
+          "var_pct": -20.9
+        },
+        "2019": {
+          "mediana_usd_m2": 1900.0,
+          "promedio_usd_m2": 2408.33,
+          "n_tasaciones": 24,
+          "min": 1550.0,
+          "max": 4400.0,
+          "p25": 1700.0,
+          "p75": 3250.0,
+          "var_pct": 11.8
+        },
+        "2020": {
+          "mediana_usd_m2": 2400.0,
+          "promedio_usd_m2": 2524.14,
+          "n_tasaciones": 58,
+          "min": 1500.0,
+          "max": 4400.0,
+          "p25": 1800.0,
+          "p75": 3200.0,
+          "var_pct": 26.3
+        },
+        "2021": {
+          "mediana_usd_m2": 2200.0,
+          "promedio_usd_m2": 2338.39,
+          "n_tasaciones": 112,
+          "min": 580.0,
+          "max": 4000.0,
+          "p25": 1960.0,
+          "p75": 2700.0,
+          "var_pct": -8.3
+        },
+        "2022": {
+          "mediana_usd_m2": 2250.0,
+          "promedio_usd_m2": 2531.67,
+          "n_tasaciones": 12,
+          "min": 1600.0,
+          "max": 4500.0,
+          "p25": 2200.0,
+          "p75": 3000.0,
+          "var_pct": 2.3
+        },
+        "2023": {
+          "mediana_usd_m2": 2515.0,
+          "promedio_usd_m2": 2496.18,
+          "n_tasaciones": 102,
+          "min": 100.0,
+          "max": 4400.0,
+          "p25": 1900.0,
+          "p75": 3000.0,
+          "var_pct": 11.8
+        }
+      }
+    },
+    "LOS OLIVOS": {
+      "departamento": "LIMA",
+      "total_tasaciones": 424,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1104.6,
+          "n_tasaciones": 88,
+          "min": 30.0,
+          "max": 2760.0,
+          "p25": 950.0,
+          "p75": 1250.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1310.0,
+          "n_tasaciones": 10,
+          "min": 900.0,
+          "max": 2400.0,
+          "p25": 1000.0,
+          "p75": 1400.0,
+          "var_pct": 13.6
+        },
+        "2019": {
+          "mediana_usd_m2": 1025.0,
+          "promedio_usd_m2": 1142.4,
+          "n_tasaciones": 48,
+          "min": 600.0,
+          "max": 2000.0,
+          "p25": 900.0,
+          "p75": 1300.0,
+          "var_pct": -18.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1102.95,
+          "n_tasaciones": 67,
+          "min": 7.5,
+          "max": 2000.0,
+          "p25": 850.0,
+          "p75": 1400.0,
+          "var_pct": 7.3
+        },
+        "2021": {
+          "mediana_usd_m2": 1150.0,
+          "promedio_usd_m2": 1151.55,
+          "n_tasaciones": 71,
+          "min": 650.0,
+          "max": 2400.0,
+          "p25": 950.0,
+          "p75": 1300.0,
+          "var_pct": 4.5
+        },
+        "2022": {
+          "mediana_usd_m2": 1150.0,
+          "promedio_usd_m2": 1220.62,
+          "n_tasaciones": 13,
+          "min": 8.0,
+          "max": 2000.0,
+          "p25": 950.0,
+          "p75": 1500.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1050.0,
+          "promedio_usd_m2": 1132.28,
+          "n_tasaciones": 125,
+          "min": 400.0,
+          "max": 4200.0,
+          "p25": 900.0,
+          "p75": 1290.0,
+          "var_pct": -8.7
+        },
+        "2024": {
+          "mediana_usd_m2": 1050.0,
+          "promedio_usd_m2": 1050.0,
+          "n_tasaciones": 2,
+          "min": 900.0,
+          "max": 1200.0,
+          "p25": 900.0,
+          "p75": 1200.0,
+          "var_pct": 0.0
+        }
+      }
+    },
+    "JESUS MARIA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 416,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2319.41,
+          "n_tasaciones": 135,
+          "min": 920.0,
+          "max": 5800.0,
+          "p25": 1670.0,
+          "p75": 2610.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2400.0,
+          "promedio_usd_m2": 2442.86,
+          "n_tasaciones": 7,
+          "min": 1200.0,
+          "max": 3800.0,
+          "p25": 1800.0,
+          "p75": 2800.0,
+          "var_pct": 14.3
+        },
+        "2019": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 2506.25,
+          "n_tasaciones": 32,
+          "min": 1500.0,
+          "max": 3800.0,
+          "p25": 2000.0,
+          "p75": 3000.0,
+          "var_pct": 4.2
+        },
+        "2020": {
+          "mediana_usd_m2": 2550.0,
+          "promedio_usd_m2": 2604.31,
+          "n_tasaciones": 58,
+          "min": 1200.0,
+          "max": 4500.0,
+          "p25": 1900.0,
+          "p75": 3100.0,
+          "var_pct": 2.0
+        },
+        "2021": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 2683.4,
+          "n_tasaciones": 86,
+          "min": 12.0,
+          "max": 4900.0,
+          "p25": 2000.0,
+          "p75": 3500.0,
+          "var_pct": -2.0
+        },
+        "2022": {
+          "mediana_usd_m2": 1900.0,
+          "promedio_usd_m2": 2223.33,
+          "n_tasaciones": 9,
+          "min": 1360.0,
+          "max": 3650.0,
+          "p25": 1810.0,
+          "p75": 2700.0,
+          "var_pct": -24.0
+        },
+        "2023": {
+          "mediana_usd_m2": 2600.0,
+          "promedio_usd_m2": 2531.38,
+          "n_tasaciones": 87,
+          "min": 280.0,
+          "max": 4500.0,
+          "p25": 2000.0,
+          "p75": 3000.0,
+          "var_pct": 36.8
+        },
+        "2024": {
+          "mediana_usd_m2": 3325.0,
+          "promedio_usd_m2": 3325.0,
+          "n_tasaciones": 2,
+          "min": 2900.0,
+          "max": 3750.0,
+          "p25": 2900.0,
+          "p75": 3750.0,
+          "var_pct": 27.9
+        }
+      }
+    },
+    "CHICLAYO": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 356,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1225.0,
+          "promedio_usd_m2": 1225.0,
+          "n_tasaciones": 2,
+          "min": 950.0,
+          "max": 1500.0,
+          "p25": 950.0,
+          "p75": 1500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2100.0,
+          "n_tasaciones": 1,
+          "min": 2100.0,
+          "max": 2100.0,
+          "var_pct": 71.4
+        },
+        "2019": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1433.33,
+          "n_tasaciones": 3,
+          "min": 1100.0,
+          "max": 1700.0,
+          "p25": 1100.0,
+          "p75": 1700.0,
+          "var_pct": -28.6
+        },
+        "2020": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 250.0,
+          "n_tasaciones": 1,
+          "min": 250.0,
+          "max": 250.0,
+          "var_pct": -83.3
+        },
+        "2021": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 950.0,
+          "n_tasaciones": 2,
+          "min": 800.0,
+          "max": 1100.0,
+          "p25": 800.0,
+          "p75": 1100.0,
+          "var_pct": 280.0
+        },
+        "2022": {
+          "mediana_usd_m2": 690.0,
+          "promedio_usd_m2": 666.54,
+          "n_tasaciones": 26,
+          "min": 15.0,
+          "max": 1700.0,
+          "p25": 145.0,
+          "p75": 1000.0,
+          "var_pct": -27.4
+        },
+        "2023": {
+          "mediana_usd_m2": 780.0,
+          "promedio_usd_m2": 780.0,
+          "n_tasaciones": 1,
+          "min": 780.0,
+          "max": 780.0,
+          "var_pct": 13.0
+        }
+      }
+    },
+    "BREÑA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 344,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1350.0,
+          "promedio_usd_m2": 1310.83,
+          "n_tasaciones": 72,
+          "min": 900.0,
+          "max": 2000.0,
+          "p25": 1100.0,
+          "p75": 1470.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1350.0,
+          "promedio_usd_m2": 1457.14,
+          "n_tasaciones": 7,
+          "min": 900.0,
+          "max": 2000.0,
+          "p25": 950.0,
+          "p75": 2000.0,
+          "var_pct": 0.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1451.25,
+          "n_tasaciones": 28,
+          "min": 800.0,
+          "max": 3700.0,
+          "p25": 1100.0,
+          "p75": 1600.0,
+          "var_pct": 3.7
+        },
+        "2020": {
+          "mediana_usd_m2": 1205.0,
+          "promedio_usd_m2": 1312.84,
+          "n_tasaciones": 44,
+          "min": 800.0,
+          "max": 2700.0,
+          "p25": 1100.0,
+          "p75": 1500.0,
+          "var_pct": -13.9
+        },
+        "2021": {
+          "mediana_usd_m2": 1150.0,
+          "promedio_usd_m2": 1232.8,
+          "n_tasaciones": 87,
+          "min": 4.0,
+          "max": 3700.0,
+          "p25": 1000.0,
+          "p75": 1300.0,
+          "var_pct": -4.6
+        },
+        "2022": {
+          "mediana_usd_m2": 1150.0,
+          "promedio_usd_m2": 1314.74,
+          "n_tasaciones": 19,
+          "min": 1000.0,
+          "max": 2670.0,
+          "p25": 1000.0,
+          "p75": 1700.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1390.4,
+          "n_tasaciones": 87,
+          "min": 300.0,
+          "max": 3500.0,
+          "p25": 1100.0,
+          "p75": 1540.0,
+          "var_pct": 8.7
+        }
+      }
+    },
+    "BARRANCO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 331,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 2551.03,
+          "n_tasaciones": 68,
+          "min": 1200.0,
+          "max": 6250.0,
+          "p25": 1900.0,
+          "p75": 3180.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2700.0,
+          "promedio_usd_m2": 2775.0,
+          "n_tasaciones": 4,
+          "min": 2200.0,
+          "max": 3500.0,
+          "p25": 2400.0,
+          "p75": 3500.0,
+          "var_pct": 8.0
+        },
+        "2019": {
+          "mediana_usd_m2": 3800.0,
+          "promedio_usd_m2": 3927.17,
+          "n_tasaciones": 53,
+          "min": 1000.0,
+          "max": 6500.0,
+          "p25": 3800.0,
+          "p75": 4800.0,
+          "var_pct": 40.7
+        },
+        "2020": {
+          "mediana_usd_m2": 3800.0,
+          "promedio_usd_m2": 3658.47,
+          "n_tasaciones": 72,
+          "min": 1100.0,
+          "max": 7000.0,
+          "p25": 2800.0,
+          "p75": 4500.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 4000.0,
+          "promedio_usd_m2": 3780.14,
+          "n_tasaciones": 72,
+          "min": 920.0,
+          "max": 7000.0,
+          "p25": 3000.0,
+          "p75": 4800.0,
+          "var_pct": 5.3
+        },
+        "2022": {
+          "mediana_usd_m2": 3400.0,
+          "promedio_usd_m2": 3130.71,
+          "n_tasaciones": 7,
+          "min": 1800.0,
+          "max": 4000.0,
+          "p25": 2060.0,
+          "p75": 4000.0,
+          "var_pct": -15.0
+        },
+        "2023": {
+          "mediana_usd_m2": 2010.0,
+          "promedio_usd_m2": 2791.56,
+          "n_tasaciones": 55,
+          "min": 110.0,
+          "max": 35250.57,
+          "p25": 950.0,
+          "p75": 3455.0,
+          "var_pct": -40.9
+        }
+      }
+    },
+    "LURIN": {
+      "departamento": "LIMA",
+      "total_tasaciones": 308,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 66069.85,
+          "n_tasaciones": 57,
+          "min": 5.9,
+          "max": 3747451.5,
+          "p25": 250.0,
+          "p75": 400.0
+        },
+        "2018": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 253.55,
+          "n_tasaciones": 10,
+          "min": 0.5,
+          "max": 350.0,
+          "p25": 145.0,
+          "p75": 350.0,
+          "var_pct": 16.7
+        },
+        "2019": {
+          "mediana_usd_m2": 220.0,
+          "promedio_usd_m2": 266.03,
+          "n_tasaciones": 30,
+          "min": 40.0,
+          "max": 820.0,
+          "p25": 150.0,
+          "p75": 350.0,
+          "var_pct": -37.1
+        },
+        "2020": {
+          "mediana_usd_m2": 255.0,
+          "promedio_usd_m2": 285.06,
+          "n_tasaciones": 32,
+          "min": 100.0,
+          "max": 900.0,
+          "p25": 140.0,
+          "p75": 350.0,
+          "var_pct": 15.9
+        },
+        "2021": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 600.0,
+          "n_tasaciones": 1,
+          "min": 600.0,
+          "max": 600.0,
+          "var_pct": 135.3
+        },
+        "2022": {
+          "mediana_usd_m2": 140.0,
+          "promedio_usd_m2": 200.31,
+          "n_tasaciones": 27,
+          "min": 100.0,
+          "max": 700.0,
+          "p25": 125.0,
+          "p75": 140.0,
+          "var_pct": -76.7
+        },
+        "2023": {
+          "mediana_usd_m2": 240.0,
+          "promedio_usd_m2": 336.6,
+          "n_tasaciones": 75,
+          "min": 90.0,
+          "max": 1770.0,
+          "p25": 145.0,
+          "p75": 350.0,
+          "var_pct": 71.4
+        },
+        "2024": {
+          "mediana_usd_m2": 530.0,
+          "promedio_usd_m2": 530.0,
+          "n_tasaciones": 1,
+          "min": 530.0,
+          "max": 530.0,
+          "var_pct": 120.8
+        }
+      }
+    },
+    "VILLA EL SALVADOR": {
+      "departamento": "LIMA",
+      "total_tasaciones": 305,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 620.62,
+          "n_tasaciones": 61,
+          "min": 168.15,
+          "max": 3000.0,
+          "p25": 380.0,
+          "p75": 650.0
+        },
+        "2018": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 642.86,
+          "n_tasaciones": 7,
+          "min": 400.0,
+          "max": 1200.0,
+          "p25": 500.0,
+          "p75": 600.0,
+          "var_pct": 20.0
+        },
+        "2019": {
+          "mediana_usd_m2": 475.0,
+          "promedio_usd_m2": 192556.81,
+          "n_tasaciones": 36,
+          "min": 255.0,
+          "max": 6912000.0,
+          "p25": 400.0,
+          "p75": 550.0,
+          "var_pct": -20.8
+        },
+        "2020": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 514.29,
+          "n_tasaciones": 42,
+          "min": 20.0,
+          "max": 1650.0,
+          "p25": 370.0,
+          "p75": 580.0,
+          "var_pct": -5.3
+        },
+        "2021": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 562.33,
+          "n_tasaciones": 60,
+          "min": 150.0,
+          "max": 950.0,
+          "p25": 460.0,
+          "p75": 700.0,
+          "var_pct": 22.2
+        },
+        "2022": {
+          "mediana_usd_m2": 485.0,
+          "promedio_usd_m2": 495.0,
+          "n_tasaciones": 6,
+          "min": 340.0,
+          "max": 650.0,
+          "p25": 410.0,
+          "p75": 600.0,
+          "var_pct": -11.8
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 654.84,
+          "n_tasaciones": 92,
+          "min": 145.0,
+          "max": 1900.0,
+          "p25": 460.0,
+          "p75": 800.0,
+          "var_pct": 23.7
+        },
+        "2024": {
+          "mediana_usd_m2": 585.0,
+          "promedio_usd_m2": 585.0,
+          "n_tasaciones": 1,
+          "min": 585.0,
+          "max": 585.0,
+          "var_pct": -2.5
+        }
+      }
+    },
+    "COMAS": {
+      "departamento": "LIMA",
+      "total_tasaciones": 300,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 565.0,
+          "promedio_usd_m2": 683.59,
+          "n_tasaciones": 56,
+          "min": 41.0,
+          "max": 2800.0,
+          "p25": 450.0,
+          "p75": 850.0
+        },
+        "2018": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 370.0,
+          "n_tasaciones": 4,
+          "min": 280.0,
+          "max": 520.0,
+          "p25": 280.0,
+          "p75": 520.0,
+          "var_pct": -39.8
+        },
+        "2019": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 741.53,
+          "n_tasaciones": 36,
+          "min": 150.0,
+          "max": 2000.0,
+          "p25": 400.0,
+          "p75": 1000.0,
+          "var_pct": 98.5
+        },
+        "2020": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 696.25,
+          "n_tasaciones": 36,
+          "min": 300.0,
+          "max": 1450.0,
+          "p25": 500.0,
+          "p75": 900.0,
+          "var_pct": -3.7
+        },
+        "2021": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 617.17,
+          "n_tasaciones": 46,
+          "min": 215.0,
+          "max": 1260.0,
+          "p25": 400.0,
+          "p75": 800.0,
+          "var_pct": -23.1
+        },
+        "2022": {
+          "mediana_usd_m2": 685.0,
+          "promedio_usd_m2": 702.27,
+          "n_tasaciones": 11,
+          "min": 200.0,
+          "max": 1000.0,
+          "p25": 500.0,
+          "p75": 900.0,
+          "var_pct": 37.0
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 638.53,
+          "n_tasaciones": 111,
+          "min": 190.0,
+          "max": 1890.0,
+          "p25": 420.0,
+          "p75": 800.0,
+          "var_pct": -12.4
+        }
+      }
+    },
+    "HUANCAYO": {
+      "departamento": "HUANCAYO",
+      "total_tasaciones": 279,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1100.0,
+          "n_tasaciones": 1,
+          "min": 1100.0,
+          "max": 1100.0
+        },
+        "2019": {
+          "mediana_usd_m2": 2280.0,
+          "promedio_usd_m2": 2280.0,
+          "n_tasaciones": 1,
+          "min": 2280.0,
+          "max": 2280.0,
+          "var_pct": 107.3
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": -56.1
+        },
+        "2021": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 340.0,
+          "n_tasaciones": 1,
+          "min": 340.0,
+          "max": 340.0,
+          "var_pct": -66.0
+        },
+        "2022": {
+          "mediana_usd_m2": 505.0,
+          "promedio_usd_m2": 589.75,
+          "n_tasaciones": 40,
+          "min": 90.0,
+          "max": 1400.0,
+          "p25": 400.0,
+          "p75": 790.0,
+          "var_pct": 48.5
+        },
+        "2023": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 900.0,
+          "n_tasaciones": 1,
+          "min": 900.0,
+          "max": 900.0,
+          "var_pct": 78.2
+        }
+      }
+    },
+    "PUENTE PIEDRA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 241,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 320.0,
+          "promedio_usd_m2": 325.78,
+          "n_tasaciones": 45,
+          "min": 150.0,
+          "max": 700.0,
+          "p25": 250.0,
+          "p75": 360.0
+        },
+        "2018": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 2,
+          "min": 400.0,
+          "max": 400.0,
+          "p25": 400.0,
+          "p75": 400.0,
+          "var_pct": 25.0
+        },
+        "2019": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 479.0,
+          "n_tasaciones": 20,
+          "min": 120.0,
+          "max": 2600.0,
+          "p25": 270.0,
+          "p75": 530.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 355.0,
+          "promedio_usd_m2": 343.75,
+          "n_tasaciones": 32,
+          "min": 150.0,
+          "max": 700.0,
+          "p25": 200.0,
+          "p75": 460.0,
+          "var_pct": -11.2
+        },
+        "2021": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 343.86,
+          "n_tasaciones": 44,
+          "min": 85.0,
+          "max": 830.0,
+          "p25": 240.0,
+          "p75": 400.0,
+          "var_pct": -4.2
+        },
+        "2022": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 925.0,
+          "n_tasaciones": 3,
+          "min": 400.0,
+          "max": 1700.0,
+          "p25": 400.0,
+          "p75": 1700.0,
+          "var_pct": 98.5
+        },
+        "2023": {
+          "mediana_usd_m2": 405.0,
+          "promedio_usd_m2": 465.53,
+          "n_tasaciones": 94,
+          "min": 125.0,
+          "max": 1400.0,
+          "p25": 320.0,
+          "p75": 560.0,
+          "var_pct": -40.0
+        },
+        "2024": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0,
+          "var_pct": -1.2
+        }
+      }
+    },
+    "SAN JUAN DE MIRAFLORES": {
+      "departamento": "LIMA",
+      "total_tasaciones": 201,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 820.0,
+          "promedio_usd_m2": 965.98,
+          "n_tasaciones": 51,
+          "min": 200.0,
+          "max": 3500.0,
+          "p25": 500.0,
+          "p75": 1100.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1025.0,
+          "promedio_usd_m2": 1025.0,
+          "n_tasaciones": 2,
+          "min": 850.0,
+          "max": 1200.0,
+          "p25": 850.0,
+          "p75": 1200.0,
+          "var_pct": 25.0
+        },
+        "2019": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 912.61,
+          "n_tasaciones": 23,
+          "min": 400.0,
+          "max": 2700.0,
+          "p25": 600.0,
+          "p75": 1000.0,
+          "var_pct": -12.2
+        },
+        "2020": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 877.89,
+          "n_tasaciones": 19,
+          "min": 470.0,
+          "max": 1300.0,
+          "p25": 700.0,
+          "p75": 1100.0,
+          "var_pct": -5.6
+        },
+        "2021": {
+          "mediana_usd_m2": 860.0,
+          "promedio_usd_m2": 1017.6,
+          "n_tasaciones": 42,
+          "min": 9.0,
+          "max": 3500.0,
+          "p25": 680.0,
+          "p75": 950.0,
+          "var_pct": 1.2
+        },
+        "2022": {
+          "mediana_usd_m2": 925.0,
+          "promedio_usd_m2": 1350.0,
+          "n_tasaciones": 6,
+          "min": 800.0,
+          "max": 3550.0,
+          "p25": 900.0,
+          "p75": 1000.0,
+          "var_pct": 7.6
+        },
+        "2023": {
+          "mediana_usd_m2": 825.0,
+          "promedio_usd_m2": 834.4,
+          "n_tasaciones": 58,
+          "min": 420.0,
+          "max": 2500.0,
+          "p25": 650.0,
+          "p75": 900.0,
+          "var_pct": -10.8
+        }
+      }
+    },
+    "LURIGANCHO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 174,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 475.0,
+          "promedio_usd_m2": 475.0,
+          "n_tasaciones": 2,
+          "min": 380.0,
+          "max": 570.0,
+          "p25": 380.0,
+          "p75": 570.0
+        },
+        "2018": {
+          "mediana_usd_m2": 480.0,
+          "promedio_usd_m2": 480.0,
+          "n_tasaciones": 1,
+          "min": 480.0,
+          "max": 480.0,
+          "var_pct": 1.1
+        },
+        "2019": {
+          "mediana_usd_m2": 495.0,
+          "promedio_usd_m2": 465.36,
+          "n_tasaciones": 14,
+          "min": 265.0,
+          "max": 600.0,
+          "p25": 330.0,
+          "p75": 600.0,
+          "var_pct": 3.1
+        },
+        "2020": {
+          "mediana_usd_m2": 360.0,
+          "promedio_usd_m2": 366.83,
+          "n_tasaciones": 41,
+          "min": 165.0,
+          "max": 650.0,
+          "p25": 300.0,
+          "p75": 450.0,
+          "var_pct": -27.3
+        },
+        "2021": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 444.15,
+          "n_tasaciones": 48,
+          "min": 9.0,
+          "max": 3200.0,
+          "p25": 330.0,
+          "p75": 450.0,
+          "var_pct": 11.1
+        },
+        "2022": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 410.0,
+          "n_tasaciones": 11,
+          "min": 170.0,
+          "max": 630.0,
+          "p25": 360.0,
+          "p75": 490.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 395.0,
+          "promedio_usd_m2": 395.09,
+          "n_tasaciones": 56,
+          "min": 90.0,
+          "max": 990.0,
+          "p25": 260.0,
+          "p75": 480.0,
+          "var_pct": -1.2
+        },
+        "2024": {
+          "mediana_usd_m2": 345.0,
+          "promedio_usd_m2": 345.0,
+          "n_tasaciones": 1,
+          "min": 345.0,
+          "max": 345.0,
+          "var_pct": -12.7
+        }
+      }
+    },
+    "VILLA MARIA DEL TRIUNFO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 159,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 519.55,
+          "n_tasaciones": 22,
+          "min": 200.0,
+          "max": 1200.0,
+          "p25": 350.0,
+          "p75": 600.0
+        },
+        "2018": {
+          "mediana_usd_m2": 380.0,
+          "promedio_usd_m2": 435.0,
+          "n_tasaciones": 4,
+          "min": 180.0,
+          "max": 800.0,
+          "p25": 310.0,
+          "p75": 800.0,
+          "var_pct": -15.6
+        },
+        "2019": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 541.67,
+          "n_tasaciones": 12,
+          "min": 330.0,
+          "max": 1000.0,
+          "p25": 370.0,
+          "p75": 800.0,
+          "var_pct": 5.3
+        },
+        "2020": {
+          "mediana_usd_m2": 460.0,
+          "promedio_usd_m2": 471.92,
+          "n_tasaciones": 26,
+          "min": 210.0,
+          "max": 1150.0,
+          "p25": 350.0,
+          "p75": 475.0,
+          "var_pct": 15.0
+        },
+        "2021": {
+          "mediana_usd_m2": 405.0,
+          "promedio_usd_m2": 449.5,
+          "n_tasaciones": 30,
+          "min": 160.0,
+          "max": 1000.0,
+          "p25": 270.0,
+          "p75": 550.0,
+          "var_pct": -12.0
+        },
+        "2022": {
+          "mediana_usd_m2": 570.0,
+          "promedio_usd_m2": 660.62,
+          "n_tasaciones": 8,
+          "min": 400.0,
+          "max": 1200.0,
+          "p25": 475.0,
+          "p75": 810.0,
+          "var_pct": 40.7
+        },
+        "2023": {
+          "mediana_usd_m2": 495.0,
+          "promedio_usd_m2": 606.16,
+          "n_tasaciones": 56,
+          "min": 60.0,
+          "max": 2900.0,
+          "p25": 400.0,
+          "p75": 620.0,
+          "var_pct": -13.2
+        },
+        "2024": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 600.0,
+          "n_tasaciones": 1,
+          "min": 600.0,
+          "max": 600.0,
+          "var_pct": 21.2
+        }
+      }
+    },
+    "EL AGUSTINO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 155,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 733.53,
+          "n_tasaciones": 17,
+          "min": 240.0,
+          "max": 1650.0,
+          "p25": 500.0,
+          "p75": 900.0
+        },
+        "2018": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 600.0,
+          "n_tasaciones": 1,
+          "min": 600.0,
+          "max": 600.0,
+          "var_pct": -7.7
+        },
+        "2019": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 876.0,
+          "n_tasaciones": 15,
+          "min": 150.0,
+          "max": 2000.0,
+          "p25": 640.0,
+          "p75": 850.0,
+          "var_pct": 33.3
+        },
+        "2020": {
+          "mediana_usd_m2": 630.0,
+          "promedio_usd_m2": 607.17,
+          "n_tasaciones": 29,
+          "min": 8.0,
+          "max": 900.0,
+          "p25": 550.0,
+          "p75": 700.0,
+          "var_pct": -21.2
+        },
+        "2021": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 627.27,
+          "n_tasaciones": 33,
+          "min": 460.0,
+          "max": 1800.0,
+          "p25": 500.0,
+          "p75": 700.0,
+          "var_pct": -12.7
+        },
+        "2022": {
+          "mediana_usd_m2": 575.0,
+          "promedio_usd_m2": 653.75,
+          "n_tasaciones": 12,
+          "min": 360.0,
+          "max": 1200.0,
+          "p25": 540.0,
+          "p75": 875.0,
+          "var_pct": 4.5
+        },
+        "2023": {
+          "mediana_usd_m2": 680.0,
+          "promedio_usd_m2": 676.28,
+          "n_tasaciones": 47,
+          "min": 290.0,
+          "max": 1320.0,
+          "p25": 470.0,
+          "p75": 810.0,
+          "var_pct": 18.3
+        },
+        "2024": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0,
+          "var_pct": -41.2
+        }
+      }
+    },
+    "CERRO COLORADO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 153,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 297.5,
+          "promedio_usd_m2": 297.5,
+          "n_tasaciones": 2,
+          "min": 285.0,
+          "max": 310.0,
+          "p25": 285.0,
+          "p75": 310.0
+        },
+        "2019": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 340.0,
+          "n_tasaciones": 1,
+          "min": 340.0,
+          "max": 340.0,
+          "var_pct": 14.3
+        },
+        "2020": {
+          "mediana_usd_m2": 1350.0,
+          "promedio_usd_m2": 1350.0,
+          "n_tasaciones": 2,
+          "min": 800.0,
+          "max": 1900.0,
+          "p25": 800.0,
+          "p75": 1900.0,
+          "var_pct": 297.1
+        },
+        "2021": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0,
+          "var_pct": -74.1
+        },
+        "2022": {
+          "mediana_usd_m2": 665.0,
+          "promedio_usd_m2": 665.0,
+          "n_tasaciones": 2,
+          "min": 480.0,
+          "max": 850.0,
+          "p25": 480.0,
+          "p75": 850.0,
+          "var_pct": 90.0
+        },
+        "2023": {
+          "mediana_usd_m2": 620.0,
+          "promedio_usd_m2": 620.0,
+          "n_tasaciones": 1,
+          "min": 620.0,
+          "max": 620.0,
+          "var_pct": -6.8
+        }
+      }
+    },
+    "CASTILLA": {
+      "departamento": "PIURA",
+      "total_tasaciones": 150,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 854.0,
+          "n_tasaciones": 5,
+          "min": 800.0,
+          "max": 920.0,
+          "p25": 800.0,
+          "p75": 900.0
+        },
+        "2019": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 908.0,
+          "n_tasaciones": 5,
+          "min": 900.0,
+          "max": 920.0,
+          "p25": 900.0,
+          "p75": 920.0,
+          "var_pct": 5.9
+        },
+        "2020": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 900.0,
+          "n_tasaciones": 2,
+          "min": 900.0,
+          "max": 900.0,
+          "p25": 900.0,
+          "p75": 900.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 297.5,
+          "promedio_usd_m2": 421.78,
+          "n_tasaciones": 36,
+          "min": 9.0,
+          "max": 3600.0,
+          "p25": 200.0,
+          "p75": 500.0,
+          "var_pct": -66.9
+        },
+        "2022": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 321.0,
+          "n_tasaciones": 10,
+          "min": 130.0,
+          "max": 510.0,
+          "p25": 170.0,
+          "p75": 370.0,
+          "var_pct": 17.6
+        },
+        "2023": {
+          "mediana_usd_m2": 417.5,
+          "promedio_usd_m2": 3813.57,
+          "n_tasaciones": 56,
+          "min": 30.0,
+          "max": 24000.0,
+          "p25": 300.0,
+          "p75": 850.0,
+          "var_pct": 19.3
+        },
+        "2024": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 450.0,
+          "n_tasaciones": 1,
+          "min": 450.0,
+          "max": 450.0,
+          "var_pct": 7.8
+        }
+      }
+    },
+    "SAN LUIS": {
+      "departamento": "LIMA",
+      "total_tasaciones": 149,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1410.0,
+          "promedio_usd_m2": 1545.9,
+          "n_tasaciones": 61,
+          "min": 1100.0,
+          "max": 5000.0,
+          "p25": 1350.0,
+          "p75": 1410.0
+        },
+        "2018": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 950.0,
+          "n_tasaciones": 2,
+          "min": 750.0,
+          "max": 1150.0,
+          "p25": 750.0,
+          "p75": 1150.0,
+          "var_pct": -32.6
+        },
+        "2019": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1185.0,
+          "n_tasaciones": 11,
+          "min": 25.0,
+          "max": 1500.0,
+          "p25": 1000.0,
+          "p75": 1500.0,
+          "var_pct": 36.8
+        },
+        "2020": {
+          "mediana_usd_m2": 1450.0,
+          "promedio_usd_m2": 1480.42,
+          "n_tasaciones": 24,
+          "min": 700.0,
+          "max": 1900.0,
+          "p25": 1400.0,
+          "p75": 1680.0,
+          "var_pct": 11.5
+        },
+        "2021": {
+          "mediana_usd_m2": 1350.0,
+          "promedio_usd_m2": 1355.0,
+          "n_tasaciones": 19,
+          "min": 5.0,
+          "max": 2000.0,
+          "p25": 1250.0,
+          "p75": 1700.0,
+          "var_pct": -6.9
+        },
+        "2022": {
+          "mediana_usd_m2": 1215.0,
+          "promedio_usd_m2": 1240.0,
+          "n_tasaciones": 4,
+          "min": 1180.0,
+          "max": 1350.0,
+          "p25": 1180.0,
+          "p75": 1350.0,
+          "var_pct": -10.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1445.0,
+          "promedio_usd_m2": 3447.14,
+          "n_tasaciones": 28,
+          "min": 840.0,
+          "max": 56790.0,
+          "p25": 1300.0,
+          "p75": 1750.0,
+          "var_pct": 18.9
+        }
+      }
+    },
+    "SANTA ANITA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 145,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1125.0,
+          "promedio_usd_m2": 1210.83,
+          "n_tasaciones": 18,
+          "min": 110.0,
+          "max": 3000.0,
+          "p25": 900.0,
+          "p75": 1500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1200.0,
+          "n_tasaciones": 2,
+          "min": 1000.0,
+          "max": 1400.0,
+          "p25": 1000.0,
+          "p75": 1400.0,
+          "var_pct": 6.7
+        },
+        "2019": {
+          "mediana_usd_m2": 1050.0,
+          "promedio_usd_m2": 1239.58,
+          "n_tasaciones": 24,
+          "min": 650.0,
+          "max": 3500.0,
+          "p25": 900.0,
+          "p75": 1400.0,
+          "var_pct": -12.5
+        },
+        "2020": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1150.42,
+          "n_tasaciones": 19,
+          "min": 8.0,
+          "max": 1600.0,
+          "p25": 1000.0,
+          "p75": 1400.0,
+          "var_pct": 14.3
+        },
+        "2021": {
+          "mediana_usd_m2": 1050.0,
+          "promedio_usd_m2": 1121.09,
+          "n_tasaciones": 34,
+          "min": 12.0,
+          "max": 2100.0,
+          "p25": 900.0,
+          "p75": 1300.0,
+          "var_pct": -12.5
+        },
+        "2022": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1347.5,
+          "n_tasaciones": 4,
+          "min": 1200.0,
+          "max": 1590.0,
+          "p25": 1200.0,
+          "p75": 1590.0,
+          "var_pct": 23.8
+        },
+        "2023": {
+          "mediana_usd_m2": 1240.0,
+          "promedio_usd_m2": 1256.28,
+          "n_tasaciones": 43,
+          "min": 700.0,
+          "max": 2400.0,
+          "p25": 1100.0,
+          "p75": 1330.0,
+          "var_pct": -4.6
+        },
+        "2024": {
+          "mediana_usd_m2": 3150.0,
+          "promedio_usd_m2": 3150.0,
+          "n_tasaciones": 1,
+          "min": 3150.0,
+          "max": 3150.0,
+          "var_pct": 154.0
+        }
+      }
+    },
+    "INDEPENDENCIA": {
+      "departamento": "ANCASH",
+      "total_tasaciones": 145,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 12000.0,
+          "promedio_usd_m2": 12000.0,
+          "n_tasaciones": 1,
+          "min": 12000.0,
+          "max": 12000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1300.0,
+          "n_tasaciones": 1,
+          "min": 1300.0,
+          "max": 1300.0,
+          "var_pct": -89.2
+        },
+        "2019": {
+          "mediana_usd_m2": 570.0,
+          "promedio_usd_m2": 570.0,
+          "n_tasaciones": 2,
+          "min": 500.0,
+          "max": 640.0,
+          "p25": 500.0,
+          "p75": 640.0,
+          "var_pct": -56.2
+        },
+        "2020": {
+          "mediana_usd_m2": 430.0,
+          "promedio_usd_m2": 430.0,
+          "n_tasaciones": 1,
+          "min": 430.0,
+          "max": 430.0,
+          "var_pct": -24.6
+        },
+        "2021": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 872.27,
+          "n_tasaciones": 11,
+          "min": 300.0,
+          "max": 2380.0,
+          "p25": 300.0,
+          "p75": 1200.0,
+          "var_pct": 62.8
+        },
+        "2022": {
+          "mediana_usd_m2": 1260.0,
+          "promedio_usd_m2": 1260.0,
+          "n_tasaciones": 1,
+          "min": 1260.0,
+          "max": 1260.0,
+          "var_pct": 80.0
+        },
+        "2023": {
+          "mediana_usd_m2": 90.0,
+          "promedio_usd_m2": 90.0,
+          "n_tasaciones": 1,
+          "min": 90.0,
+          "max": 90.0,
+          "var_pct": -92.9
+        },
+        "2024": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 800.0,
+          "n_tasaciones": 1,
+          "min": 800.0,
+          "max": 800.0,
+          "var_pct": 788.9
+        }
+      }
+    },
+    "CALLAO": {
+      "departamento": "-",
+      "total_tasaciones": 129,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 880.0,
+          "promedio_usd_m2": 1046.0,
+          "n_tasaciones": 5,
+          "min": 400.0,
+          "max": 2000.0,
+          "p25": 800.0,
+          "p75": 1150.0
+        },
+        "2019": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 662.5,
+          "n_tasaciones": 4,
+          "min": 600.0,
+          "max": 700.0,
+          "p25": 650.0,
+          "p75": 700.0,
+          "var_pct": -23.3
+        },
+        "2020": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 588.33,
+          "n_tasaciones": 3,
+          "min": 315.0,
+          "max": 800.0,
+          "p25": 315.0,
+          "p75": 800.0,
+          "var_pct": -3.7
+        },
+        "2022": {
+          "mediana_usd_m2": 820.0,
+          "promedio_usd_m2": 754.29,
+          "n_tasaciones": 7,
+          "min": 400.0,
+          "max": 1100.0,
+          "p25": 500.0,
+          "p75": 930.0,
+          "var_pct": 26.2
+        },
+        "2023": {
+          "mediana_usd_m2": 860.0,
+          "promedio_usd_m2": 893.33,
+          "n_tasaciones": 3,
+          "min": 840.0,
+          "max": 980.0,
+          "p25": 840.0,
+          "p75": 980.0,
+          "var_pct": 4.9
+        }
+      }
+    },
+    "PIURA": {
+      "departamento": "PIURA",
+      "total_tasaciones": 121,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 1155.5,
+          "n_tasaciones": 4,
+          "min": 22.0,
+          "max": 3000.0,
+          "p25": 500.0,
+          "p75": 3000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 900.0,
+          "n_tasaciones": 2,
+          "min": 900.0,
+          "max": 900.0,
+          "p25": 900.0,
+          "p75": 900.0,
+          "var_pct": 12.5
+        },
+        "2019": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1900.0,
+          "n_tasaciones": 3,
+          "min": 1200.0,
+          "max": 3000.0,
+          "p25": 1200.0,
+          "p75": 3000.0,
+          "var_pct": 66.7
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 2,
+          "min": 800.0,
+          "max": 1200.0,
+          "p25": 800.0,
+          "p75": 1200.0,
+          "var_pct": -33.3
+        },
+        "2022": {
+          "mediana_usd_m2": 485.0,
+          "promedio_usd_m2": 580.0,
+          "n_tasaciones": 4,
+          "min": 150.0,
+          "max": 1200.0,
+          "p25": 200.0,
+          "p75": 1200.0,
+          "var_pct": -51.5
+        },
+        "2023": {
+          "mediana_usd_m2": 510.0,
+          "promedio_usd_m2": 551.88,
+          "n_tasaciones": 105,
+          "min": 10.0,
+          "max": 2050.0,
+          "p25": 230.0,
+          "p75": 790.0,
+          "var_pct": 5.2
+        }
+      }
+    },
+    "RIMAC": {
+      "departamento": "LIMA",
+      "total_tasaciones": 118,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1098.08,
+          "n_tasaciones": 26,
+          "min": 350.0,
+          "max": 3100.0,
+          "p25": 850.0,
+          "p75": 1200.0
+        },
+        "2018": {
+          "mediana_usd_m2": 975.0,
+          "promedio_usd_m2": 975.0,
+          "n_tasaciones": 2,
+          "min": 700.0,
+          "max": 1250.0,
+          "p25": 700.0,
+          "p75": 1250.0,
+          "var_pct": -2.5
+        },
+        "2019": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1071.43,
+          "n_tasaciones": 7,
+          "min": 800.0,
+          "max": 1400.0,
+          "p25": 800.0,
+          "p75": 1400.0,
+          "var_pct": 2.6
+        },
+        "2020": {
+          "mediana_usd_m2": 800.0,
+          "promedio_usd_m2": 848.33,
+          "n_tasaciones": 18,
+          "min": 350.0,
+          "max": 1500.0,
+          "p25": 720.0,
+          "p75": 900.0,
+          "var_pct": -20.0
+        },
+        "2021": {
+          "mediana_usd_m2": 840.0,
+          "promedio_usd_m2": 755.56,
+          "n_tasaciones": 18,
+          "min": 80.0,
+          "max": 1300.0,
+          "p25": 450.0,
+          "p75": 950.0,
+          "var_pct": 5.0
+        },
+        "2022": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 812.5,
+          "n_tasaciones": 4,
+          "min": 450.0,
+          "max": 1000.0,
+          "p25": 800.0,
+          "p75": 1000.0,
+          "var_pct": 7.1
+        },
+        "2023": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 300.0,
+          "n_tasaciones": 1,
+          "min": 300.0,
+          "max": 300.0,
+          "var_pct": -66.7
+        },
+        "2024": {
+          "mediana_usd_m2": 665.0,
+          "promedio_usd_m2": 665.0,
+          "n_tasaciones": 2,
+          "min": 600.0,
+          "max": 730.0,
+          "p25": 600.0,
+          "p75": 730.0,
+          "var_pct": 121.7
+        }
+      }
+    },
+    "ICA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 117,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 625.0,
+          "promedio_usd_m2": 6573.75,
+          "n_tasaciones": 4,
+          "min": 45.0,
+          "max": 25000.0,
+          "p25": 350.0,
+          "p75": 25000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 1800.0,
+          "n_tasaciones": 1,
+          "min": 1800.0,
+          "max": 1800.0,
+          "var_pct": 188.0
+        },
+        "2019": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 804.0,
+          "n_tasaciones": 5,
+          "min": 100.0,
+          "max": 1800.0,
+          "p25": 170.0,
+          "p75": 1000.0,
+          "var_pct": -47.2
+        },
+        "2020": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 1871.43,
+          "n_tasaciones": 7,
+          "min": 200.0,
+          "max": 2500.0,
+          "p25": 400.0,
+          "p75": 2500.0,
+          "var_pct": 163.2
+        },
+        "2022": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 260.0,
+          "n_tasaciones": 3,
+          "min": 180.0,
+          "max": 300.0,
+          "p25": 180.0,
+          "p75": 300.0,
+          "var_pct": -88.0
+        },
+        "2023": {
+          "mediana_usd_m2": 710.0,
+          "promedio_usd_m2": 710.0,
+          "n_tasaciones": 1,
+          "min": 710.0,
+          "max": 710.0,
+          "var_pct": 136.7
+        }
+      }
+    },
+    "BELLAVISTA": {
+      "departamento": "SAN MARTIN",
+      "total_tasaciones": 110,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 863.0,
+          "n_tasaciones": 10,
+          "min": 380.0,
+          "max": 1240.0,
+          "p25": 700.0,
+          "p75": 1200.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1073.08,
+          "n_tasaciones": 26,
+          "min": 100.0,
+          "max": 1750.0,
+          "p25": 1000.0,
+          "p75": 1200.0,
+          "var_pct": 17.6
+        },
+        "2021": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 850.0,
+          "n_tasaciones": 1,
+          "min": 850.0,
+          "max": 850.0,
+          "var_pct": -15.0
+        },
+        "2023": {
+          "mediana_usd_m2": 320.0,
+          "promedio_usd_m2": 320.0,
+          "n_tasaciones": 1,
+          "min": 320.0,
+          "max": 320.0,
+          "var_pct": -62.4
+        }
+      }
+    },
+    "VENTANILLA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 108,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 75.0,
+          "promedio_usd_m2": 75.0,
+          "n_tasaciones": 1,
+          "min": 75.0,
+          "max": 75.0
+        },
+        "2020": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 286.76,
+          "n_tasaciones": 17,
+          "min": 90.0,
+          "max": 480.0,
+          "p25": 185.0,
+          "p75": 420.0,
+          "var_pct": 233.3
+        },
+        "2021": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 279.55,
+          "n_tasaciones": 40,
+          "min": 12.0,
+          "max": 825.0,
+          "p25": 140.0,
+          "p75": 380.0,
+          "var_pct": 20.0
+        },
+        "2023": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 180.0,
+          "n_tasaciones": 2,
+          "min": 180.0,
+          "max": 180.0,
+          "p25": 180.0,
+          "p75": 180.0,
+          "var_pct": -40.0
+        }
+      }
+    },
+    "CHIMBOTE": {
+      "departamento": "ANCASH",
+      "total_tasaciones": 102,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 290.0,
+          "promedio_usd_m2": 324.81,
+          "n_tasaciones": 27,
+          "min": 50.0,
+          "max": 1000.0,
+          "p25": 290.0,
+          "p75": 290.0
+        },
+        "2018": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 200.0,
+          "n_tasaciones": 1,
+          "min": 200.0,
+          "max": 200.0,
+          "var_pct": -31.0
+        },
+        "2019": {
+          "mediana_usd_m2": 290.0,
+          "promedio_usd_m2": 322.37,
+          "n_tasaciones": 13,
+          "min": 0.8,
+          "max": 1300.0,
+          "p25": 185.0,
+          "p75": 290.0,
+          "var_pct": 45.0
+        },
+        "2020": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 1234.91,
+          "n_tasaciones": 22,
+          "min": 8.0,
+          "max": 17000.0,
+          "p25": 200.0,
+          "p75": 400.0,
+          "var_pct": -13.8
+        },
+        "2021": {
+          "mediana_usd_m2": 290.0,
+          "promedio_usd_m2": 380.62,
+          "n_tasaciones": 8,
+          "min": 185.0,
+          "max": 1270.0,
+          "p25": 185.0,
+          "p75": 320.0,
+          "var_pct": 16.0
+        },
+        "2023": {
+          "mediana_usd_m2": 372.0,
+          "promedio_usd_m2": 1321.45,
+          "n_tasaciones": 29,
+          "min": 140.0,
+          "max": 24950.0,
+          "p25": 250.0,
+          "p75": 600.0,
+          "var_pct": 28.3
+        }
+      }
+    },
+    "JOSE LUIS BUSTAMANTE Y RIVERO": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 101,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 680.0,
+          "promedio_usd_m2": 664.71,
+          "n_tasaciones": 17,
+          "min": 200.0,
+          "max": 950.0,
+          "p25": 550.0,
+          "p75": 800.0
+        },
+        "2021": {
+          "mediana_usd_m2": 520.0,
+          "promedio_usd_m2": 582.27,
+          "n_tasaciones": 22,
+          "min": 500.0,
+          "max": 850.0,
+          "p25": 520.0,
+          "p75": 650.0,
+          "var_pct": -23.5
+        },
+        "2022": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 705.83,
+          "n_tasaciones": 12,
+          "min": 520.0,
+          "max": 1100.0,
+          "p25": 520.0,
+          "p75": 860.0,
+          "var_pct": 29.8
+        },
+        "2023": {
+          "mediana_usd_m2": 520.0,
+          "promedio_usd_m2": 707.65,
+          "n_tasaciones": 49,
+          "min": 270.0,
+          "max": 3525.0,
+          "p25": 520.0,
+          "p75": 780.0,
+          "var_pct": -23.0
+        },
+        "2024": {
+          "mediana_usd_m2": 90.0,
+          "promedio_usd_m2": 90.0,
+          "n_tasaciones": 1,
+          "min": 90.0,
+          "max": 90.0,
+          "var_pct": -82.7
+        }
+      }
+    },
+    "CAÑETE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 100,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 750.0,
+          "promedio_usd_m2": 574.17,
+          "n_tasaciones": 6,
+          "min": 30.0,
+          "max": 990.0,
+          "p25": 75.0,
+          "p75": 850.0
+        },
+        "2020": {
+          "mediana_usd_m2": 130.0,
+          "promedio_usd_m2": 3099.58,
+          "n_tasaciones": 24,
+          "min": 25.0,
+          "max": 66000.0,
+          "p25": 90.0,
+          "p75": 650.0,
+          "var_pct": -82.7
+        },
+        "2021": {
+          "mediana_usd_m2": 150.0,
+          "promedio_usd_m2": 364.32,
+          "n_tasaciones": 57,
+          "min": 12.0,
+          "max": 1380.0,
+          "p25": 60.0,
+          "p75": 500.0,
+          "var_pct": 15.4
+        },
+        "2022": {
+          "mediana_usd_m2": 120.0,
+          "promedio_usd_m2": 120.0,
+          "n_tasaciones": 1,
+          "min": 120.0,
+          "max": 120.0,
+          "var_pct": -20.0
+        },
+        "2023": {
+          "mediana_usd_m2": 135.0,
+          "promedio_usd_m2": 135.0,
+          "n_tasaciones": 2,
+          "min": 135.0,
+          "max": 135.0,
+          "p25": 135.0,
+          "p75": 135.0,
+          "var_pct": 12.5
+        }
+      }
+    },
+    "CIENEGUILLA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 99,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 235.0,
+          "promedio_usd_m2": 196.18,
+          "n_tasaciones": 17,
+          "min": 70.0,
+          "max": 280.0,
+          "p25": 120.0,
+          "p75": 250.0
+        },
+        "2018": {
+          "mediana_usd_m2": 60.0,
+          "promedio_usd_m2": 60.0,
+          "n_tasaciones": 1,
+          "min": 60.0,
+          "max": 60.0,
+          "var_pct": -74.5
+        },
+        "2019": {
+          "mediana_usd_m2": 210.0,
+          "promedio_usd_m2": 214.38,
+          "n_tasaciones": 8,
+          "min": 160.0,
+          "max": 250.0,
+          "p25": 210.0,
+          "p75": 240.0,
+          "var_pct": 250.0
+        },
+        "2020": {
+          "mediana_usd_m2": 160.0,
+          "promedio_usd_m2": 157.73,
+          "n_tasaciones": 22,
+          "min": 50.0,
+          "max": 280.0,
+          "p25": 90.0,
+          "p75": 200.0,
+          "var_pct": -23.8
+        },
+        "2021": {
+          "mediana_usd_m2": 170.0,
+          "promedio_usd_m2": 196.74,
+          "n_tasaciones": 23,
+          "min": 70.0,
+          "max": 450.0,
+          "p25": 145.0,
+          "p75": 225.0,
+          "var_pct": 6.2
+        },
+        "2022": {
+          "mediana_usd_m2": 140.0,
+          "promedio_usd_m2": 140.0,
+          "n_tasaciones": 3,
+          "min": 80.0,
+          "max": 200.0,
+          "p25": 80.0,
+          "p75": 200.0,
+          "var_pct": -17.6
+        },
+        "2023": {
+          "mediana_usd_m2": 170.0,
+          "promedio_usd_m2": 281.43,
+          "n_tasaciones": 23,
+          "min": 90.0,
+          "max": 1400.0,
+          "p25": 170.0,
+          "p75": 225.0,
+          "var_pct": 21.4
+        },
+        "2024": {
+          "mediana_usd_m2": 95.0,
+          "promedio_usd_m2": 95.0,
+          "n_tasaciones": 2,
+          "min": 80.0,
+          "max": 110.0,
+          "p25": 80.0,
+          "p75": 110.0,
+          "var_pct": -44.1
+        }
+      }
+    },
+    "VICTOR LARCO HERRERA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 87,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1250.0,
+          "n_tasaciones": 1,
+          "min": 1250.0,
+          "max": 1250.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1071.03,
+          "n_tasaciones": 29,
+          "min": 330.0,
+          "max": 1800.0,
+          "p25": 900.0,
+          "p75": 1300.0,
+          "var_pct": -20.0
+        },
+        "2022": {
+          "mediana_usd_m2": 1170.0,
+          "promedio_usd_m2": 1170.0,
+          "n_tasaciones": 1,
+          "min": 1170.0,
+          "max": 1170.0,
+          "var_pct": 17.0
+        },
+        "2023": {
+          "mediana_usd_m2": 570.0,
+          "promedio_usd_m2": 570.0,
+          "n_tasaciones": 1,
+          "min": 570.0,
+          "max": 570.0,
+          "var_pct": -51.3
+        }
+      }
+    },
+    "PUNTA HERMOSA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 86,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1183.91,
+          "n_tasaciones": 23,
+          "min": 90.0,
+          "max": 1800.0,
+          "p25": 850.0,
+          "p75": 1500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1250.0,
+          "n_tasaciones": 2,
+          "min": 900.0,
+          "max": 1600.0,
+          "p25": 900.0,
+          "p75": 1600.0,
+          "var_pct": 0.0
+        },
+        "2019": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 503.33,
+          "n_tasaciones": 3,
+          "min": 110.0,
+          "max": 750.0,
+          "p25": 110.0,
+          "p75": 750.0,
+          "var_pct": -48.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1166.0,
+          "n_tasaciones": 20,
+          "min": 350.0,
+          "max": 2200.0,
+          "p25": 1100.0,
+          "p75": 1300.0,
+          "var_pct": 84.6
+        },
+        "2021": {
+          "mediana_usd_m2": 770.0,
+          "promedio_usd_m2": 805.71,
+          "n_tasaciones": 21,
+          "min": 100.0,
+          "max": 1800.0,
+          "p25": 400.0,
+          "p75": 1000.0,
+          "var_pct": -35.8
+        },
+        "2022": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 2,
+          "min": 850.0,
+          "max": 1150.0,
+          "p25": 850.0,
+          "p75": 1150.0,
+          "var_pct": 29.9
+        },
+        "2023": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1138.67,
+          "n_tasaciones": 15,
+          "min": 610.0,
+          "max": 2500.0,
+          "p25": 710.0,
+          "p75": 1400.0,
+          "var_pct": 10.0
+        }
+      }
+    },
+    "PACHACAMAC": {
+      "departamento": "LIMA",
+      "total_tasaciones": 86,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 185.0,
+          "promedio_usd_m2": 239.09,
+          "n_tasaciones": 11,
+          "min": 80.0,
+          "max": 700.0,
+          "p25": 170.0,
+          "p75": 200.0
+        },
+        "2018": {
+          "mediana_usd_m2": 166.0,
+          "promedio_usd_m2": 166.0,
+          "n_tasaciones": 2,
+          "min": 32.0,
+          "max": 300.0,
+          "p25": 32.0,
+          "p75": 300.0,
+          "var_pct": -10.3
+        },
+        "2019": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 205.94,
+          "n_tasaciones": 16,
+          "min": 35.0,
+          "max": 700.0,
+          "p25": 45.0,
+          "p75": 325.0,
+          "var_pct": 8.4
+        },
+        "2020": {
+          "mediana_usd_m2": 225.0,
+          "promedio_usd_m2": 230.0,
+          "n_tasaciones": 10,
+          "min": 60.0,
+          "max": 500.0,
+          "p25": 90.0,
+          "p75": 285.0,
+          "var_pct": 25.0
+        },
+        "2021": {
+          "mediana_usd_m2": 90.0,
+          "promedio_usd_m2": 136.35,
+          "n_tasaciones": 17,
+          "min": 38.0,
+          "max": 315.0,
+          "p25": 85.0,
+          "p75": 175.0,
+          "var_pct": -60.0
+        },
+        "2022": {
+          "mediana_usd_m2": 77.5,
+          "promedio_usd_m2": 114.17,
+          "n_tasaciones": 6,
+          "min": 55.0,
+          "max": 300.0,
+          "p25": 55.0,
+          "p75": 120.0,
+          "var_pct": -13.9
+        },
+        "2023": {
+          "mediana_usd_m2": 170.0,
+          "promedio_usd_m2": 409.38,
+          "n_tasaciones": 24,
+          "min": 55.0,
+          "max": 3750.0,
+          "p25": 120.0,
+          "p75": 400.0,
+          "var_pct": 119.4
+        }
+      }
+    },
+    "CHACLACAYO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 85,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 508.61,
+          "n_tasaciones": 36,
+          "min": 80.0,
+          "max": 650.0,
+          "p25": 460.0,
+          "p75": 600.0
+        },
+        "2019": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 402.73,
+          "n_tasaciones": 11,
+          "min": 55.0,
+          "max": 750.0,
+          "p25": 300.0,
+          "p75": 470.0,
+          "var_pct": -20.0
+        },
+        "2020": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 370.91,
+          "n_tasaciones": 11,
+          "min": 80.0,
+          "max": 550.0,
+          "p25": 280.0,
+          "p75": 500.0,
+          "var_pct": 0.0
+        },
+        "2021": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 496.54,
+          "n_tasaciones": 13,
+          "min": 315.0,
+          "max": 1100.0,
+          "p25": 350.0,
+          "p75": 530.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 423.33,
+          "n_tasaciones": 3,
+          "min": 370.0,
+          "max": 450.0,
+          "p25": 370.0,
+          "p75": 450.0,
+          "var_pct": 12.5
+        },
+        "2023": {
+          "mediana_usd_m2": 335.0,
+          "promedio_usd_m2": 329.0,
+          "n_tasaciones": 10,
+          "min": 180.0,
+          "max": 490.0,
+          "p25": 240.0,
+          "p75": 400.0,
+          "var_pct": -25.6
+        },
+        "2024": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 300.0,
+          "n_tasaciones": 1,
+          "min": 300.0,
+          "max": 300.0,
+          "var_pct": -10.4
+        }
+      }
+    },
+    "CAYMA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 85,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 25.0,
+          "promedio_usd_m2": 25.0,
+          "n_tasaciones": 1,
+          "min": 25.0,
+          "max": 25.0
+        },
+        "2020": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 907.62,
+          "n_tasaciones": 21,
+          "min": 140.0,
+          "max": 1400.0,
+          "p25": 800.0,
+          "p75": 1000.0,
+          "var_pct": 3500.0
+        },
+        "2021": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 877.62,
+          "n_tasaciones": 37,
+          "min": 12.0,
+          "max": 1650.0,
+          "p25": 800.0,
+          "p75": 1140.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 952.0,
+          "n_tasaciones": 5,
+          "min": 810.0,
+          "max": 1200.0,
+          "p25": 900.0,
+          "p75": 950.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1050.0,
+          "promedio_usd_m2": 1050.0,
+          "n_tasaciones": 1,
+          "min": 1050.0,
+          "max": 1050.0,
+          "var_pct": 16.7
+        }
+      }
+    },
+    "LA PERLA": {
+      "departamento": "CALLAO",
+      "total_tasaciones": 84,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1100.0,
+          "n_tasaciones": 1,
+          "min": 1100.0,
+          "max": 1100.0
+        },
+        "2019": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 950.0,
+          "n_tasaciones": 1,
+          "min": 950.0,
+          "max": 950.0,
+          "var_pct": -13.6
+        },
+        "2020": {
+          "mediana_usd_m2": 895.0,
+          "promedio_usd_m2": 1046.07,
+          "n_tasaciones": 14,
+          "min": 585.0,
+          "max": 2000.0,
+          "p25": 800.0,
+          "p75": 1000.0,
+          "var_pct": -5.8
+        },
+        "2021": {
+          "mediana_usd_m2": 995.0,
+          "promedio_usd_m2": 1080.59,
+          "n_tasaciones": 34,
+          "min": 590.0,
+          "max": 2000.0,
+          "p25": 850.0,
+          "p75": 1100.0,
+          "var_pct": 11.2
+        },
+        "2022": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 1037.14,
+          "n_tasaciones": 7,
+          "min": 450.0,
+          "max": 2000.0,
+          "p25": 750.0,
+          "p75": 1300.0,
+          "var_pct": -9.5
+        },
+        "2023": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 977.39,
+          "n_tasaciones": 23,
+          "min": 400.0,
+          "max": 1600.0,
+          "p25": 700.0,
+          "p75": 1150.0,
+          "var_pct": 0.0
+        }
+      }
+    },
+    "HUARAZ": {
+      "departamento": "ANCASH",
+      "total_tasaciones": 84,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 850.0,
+          "n_tasaciones": 1,
+          "min": 850.0,
+          "max": 850.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": 17.6
+        },
+        "2020": {
+          "mediana_usd_m2": 690.0,
+          "promedio_usd_m2": 707.2,
+          "n_tasaciones": 5,
+          "min": 6.0,
+          "max": 1590.0,
+          "p25": 400.0,
+          "p75": 850.0,
+          "var_pct": -31.0
+        },
+        "2021": {
+          "mediana_usd_m2": 890.0,
+          "promedio_usd_m2": 1039.94,
+          "n_tasaciones": 16,
+          "min": 14.0,
+          "max": 2070.0,
+          "p25": 630.0,
+          "p75": 1600.0,
+          "var_pct": 29.0
+        },
+        "2022": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 200.0,
+          "n_tasaciones": 1,
+          "min": 200.0,
+          "max": 200.0,
+          "var_pct": -77.5
+        },
+        "2023": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 3401.97,
+          "n_tasaciones": 51,
+          "min": 300.0,
+          "max": 111280.5,
+          "p25": 660.0,
+          "p75": 2000.0,
+          "var_pct": 450.0
+        },
+        "2024": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2100.0,
+          "n_tasaciones": 1,
+          "min": 2100.0,
+          "max": 2100.0,
+          "var_pct": 90.9
+        }
+      }
+    },
+    "ASIA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 81,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1673.1,
+          "n_tasaciones": 21,
+          "min": 50.0,
+          "max": 8000.0,
+          "p25": 420.0,
+          "p75": 1400.0
+        },
+        "2019": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 736.67,
+          "n_tasaciones": 9,
+          "min": 30.39,
+          "max": 1800.0,
+          "p25": 360.0,
+          "p75": 1500.0,
+          "var_pct": -59.1
+        },
+        "2020": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 900.0,
+          "n_tasaciones": 1,
+          "min": 900.0,
+          "max": 900.0,
+          "var_pct": 100.0
+        },
+        "2021": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 776.36,
+          "n_tasaciones": 11,
+          "min": 90.0,
+          "max": 2200.0,
+          "p25": 260.0,
+          "p75": 1150.0,
+          "var_pct": -38.9
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 730.53,
+          "n_tasaciones": 15,
+          "min": 14.0,
+          "max": 2000.0,
+          "p25": 70.0,
+          "p75": 1250.0,
+          "var_pct": 9.1
+        }
+      }
+    },
+    "SULLANA": {
+      "departamento": "PIURA",
+      "total_tasaciones": 81,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 10.0,
+          "promedio_usd_m2": 10.0,
+          "n_tasaciones": 1,
+          "min": 10.0,
+          "max": 10.0
+        },
+        "2020": {
+          "mediana_usd_m2": 240.0,
+          "promedio_usd_m2": 321.07,
+          "n_tasaciones": 14,
+          "min": 40.0,
+          "max": 680.0,
+          "p25": 150.0,
+          "p75": 500.0,
+          "var_pct": 2300.0
+        },
+        "2021": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 258.71,
+          "n_tasaciones": 17,
+          "min": 8.0,
+          "max": 650.0,
+          "p25": 140.0,
+          "p75": 380.0,
+          "var_pct": -25.0
+        },
+        "2022": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 175.0,
+          "n_tasaciones": 3,
+          "min": 95.0,
+          "max": 250.0,
+          "p25": 95.0,
+          "p75": 250.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 1250.22,
+          "n_tasaciones": 46,
+          "min": 60.0,
+          "max": 18000.0,
+          "p25": 190.0,
+          "p75": 950.0,
+          "var_pct": 177.8
+        }
+      }
+    },
+    "TARAPOTO": {
+      "departamento": "SAN MARTIN",
+      "total_tasaciones": 80,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0
+        },
+        "2018": {
+          "mediana_usd_m2": 120.0,
+          "promedio_usd_m2": 120.0,
+          "n_tasaciones": 1,
+          "min": 120.0,
+          "max": 120.0,
+          "var_pct": -65.7
+        },
+        "2019": {
+          "mediana_usd_m2": 1800.0,
+          "promedio_usd_m2": 1800.0,
+          "n_tasaciones": 1,
+          "min": 1800.0,
+          "max": 1800.0,
+          "var_pct": 1400.0
+        },
+        "2020": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 344.7,
+          "n_tasaciones": 10,
+          "min": 17.0,
+          "max": 1000.0,
+          "p25": 230.0,
+          "p75": 450.0,
+          "var_pct": -86.1
+        },
+        "2021": {
+          "mediana_usd_m2": 185.0,
+          "promedio_usd_m2": 200.91,
+          "n_tasaciones": 11,
+          "min": 70.0,
+          "max": 350.0,
+          "p25": 130.0,
+          "p75": 260.0,
+          "var_pct": -26.0
+        },
+        "2022": {
+          "mediana_usd_m2": 475.0,
+          "promedio_usd_m2": 475.0,
+          "n_tasaciones": 2,
+          "min": 450.0,
+          "max": 500.0,
+          "p25": 450.0,
+          "p75": 500.0,
+          "var_pct": 156.8
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 600.0,
+          "n_tasaciones": 1,
+          "min": 600.0,
+          "max": 600.0,
+          "var_pct": 26.3
+        },
+        "2024": {
+          "mediana_usd_m2": 530.0,
+          "promedio_usd_m2": 530.0,
+          "n_tasaciones": 1,
+          "min": 530.0,
+          "max": 530.0,
+          "var_pct": -11.7
+        }
+      }
+    },
+    "PISCO": {
+      "departamento": "ICA",
+      "total_tasaciones": 78,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 160.0,
+          "promedio_usd_m2": 154.72,
+          "n_tasaciones": 18,
+          "min": 50.0,
+          "max": 180.0,
+          "p25": 160.0,
+          "p75": 170.0
+        },
+        "2019": {
+          "mediana_usd_m2": 6.0,
+          "promedio_usd_m2": 6.0,
+          "n_tasaciones": 1,
+          "min": 6.0,
+          "max": 6.0,
+          "var_pct": -96.2
+        },
+        "2020": {
+          "mediana_usd_m2": 115.0,
+          "promedio_usd_m2": 21198.08,
+          "n_tasaciones": 18,
+          "min": 1.0,
+          "max": 350000.0,
+          "p25": 14.0,
+          "p75": 230.0,
+          "var_pct": 1816.7
+        },
+        "2021": {
+          "mediana_usd_m2": 42.5,
+          "promedio_usd_m2": 208.11,
+          "n_tasaciones": 14,
+          "min": 0.5,
+          "max": 950.0,
+          "p25": 18.0,
+          "p75": 300.0,
+          "var_pct": -63.0
+        },
+        "2022": {
+          "mediana_usd_m2": 12.5,
+          "promedio_usd_m2": 55.83,
+          "n_tasaciones": 12,
+          "min": 6.0,
+          "max": 240.0,
+          "p25": 11.0,
+          "p75": 116.0,
+          "var_pct": -70.6
+        },
+        "2023": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 385.33,
+          "n_tasaciones": 15,
+          "min": 40.0,
+          "max": 1550.0,
+          "p25": 210.0,
+          "p75": 450.0,
+          "var_pct": 2300.0
+        }
+      }
+    },
+    "WANCHAQ": {
+      "departamento": "CUSCO",
+      "total_tasaciones": 74,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1400.0,
+          "n_tasaciones": 1,
+          "min": 1400.0,
+          "max": 1400.0
+        },
+        "2019": {
+          "mediana_usd_m2": 3200.0,
+          "promedio_usd_m2": 3200.0,
+          "n_tasaciones": 1,
+          "min": 3200.0,
+          "max": 3200.0,
+          "var_pct": 128.6
+        },
+        "2020": {
+          "mediana_usd_m2": 1950.0,
+          "promedio_usd_m2": 1950.0,
+          "n_tasaciones": 2,
+          "min": 1700.0,
+          "max": 2200.0,
+          "p25": 1700.0,
+          "p75": 2200.0,
+          "var_pct": -39.1
+        },
+        "2021": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1490.0,
+          "n_tasaciones": 21,
+          "min": 1000.0,
+          "max": 2370.0,
+          "p25": 1000.0,
+          "p75": 1700.0,
+          "var_pct": -23.1
+        },
+        "2022": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1468.0,
+          "n_tasaciones": 5,
+          "min": 1000.0,
+          "max": 2000.0,
+          "p25": 1150.0,
+          "p75": 1790.0,
+          "var_pct": -6.7
+        },
+        "2023": {
+          "mediana_usd_m2": 2050.0,
+          "promedio_usd_m2": 1992.5,
+          "n_tasaciones": 32,
+          "min": 1650.0,
+          "max": 2500.0,
+          "p25": 1800.0,
+          "p75": 2100.0,
+          "var_pct": 46.4
+        }
+      }
+    },
+    "AREQUIPA": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 70,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1585.71,
+          "n_tasaciones": 7,
+          "min": 1200.0,
+          "max": 2300.0,
+          "p25": 1500.0,
+          "p75": 1600.0,
+          "var_pct": 50.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1350.0,
+          "promedio_usd_m2": 1231.25,
+          "n_tasaciones": 8,
+          "min": 750.0,
+          "max": 1600.0,
+          "p25": 1000.0,
+          "p75": 1500.0,
+          "var_pct": -10.0
+        },
+        "2022": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1250.0,
+          "n_tasaciones": 1,
+          "min": 1250.0,
+          "max": 1250.0,
+          "var_pct": -7.4
+        },
+        "2023": {
+          "mediana_usd_m2": 1185.0,
+          "promedio_usd_m2": 1185.0,
+          "n_tasaciones": 2,
+          "min": 990.0,
+          "max": 1380.0,
+          "p25": 990.0,
+          "p75": 1380.0,
+          "var_pct": -5.2
+        },
+        "2024": {
+          "mediana_usd_m2": 715.0,
+          "promedio_usd_m2": 715.0,
+          "n_tasaciones": 1,
+          "min": 715.0,
+          "max": 715.0,
+          "var_pct": -39.7
+        }
+      }
+    },
+    "CHILCA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 64,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 120.0,
+          "promedio_usd_m2": 119.44,
+          "n_tasaciones": 9,
+          "min": 30.0,
+          "max": 190.0,
+          "p25": 100.0,
+          "p75": 130.0
+        },
+        "2019": {
+          "mediana_usd_m2": 90.0,
+          "promedio_usd_m2": 88.33,
+          "n_tasaciones": 6,
+          "min": 25.0,
+          "max": 160.0,
+          "p25": 45.0,
+          "p75": 120.0,
+          "var_pct": -25.0
+        },
+        "2020": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 372.5,
+          "n_tasaciones": 4,
+          "min": 150.0,
+          "max": 540.0,
+          "p25": 300.0,
+          "p75": 540.0,
+          "var_pct": 344.4
+        },
+        "2022": {
+          "mediana_usd_m2": 30.0,
+          "promedio_usd_m2": 30.0,
+          "n_tasaciones": 1,
+          "min": 30.0,
+          "max": 30.0,
+          "var_pct": -92.5
+        },
+        "2023": {
+          "mediana_usd_m2": 725.0,
+          "promedio_usd_m2": 650.0,
+          "n_tasaciones": 6,
+          "min": 250.0,
+          "max": 1010.0,
+          "p25": 350.0,
+          "p75": 840.0,
+          "var_pct": 2316.7
+        },
+        "2024": {
+          "mediana_usd_m2": 18.0,
+          "promedio_usd_m2": 18.0,
+          "n_tasaciones": 1,
+          "min": 18.0,
+          "max": 18.0,
+          "var_pct": -97.5
+        }
+      }
+    },
+    "PUCUSANA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 64,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 475.0,
+          "promedio_usd_m2": 788.5,
+          "n_tasaciones": 10,
+          "min": 75.0,
+          "max": 3000.0,
+          "p25": 400.0,
+          "p75": 800.0
+        },
+        "2018": {
+          "mediana_usd_m2": 1400.0,
+          "promedio_usd_m2": 1400.0,
+          "n_tasaciones": 1,
+          "min": 1400.0,
+          "max": 1400.0,
+          "var_pct": 194.7
+        },
+        "2019": {
+          "mediana_usd_m2": 245.0,
+          "promedio_usd_m2": 245.0,
+          "n_tasaciones": 2,
+          "min": 40.0,
+          "max": 450.0,
+          "p25": 40.0,
+          "p75": 450.0,
+          "var_pct": -82.5
+        },
+        "2020": {
+          "mediana_usd_m2": 15.0,
+          "promedio_usd_m2": 114.33,
+          "n_tasaciones": 39,
+          "min": 3.0,
+          "max": 1800.0,
+          "p25": 13.0,
+          "p75": 25.0,
+          "var_pct": -93.9
+        },
+        "2021": {
+          "mediana_usd_m2": 80.0,
+          "promedio_usd_m2": 218.29,
+          "n_tasaciones": 7,
+          "min": 13.0,
+          "max": 600.0,
+          "p25": 75.0,
+          "p75": 600.0,
+          "var_pct": 433.3
+        },
+        "2023": {
+          "mediana_usd_m2": 415.0,
+          "promedio_usd_m2": 478.0,
+          "n_tasaciones": 5,
+          "min": 45.0,
+          "max": 1200.0,
+          "p25": 240.0,
+          "p75": 490.0,
+          "var_pct": 418.8
+        }
+      }
+    },
+    "HUAURA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 62,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 140.0,
+          "promedio_usd_m2": 140.0,
+          "n_tasaciones": 1,
+          "min": 140.0,
+          "max": 140.0
+        },
+        "2020": {
+          "mediana_usd_m2": 760.0,
+          "promedio_usd_m2": 21203.7,
+          "n_tasaciones": 23,
+          "min": 60.0,
+          "max": 60000.0,
+          "p25": 200.0,
+          "p75": 40000.0,
+          "var_pct": 442.9
+        },
+        "2021": {
+          "mediana_usd_m2": 390.0,
+          "promedio_usd_m2": 355.11,
+          "n_tasaciones": 27,
+          "min": 3.0,
+          "max": 1000.0,
+          "p25": 200.0,
+          "p75": 430.0,
+          "var_pct": -48.7
+        },
+        "2022": {
+          "mediana_usd_m2": 230.0,
+          "promedio_usd_m2": 7638.75,
+          "n_tasaciones": 4,
+          "min": 95.0,
+          "max": 30000.0,
+          "p25": 200.0,
+          "p75": 30000.0,
+          "var_pct": -41.0
+        },
+        "2023": {
+          "mediana_usd_m2": 1640.0,
+          "promedio_usd_m2": 1448.57,
+          "n_tasaciones": 7,
+          "min": 370.0,
+          "max": 3520.0,
+          "p25": 560.0,
+          "p75": 1750.0,
+          "var_pct": 613.0
+        }
+      }
+    },
+    "VEINTISEIS DE OCTUBRE": {
+      "departamento": "PIURA",
+      "total_tasaciones": 61,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 325.0,
+          "n_tasaciones": 8,
+          "min": 140.0,
+          "max": 800.0,
+          "p25": 180.0,
+          "p75": 400.0
+        },
+        "2021": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0,
+          "var_pct": 40.0
+        },
+        "2022": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 385.0,
+          "n_tasaciones": 4,
+          "min": 250.0,
+          "max": 790.0,
+          "p25": 250.0,
+          "p75": 790.0,
+          "var_pct": -28.6
+        },
+        "2023": {
+          "mediana_usd_m2": 245.0,
+          "promedio_usd_m2": 245.0,
+          "n_tasaciones": 2,
+          "min": 60.0,
+          "max": 430.0,
+          "p25": 60.0,
+          "p75": 430.0,
+          "var_pct": -2.0
+        },
+        "2024": {
+          "mediana_usd_m2": 45.0,
+          "promedio_usd_m2": 45.0,
+          "n_tasaciones": 1,
+          "min": 45.0,
+          "max": 45.0,
+          "var_pct": -81.6
+        }
+      }
+    },
+    "YANAHUARA": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 59,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2500.0,
+          "promedio_usd_m2": 2500.0,
+          "n_tasaciones": 6,
+          "min": 2000.0,
+          "max": 3000.0,
+          "p25": 2000.0,
+          "p75": 3000.0
+        },
+        "2019": {
+          "mediana_usd_m2": 2200.0,
+          "promedio_usd_m2": 2200.0,
+          "n_tasaciones": 1,
+          "min": 2200.0,
+          "max": 2200.0,
+          "var_pct": -12.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": -54.5
+        },
+        "2021": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 1266.67,
+          "n_tasaciones": 3,
+          "min": 1000.0,
+          "max": 1600.0,
+          "p25": 1000.0,
+          "p75": 1600.0,
+          "var_pct": 20.0
+        },
+        "2023": {
+          "mediana_usd_m2": 840.0,
+          "promedio_usd_m2": 888.67,
+          "n_tasaciones": 15,
+          "min": 75.0,
+          "max": 1790.0,
+          "p25": 700.0,
+          "p75": 1150.0,
+          "var_pct": -30.0
+        }
+      }
+    },
+    "PARACAS": {
+      "departamento": "ICA",
+      "total_tasaciones": 54,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 40.0,
+          "promedio_usd_m2": 163.11,
+          "n_tasaciones": 9,
+          "min": 22.0,
+          "max": 640.0,
+          "p25": 22.0,
+          "p75": 250.0
+        },
+        "2018": {
+          "mediana_usd_m2": 51.5,
+          "promedio_usd_m2": 51.5,
+          "n_tasaciones": 2,
+          "min": 3.0,
+          "max": 100.0,
+          "p25": 3.0,
+          "p75": 100.0,
+          "var_pct": 28.7
+        },
+        "2019": {
+          "mediana_usd_m2": 12.0,
+          "promedio_usd_m2": 12.0,
+          "n_tasaciones": 2,
+          "min": 10.0,
+          "max": 14.0,
+          "p25": 10.0,
+          "p75": 14.0,
+          "var_pct": -76.7
+        },
+        "2020": {
+          "mediana_usd_m2": 51.5,
+          "promedio_usd_m2": 51.5,
+          "n_tasaciones": 2,
+          "min": 3.0,
+          "max": 100.0,
+          "p25": 3.0,
+          "p75": 100.0,
+          "var_pct": 329.2
+        },
+        "2023": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 280.53,
+          "n_tasaciones": 38,
+          "min": 3.5,
+          "max": 790.0,
+          "p25": 10.0,
+          "p75": 530.0,
+          "var_pct": 288.3
+        }
+      }
+    },
+    "HUARAL": {
+      "departamento": "LIMA",
+      "total_tasaciones": 54,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 492.5,
+          "promedio_usd_m2": 12699.17,
+          "n_tasaciones": 6,
+          "min": 40.0,
+          "max": 60000.0,
+          "p25": 170.0,
+          "p75": 15000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 180.0,
+          "n_tasaciones": 1,
+          "min": 180.0,
+          "max": 180.0,
+          "var_pct": -63.5
+        },
+        "2019": {
+          "mediana_usd_m2": 7.0,
+          "promedio_usd_m2": 7.0,
+          "n_tasaciones": 2,
+          "min": 7.0,
+          "max": 7.0,
+          "p25": 7.0,
+          "p75": 7.0,
+          "var_pct": -96.1
+        },
+        "2020": {
+          "mediana_usd_m2": 85.0,
+          "promedio_usd_m2": 197.0,
+          "n_tasaciones": 16,
+          "min": 12.0,
+          "max": 700.0,
+          "p25": 60.0,
+          "p75": 300.0,
+          "var_pct": 1114.3
+        },
+        "2021": {
+          "mediana_usd_m2": 70.0,
+          "promedio_usd_m2": 132.85,
+          "n_tasaciones": 13,
+          "min": 12.0,
+          "max": 600.0,
+          "p25": 60.0,
+          "p75": 70.0,
+          "var_pct": -17.6
+        },
+        "2023": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 5944.38,
+          "n_tasaciones": 16,
+          "min": 10.0,
+          "max": 73200.0,
+          "p25": 250.0,
+          "p75": 760.0,
+          "var_pct": 614.3
+        }
+      }
+    },
+    "SACHACA": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 53,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 830.0,
+          "promedio_usd_m2": 830.0,
+          "n_tasaciones": 1,
+          "min": 830.0,
+          "max": 830.0
+        },
+        "2021": {
+          "mediana_usd_m2": 735.0,
+          "promedio_usd_m2": 788.33,
+          "n_tasaciones": 18,
+          "min": 500.0,
+          "max": 1150.0,
+          "p25": 700.0,
+          "p75": 950.0,
+          "var_pct": -11.4
+        },
+        "2022": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 800.0,
+          "n_tasaciones": 4,
+          "min": 500.0,
+          "max": 1000.0,
+          "p25": 850.0,
+          "p75": 1000.0,
+          "var_pct": 15.6
+        },
+        "2023": {
+          "mediana_usd_m2": 805.0,
+          "promedio_usd_m2": 729.38,
+          "n_tasaciones": 16,
+          "min": 130.0,
+          "max": 1100.0,
+          "p25": 600.0,
+          "p75": 950.0,
+          "var_pct": -5.3
+        }
+      }
+    },
+    "CHANCHAMAYO": {
+      "departamento": "JUNIN",
+      "total_tasaciones": 49,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 451.43,
+          "n_tasaciones": 14,
+          "min": 200.0,
+          "max": 900.0,
+          "p25": 280.0,
+          "p75": 600.0
+        },
+        "2021": {
+          "mediana_usd_m2": 315.0,
+          "promedio_usd_m2": 286.94,
+          "n_tasaciones": 8,
+          "min": 5.5,
+          "max": 350.0,
+          "p25": 315.0,
+          "p75": 350.0,
+          "var_pct": -10.0
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 707.41,
+          "n_tasaciones": 27,
+          "min": 30.0,
+          "max": 2100.0,
+          "p25": 450.0,
+          "p75": 870.0,
+          "var_pct": 90.5
+        }
+      }
+    },
+    "IQUITOS": {
+      "departamento": "LORETO",
+      "total_tasaciones": 47,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 3100.0,
+          "promedio_usd_m2": 3100.0,
+          "n_tasaciones": 1,
+          "min": 3100.0,
+          "max": 3100.0
+        },
+        "2018": {
+          "mediana_usd_m2": 3500.0,
+          "promedio_usd_m2": 3500.0,
+          "n_tasaciones": 2,
+          "min": 3200.0,
+          "max": 3800.0,
+          "p25": 3200.0,
+          "p75": 3800.0,
+          "var_pct": 12.9
+        },
+        "2019": {
+          "mediana_usd_m2": 3800.0,
+          "promedio_usd_m2": 3800.0,
+          "n_tasaciones": 1,
+          "min": 3800.0,
+          "max": 3800.0,
+          "var_pct": 8.6
+        },
+        "2020": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 572.22,
+          "n_tasaciones": 9,
+          "min": 200.0,
+          "max": 1800.0,
+          "p25": 220.0,
+          "p75": 500.0,
+          "var_pct": -86.8
+        },
+        "2023": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 451.76,
+          "n_tasaciones": 34,
+          "min": 150.0,
+          "max": 1430.0,
+          "p25": 250.0,
+          "p75": 480.0,
+          "var_pct": -40.0
+        }
+      }
+    },
+    "CORONEL PORTILLO": {
+      "departamento": "UCAYALI",
+      "total_tasaciones": 47,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 200.0,
+          "n_tasaciones": 1,
+          "min": 200.0,
+          "max": 200.0
+        },
+        "2020": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 593.89,
+          "n_tasaciones": 9,
+          "min": 65.0,
+          "max": 1850.0,
+          "p25": 110.0,
+          "p75": 1000.0,
+          "var_pct": -10.0
+        },
+        "2021": {
+          "mediana_usd_m2": 185.0,
+          "promedio_usd_m2": 278.57,
+          "n_tasaciones": 21,
+          "min": 45.0,
+          "max": 1750.0,
+          "p25": 90.0,
+          "p75": 265.0,
+          "var_pct": 2.8
+        },
+        "2022": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 535.33,
+          "n_tasaciones": 15,
+          "min": 130.0,
+          "max": 1500.0,
+          "p25": 190.0,
+          "p75": 550.0,
+          "var_pct": 143.2
+        },
+        "2023": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0,
+          "var_pct": -22.2
+        }
+      }
+    },
+    "PIMENTEL": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 46,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 70.0,
+          "promedio_usd_m2": 163.33,
+          "n_tasaciones": 3,
+          "min": 70.0,
+          "max": 350.0,
+          "p25": 70.0,
+          "p75": 350.0
+        },
+        "2020": {
+          "mediana_usd_m2": 220.0,
+          "promedio_usd_m2": 220.0,
+          "n_tasaciones": 1,
+          "min": 220.0,
+          "max": 220.0,
+          "var_pct": 214.3
+        },
+        "2023": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0,
+          "var_pct": 59.1
+        }
+      }
+    },
+    "VIRU": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 45,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 22000.0,
+          "promedio_usd_m2": 20450.0,
+          "n_tasaciones": 20,
+          "min": 2200.0,
+          "max": 22000.0,
+          "p25": 22000.0,
+          "p75": 22000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 22000.0,
+          "promedio_usd_m2": 22000.0,
+          "n_tasaciones": 16,
+          "min": 22000.0,
+          "max": 22000.0,
+          "p25": 22000.0,
+          "p75": 22000.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 150.0,
+          "promedio_usd_m2": 150.0,
+          "n_tasaciones": 1,
+          "min": 150.0,
+          "max": 150.0,
+          "var_pct": -99.3
+        },
+        "2021": {
+          "mediana_usd_m2": 20.0,
+          "promedio_usd_m2": 20.0,
+          "n_tasaciones": 2,
+          "min": 20.0,
+          "max": 20.0,
+          "p25": 20.0,
+          "p75": 20.0,
+          "var_pct": -86.7
+        },
+        "2023": {
+          "mediana_usd_m2": 160.0,
+          "promedio_usd_m2": 195.83,
+          "n_tasaciones": 6,
+          "min": 10.0,
+          "max": 490.0,
+          "p25": 55.0,
+          "p75": 300.0,
+          "var_pct": 700.0
+        }
+      }
+    },
+    "ANCON": {
+      "departamento": "LIMA",
+      "total_tasaciones": 44,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 682.5,
+          "n_tasaciones": 6,
+          "min": 85.0,
+          "max": 1400.0,
+          "p25": 280.0,
+          "p75": 980.0
+        },
+        "2018": {
+          "mediana_usd_m2": 725.0,
+          "promedio_usd_m2": 725.0,
+          "n_tasaciones": 2,
+          "min": 100.0,
+          "max": 1350.0,
+          "p25": 100.0,
+          "p75": 1350.0,
+          "var_pct": 7.4
+        },
+        "2019": {
+          "mediana_usd_m2": 425.0,
+          "promedio_usd_m2": 410.0,
+          "n_tasaciones": 6,
+          "min": 100.0,
+          "max": 900.0,
+          "p25": 150.0,
+          "p75": 460.0,
+          "var_pct": -41.4
+        },
+        "2020": {
+          "mediana_usd_m2": 1200.0,
+          "promedio_usd_m2": 866.67,
+          "n_tasaciones": 9,
+          "min": 100.0,
+          "max": 1200.0,
+          "p25": 360.0,
+          "p75": 1200.0,
+          "var_pct": 182.4
+        },
+        "2021": {
+          "mediana_usd_m2": 275.0,
+          "promedio_usd_m2": 513.64,
+          "n_tasaciones": 11,
+          "min": 165.0,
+          "max": 1200.0,
+          "p25": 250.0,
+          "p75": 1000.0,
+          "var_pct": -77.1
+        },
+        "2022": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1100.0,
+          "n_tasaciones": 1,
+          "min": 1100.0,
+          "max": 1100.0,
+          "var_pct": 300.0
+        },
+        "2023": {
+          "mediana_usd_m2": 230.0,
+          "promedio_usd_m2": 455.56,
+          "n_tasaciones": 9,
+          "min": 70.0,
+          "max": 1300.0,
+          "p25": 230.0,
+          "p75": 440.0,
+          "var_pct": -79.1
+        }
+      }
+    },
+    "SANTA": {
+      "departamento": "ANCASH",
+      "total_tasaciones": 44,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 231.43,
+          "n_tasaciones": 7,
+          "min": 120.0,
+          "max": 400.0,
+          "p25": 150.0,
+          "p75": 300.0
+        },
+        "2021": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 238.23,
+          "n_tasaciones": 26,
+          "min": 9.0,
+          "max": 550.0,
+          "p25": 180.0,
+          "p75": 250.0,
+          "var_pct": 0.0
+        },
+        "2022": {
+          "mediana_usd_m2": 380.0,
+          "promedio_usd_m2": 481.43,
+          "n_tasaciones": 7,
+          "min": 200.0,
+          "max": 1100.0,
+          "p25": 270.0,
+          "p75": 680.0,
+          "var_pct": 90.0
+        },
+        "2023": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 220.0,
+          "n_tasaciones": 3,
+          "min": 150.0,
+          "max": 260.0,
+          "p25": 150.0,
+          "p75": 260.0,
+          "var_pct": -34.2
+        },
+        "2024": {
+          "mediana_usd_m2": 1130.0,
+          "promedio_usd_m2": 1130.0,
+          "n_tasaciones": 1,
+          "min": 1130.0,
+          "max": 1130.0,
+          "var_pct": 352.0
+        }
+      }
+    },
+    "MAYNAS": {
+      "departamento": "LORETO",
+      "total_tasaciones": 43,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 155.0,
+          "promedio_usd_m2": 155.0,
+          "n_tasaciones": 1,
+          "min": 155.0,
+          "max": 155.0
+        },
+        "2020": {
+          "mediana_usd_m2": 430.0,
+          "promedio_usd_m2": 541.43,
+          "n_tasaciones": 7,
+          "min": 150.0,
+          "max": 1700.0,
+          "p25": 220.0,
+          "p75": 550.0,
+          "var_pct": 177.4
+        },
+        "2021": {
+          "mediana_usd_m2": 370.0,
+          "promedio_usd_m2": 370.0,
+          "n_tasaciones": 1,
+          "min": 370.0,
+          "max": 370.0,
+          "var_pct": -14.0
+        },
+        "2022": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 230.65,
+          "n_tasaciones": 10,
+          "min": 6.5,
+          "max": 420.0,
+          "p25": 130.0,
+          "p75": 340.0,
+          "var_pct": -32.4
+        }
+      }
+    },
+    "PARIÑAS": {
+      "departamento": "PIURA",
+      "total_tasaciones": 43,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 170.0,
+          "promedio_usd_m2": 223.33,
+          "n_tasaciones": 3,
+          "min": 120.0,
+          "max": 380.0,
+          "p25": 120.0,
+          "p75": 380.0
+        },
+        "2021": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 2,
+          "min": 400.0,
+          "max": 400.0,
+          "p25": 400.0,
+          "p75": 400.0,
+          "var_pct": 135.3
+        },
+        "2023": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 540.66,
+          "n_tasaciones": 38,
+          "min": 130.0,
+          "max": 1010.0,
+          "p25": 440.0,
+          "p75": 600.0,
+          "var_pct": 50.0
+        }
+      }
+    },
+    "CHINCHA ALTA": {
+      "departamento": "CHINCHA",
+      "total_tasaciones": 42,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0
+        },
+        "2020": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 550.0,
+          "n_tasaciones": 1,
+          "min": 550.0,
+          "max": 550.0,
+          "var_pct": 37.5
+        },
+        "2023": {
+          "mediana_usd_m2": 1040.0,
+          "promedio_usd_m2": 1040.0,
+          "n_tasaciones": 1,
+          "min": 1040.0,
+          "max": 1040.0,
+          "var_pct": 89.1
+        }
+      }
+    },
+    "OXAPAMPA": {
+      "departamento": "PASCO",
+      "total_tasaciones": 41,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2400.0,
+          "promedio_usd_m2": 2300.0,
+          "n_tasaciones": 4,
+          "min": 1800.0,
+          "max": 2600.0,
+          "p25": 2200.0,
+          "p75": 2600.0
+        },
+        "2020": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0,
+          "var_pct": -83.3
+        },
+        "2021": {
+          "mediana_usd_m2": 60.0,
+          "promedio_usd_m2": 105.4,
+          "n_tasaciones": 4,
+          "min": 1.6,
+          "max": 300.0,
+          "p25": 60.0,
+          "p75": 300.0,
+          "var_pct": -85.0
+        },
+        "2022": {
+          "mediana_usd_m2": 30.0,
+          "promedio_usd_m2": 30.0,
+          "n_tasaciones": 1,
+          "min": 30.0,
+          "max": 30.0,
+          "var_pct": -50.0
+        },
+        "2023": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 362.48,
+          "n_tasaciones": 23,
+          "min": 17.0,
+          "max": 1130.0,
+          "p25": 150.0,
+          "p75": 450.0,
+          "var_pct": 1066.7
+        },
+        "2024": {
+          "mediana_usd_m2": 1.45,
+          "promedio_usd_m2": 1.45,
+          "n_tasaciones": 1,
+          "min": 1.45,
+          "max": 1.45,
+          "var_pct": -99.6
+        }
+      }
+    },
+    "CALLERIA": {
+      "departamento": "UCAYALI",
+      "total_tasaciones": 40,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0
+        },
+        "2020": {
+          "mediana_usd_m2": 75.0,
+          "promedio_usd_m2": 75.0,
+          "n_tasaciones": 1,
+          "min": 75.0,
+          "max": 75.0,
+          "var_pct": -78.6
+        },
+        "2021": {
+          "mediana_usd_m2": 270.0,
+          "promedio_usd_m2": 263.33,
+          "n_tasaciones": 3,
+          "min": 230.0,
+          "max": 290.0,
+          "p25": 230.0,
+          "p75": 290.0,
+          "var_pct": 260.0
+        },
+        "2023": {
+          "mediana_usd_m2": 270.0,
+          "promedio_usd_m2": 304.81,
+          "n_tasaciones": 27,
+          "min": 60.0,
+          "max": 710.0,
+          "p25": 160.0,
+          "p75": 435.0,
+          "var_pct": 0.0
+        }
+      }
+    },
+    "NUEVO CHIMBOTE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 37,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 272.5,
+          "promedio_usd_m2": 272.5,
+          "n_tasaciones": 2,
+          "min": 95.0,
+          "max": 450.0,
+          "p25": 95.0,
+          "p75": 450.0
+        },
+        "2020": {
+          "mediana_usd_m2": 189.0,
+          "promedio_usd_m2": 252.67,
+          "n_tasaciones": 3,
+          "min": 189.0,
+          "max": 380.0,
+          "p25": 189.0,
+          "p75": 380.0,
+          "var_pct": -30.6
+        },
+        "2023": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 300.0,
+          "n_tasaciones": 1,
+          "min": 300.0,
+          "max": 300.0,
+          "var_pct": 58.7
+        }
+      }
+    },
+    "SUBTANJALLA": {
+      "departamento": "ICA",
+      "total_tasaciones": 36,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 120.0,
+          "promedio_usd_m2": 120.0,
+          "n_tasaciones": 2,
+          "min": 100.0,
+          "max": 140.0,
+          "p25": 100.0,
+          "p75": 140.0
+        },
+        "2019": {
+          "mediana_usd_m2": 130.0,
+          "promedio_usd_m2": 125.0,
+          "n_tasaciones": 6,
+          "min": 100.0,
+          "max": 130.0,
+          "p25": 130.0,
+          "p75": 130.0,
+          "var_pct": 8.3
+        },
+        "2020": {
+          "mediana_usd_m2": 110.0,
+          "promedio_usd_m2": 116.67,
+          "n_tasaciones": 3,
+          "min": 100.0,
+          "max": 140.0,
+          "p25": 100.0,
+          "p75": 140.0,
+          "var_pct": -15.4
+        },
+        "2021": {
+          "mediana_usd_m2": 20.0,
+          "promedio_usd_m2": 103.43,
+          "n_tasaciones": 7,
+          "min": 18.0,
+          "max": 400.0,
+          "p25": 18.0,
+          "p75": 230.0,
+          "var_pct": -81.8
+        },
+        "2023": {
+          "mediana_usd_m2": 170.0,
+          "promedio_usd_m2": 228.61,
+          "n_tasaciones": 18,
+          "min": 35.0,
+          "max": 550.0,
+          "p25": 130.0,
+          "p75": 370.0,
+          "var_pct": 750.0
+        }
+      }
+    },
+    "SATIPO": {
+      "departamento": "JUNIN",
+      "total_tasaciones": 36,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 1,
+          "min": 700.0,
+          "max": 700.0
+        },
+        "2020": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 484.29,
+          "n_tasaciones": 7,
+          "min": 220.0,
+          "max": 700.0,
+          "p25": 270.0,
+          "p75": 700.0,
+          "var_pct": -28.6
+        },
+        "2021": {
+          "mediana_usd_m2": 347.5,
+          "promedio_usd_m2": 347.5,
+          "n_tasaciones": 4,
+          "min": 225.0,
+          "max": 470.0,
+          "p25": 225.0,
+          "p75": 470.0,
+          "var_pct": -30.5
+        },
+        "2023": {
+          "mediana_usd_m2": 695.0,
+          "promedio_usd_m2": 719.58,
+          "n_tasaciones": 24,
+          "min": 50.0,
+          "max": 1550.0,
+          "p25": 450.0,
+          "p75": 1000.0,
+          "var_pct": 100.0
+        }
+      }
+    },
+    "PAUCARPATA": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 35,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 510.0,
+          "promedio_usd_m2": 510.0,
+          "n_tasaciones": 2,
+          "min": 70.0,
+          "max": 950.0,
+          "p25": 70.0,
+          "p75": 950.0
+        },
+        "2020": {
+          "mediana_usd_m2": 665.0,
+          "promedio_usd_m2": 690.0,
+          "n_tasaciones": 4,
+          "min": 550.0,
+          "max": 880.0,
+          "p25": 650.0,
+          "p75": 880.0,
+          "var_pct": 30.4
+        },
+        "2021": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 800.31,
+          "n_tasaciones": 16,
+          "min": 440.0,
+          "max": 1200.0,
+          "p25": 670.0,
+          "p75": 950.0,
+          "var_pct": 27.8
+        },
+        "2023": {
+          "mediana_usd_m2": 640.0,
+          "promedio_usd_m2": 698.46,
+          "n_tasaciones": 13,
+          "min": 430.0,
+          "max": 1010.0,
+          "p25": 600.0,
+          "p75": 810.0,
+          "var_pct": -24.7
+        }
+      }
+    },
+    "PAITA": {
+      "departamento": "PAITA",
+      "total_tasaciones": 34,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 35.0,
+          "promedio_usd_m2": 423.33,
+          "n_tasaciones": 3,
+          "min": 35.0,
+          "max": 1200.0,
+          "p25": 35.0,
+          "p75": 1200.0
+        },
+        "2020": {
+          "mediana_usd_m2": 60.0,
+          "promedio_usd_m2": 60.0,
+          "n_tasaciones": 1,
+          "min": 60.0,
+          "max": 60.0,
+          "var_pct": 71.4
+        },
+        "2021": {
+          "mediana_usd_m2": 67.5,
+          "promedio_usd_m2": 99.38,
+          "n_tasaciones": 8,
+          "min": 65.0,
+          "max": 285.0,
+          "p25": 65.0,
+          "p75": 110.0,
+          "var_pct": 12.5
+        },
+        "2023": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 340.0,
+          "n_tasaciones": 1,
+          "min": 340.0,
+          "max": 340.0,
+          "var_pct": 403.7
+        }
+      }
+    },
+    "HUACHO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 34,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 495.0,
+          "promedio_usd_m2": 592.5,
+          "n_tasaciones": 4,
+          "min": 180.0,
+          "max": 1200.0,
+          "p25": 240.0,
+          "p75": 1200.0
+        },
+        "2018": {
+          "mediana_usd_m2": 2355.0,
+          "promedio_usd_m2": 2355.0,
+          "n_tasaciones": 1,
+          "min": 2355.0,
+          "max": 2355.0,
+          "var_pct": 375.8
+        },
+        "2019": {
+          "mediana_usd_m2": 900.0,
+          "promedio_usd_m2": 729.4,
+          "n_tasaciones": 5,
+          "min": 12.0,
+          "max": 1400.0,
+          "p25": 235.0,
+          "p75": 1100.0,
+          "var_pct": -61.8
+        },
+        "2020": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 643.33,
+          "n_tasaciones": 3,
+          "min": 400.0,
+          "max": 1130.0,
+          "p25": 400.0,
+          "p75": 1130.0,
+          "var_pct": -55.6
+        },
+        "2023": {
+          "mediana_usd_m2": 960.0,
+          "promedio_usd_m2": 970.24,
+          "n_tasaciones": 21,
+          "min": 75.0,
+          "max": 1570.0,
+          "p25": 810.0,
+          "p75": 1360.0,
+          "var_pct": 140.0
+        }
+      }
+    },
+    "CHANCAY": {
+      "departamento": "LIMA",
+      "total_tasaciones": 33,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 87500.0,
+          "promedio_usd_m2": 99223.33,
+          "n_tasaciones": 6,
+          "min": 40.0,
+          "max": 300000.0,
+          "p25": 300.0,
+          "p75": 120000.0
+        },
+        "2018": {
+          "mediana_usd_m2": 70.0,
+          "promedio_usd_m2": 70.0,
+          "n_tasaciones": 1,
+          "min": 70.0,
+          "max": 70.0,
+          "var_pct": -99.9
+        },
+        "2019": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 250.0,
+          "n_tasaciones": 1,
+          "min": 250.0,
+          "max": 250.0,
+          "var_pct": 257.1
+        },
+        "2020": {
+          "mediana_usd_m2": 130.0,
+          "promedio_usd_m2": 126.67,
+          "n_tasaciones": 3,
+          "min": 50.0,
+          "max": 200.0,
+          "p25": 50.0,
+          "p75": 200.0,
+          "var_pct": -48.0
+        },
+        "2021": {
+          "mediana_usd_m2": 40000.0,
+          "promedio_usd_m2": 40000.0,
+          "n_tasaciones": 1,
+          "min": 40000.0,
+          "max": 40000.0,
+          "var_pct": 30669.2
+        },
+        "2023": {
+          "mediana_usd_m2": 182.5,
+          "promedio_usd_m2": 354.27,
+          "n_tasaciones": 20,
+          "min": 8.5,
+          "max": 2040.0,
+          "p25": 60.0,
+          "p75": 610.0,
+          "var_pct": -99.5
+        }
+      }
+    },
+    "HUANCHACO": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 32,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 300.0,
+          "promedio_usd_m2": 300.0,
+          "n_tasaciones": 1,
+          "min": 300.0,
+          "max": 300.0
+        },
+        "2019": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 200.0,
+          "n_tasaciones": 1,
+          "min": 200.0,
+          "max": 200.0,
+          "var_pct": -33.3
+        },
+        "2020": {
+          "mediana_usd_m2": 340.0,
+          "promedio_usd_m2": 376.67,
+          "n_tasaciones": 6,
+          "min": 90.0,
+          "max": 680.0,
+          "p25": 310.0,
+          "p75": 500.0,
+          "var_pct": 70.0
+        },
+        "2023": {
+          "mediana_usd_m2": 325.0,
+          "promedio_usd_m2": 380.0,
+          "n_tasaciones": 24,
+          "min": 70.0,
+          "max": 1250.0,
+          "p25": 250.0,
+          "p75": 480.0,
+          "var_pct": -4.4
+        }
+      }
+    },
+    "CAJAMARCA": {
+      "departamento": "PASCO",
+      "total_tasaciones": 32,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1600.0,
+          "promedio_usd_m2": 1600.0,
+          "n_tasaciones": 1,
+          "min": 1600.0,
+          "max": 1600.0,
+          "var_pct": 60.0
+        },
+        "2021": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 2,
+          "min": 700.0,
+          "max": 700.0,
+          "p25": 700.0,
+          "p75": 700.0,
+          "var_pct": -56.2
+        },
+        "2022": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 7,
+          "min": 700.0,
+          "max": 700.0,
+          "p25": 700.0,
+          "p75": 700.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 510.0,
+          "promedio_usd_m2": 510.0,
+          "n_tasaciones": 1,
+          "min": 510.0,
+          "max": 510.0,
+          "var_pct": -27.1
+        }
+      }
+    },
+    "SAN SEBASTIAN": {
+      "departamento": "LIMA",
+      "total_tasaciones": 32,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 1375.0,
+          "promedio_usd_m2": 1487.5,
+          "n_tasaciones": 4,
+          "min": 1000.0,
+          "max": 2200.0,
+          "p25": 1150.0,
+          "p75": 2200.0
+        },
+        "2021": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1248.0,
+          "n_tasaciones": 5,
+          "min": 440.0,
+          "max": 2350.0,
+          "p25": 800.0,
+          "p75": 1650.0,
+          "var_pct": -27.3
+        },
+        "2023": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1500.0,
+          "n_tasaciones": 2,
+          "min": 1100.0,
+          "max": 1900.0,
+          "p25": 1100.0,
+          "p75": 1900.0,
+          "var_pct": 50.0
+        }
+      }
+    },
+    "SAN BARTOLO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 31,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 448.0,
+          "n_tasaciones": 5,
+          "min": 90.0,
+          "max": 590.0,
+          "p25": 480.0,
+          "p75": 580.0
+        },
+        "2018": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 950.0,
+          "n_tasaciones": 2,
+          "min": 500.0,
+          "max": 1400.0,
+          "p25": 500.0,
+          "p75": 1400.0,
+          "var_pct": 90.0
+        },
+        "2019": {
+          "mediana_usd_m2": 520.0,
+          "promedio_usd_m2": 480.0,
+          "n_tasaciones": 3,
+          "min": 400.0,
+          "max": 520.0,
+          "p25": 400.0,
+          "p75": 520.0,
+          "var_pct": -45.3
+        },
+        "2020": {
+          "mediana_usd_m2": 750.0,
+          "promedio_usd_m2": 857.14,
+          "n_tasaciones": 7,
+          "min": 400.0,
+          "max": 1650.0,
+          "p25": 450.0,
+          "p75": 1200.0,
+          "var_pct": 44.2
+        },
+        "2021": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1350.0,
+          "n_tasaciones": 6,
+          "min": 950.0,
+          "max": 1650.0,
+          "p25": 1000.0,
+          "p75": 1500.0,
+          "var_pct": 100.0
+        },
+        "2022": {
+          "mediana_usd_m2": 600.0,
+          "promedio_usd_m2": 600.0,
+          "n_tasaciones": 1,
+          "min": 600.0,
+          "max": 600.0,
+          "var_pct": -60.0
+        },
+        "2023": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 811.43,
+          "n_tasaciones": 7,
+          "min": 530.0,
+          "max": 1600.0,
+          "p25": 650.0,
+          "p75": 750.0,
+          "var_pct": 16.7
+        }
+      }
+    },
+    "ILO": {
+      "departamento": "MOQUEGUA",
+      "total_tasaciones": 31,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 275.0,
+          "promedio_usd_m2": 266.67,
+          "n_tasaciones": 6,
+          "min": 100.0,
+          "max": 400.0,
+          "p25": 250.0,
+          "p75": 300.0
+        },
+        "2021": {
+          "mediana_usd_m2": 240.0,
+          "promedio_usd_m2": 287.42,
+          "n_tasaciones": 19,
+          "min": 11.0,
+          "max": 810.0,
+          "p25": 155.0,
+          "p75": 350.0,
+          "var_pct": -12.7
+        },
+        "2023": {
+          "mediana_usd_m2": 360.0,
+          "promedio_usd_m2": 353.33,
+          "n_tasaciones": 6,
+          "min": 230.0,
+          "max": 450.0,
+          "p25": 320.0,
+          "p75": 400.0,
+          "var_pct": 50.0
+        }
+      }
+    },
+    "LURIGANCHO CHOSICA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 30,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 445.0,
+          "promedio_usd_m2": 433.21,
+          "n_tasaciones": 28,
+          "min": 150.0,
+          "max": 1100.0,
+          "p25": 350.0,
+          "p75": 520.0
+        },
+        "2020": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 350.0,
+          "n_tasaciones": 1,
+          "min": 350.0,
+          "max": 350.0,
+          "var_pct": -21.3
+        },
+        "2023": {
+          "mediana_usd_m2": 140.0,
+          "promedio_usd_m2": 140.0,
+          "n_tasaciones": 1,
+          "min": 140.0,
+          "max": 140.0,
+          "var_pct": -60.0
+        }
+      }
+    },
+    "CUSCO": {
+      "departamento": "CUSCO",
+      "total_tasaciones": 29,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1500.0,
+          "n_tasaciones": 1,
+          "min": 1500.0,
+          "max": 1500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 21.0,
+          "promedio_usd_m2": 21.0,
+          "n_tasaciones": 2,
+          "min": 18.0,
+          "max": 24.0,
+          "p25": 18.0,
+          "p75": 24.0,
+          "var_pct": -98.6
+        },
+        "2019": {
+          "mediana_usd_m2": 5500.0,
+          "promedio_usd_m2": 5500.0,
+          "n_tasaciones": 2,
+          "min": 3700.0,
+          "max": 7300.0,
+          "p25": 3700.0,
+          "p75": 7300.0,
+          "var_pct": 26090.5
+        },
+        "2020": {
+          "mediana_usd_m2": 1500.0,
+          "promedio_usd_m2": 1500.0,
+          "n_tasaciones": 1,
+          "min": 1500.0,
+          "max": 1500.0,
+          "var_pct": -72.7
+        },
+        "2022": {
+          "mediana_usd_m2": 2100.0,
+          "promedio_usd_m2": 2100.0,
+          "n_tasaciones": 2,
+          "min": 2100.0,
+          "max": 2100.0,
+          "p25": 2100.0,
+          "p75": 2100.0,
+          "var_pct": 40.0
+        },
+        "2023": {
+          "mediana_usd_m2": 2400.0,
+          "promedio_usd_m2": 19095.79,
+          "n_tasaciones": 19,
+          "min": 250.0,
+          "max": 320310.0,
+          "p25": 1300.0,
+          "p75": 4000.0,
+          "var_pct": 14.3
+        }
+      }
+    },
+    "SAN JUAN BAUTISTA": {
+      "departamento": "ICA",
+      "total_tasaciones": 29,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 212.5,
+          "promedio_usd_m2": 212.5,
+          "n_tasaciones": 2,
+          "min": 145.0,
+          "max": 280.0,
+          "p25": 145.0,
+          "p75": 280.0
+        },
+        "2020": {
+          "mediana_usd_m2": 175.0,
+          "promedio_usd_m2": 175.0,
+          "n_tasaciones": 2,
+          "min": 130.0,
+          "max": 220.0,
+          "p25": 130.0,
+          "p75": 220.0,
+          "var_pct": -17.6
+        },
+        "2023": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 180.0,
+          "n_tasaciones": 5,
+          "min": 80.0,
+          "max": 250.0,
+          "p25": 160.0,
+          "p75": 210.0,
+          "var_pct": 14.3
+        }
+      }
+    },
+    "MOCHE": {
+      "departamento": "LA LIBERTAD",
+      "total_tasaciones": 28,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 765.0,
+          "promedio_usd_m2": 765.0,
+          "n_tasaciones": 1,
+          "min": 765.0,
+          "max": 765.0
+        },
+        "2020": {
+          "mediana_usd_m2": 200.0,
+          "promedio_usd_m2": 175.0,
+          "n_tasaciones": 4,
+          "min": 70.0,
+          "max": 230.0,
+          "p25": 200.0,
+          "p75": 230.0,
+          "var_pct": -73.9
+        },
+        "2023": {
+          "mediana_usd_m2": 260.0,
+          "promedio_usd_m2": 301.96,
+          "n_tasaciones": 23,
+          "min": 70.0,
+          "max": 940.0,
+          "p25": 180.0,
+          "p75": 370.0,
+          "var_pct": 30.0
+        }
+      }
+    },
+    "HUANUCO": {
+      "departamento": "HUANUCO",
+      "total_tasaciones": 27,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 757.5,
+          "promedio_usd_m2": 757.5,
+          "n_tasaciones": 2,
+          "min": 15.0,
+          "max": 1500.0,
+          "p25": 15.0,
+          "p75": 1500.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1100.0,
+          "promedio_usd_m2": 1100.0,
+          "n_tasaciones": 1,
+          "min": 1100.0,
+          "max": 1100.0,
+          "var_pct": 45.2
+        },
+        "2022": {
+          "mediana_usd_m2": 680.0,
+          "promedio_usd_m2": 680.0,
+          "n_tasaciones": 1,
+          "min": 680.0,
+          "max": 680.0,
+          "var_pct": -38.2
+        },
+        "2023": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1106.09,
+          "n_tasaciones": 23,
+          "min": 210.0,
+          "max": 2440.0,
+          "p25": 900.0,
+          "p75": 1200.0,
+          "var_pct": 47.1
+        }
+      }
+    },
+    "AMARILIS": {
+      "departamento": "HUANUCO",
+      "total_tasaciones": 26,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 407.5,
+          "promedio_usd_m2": 407.5,
+          "n_tasaciones": 2,
+          "min": 350.0,
+          "max": 465.0,
+          "p25": 350.0,
+          "p75": 465.0
+        },
+        "2021": {
+          "mediana_usd_m2": 515.0,
+          "promedio_usd_m2": 515.0,
+          "n_tasaciones": 2,
+          "min": 500.0,
+          "max": 530.0,
+          "p25": 500.0,
+          "p75": 530.0,
+          "var_pct": 26.4
+        },
+        "2022": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0,
+          "var_pct": -22.3
+        },
+        "2023": {
+          "mediana_usd_m2": 500.0,
+          "promedio_usd_m2": 518.1,
+          "n_tasaciones": 21,
+          "min": 50.0,
+          "max": 1000.0,
+          "p25": 330.0,
+          "p75": 750.0,
+          "var_pct": 25.0
+        }
+      }
+    },
+    "CHINCHA BAJA": {
+      "departamento": "ICA",
+      "total_tasaciones": 25,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 25.0,
+          "promedio_usd_m2": 25.0,
+          "n_tasaciones": 2,
+          "min": 20.0,
+          "max": 30.0,
+          "p25": 20.0,
+          "p75": 30.0
+        },
+        "2019": {
+          "mediana_usd_m2": 25.0,
+          "promedio_usd_m2": 47.5,
+          "n_tasaciones": 4,
+          "min": 20.0,
+          "max": 120.0,
+          "p25": 20.0,
+          "p75": 120.0,
+          "var_pct": 0.0
+        },
+        "2020": {
+          "mediana_usd_m2": 145.0,
+          "promedio_usd_m2": 145.0,
+          "n_tasaciones": 2,
+          "min": 90.0,
+          "max": 200.0,
+          "p25": 90.0,
+          "p75": 200.0,
+          "var_pct": 480.0
+        },
+        "2021": {
+          "mediana_usd_m2": 65000.0,
+          "promedio_usd_m2": 65000.0,
+          "n_tasaciones": 1,
+          "min": 65000.0,
+          "max": 65000.0,
+          "var_pct": 44727.6
+        },
+        "2023": {
+          "mediana_usd_m2": 92.5,
+          "promedio_usd_m2": 229.5,
+          "n_tasaciones": 16,
+          "min": 20.0,
+          "max": 1800.0,
+          "p25": 65.0,
+          "p75": 260.0,
+          "var_pct": -99.9
+        }
+      }
+    },
+    "SANTIAGO": {
+      "departamento": "CUSCO",
+      "total_tasaciones": 25,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 950.0,
+          "promedio_usd_m2": 1190.0,
+          "n_tasaciones": 5,
+          "min": 850.0,
+          "max": 1700.0,
+          "p25": 950.0,
+          "p75": 1500.0
+        },
+        "2021": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 250.0,
+          "n_tasaciones": 1,
+          "min": 250.0,
+          "max": 250.0,
+          "var_pct": -73.7
+        },
+        "2022": {
+          "mediana_usd_m2": 675.0,
+          "promedio_usd_m2": 675.0,
+          "n_tasaciones": 1,
+          "min": 675.0,
+          "max": 675.0,
+          "var_pct": 170.0
+        },
+        "2023": {
+          "mediana_usd_m2": 940.0,
+          "promedio_usd_m2": 1130.0,
+          "n_tasaciones": 3,
+          "min": 600.0,
+          "max": 1850.0,
+          "p25": 600.0,
+          "p75": 1850.0,
+          "var_pct": 39.3
+        }
+      }
+    },
+    "SOCABAYA": {
+      "departamento": "AREQUIPA",
+      "total_tasaciones": 25,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 324.0,
+          "n_tasaciones": 5,
+          "min": 140.0,
+          "max": 450.0,
+          "p25": 230.0,
+          "p75": 400.0
+        },
+        "2021": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 402.86,
+          "n_tasaciones": 7,
+          "min": 240.0,
+          "max": 550.0,
+          "p25": 330.0,
+          "p75": 500.0,
+          "var_pct": 0.0
+        },
+        "2023": {
+          "mediana_usd_m2": 415.0,
+          "promedio_usd_m2": 407.92,
+          "n_tasaciones": 12,
+          "min": 215.0,
+          "max": 530.0,
+          "p25": 360.0,
+          "p75": 480.0,
+          "var_pct": 3.8
+        },
+        "2024": {
+          "mediana_usd_m2": 670.0,
+          "promedio_usd_m2": 670.0,
+          "n_tasaciones": 1,
+          "min": 670.0,
+          "max": 670.0,
+          "var_pct": 61.4
+        }
+      }
+    },
+    "HUAROCHIRI": {
+      "departamento": "LIMA",
+      "total_tasaciones": 24,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 110.0,
+          "promedio_usd_m2": 43406.67,
+          "n_tasaciones": 3,
+          "min": 110.0,
+          "max": 130000.0,
+          "p25": 110.0,
+          "p75": 130000.0
+        },
+        "2020": {
+          "mediana_usd_m2": 87.5,
+          "promedio_usd_m2": 89.17,
+          "n_tasaciones": 6,
+          "min": 50.0,
+          "max": 130.0,
+          "p25": 50.0,
+          "p75": 130.0,
+          "var_pct": -20.5
+        },
+        "2021": {
+          "mediana_usd_m2": 127.5,
+          "promedio_usd_m2": 114.58,
+          "n_tasaciones": 12,
+          "min": 50.0,
+          "max": 140.0,
+          "p25": 100.0,
+          "p75": 130.0,
+          "var_pct": 45.7
+        },
+        "2022": {
+          "mediana_usd_m2": 135.0,
+          "promedio_usd_m2": 130.0,
+          "n_tasaciones": 3,
+          "min": 120.0,
+          "max": 135.0,
+          "p25": 120.0,
+          "p75": 135.0,
+          "var_pct": 5.9
+        }
+      }
+    },
+    "PUNTA NEGRA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 23,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 375.0,
+          "promedio_usd_m2": 606.67,
+          "n_tasaciones": 6,
+          "min": 15.0,
+          "max": 1750.0,
+          "p25": 25.0,
+          "p75": 1100.0
+        },
+        "2020": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 650.0,
+          "n_tasaciones": 3,
+          "min": 650.0,
+          "max": 650.0,
+          "p25": 650.0,
+          "p75": 650.0,
+          "var_pct": 73.3
+        },
+        "2021": {
+          "mediana_usd_m2": 530.0,
+          "promedio_usd_m2": 416.0,
+          "n_tasaciones": 5,
+          "min": 230.0,
+          "max": 550.0,
+          "p25": 240.0,
+          "p75": 530.0,
+          "var_pct": -18.5
+        },
+        "2023": {
+          "mediana_usd_m2": 360.0,
+          "promedio_usd_m2": 497.71,
+          "n_tasaciones": 7,
+          "min": 2.0,
+          "max": 1190.0,
+          "p25": 2.0,
+          "p75": 850.0,
+          "var_pct": -32.1
+        },
+        "2024": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 2,
+          "min": 700.0,
+          "max": 700.0,
+          "p25": 700.0,
+          "p75": 700.0,
+          "var_pct": 94.4
+        }
+      }
+    },
+    "ABANCAY": {
+      "departamento": "LIMA",
+      "total_tasaciones": 23,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 850.0,
+          "promedio_usd_m2": 812.5,
+          "n_tasaciones": 4,
+          "min": 550.0,
+          "max": 1000.0,
+          "p25": 700.0,
+          "p75": 1000.0
+        },
+        "2021": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 454.0,
+          "n_tasaciones": 5,
+          "min": 220.0,
+          "max": 910.0,
+          "p25": 340.0,
+          "p75": 400.0,
+          "var_pct": -52.9
+        },
+        "2023": {
+          "mediana_usd_m2": 930.0,
+          "promedio_usd_m2": 930.0,
+          "n_tasaciones": 1,
+          "min": 930.0,
+          "max": 930.0,
+          "var_pct": 132.5
+        }
+      }
+    },
+    "BARRANCA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 23,
+      "años": {
+        "2020": {
+          "mediana_usd_m2": 121.5,
+          "promedio_usd_m2": 121.5,
+          "n_tasaciones": 2,
+          "min": 13.0,
+          "max": 230.0,
+          "p25": 13.0,
+          "p75": 230.0
+        },
+        "2021": {
+          "mediana_usd_m2": 302.5,
+          "promedio_usd_m2": 302.5,
+          "n_tasaciones": 2,
+          "min": 220.0,
+          "max": 385.0,
+          "p25": 220.0,
+          "p75": 385.0,
+          "var_pct": 149.0
+        },
+        "2022": {
+          "mediana_usd_m2": 190.0,
+          "promedio_usd_m2": 127.8,
+          "n_tasaciones": 5,
+          "min": 4.5,
+          "max": 220.0,
+          "p25": 4.5,
+          "p75": 220.0,
+          "var_pct": -37.2
+        },
+        "2023": {
+          "mediana_usd_m2": 2220.0,
+          "promedio_usd_m2": 12937.5,
+          "n_tasaciones": 14,
+          "min": 95.0,
+          "max": 34000.0,
+          "p25": 270.0,
+          "p75": 32000.0,
+          "var_pct": 1068.4
+        }
+      }
+    },
+    "MALA": {
+      "departamento": "CAÑETE",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 320.0,
+          "promedio_usd_m2": 440.0,
+          "n_tasaciones": 3,
+          "min": 50.0,
+          "max": 950.0,
+          "p25": 50.0,
+          "p75": 950.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": 212.5
+        },
+        "2020": {
+          "mediana_usd_m2": 150.0,
+          "promedio_usd_m2": 150.0,
+          "n_tasaciones": 2,
+          "min": 30.0,
+          "max": 270.0,
+          "p25": 30.0,
+          "p75": 270.0,
+          "var_pct": -85.0
+        },
+        "2023": {
+          "mediana_usd_m2": 700.0,
+          "promedio_usd_m2": 700.0,
+          "n_tasaciones": 1,
+          "min": 700.0,
+          "max": 700.0,
+          "var_pct": 366.7
+        }
+      }
+    },
+    "LURIGANCHO - CHOSICA": {
+      "departamento": "LIMA",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 406.58,
+          "n_tasaciones": 19,
+          "min": 200.0,
+          "max": 575.0,
+          "p25": 300.0,
+          "p75": 500.0
+        },
+        "2019": {
+          "mediana_usd_m2": 400.0,
+          "promedio_usd_m2": 400.0,
+          "n_tasaciones": 1,
+          "min": 400.0,
+          "max": 400.0,
+          "var_pct": -11.1
+        },
+        "2022": {
+          "mediana_usd_m2": 680.0,
+          "promedio_usd_m2": 680.0,
+          "n_tasaciones": 1,
+          "min": 680.0,
+          "max": 680.0,
+          "var_pct": 70.0
+        }
+      }
+    },
+    "OLMOS": {
+      "departamento": "LAMBAYEQUE",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 8050.0,
+          "promedio_usd_m2": 8050.0,
+          "n_tasaciones": 2,
+          "min": 600.0,
+          "max": 15500.0,
+          "p25": 600.0,
+          "p75": 15500.0
+        },
+        "2018": {
+          "mediana_usd_m2": 16500.0,
+          "promedio_usd_m2": 16500.0,
+          "n_tasaciones": 2,
+          "min": 16500.0,
+          "max": 16500.0,
+          "p25": 16500.0,
+          "p75": 16500.0,
+          "var_pct": 105.0
+        },
+        "2019": {
+          "mediana_usd_m2": 17000.0,
+          "promedio_usd_m2": 17000.0,
+          "n_tasaciones": 1,
+          "min": 17000.0,
+          "max": 17000.0,
+          "var_pct": 3.0
+        },
+        "2021": {
+          "mediana_usd_m2": 5700.0,
+          "promedio_usd_m2": 19920.0,
+          "n_tasaciones": 5,
+          "min": 2400.0,
+          "max": 80000.0,
+          "p25": 5000.0,
+          "p75": 6500.0,
+          "var_pct": -66.5
+        },
+        "2023": {
+          "mediana_usd_m2": 8500.0,
+          "promedio_usd_m2": 9390.0,
+          "n_tasaciones": 5,
+          "min": 950.0,
+          "max": 18000.0,
+          "p25": 6500.0,
+          "p75": 13000.0,
+          "var_pct": 49.1
+        }
+      }
+    },
+    "JOSE LEONARDO ORTIZ": {
+      "departamento": "LAMBAYEQUE",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 2000.0,
+          "promedio_usd_m2": 2000.0,
+          "n_tasaciones": 1,
+          "min": 2000.0,
+          "max": 2000.0
+        },
+        "2020": {
+          "mediana_usd_m2": 420.0,
+          "promedio_usd_m2": 406.67,
+          "n_tasaciones": 3,
+          "min": 200.0,
+          "max": 600.0,
+          "p25": 200.0,
+          "p75": 600.0,
+          "var_pct": -79.0
+        },
+        "2023": {
+          "mediana_usd_m2": 540.0,
+          "promedio_usd_m2": 838.82,
+          "n_tasaciones": 17,
+          "min": 40.0,
+          "max": 2740.0,
+          "p25": 350.0,
+          "p75": 1170.0,
+          "var_pct": 28.6
+        }
+      }
+    },
+    "SAN VICENTE DE CAÑETE": {
+      "departamento": "LIMA",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 650.0,
+          "promedio_usd_m2": 650.0,
+          "n_tasaciones": 1,
+          "min": 650.0,
+          "max": 650.0
+        },
+        "2019": {
+          "mediana_usd_m2": 450.0,
+          "promedio_usd_m2": 450.0,
+          "n_tasaciones": 1,
+          "min": 450.0,
+          "max": 450.0,
+          "var_pct": -30.8
+        },
+        "2020": {
+          "mediana_usd_m2": 33150.0,
+          "promedio_usd_m2": 33150.0,
+          "n_tasaciones": 2,
+          "min": 300.0,
+          "max": 66000.0,
+          "p25": 300.0,
+          "p75": 66000.0,
+          "var_pct": 7266.7
+        },
+        "2023": {
+          "mediana_usd_m2": 420.0,
+          "promedio_usd_m2": 590.0,
+          "n_tasaciones": 15,
+          "min": 140.0,
+          "max": 2000.0,
+          "p25": 340.0,
+          "p75": 800.0,
+          "var_pct": -98.7
+        }
+      }
+    },
+    "CHINCHA": {
+      "departamento": "ICA",
+      "total_tasaciones": 21,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 320.0,
+          "promedio_usd_m2": 320.0,
+          "n_tasaciones": 1,
+          "min": 320.0,
+          "max": 320.0
+        },
+        "2020": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 10158.0,
+          "n_tasaciones": 5,
+          "min": 130.0,
+          "max": 50000.0,
+          "p25": 180.0,
+          "p75": 300.0,
+          "var_pct": -43.8
+        },
+        "2021": {
+          "mediana_usd_m2": 250.0,
+          "promedio_usd_m2": 7957.11,
+          "n_tasaciones": 9,
+          "min": 14.0,
+          "max": 65000.0,
+          "p25": 130.0,
+          "p75": 650.0,
+          "var_pct": 38.9
+        },
+        "2022": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 550.0,
+          "n_tasaciones": 2,
+          "min": 150.0,
+          "max": 950.0,
+          "p25": 150.0,
+          "p75": 950.0,
+          "var_pct": 120.0
+        },
+        "2023": {
+          "mediana_usd_m2": 290.0,
+          "promedio_usd_m2": 9846.67,
+          "n_tasaciones": 3,
+          "min": 250.0,
+          "max": 29000.0,
+          "p25": 250.0,
+          "p75": 29000.0,
+          "var_pct": -47.3
+        }
+      }
+    },
+    "SAN ANTONIO": {
+      "departamento": "LIMA",
+      "total_tasaciones": 21,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 20.0,
+          "promedio_usd_m2": 392.0,
+          "n_tasaciones": 5,
+          "min": 20.0,
+          "max": 1000.0,
+          "p25": 20.0,
+          "p75": 900.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0,
+          "var_pct": 4900.0
+        },
+        "2021": {
+          "mediana_usd_m2": 120.0,
+          "promedio_usd_m2": 120.0,
+          "n_tasaciones": 4,
+          "min": 120.0,
+          "max": 120.0,
+          "p25": 120.0,
+          "p75": 120.0,
+          "var_pct": -88.0
+        },
+        "2023": {
+          "mediana_usd_m2": 130.0,
+          "promedio_usd_m2": 367.45,
+          "n_tasaciones": 11,
+          "min": 19.0,
+          "max": 1400.0,
+          "p25": 110.0,
+          "p75": 760.0,
+          "var_pct": 8.3
+        }
+      }
+    },
+    "LAMBAYEQUE": {
+      "departamento": "CHICLAYO",
+      "total_tasaciones": 20,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 55.0,
+          "promedio_usd_m2": 522.33,
+          "n_tasaciones": 3,
+          "min": 12.0,
+          "max": 1500.0,
+          "p25": 12.0,
+          "p75": 1500.0
+        },
+        "2019": {
+          "mediana_usd_m2": 1720.0,
+          "promedio_usd_m2": 1720.0,
+          "n_tasaciones": 1,
+          "min": 1720.0,
+          "max": 1720.0,
+          "var_pct": 3027.3
+        },
+        "2020": {
+          "mediana_usd_m2": 430.0,
+          "promedio_usd_m2": 401.25,
+          "n_tasaciones": 4,
+          "min": 235.0,
+          "max": 510.0,
+          "p25": 350.0,
+          "p75": 510.0,
+          "var_pct": -75.0
+        },
+        "2023": {
+          "mediana_usd_m2": 335.0,
+          "promedio_usd_m2": 335.0,
+          "n_tasaciones": 1,
+          "min": 335.0,
+          "max": 335.0,
+          "var_pct": -22.1
+        }
+      }
+    },
+    "SANTA MARIA DEL MAR": {
+      "departamento": "LIMA",
+      "total_tasaciones": 20,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1625.0,
+          "promedio_usd_m2": 1783.33,
+          "n_tasaciones": 6,
+          "min": 1250.0,
+          "max": 2800.0,
+          "p25": 1400.0,
+          "p75": 2000.0
+        },
+        "2020": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 1367.5,
+          "n_tasaciones": 4,
+          "min": 70.0,
+          "max": 2000.0,
+          "p25": 1450.0,
+          "p75": 2000.0,
+          "var_pct": 4.6
+        },
+        "2021": {
+          "mediana_usd_m2": 1300.0,
+          "promedio_usd_m2": 1300.0,
+          "n_tasaciones": 1,
+          "min": 1300.0,
+          "max": 1300.0,
+          "var_pct": -23.5
+        },
+        "2023": {
+          "mediana_usd_m2": 1250.0,
+          "promedio_usd_m2": 1414.44,
+          "n_tasaciones": 9,
+          "min": 1100.0,
+          "max": 2000.0,
+          "p25": 1250.0,
+          "p75": 1680.0,
+          "var_pct": -3.8
+        }
+      }
+    },
+    "HUAMANGA": {
+      "departamento": "AYACUCHO",
+      "total_tasaciones": 20,
+      "años": {
+        "2017": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 1000.0,
+          "n_tasaciones": 1,
+          "min": 1000.0,
+          "max": 1000.0
+        },
+        "2020": {
+          "mediana_usd_m2": 350.0,
+          "promedio_usd_m2": 410.0,
+          "n_tasaciones": 5,
+          "min": 300.0,
+          "max": 580.0,
+          "p25": 320.0,
+          "p75": 500.0,
+          "var_pct": -65.0
+        },
+        "2021": {
+          "mediana_usd_m2": 570.0,
+          "promedio_usd_m2": 669.23,
+          "n_tasaciones": 13,
+          "min": 230.0,
+          "max": 1250.0,
+          "p25": 390.0,
+          "p75": 1100.0,
+          "var_pct": 62.9
+        },
+        "2023": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 550.0,
+          "n_tasaciones": 1,
+          "min": 550.0,
+          "max": 550.0,
+          "var_pct": -3.5
+        }
+      }
+    },
+    "NAZCA": {
+      "departamento": "ICA",
+      "total_tasaciones": 20,
+      "años": {
+        "2019": {
+          "mediana_usd_m2": 1700.0,
+          "promedio_usd_m2": 1700.0,
+          "n_tasaciones": 1,
+          "min": 1700.0,
+          "max": 1700.0
+        },
+        "2020": {
+          "mediana_usd_m2": 640.0,
+          "promedio_usd_m2": 640.0,
+          "n_tasaciones": 2,
+          "min": 280.0,
+          "max": 1000.0,
+          "p25": 280.0,
+          "p75": 1000.0,
+          "var_pct": -62.4
+        },
+        "2021": {
+          "mediana_usd_m2": 1000.0,
+          "promedio_usd_m2": 7604.0,
+          "n_tasaciones": 5,
+          "min": 100.0,
+          "max": 18000.0,
+          "p25": 920.0,
+          "p75": 18000.0,
+          "var_pct": 56.2
+        },
+        "2022": {
+          "mediana_usd_m2": 180.0,
+          "promedio_usd_m2": 180.0,
+          "n_tasaciones": 1,
+          "min": 180.0,
+          "max": 180.0,
+          "var_pct": -82.0
+        },
+        "2023": {
+          "mediana_usd_m2": 550.0,
+          "promedio_usd_m2": 727.27,
+          "n_tasaciones": 11,
+          "min": 200.0,
+          "max": 1510.0,
+          "p25": 250.0,
+          "p75": 1080.0,
+          "var_pct": 205.6
+        }
+      }
+    }
+  }
+}
