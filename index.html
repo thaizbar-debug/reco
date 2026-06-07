@@ -3424,18 +3424,17 @@ function buildTasChart(district, isFullReport){
     const vrTxt=vr!==undefined?(vr>0?'+'+vr+'%':vr+'%'):'';
     return `<div class="tas-bar-wrap">
       <div class="tas-bar" style="height:${h}px"></div>
-      <div class="tas-tip">$${v.toLocaleString()}/m² · ${n} tas.${vrTxt?' · '+vrTxt:''}</div>
+      <div class="tas-tip">$${v.toLocaleString()}/m²${vrTxt?' · '+vrTxt:''}</div>
     </div>`;
   }).join('');
   const labels=years.map(y=>`<span class="tas-label">${y.slice(2)}</span>`).join('');
   const prefix=isFullReport?'fr-':'';
   return `<div class="${prefix}tas-chart">
     <div class="${isFullReport?'fr-sec-title':'section-title'}" style="margin-bottom:2px">Evolución del valor · ${district}</div>
-    <div class="tas-chart-sub">Mediana USD/m² · ${d.n} tasaciones profesionales · ${years[0]}-${years[years.length-1]}</div>
+    <div class="tas-chart-sub">Mediana USD/m² · ${years[0]}-${years[years.length-1]}</div>
     <div class="tas-bars">${bars}</div>
     <div class="tas-labels">${labels}</div>
     <div class="tas-var ${cls}">${arrow} ${Math.abs(totalChange)}% en ${years.length} años (${years[0]}-${years[years.length-1]})</div>
-    <div class="tas-meta">Fuente: RECO · Tasaciones BVANET · Solo inmuebles</div>
   </div>`;
 }
 
