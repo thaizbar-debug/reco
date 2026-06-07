@@ -1971,6 +1971,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()" title="Tiempo de traslado">🚗 Traslado</button>
       <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()" title="Establecimientos cercanos">📍 Cerca de ti</button>
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()" title="Ver Street View de Google">👁️ Street View</button>
+      <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()" title="Tráfico en tiempo real">🚦 Tráfico</button>
       <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()" title="Catastro de lotes (Lima Metropolitana)">📐 Catastro</button>
     </div>
 
@@ -1985,7 +1986,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="mtool-panel-row"><b>📍 Establecimientos cerca</b><span id="poiRadiusLabel">800 m</span></div>
       <input type="range" min="300" max="3000" step="100" value="800" id="poiRadiusSlider" oninput="setPoiRadius(this.value)"/>
       <div class="poi-chips" id="poiChips"></div>
-      <div class="mtool-hint">Datos reales de OpenStreetMap. Acércate al barrio que te interese (zoom ≥ 13).</div>
+      <div class="mtool-hint">Datos de HERE Maps. Acércate al barrio que te interese (zoom ≥ 13).</div>
       <button class="mtool-clear" onclick="clearPoi()">✕ Quitar marcadores</button>
     </div>
 
@@ -2666,18 +2667,66 @@ function _deactivateRadiusPoly(){
 }
 
 // ── Tiempo de traslado (commute) ──────────────────────────────
-// Estimación: distancia en línea recta × 1.3 (factor de vías) a 24 km/h promedio en ciudad.
-let commuteMarker=null, commuteCircle=null;
+// Pre-filtro rápido: Haversine × 1.3 ÷ 24 km/h. Visualización real: HERE Isoline API.
+let commuteMarker=null, commuteCircle=null, commuteIsoLayer=null;
+let _commuteIsoDebounce=null;
+
 function _haversineKm(aLat,aLng,bLat,bLng){
   const R=6371, r=Math.PI/180;
   const dLat=(bLat-aLat)*r, dLng=(bLng-aLng)*r;
   const x=Math.sin(dLat/2)**2 + Math.cos(aLat*r)*Math.cos(bLat*r)*Math.sin(dLng/2)**2;
   return 2*R*Math.asin(Math.sqrt(x));
 }
+
+// Quick estimation for bulk property filtering (no API call)
 function commuteMinTo(c, geo){
   const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
   return Math.max(1, Math.round(km/24*60));
 }
+
+// HERE Flexible Polyline decoder (minimal implementation)
+function _decodeFlexPolyline(encoded){
+  let index=0, lat=0, lng=0, result=[];
+  const _dec=()=>{
+    let b, shift=0, val=0;
+    do { b=encoded.charCodeAt(index++)-63; val|=(b&0x1f)<<shift; shift+=5; } while(b>=0x20);
+    return (val&1)?~(val>>1):(val>>1);
+  };
+  const header=_dec();
+  const precision=Math.pow(10, header&0xf);
+  const thirdDim=(header>>4)&0x7;
+  while(index<encoded.length){
+    lat+=_dec(); lng+=_dec();
+    if(thirdDim) _dec();
+    result.push([lat/precision, lng/precision]);
+  }
+  return result;
+}
+
+// Fetch real drive time from HERE Routing API
+async function _fetchHereRouteTime(originLat,originLng,destLat,destLng){
+  const url=`https://router.hereapi.com/v8/routes?transportMode=car&origin=${originLat},${originLng}&destination=${destLat},${destLng}&return=summary&apiKey=${HERE_API_KEY}`;
+  try{
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HERE Routing '+resp.status);
+    const data=await resp.json();
+    const sec=data.routes[0].sections[0].summary.duration;
+    return Math.max(1, Math.round(sec/60));
+  }catch(e){ console.warn('HERE Routing API error:',e); return null; }
+}
+
+// Fetch isoline (isochrone) polygon from HERE Isoline API
+async function _fetchHereIsoline(lat,lng,seconds){
+  const url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=car&origin=${lat},${lng}&range[type]=time&range[values]=${seconds}&apiKey=${HERE_API_KEY}`;
+  try{
+    const resp=await fetch(url);
+    if(!resp.ok) throw new Error('HERE Isoline '+resp.status);
+    const data=await resp.json();
+    const encoded=data.isolines[0].polygons[0].outer;
+    return _decodeFlexPolyline(encoded);
+  }catch(e){ console.warn('HERE Isoline API error:',e); return null; }
+}
+
 function toggleCommuteMode(){
   const on=!S.commuteMode;
   _deactivateRadiusPoly();
@@ -2687,37 +2736,93 @@ function toggleCommuteMode(){
   document.getElementById('commutePanel').classList.toggle('open',on);
   document.getElementById('realMap').classList.toggle('commute-mode',on);
 }
-function setCommuteDest(latlng){
+
+async function setCommuteDest(latlng){
   const maxMin=parseInt(document.getElementById('commuteSlider').value||'30');
-  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin};
-  drawCommute();
+  S.commute={lat:latlng.lat, lng:latlng.lng, maxMin, realMin:null, isoCoords:null};
+  drawCommute(); // draw marker + fallback circle immediately
   applyFilters();
   _commuteInfo();
+  // Fetch real route time (from map center to destination)
+  const center=leafletMap.getCenter();
+  const realMin=await _fetchHereRouteTime(center.lat,center.lng,latlng.lat,latlng.lng);
+  if(S.commute && realMin!==null){
+    S.commute.realMin=realMin;
+    _commuteInfo();
+  }
+  // Fetch isochrone
+  await _fetchAndDrawIsoline();
 }
+
+async function _fetchAndDrawIsoline(){
+  if(!S.commute) return;
+  const seconds=S.commute.maxMin*60;
+  const coords=await _fetchHereIsoline(S.commute.lat,S.commute.lng,seconds);
+  if(!S.commute) return; // user may have cleared while waiting
+  if(coords && coords.length>2){
+    S.commute.isoCoords=coords;
+    _drawIsoLayer();
+  }
+}
+
+function _drawIsoLayer(){
+  if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
+  if(!S.commute || !S.commute.isoCoords || !leafletMap) return;
+  // Remove fallback circle when we have real isoline
+  if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
+  commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2,dashArray:'6 4',fillColor:'#0891b2',fillOpacity:0.08}).addTo(leafletMap);
+}
+
 function updateCommute(val){
   document.getElementById('commuteLabel').textContent=val+' min';
-  if(S.commute){ S.commute.maxMin=parseInt(val); drawCommute(); applyFilters(); _commuteInfo(); }
+  if(S.commute){
+    S.commute.maxMin=parseInt(val);
+    S.commute.isoCoords=null;
+    drawCommute(); // show fallback circle while loading
+    applyFilters();
+    _commuteInfo();
+    // Debounce isoline re-fetch
+    if(_commuteIsoDebounce) clearTimeout(_commuteIsoDebounce);
+    _commuteIsoDebounce=setTimeout(()=>{ _fetchAndDrawIsoline(); },600);
+  }
 }
+
 function drawCommute(){
   if(!S.commute || !leafletMap) return;
   if(commuteMarker) commuteMarker.remove();
   const icon=L.divIcon({className:'',html:'<div class="commute-dest">📍</div>',iconSize:[34,34],iconAnchor:[17,30]});
   commuteMarker=L.marker([S.commute.lat,S.commute.lng],{icon}).addTo(leafletMap);
-  if(commuteCircle) commuteCircle.remove();
-  // Radio alcanzable aprox. (inverso de commuteMinTo): km = maxMin/60 × 24 ÷ 1.3
-  const km=(S.commute.maxMin/60)*24/1.3;
-  commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:1.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.06}).addTo(leafletMap);
+  // If we already have isoline coords, draw polygon; otherwise fallback circle
+  if(S.commute.isoCoords && S.commute.isoCoords.length>2){
+    if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
+    _drawIsoLayer();
+  } else {
+    if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
+    if(commuteCircle) commuteCircle.remove();
+    const km=(S.commute.maxMin/60)*24/1.3;
+    commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:1.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.06}).addTo(leafletMap);
+  }
 }
+
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo en auto.'; return; }
   const n=getFiltered().length;
-  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto (aprox.).';
+  let txt=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min en auto';
+  if(S.commute.realMin!==null){
+    txt+=' (ruta real al destino: '+S.commute.realMin+' min).';
+  } else {
+    txt+=' (aprox.).';
+  }
+  el.textContent=txt;
 }
+
 function clearCommute(){
   S.commute=null;
   if(commuteMarker){ commuteMarker.remove(); commuteMarker=null; }
   if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
+  if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
+  if(_commuteIsoDebounce){ clearTimeout(_commuteIsoDebounce); _commuteIsoDebounce=null; }
   _commuteInfo();
   applyFilters();
 }
