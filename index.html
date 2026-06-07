@@ -2463,13 +2463,22 @@ function renderCards(list){
 let leafletMap=null;
 let leafletMarkers={};
 
+function _createTileLayer(){
+  if(HERE_API_KEY){
+    return L.tileLayer('https://maps.hereapi.com/v3/base/mc/{z}/{x}/{y}/png8?style=explore.day&size=256&apiKey='+HERE_API_KEY,{
+      attribution:'© <a href="https://www.here.com">HERE</a>',
+      maxZoom:20
+    });
+  }
+  return L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
+    maxZoom:19
+  });
+}
 function initMap(){
   leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    attribution:'© <a href="https://www.openstreetmap.org/">OpenStreetMap</a>',
-    maxZoom:19
-  }).addTo(leafletMap);
+  _createTileLayer().addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
   leafletMap.on('dblclick',onMapDblClick);
@@ -3130,29 +3139,21 @@ function showSuggestions(val){
 }
 // ─── Geocodificación: HERE (principal) → Google (opcional) → Photon (fallback) ───
 
-// HERE Autocomplete — 250K req gratis/mes, datos propietarios
+// HERE Autosuggest — devuelve sugerencias CON coordenadas (1 sola llamada)
 async function _fetchHere(q){
   if(!HERE_API_KEY) return [];
-  const url=`https://autocomplete.search.hereapi.com/v1/autocomplete?q=${encodeURIComponent(q)}&in=countryCode:PER&at=-12.05,-77.04&lang=es&limit=5&apiKey=${HERE_API_KEY}`;
+  const url=`https://autosuggest.search.hereapi.com/v1/autosuggest?q=${encodeURIComponent(q)}&in=countryCode:PER&at=-12.05,-77.04&lang=es&limit=5&apiKey=${HERE_API_KEY}`;
   const res=await fetch(url);
-  if(!res.ok) return [];
+  if(!res.ok){ console.warn('[reco] HERE autosuggest HTTP',res.status); return []; }
   const data=await res.json();
   if(!data.items||!data.items.length) return [];
-  return data.items.map(it=>({
+  return data.items.filter(it=>it.position).map(it=>({
     label:it.title,
     sub:it.address?(it.address.district||it.address.city||it.address.county||'Perú'):'Perú',
-    hereId:it.id,
+    lat:it.position.lat,
+    lng:it.position.lng,
     src:'here'
   }));
-}
-async function _geocodeHereId(hereId){
-  if(!HERE_API_KEY) return null;
-  const url=`https://lookup.search.hereapi.com/v1/lookup?id=${encodeURIComponent(hereId)}&apiKey=${HERE_API_KEY}`;
-  const res=await fetch(url);
-  if(!res.ok) return null;
-  const data=await res.json();
-  if(!data.position) return null;
-  return {lat:data.position.lat,lng:data.position.lng};
 }
 
 // Google Places Autocomplete (carga dinámica si hay key)
@@ -3244,7 +3245,7 @@ async function _fetchGeo(q){
     const secHtml=`<div class="sg-section">Direcciones</div>`
       +items.map(r=>{
         if(r.src==='here'){
-          return `<div class="sg-item sg-geo" onmousedown="pickHereResult('${r.hereId}','${r.label.replace(/'/g,"\\'")}')">
+          return `<div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
             <span class="sg-ico">📍</span>
             <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
           </div>`;
@@ -3283,13 +3284,6 @@ function _activateRadiusAt(lat,lng,label){
   drawRadiusCircle();
   leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
   applyFilters();
-}
-async function pickHereResult(hereId,label){
-  document.getElementById('searchQ').value='';
-  document.getElementById('sgDrop').style.display='none';
-  const loc=await _geocodeHereId(hereId);
-  if(!loc){ toast('No se pudo obtener la ubicación'); return; }
-  _activateRadiusAt(loc.lat,loc.lng,label);
 }
 async function pickGoogleResult(placeId,label){
   document.getElementById('searchQ').value='';
@@ -4625,7 +4619,7 @@ function _pubMapInit(){
   if(!container||pubMap)return;
   const center=(_pd.lat&&_pd.lng)?[_pd.lat,_pd.lng]:[-12.046374,-77.042793];
   pubMap=L.map('pubMapEl',{zoomControl:true}).setView(center,14);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(pubMap);
+  _createTileLayer().addTo(pubMap);
   pubMarker=L.marker(center,{draggable:true}).addTo(pubMap);
   pubMarker.on('dragend',()=>{
     const ll=pubMarker.getLatLng();_pd.lat=ll.lat;_pd.lng=ll.lng;
@@ -4949,7 +4943,7 @@ function goToApp(hash){
       const secHtml=`<div class="sg-section">Direcciones</div>`
         +items.map(r=>{
           if(r.src==='here'){
-            return `<div class="sg-item sg-geo" onmousedown="pickHereLanding('${r.hereId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
+            return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
           }
           if(r.src==='google'){
             return `<div class="sg-item sg-geo" onmousedown="pickGoogleLanding('${r.placeId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
@@ -4963,12 +4957,6 @@ function goToApp(hash){
       if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
       setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
     }
-  }
-  async function pickHereLanding(hereId,label){
-    document.getElementById('heroQ').value=label;
-    document.getElementById('sgDropLanding').style.display='none';
-    const loc=await _geocodeHereId(hereId);
-    if(loc) _lastGeoL={lat:loc.lat,lng:loc.lng,label};
   }
   async function pickGoogleLanding(placeId,label){
     document.getElementById('heroQ').value=label;
