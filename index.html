@@ -773,6 +773,7 @@ header .spacer{flex:1}
   width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
   font-size:13px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
+.poi-ctr{font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
 #realMap.commute-mode,#realMap.sv-mode{cursor:crosshair !important}
 #realMap.commute-mode .leaflet-interactive,#realMap.sv-mode .leaflet-interactive{cursor:crosshair !important}
 
@@ -1976,9 +1977,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
 
     <div class="mtool-panel" id="poiPanel">
-      <div class="mtool-panel-row"><b>📍 Establecimientos cerca</b></div>
+      <div class="mtool-panel-row"><b>📍 Establecimientos cerca</b><span id="poiRadiusLabel">800 m</span></div>
+      <input type="range" min="300" max="3000" step="100" value="800" id="poiRadiusSlider" oninput="setPoiRadius(this.value)"/>
       <div class="poi-chips" id="poiChips"></div>
-      <div class="mtool-hint">Se ubican alrededor del centro del mapa actual.</div>
+      <div class="mtool-hint">Datos reales de OpenStreetMap. Acércate al barrio que te interese (zoom ≥ 13).</div>
       <button class="mtool-clear" onclick="clearPoi()">✕ Quitar marcadores</button>
     </div>
 
@@ -2221,7 +2223,7 @@ const S = {
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, svMode:false,
-  catastroOn:false,
+  catastroOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
 
@@ -2706,40 +2708,63 @@ function clearCommute(){
   applyFilters();
 }
 
-// ── Cerca de ti (establecimientos / POI) ──────────────────────
+// ── Cerca de ti — POIs reales de OpenStreetMap (Overpass API) ─────────
+const OVERPASS_EPS=['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://maps.mail.ru/osm/tools/overpass/api/interpreter','https://overpass.private.coffee/api/interpreter'];
 const POI_CATS={
-  colegios:{l:'Colegios',e:'🏫',c:'#2563EB'},
-  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A'},
-  parques:{l:'Parques',e:'🌳',c:'#15803D'},
-  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626'},
-  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C'},
-  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED'}
-};
-const POI_NAMES={
-  colegios:['I.E. San José','Colegio Santa María','Liceo Naval','Innova Schools','Colegio Markham'],
-  supermercados:['Plaza Vea','Wong','Metro','Vivanda','Tottus'],
-  parques:['Parque Kennedy','Parque El Olivar','Parque Reducto','Malecón','Parque Central'],
-  clinicas:['Clínica Internacional','Clínica Ricardo Palma','Clínica Delgado','Centro Médico','Clínica Anglo'],
-  restaurantes:['La Mar','Tanta','Pardos Chicken','La Lucha','El Mercado'],
-  bancos:['BCP','Interbank','BBVA','Scotiabank','BanBif']
+  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',q:['node["amenity"="school"]','way["amenity"="school"]']},
+  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',q:['node["shop"="supermarket"]','way["shop"="supermarket"]']},
+  parques:{l:'Parques',e:'🌳',c:'#15803D',q:['way["leisure"="park"]','node["leisure"="park"]']},
+  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',q:['node["amenity"~"^(hospital|clinic|doctors)$"]','way["amenity"~"^(hospital|clinic|doctors)$"]']},
+  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',q:['node["amenity"="pharmacy"]','way["amenity"="pharmacy"]']},
+  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',q:['node["amenity"~"^(restaurant|cafe|fast_food)$"]']},
+  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',q:['node["amenity"~"^(bank|atm)$"]','way["amenity"="bank"]']}
 };
 let poiMarkers={};
-function _seedRand(seed){
-  let t=seed>>>0;
-  return function(){ t+=0x6D2B79F5; let x=Math.imul(t^(t>>>15),1|t); x^=x+Math.imul(x^(x>>>7),61|x); return((x^(x>>>14))>>>0)/4294967296; };
+let _poiLoading={};
+let _poiCenter=null;
+let poiCenterMarker=null, poiCenterCircle=null;
+function _poiDrawCenter(){
+  if(!leafletMap||!_poiCenter) return;
+  const ll=[_poiCenter.lat,_poiCenter.lng], rad=S.poiRadius||800;
+  if(poiCenterMarker){ poiCenterMarker.setLatLng(ll); }
+  else { poiCenterMarker=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="poi-ctr">📍</div>',iconSize:[30,30],iconAnchor:[15,28]}),zIndexOffset:600}).addTo(leafletMap); }
+  if(poiCenterCircle){ poiCenterCircle.setLatLng(ll); poiCenterCircle.setRadius(rad); }
+  else { poiCenterCircle=L.circle(ll,{radius:rad,color:'#0891b2',weight:1.5,dashArray:'5 5',fillColor:'#0891b2',fillOpacity:.05}).addTo(leafletMap); }
+}
+function _poiClearCenter(){
+  if(poiCenterMarker){ poiCenterMarker.remove(); poiCenterMarker=null; }
+  if(poiCenterCircle){ poiCenterCircle.remove(); poiCenterCircle=null; }
 }
 function togglePoiPanel(){
   const panel=document.getElementById('poiPanel');
   const open=!panel.classList.contains('open');
   panel.classList.toggle('open',open);
   document.getElementById('poiToggle').classList.toggle('active',open);
-  if(open) buildPoiChips();
+  if(open){
+    if(leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; _poiDrawCenter(); }
+    if(leafletMap && leafletMap.getZoom()<13) toast('🔍 Acércate al barrio que te interese para ver establecimientos cercanos');
+    buildPoiChips();
+  } else {
+    _poiClearCenter();
+  }
+}
+function setPoiRadius(val){
+  S.poiRadius=parseInt(val);
+  const lbl=document.getElementById('poiRadiusLabel');
+  if(lbl) lbl.textContent = val>=1000?(val/1000).toFixed(val%1000?1:0)+' km':val+' m';
+  _poiDrawCenter();
+  const active=Object.keys(poiMarkers);
+  active.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
+  active.forEach(k=>loadPoi(k));
+  buildPoiChips();
 }
 function buildPoiChips(){
   const wrap=document.getElementById('poiChips'); if(!wrap) return;
   wrap.innerHTML=Object.keys(POI_CATS).map(k=>{
-    const c=POI_CATS[k]; const on=poiMarkers[k]?' on':'';
-    return `<button class="poi-chip${on}" style="--pc:${c.c}" onclick="togglePoi('${k}')">${c.e} ${c.l}</button>`;
+    const c=POI_CATS[k];
+    const on=poiMarkers[k]?' on':'', ld=_poiLoading[k]?' loading':'';
+    const cnt=poiMarkers[k]?` (${poiMarkers[k].length})`:'';
+    return `<button class="poi-chip${on}${ld}" style="--pc:${c.c}" onclick="togglePoi('${k}')">${_poiLoading[k]?'⏳':c.e} ${c.l}${cnt}</button>`;
   }).join('');
 }
 function togglePoi(cat){
@@ -2747,28 +2772,65 @@ function togglePoi(cat){
   if(poiMarkers[cat]){
     poiMarkers[cat].forEach(m=>m.remove());
     delete poiMarkers[cat];
+    buildPoiChips();
   } else {
-    const ctr=leafletMap.getCenter();
-    const c=POI_CATS[cat], nm=POI_NAMES[cat]||['Lugar'];
-    const seed=Math.floor((ctr.lat+ctr.lng)*1000)+cat.length*97;
-    const rnd=_seedRand(seed);
-    const n=6+Math.floor(rnd()*4), arr=[];
-    for(let i=0;i<n;i++){
-      const ang=rnd()*Math.PI*2, dist=(0.2+rnd()*1.3)/111;
-      const la=ctr.lat+Math.cos(ang)*dist;
-      const ln=ctr.lng+Math.sin(ang)*dist/Math.cos(ctr.lat*Math.PI/180);
+    loadPoi(cat);
+  }
+}
+function _overpassOne(url, init, ms){
+  const ctrl=new AbortController();
+  const to=setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, Object.assign({signal:ctrl.signal}, init||{}))
+    .then(r=>{ clearTimeout(to); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .catch(e=>{ clearTimeout(to); throw e; });
+}
+async function _overpassFetch(query){
+  const enc=encodeURIComponent(query);
+  try{
+    return await Promise.any(OVERPASS_EPS.map(ep=>_overpassOne(ep+'?data='+enc, null, 15000)));
+  }catch(_){}
+  try{
+    return await Promise.any(OVERPASS_EPS.map(ep=>_overpassOne(ep,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+enc},15000)));
+  }catch(e){
+    throw new Error('Overpass no disponible');
+  }
+}
+async function loadPoi(cat){
+  const c=POI_CATS[cat]; if(!c || _poiLoading[cat]) return;
+  if(!_poiCenter && leafletMap){ const ct=leafletMap.getCenter(); _poiCenter={lat:ct.lat,lng:ct.lng}; }
+  const lat=_poiCenter.lat, lng=_poiCenter.lng, rad=S.poiRadius||800;
+  _poiLoading[cat]=true; buildPoiChips();
+  const parts=c.q.map(sel=>`${sel}(around:${rad},${lat.toFixed(6)},${lng.toFixed(6)});`).join('');
+  const query=`[out:json][timeout:25];(${parts});out center 80;`;
+  try{
+    const j=await _overpassFetch(query);
+    const seen=new Set(), arr=[];
+    (j.elements||[]).forEach(el=>{
+      const la=el.lat!=null?el.lat:(el.center&&el.center.lat);
+      const ln=el.lon!=null?el.lon:(el.center&&el.center.lon);
+      if(la==null||ln==null) return;
+      const name=(el.tags&&(el.tags.name||el.tags['name:es']))||c.l.replace(/s$/,'');
+      const key=name+'|'+la.toFixed(4)+'|'+ln.toFixed(4);
+      if(seen.has(key)) return; seen.add(key);
+      const dm=_haversineKm(lat,lng,la,ln)*1000;
+      const dTxt=dm>=1000?(dm/1000).toFixed(1)+' km':Math.round(dm)+' m';
       const icon=L.divIcon({className:'',html:`<div class="poi-mk" style="background:${c.c}">${c.e}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
       const m=L.marker([la,ln],{icon}).addTo(leafletMap);
-      m.bindTooltip(nm[i%nm.length],{direction:'top',offset:[0,-12]});
+      m.bindTooltip(`<b>${name}</b><br>${c.e} a ${dTxt}`,{direction:'top',offset:[0,-12]});
       arr.push(m);
-    }
+    });
     poiMarkers[cat]=arr;
+    if(!arr.length) toast(`Sin ${c.l.toLowerCase()} en ${rad>=1000?(rad/1000)+' km':rad+' m'} · prueba ampliar el radio`);
+  }catch(e){
+    toast('No se pudo conectar con OpenStreetMap (Overpass). Reintenta en unos segundos.');
+  }finally{
+    _poiLoading[cat]=false; buildPoiChips();
   }
-  buildPoiChips();
 }
 function clearPoi(){
   Object.values(poiMarkers).forEach(a=>a.forEach(m=>m.remove()));
   poiMarkers={};
+  _poiClearCenter();
   buildPoiChips();
 }
 
@@ -2918,6 +2980,8 @@ function detailNearby(id){
   const c=GEO[id]; if(!c){ toast('Esta propiedad no tiene ubicación en el mapa'); return; }
   closeDetail();
   if(leafletMap) leafletMap.setView(c,16,{animate:true,duration:.5});
+  _poiCenter={lat:c[0],lng:c[1]};
+  _poiDrawCenter();
   const panel=document.getElementById('poiPanel');
   panel.classList.add('open');
   document.getElementById('poiToggle').classList.add('active');
