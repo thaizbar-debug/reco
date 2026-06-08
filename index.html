@@ -625,8 +625,8 @@ header .spacer{flex:1}
 #realMap{width:100%;height:100%}
 
 /* Leaflet pin — Airbnb style */
-.leaflet-div-icon{background:none!important;border:none!important}
-.lf-pin{cursor:pointer;position:relative;z-index:5;white-space:nowrap}
+.leaflet-div-icon{background:none!important;border:none!important;width:auto!important;height:auto!important}
+.lf-pin{cursor:pointer;position:relative;z-index:5;white-space:nowrap;transform:translate(-50%,-50%)}
 .lf-pin:hover{z-index:20}
 .lf-pill{
   background:#fff;color:#222;border-radius:16px;padding:4px 10px;
@@ -668,7 +668,7 @@ header .spacer{flex:1}
 .lf-cluster{
   cursor:pointer;background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:4px 10px;
   font-size:.75rem;font-weight:700;color:#222;box-shadow:0 2px 6px rgba(0,0,0,.15);
-  white-space:nowrap;transition:all .15s;display:inline-block;
+  white-space:nowrap;transition:all .15s;display:inline-block;transform:translate(-50%,-50%);
 }
 .lf-cluster:hover{box-shadow:0 4px 14px rgba(0,0,0,.22);transform:scale(1.05);border-color:#222}
 
@@ -3201,7 +3201,7 @@ function renderPins(list){
       if(!bounds.contains(GEO[p.id])) return;
       const isActive=S.selectedId===p.id;
       const html=_pinIconHtml(p,isActive);
-      const icon=L.divIcon({className:'',html,iconSize:[1,1],iconAnchor:[0,0]});
+      const icon=L.divIcon({className:'',html});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
       _bindPinHover(marker,p.id);
@@ -3232,14 +3232,14 @@ function renderPins(list){
       const p=g[0];
       const isActive=S.selectedId===p.id;
       const html=_pinIconHtml(p,isActive);
-      const icon=L.divIcon({className:'',html,iconSize:[1,1],iconAnchor:[0,0]});
+      const icon=L.divIcon({className:'',html});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
       _bindPinHover(marker,p.id);
       leafletMarkers[p.id]=marker;
     }else{
       const label=n>999?'999+':n+(n===1?' prop.':' prop.');
-      const icon=L.divIcon({className:'',html:`<div class="lf-cluster">${label}</div>`,iconSize:[1,1],iconAnchor:[0,0]});
+      const icon=L.divIcon({className:'',html:`<div class="lf-cluster">${label}</div>`});
       const marker=L.marker([al,aln],{icon}).addTo(leafletMap);
       marker.on('click',()=>leafletMap.setView([al,aln],Math.min(z+2,16),{animate:true,duration:.5}));
       leafletMarkers['c'+al+aln]=marker;
