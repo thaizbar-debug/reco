@@ -628,8 +628,8 @@ header .spacer{flex:1}
 .lf-pin{cursor:pointer;position:relative;z-index:5}
 .lf-pin:hover{z-index:20}
 .lf-pill{
-  background:#fff;color:#222;border-radius:20px;padding:5px 12px;
-  font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.18);
+  background:#fff;color:#222;border-radius:16px;padding:3px 8px;
+  font-size:.72rem;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,.18);
   white-space:nowrap;border:1.5px solid #ddd;transition:all .15s;
 }
 .lf-pin:hover .lf-pill{box-shadow:0 4px 16px rgba(0,0,0,.25);transform:scale(1.06);border-color:#222}
@@ -647,8 +647,8 @@ header .spacer{flex:1}
 .lf-hover-body .hc-addr{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lf-hover-body .hc-meta{font-size:10px;color:#94a3b8;margin-top:3px}
 .lf-cluster{
-  cursor:pointer;background:#fff;border:1.5px solid #ddd;border-radius:20px;padding:4px 12px;
-  font-size:12px;font-weight:700;color:#222;box-shadow:0 2px 8px rgba(0,0,0,.15);
+  cursor:pointer;background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:3px 8px;
+  font-size:.7rem;font-weight:700;color:#222;box-shadow:0 2px 6px rgba(0,0,0,.15);
   white-space:nowrap;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;
 }
 .lf-cluster:hover{box-shadow:0 4px 14px rgba(0,0,0,.22);transform:scale(1.05);border-color:#222}
@@ -3170,13 +3170,13 @@ function renderPins(list){
     });
   }
 
-  if(z>=14){
+  if(z>=15){
     list.forEach(p=>{
       if(!GEO[p.id]) return;
       if(!bounds.contains(GEO[p.id])) return;
       const isActive=S.selectedId===p.id;
       const html=_pinIconHtml(p,isActive);
-      const icon=L.divIcon({className:'',html,iconSize:[80,36],iconAnchor:[40,18]});
+      const icon=L.divIcon({className:'',html,iconSize:[60,28],iconAnchor:[30,14]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
       _bindPinHover(marker,p.id);
@@ -3185,33 +3185,36 @@ function renderPins(list){
     return;
   }
 
-  const cd=z>=13?.008:z>=12?.018:z>=11?.04:z>=10?.09:z>=9?.20:.45;
+  const cd=z>=14?.005:z>=13?.012:z>=12?.025:z>=11?.06:z>=10?.14:z>=9?.30:.60;
+  const maxClusters=z>=13?60:z>=12?40:z>=11?30:z>=10?20:15;
   const cells={};
   list.forEach(p=>{
     if(!GEO[p.id]) return;
     const [lat,lng]=GEO[p.id];
+    if(!bounds.contains([lat,lng])) return;
     const k=`${Math.floor(lat/cd)}_${Math.floor(lng/cd)}`;
     if(!cells[k])cells[k]=[];
     cells[k].push(p);
   });
 
-  Object.values(cells).forEach(g=>{
+  const sorted=Object.values(cells).sort((a,b)=>b.length-a.length).slice(0,maxClusters);
+  sorted.forEach(g=>{
     const coords=g.map(p=>GEO[p.id]);
     const al=coords.reduce((s,c)=>s+c[0],0)/g.length;
     const aln=coords.reduce((s,c)=>s+c[1],0)/g.length;
     const n=g.length;
-    if(n===1&&z>=11){
+    if(n===1&&z>=12){
       const p=g[0];
       const isActive=S.selectedId===p.id;
       const html=_pinIconHtml(p,isActive);
-      const icon=L.divIcon({className:'',html,iconSize:[80,36],iconAnchor:[40,18]});
+      const icon=L.divIcon({className:'',html,iconSize:[60,28],iconAnchor:[30,14]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
       _bindPinHover(marker,p.id);
       leafletMarkers[p.id]=marker;
     }else{
-      const label=n>999?'999+':n+(n===1?' propiedad':' propiedades');
-      const icon=L.divIcon({className:'',html:`<div class="lf-cluster">${label}</div>`,iconSize:[90,28],iconAnchor:[45,14]});
+      const label=n>999?'999+':n;
+      const icon=L.divIcon({className:'',html:`<div class="lf-cluster">${label}</div>`,iconSize:[40,22],iconAnchor:[20,11]});
       const marker=L.marker([al,aln],{icon}).addTo(leafletMap);
       marker.on('click',()=>leafletMap.setView([al,aln],Math.min(z+2,16),{animate:true,duration:.5}));
       leafletMarkers['c'+al+aln]=marker;
