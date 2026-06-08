@@ -2805,8 +2805,7 @@ async function _fetchAndDrawIsoline(){
 function _drawIsoLayer(){
   if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
   if(!S.commute || !S.commute.isoCoords || !leafletMap) return;
-  if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
-  commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2.5,fillColor:'#0891b2',fillOpacity:0.15}).addTo(leafletMap);
+  commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2.5,fillColor:'#0891b2',fillOpacity:0.2}).addTo(leafletMap);
 }
 
 function updateCommute(val){
@@ -2827,15 +2826,13 @@ function drawCommute(){
   if(commuteMarker) commuteMarker.remove();
   const icon=L.divIcon({className:'',html:'<div class="commute-dest">📍</div>',iconSize:[34,34],iconAnchor:[17,30]});
   commuteMarker=L.marker([S.commute.lat,S.commute.lng],{icon}).addTo(leafletMap);
+  if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
+  if(commuteCircle) commuteCircle.remove();
+  const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
+  const km=(S.commute.maxMin/60)*(speeds[S.commuteTransport]||24)/1.3;
+  commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:2.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.15}).addTo(leafletMap);
   if(S.commute.isoCoords && S.commute.isoCoords.length>2){
-    if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
     _drawIsoLayer();
-  } else {
-    if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
-    if(commuteCircle) commuteCircle.remove();
-    const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
-    const km=(S.commute.maxMin/60)*(speeds[S.commuteTransport]||24)/1.3;
-    commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:2,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.12}).addTo(leafletMap);
   }
 }
 
