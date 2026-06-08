@@ -636,16 +636,32 @@ header .spacer{flex:1}
 .lf-pin.active .lf-pill{background:#222;color:#fff;border-color:#222}
 .lf-hover-card{
   display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-  background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.22);
-  width:200px;overflow:hidden;margin-bottom:8px;pointer-events:none;
+  background:#fff;border-radius:10px;box-shadow:0 6px 24px rgba(0,0,0,.22);
+  width:240px;overflow:hidden;margin-bottom:8px;z-index:30;
 }
 .lf-pin:hover .lf-hover-card{display:block}
-.lf-hover-img{width:100%;height:100px;background:#e2e8f0;object-fit:cover;display:block}
-.lf-hover-img-placeholder{width:100%;height:100px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:28px}
-.lf-hover-body{padding:8px 10px}
-.lf-hover-body .hc-price{font-weight:800;font-size:14px;color:#222}
-.lf-hover-body .hc-addr{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.lf-hover-body .hc-meta{font-size:10px;color:#94a3b8;margin-top:3px}
+.lf-hover-img{position:relative;height:120px;overflow:hidden}
+.lf-hover-img .cimg-track{display:flex;width:100%;height:100%;transition:transform .3s cubic-bezier(.4,0,.2,1)}
+.lf-hover-img .cimg-slide{flex:0 0 100%;height:100%;overflow:hidden;background:#1e2535}
+.lf-hover-img .cimg-slide img{width:100%;height:100%;object-fit:cover;display:block}
+.lf-hover-img .cimg-slide-emoji{display:flex;align-items:center;justify-content:center;height:100%;font-size:2.2rem;background:#e2e8f0}
+.lf-hover-img .cimg-arr{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.lf-hover-img .cimg-arr-l{left:5px}
+.lf-hover-img .cimg-arr-r{right:5px}
+.lf-hover-img .cimg-dot-row{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);display:flex;gap:3px;z-index:3}
+.lf-hover-img .cimg-dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer}
+.lf-hover-img .cimg-dot.on{background:#fff}
+.lf-hover-img .hc-badges{position:absolute;bottom:6px;left:6px;display:flex;gap:4px;z-index:2}
+.lf-hover-img .hc-badges .badge{font-size:.58rem;padding:2px 5px}
+.lf-hover-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.35));pointer-events:none}
+.lf-hover-body{padding:7px 9px 8px}
+.lf-hover-body .hc-addr{font-size:.68rem;font-weight:600;color:#222;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lf-hover-body .hc-dist{font-size:.62rem;color:#64748b;margin-top:1px}
+.lf-hover-body .hc-specs{font-size:.62rem;color:#64748b;margin-top:3px;display:flex;gap:6px;flex-wrap:wrap}
+.lf-hover-body .hc-specs .spec{display:inline-flex;align-items:center;gap:2px}
+.lf-hover-body .hc-specs .spec span{font-size:.7rem}
+.lf-hover-body .hc-estrenar{font-size:.6rem;color:#10b981;font-weight:700}
+.lf-hover-body .hc-price{font-weight:800;font-size:.82rem;color:#222;margin-top:3px}
 .lf-cluster{
   cursor:pointer;background:#fff;border:1.5px solid #ddd;border-radius:16px;padding:3px 8px;
   font-size:.7rem;font-weight:700;color:#222;box-shadow:0 2px 6px rgba(0,0,0,.15);
@@ -3132,15 +3148,21 @@ function fmtPinPrice(p){
 
 function _pinHoverHtml(p){
   const assets=driveAssets(p);
-  const photo=assets.photos&&assets.photos[0];
-  const imgHtml=photo
-    ?`<img class="lf-hover-img" src="${photo}" alt="">`
-    :`<div class="lf-hover-img-placeholder">${p.emoji||'🏠'}</div>`;
-  const specs=[];
-  if(p.area) specs.push(p.area+'m²');
-  if(p.beds>0) specs.push(p.beds+' hab');
-  if(p.baths>0) specs.push(p.baths+' baño'+(p.baths>1?'s':''));
-  return `<div class="lf-hover-card">${imgHtml}<div class="lf-hover-body"><div class="hc-price">${p.cur} ${fmtPrice(p.price)}</div><div class="hc-addr">${p.district||''}</div><div class="hc-meta">${specs.join(' · ')}</div></div></div>`;
+  const photos=assets.photos||[];
+  const hid='hpin_'+String(p.id).replace(/[^a-zA-Z0-9]/g,'_');
+  const slides=photos.length
+    ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
+    : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji||'🏠'}</div></div>`;
+  const arrows=photos.length>1
+    ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${hid}',-1,${photos.length})">‹</button><button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${hid}',1,${photos.length})">›</button>`
+    : '';
+  const dots=photos.length>1
+    ? `<div class="cimg-dot-row"  id="cdots-${hid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${hid}',${i},${photos.length})"></div>`).join('')}</div>`
+    : '';
+  const badges=`<div class="hc-badges"><span class="badge badge-op">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div>`;
+  const pk=parkCount(p);
+  const specs=`<div class="hc-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${pk>0?`<span class="spec"><span>🚗</span>${pk}</span>`:''}</div>`;
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${hid}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${p.address||''}</div><div class="hc-dist">📍 ${p.district||''}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div></div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
