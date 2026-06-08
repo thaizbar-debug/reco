@@ -2558,7 +2558,7 @@ function _deactivateAllTools(){
   // Traffic
   if(S.trafficOn){
     S.trafficOn=false;
-    if(_baseLayer && HERE_API_KEY) _baseLayer.setUrl('https://maps.hereapi.com/v3/base/mc/{z}/{x}/{y}/png8?style=explore.day&size=256&apiKey='+HERE_API_KEY);
+    if(_trafficLayer){ _trafficLayer.remove(); _trafficLayer=null; }
     document.getElementById('trafficToggle')?.classList.remove('active');
   }
   // Catastro
@@ -2806,7 +2806,7 @@ function _drawIsoLayer(){
   if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
   if(!S.commute || !S.commute.isoCoords || !leafletMap) return;
   if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
-  commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2,dashArray:'6 4',fillColor:'#0891b2',fillOpacity:0.08}).addTo(leafletMap);
+  commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2.5,fillColor:'#0891b2',fillOpacity:0.15}).addTo(leafletMap);
 }
 
 function updateCommute(val){
@@ -2835,7 +2835,7 @@ function drawCommute(){
     if(commuteCircle) commuteCircle.remove();
     const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
     const km=(S.commute.maxMin/60)*(speeds[S.commuteTransport]||24)/1.3;
-    commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:1.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.06}).addTo(leafletMap);
+    commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:2,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.12}).addTo(leafletMap);
   }
 }
 
@@ -2979,14 +2979,18 @@ function clearPoi(){
   buildPoiChips();
 }
 
-// ── Tráfico en tiempo real (HERE base tiles con feature=traffic) ─────────
+// ── Tráfico en tiempo real (HERE Traffic overlay) ─────────
+let _trafficLayer=null;
 function toggleTraffic(){
-  if(!leafletMap||!HERE_API_KEY||!_baseLayer) return;
+  if(!leafletMap||!HERE_API_KEY) return;
   const wasActive=S.trafficOn;
   _deactivateAllTools();
   if(!wasActive){
     S.activeTool='traffic'; S.trafficOn=true;
-    _baseLayer.setUrl('https://maps.hereapi.com/v3/base/mc/{z}/{x}/{y}/png8?style=explore.day&size=256&features=traffic&apiKey='+HERE_API_KEY);
+    _trafficLayer=L.tileLayer(
+      'https://traffic.maps.hereapi.com/v3/flow/mc/{z}/{x}/{y}/png8?style=explore.day&apiKey='+HERE_API_KEY,
+      {opacity:0.7,maxZoom:20}
+    ).addTo(leafletMap);
     document.getElementById('trafficToggle').classList.add('active');
     toast('🚦 Tráfico activado. Las vías se muestran en color según la congestión.');
   }
