@@ -2720,17 +2720,21 @@ function commuteMinTo(c, geo){
 // HERE Flexible Polyline decoder (minimal implementation)
 function _decodeFlexPolyline(encoded){
   let index=0, lat=0, lng=0, result=[];
-  const _dec=()=>{
+  const _decUnsigned=()=>{
     let b, shift=0, val=0;
     do { b=encoded.charCodeAt(index++)-63; val|=(b&0x1f)<<shift; shift+=5; } while(b>=0x20);
+    return val;
+  };
+  const _decSigned=()=>{
+    const val=_decUnsigned();
     return (val&1)?~(val>>1):(val>>1);
   };
-  const header=_dec();
+  const header=_decUnsigned();
   const precision=Math.pow(10, header&0xf);
   const thirdDim=(header>>4)&0x7;
   while(index<encoded.length){
-    lat+=_dec(); lng+=_dec();
-    if(thirdDim) _dec();
+    lat+=_decSigned(); lng+=_decSigned();
+    if(thirdDim) _decUnsigned();
     result.push([lat/precision, lng/precision]);
   }
   return result;
