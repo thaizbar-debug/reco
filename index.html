@@ -624,39 +624,34 @@ header .spacer{flex:1}
 .map-panel{flex:1;position:relative;overflow:hidden}
 #realMap{width:100%;height:100%}
 
-/* Leaflet pin */
-@keyframes pin-bounce{
-  0%  {transform:translateY(0) scale(1)}
-  30% {transform:translateY(-18px) scale(1.15)}
-  55% {transform:translateY(0) scale(1)}
-  72% {transform:translateY(-8px) scale(1.07)}
-  100%{transform:translateY(0) scale(1)}
+/* Leaflet pin — Airbnb style */
+.lf-pin{cursor:pointer;position:relative;z-index:5}
+.lf-pin:hover{z-index:20}
+.lf-pill{
+  background:#fff;color:#222;border-radius:20px;padding:5px 12px;
+  font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.18);
+  white-space:nowrap;border:1.5px solid #ddd;transition:all .15s;
 }
-.lf-pin{cursor:pointer;display:flex;flex-direction:column;align-items:flex-start}
-.lf-pin.active{animation:pin-bounce .6s cubic-bezier(.36,.07,.19,.97) forwards}
-.lf-bubble{
-  background:var(--blue);color:#fff;
-  border-radius:8px 8px 8px 0;
-  padding:4px 9px;font-size:.72rem;font-weight:700;
-  box-shadow:0 3px 10px rgba(0,0,0,.28);
-  white-space:nowrap;transition:background .12s,transform .12s;
+.lf-pin:hover .lf-pill{box-shadow:0 4px 16px rgba(0,0,0,.25);transform:scale(1.06);border-color:#222}
+.lf-pin.active .lf-pill{background:#222;color:#fff;border-color:#222}
+.lf-hover-card{
+  display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.22);
+  width:200px;overflow:hidden;margin-bottom:8px;pointer-events:none;
 }
-.lf-pin:hover .lf-bubble{background:var(--blue2);transform:scale(1.08)}
-.lf-pin.active .lf-bubble{background:var(--amber)}
-.lf-tail{
-  width:0;height:0;
-  border-left:6px solid transparent;
-  border-right:0 solid transparent;
-  border-top:7px solid var(--blue);
-  margin-left:1px;transition:border-top-color .12s;
+.lf-pin:hover .lf-hover-card{display:block}
+.lf-hover-img{width:100%;height:100px;background:#e2e8f0;object-fit:cover;display:block}
+.lf-hover-img-placeholder{width:100%;height:100px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:28px}
+.lf-hover-body{padding:8px 10px}
+.lf-hover-body .hc-price{font-weight:800;font-size:14px;color:#222}
+.lf-hover-body .hc-addr{font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lf-hover-body .hc-meta{font-size:10px;color:#94a3b8;margin-top:3px}
+.lf-cluster{
+  cursor:pointer;background:#fff;border:1.5px solid #ddd;border-radius:20px;padding:4px 12px;
+  font-size:12px;font-weight:700;color:#222;box-shadow:0 2px 8px rgba(0,0,0,.15);
+  white-space:nowrap;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;
 }
-.lf-pin.active .lf-tail{border-top-color:var(--amber)}
-.lf-cluster{cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.3);border:2.5px solid rgba(255,255,255,.8);transition:transform .15s}
-.lf-cluster:hover{transform:scale(1.12)}
-.lf-cluster.sm{width:36px;height:36px;font-size:.75rem;background:#2563EB}
-.lf-cluster.md{width:46px;height:46px;font-size:.82rem;background:#1E40AF}
-.lf-cluster.lg{width:58px;height:58px;font-size:.9rem;background:#1e3a8a}
-.lf-cluster.xl{width:68px;height:68px;font-size:1rem;background:#172554}
+.lf-cluster:hover{box-shadow:0 4px 14px rgba(0,0,0,.22);transform:scale(1.05);border-color:#222}
 
 .map-layer-info{
   position:absolute;bottom:12px;left:12px;
@@ -2443,6 +2438,20 @@ function renderCards(list){
       </div>
     </div>`;
   }).join('');
+
+  list.forEach(p=>{
+    const card=document.getElementById('card-'+p.id);
+    if(!card) return;
+    card.addEventListener('mouseenter',()=>{
+      const pin=document.getElementById('pin-'+p.id);
+      if(pin) pin.classList.add('active');
+    });
+    card.addEventListener('mouseleave',()=>{
+      if(S.selectedId===p.id) return;
+      const pin=document.getElementById('pin-'+p.id);
+      if(pin) pin.classList.remove('active');
+    });
+  });
 }
 
 // ─────────────────────── LEAFLET MAP ───────────────────────
@@ -3121,6 +3130,24 @@ function fmtPinPrice(p){
   return p.price>=1000000?(p.price/1000000).toFixed(1)+'M':p.price>=1000?Math.round(p.price/1000)+'K':p.price;
 }
 
+function _pinHoverHtml(p){
+  const assets=driveAssets(p);
+  const photo=assets.photos&&assets.photos[0];
+  const imgHtml=photo
+    ?`<img class="lf-hover-img" src="${photo}" alt="">`
+    :`<div class="lf-hover-img-placeholder">${p.emoji||'🏠'}</div>`;
+  const specs=[];
+  if(p.area) specs.push(p.area+'m²');
+  if(p.beds>0) specs.push(p.beds+' hab');
+  if(p.baths>0) specs.push(p.baths+' baño'+(p.baths>1?'s':''));
+  return `<div class="lf-hover-card">${imgHtml}<div class="lf-hover-body"><div class="hc-price">${p.cur} ${fmtPrice(p.price)}</div><div class="hc-addr">${p.district||''}</div><div class="hc-meta">${specs.join(' · ')}</div></div></div>`;
+}
+
+function _pinIconHtml(p,isActive){
+  const price=fmtPinPrice(p);
+  return `<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-pill">${p.cur}${price}</div>${_pinHoverHtml(p)}</div>`;
+}
+
 function renderPins(list){
   const pinCountEl=document.getElementById('pinCount'); if(pinCountEl) pinCountEl.textContent=list.length;
   if(!leafletMap) return;
@@ -3131,15 +3158,28 @@ function renderPins(list){
   const z=leafletMap.getZoom();
   const bounds=leafletMap.getBounds().pad(0.15);
 
+  function _bindPinHover(marker,id){
+    marker.on('mouseover',()=>{
+      const card=document.getElementById('card-'+id);
+      if(card) card.classList.add('selected');
+    });
+    marker.on('mouseout',()=>{
+      if(S.selectedId===id) return;
+      const card=document.getElementById('card-'+id);
+      if(card) card.classList.remove('selected');
+    });
+  }
+
   if(z>=14){
     list.forEach(p=>{
       if(!GEO[p.id]) return;
       if(!bounds.contains(GEO[p.id])) return;
       const isActive=S.selectedId===p.id;
-      const price=fmtPinPrice(p);
-      const icon=L.divIcon({className:'',html:`<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-bubble">${p.cur}${price}</div><div class="lf-tail"></div></div>`,iconSize:[60,36],iconAnchor:[6,36]});
+      const html=_pinIconHtml(p,isActive);
+      const icon=L.divIcon({className:'',html,iconSize:[80,36],iconAnchor:[40,18]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
+      _bindPinHover(marker,p.id);
       leafletMarkers[p.id]=marker;
     });
     return;
@@ -3163,15 +3203,15 @@ function renderPins(list){
     if(n===1&&z>=11){
       const p=g[0];
       const isActive=S.selectedId===p.id;
-      const price=fmtPinPrice(p);
-      const icon=L.divIcon({className:'',html:`<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-bubble">${p.cur}${price}</div><div class="lf-tail"></div></div>`,iconSize:[60,36],iconAnchor:[6,36]});
+      const html=_pinIconHtml(p,isActive);
+      const icon=L.divIcon({className:'',html,iconSize:[80,36],iconAnchor:[40,18]});
       const marker=L.marker(GEO[p.id],{icon}).addTo(leafletMap);
       marker.on('click',()=>pinClick(p.id));
+      _bindPinHover(marker,p.id);
       leafletMarkers[p.id]=marker;
     }else{
-      const sz=n<=5?'sm':n<=20?'md':n<=100?'lg':'xl';
-      const dim=sz==='sm'?36:sz==='md'?46:sz==='lg'?58:68;
-      const icon=L.divIcon({className:'',html:`<div class="lf-cluster ${sz}">${n>999?'999+':n}</div>`,iconSize:[dim,dim],iconAnchor:[dim/2,dim/2]});
+      const label=n>999?'999+':n+(n===1?' propiedad':' propiedades');
+      const icon=L.divIcon({className:'',html:`<div class="lf-cluster">${label}</div>`,iconSize:[90,28],iconAnchor:[45,14]});
       const marker=L.marker([al,aln],{icon}).addTo(leafletMap);
       marker.on('click',()=>leafletMap.setView([al,aln],Math.min(z+2,16),{animate:true,duration:.5}));
       leafletMarkers['c'+al+aln]=marker;
