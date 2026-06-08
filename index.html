@@ -669,7 +669,7 @@ header .spacer{flex:1}
 /* ── Radius search ── */
 /* ── Radius / Polygon panels (opened from unified toolbar) ── */
 .radius-panel,.poly-panel{
-  position:absolute;top:12px;right:195px;z-index:501;
+  position:absolute;top:12px;right:148px;z-index:501;
   background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
   padding:12px 14px;width:248px;box-shadow:var(--sh2);
@@ -703,16 +703,16 @@ header .spacer{flex:1}
 .poly-undo-btn:hover{background:#fef3c7;color:#92400e;border-color:#f59e0b}
 
 /* ── Unified map toolbar (top-right) ── */
-.map-tools-tr{position:absolute;top:12px;right:12px;z-index:500;display:flex;flex-direction:column;gap:6px;align-items:stretch;width:175px}
+.map-tools-tr{position:absolute;top:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:3px;align-items:stretch;width:130px}
 .mtool-btn{
-  background:#fff;border:1.5px solid var(--border);border-radius:8px;
-  color:var(--txt);font-size:.78rem;font-weight:700;
-  padding:7px 12px;cursor:pointer;box-shadow:var(--sh);white-space:nowrap;transition:all .15s;
-  text-align:left;width:100%;box-sizing:border-box;
+  background:#fff;border:1px solid var(--border);border-radius:7px;
+  color:var(--txt);font-size:.72rem;font-weight:700;
+  padding:4px 8px;cursor:pointer;box-shadow:var(--sh);white-space:nowrap;transition:all .15s;
+  text-align:left;width:100%;box-sizing:border-box;line-height:1.3;
 }
 .mtool-btn:hover{border-color:var(--blue);color:var(--blue)}
 .mtool-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
-.mtool-sub{display:block;font-size:.65rem;font-weight:400;opacity:.7;margin-top:1px}
+.mtool-sub{display:block;font-size:.58rem;font-weight:400;opacity:.65;margin-top:0}
 .mtool-btn.active .mtool-sub{opacity:.85}
 .commute-modes{display:flex;gap:4px;flex-wrap:wrap}
 .commute-mode-btn{
@@ -722,14 +722,16 @@ header .spacer{flex:1}
 .commute-mode-btn:hover{border-color:var(--blue);color:var(--blue)}
 .commute-mode-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
 .mtool-panel{
-  position:absolute;top:12px;right:195px;z-index:501;
+  position:absolute;top:12px;right:148px;z-index:501;
   background:rgba(255,255,255,.97);backdrop-filter:blur(8px);
   border:1px solid var(--border);border-radius:10px;
   padding:12px 14px;width:248px;box-shadow:var(--sh2);
-  display:none;flex-direction:column;gap:8px;
+  display:none;flex-direction:column;gap:8px;position:relative;
 }
 .mtool-panel.open{display:flex}
-.mtool-panel-row{display:flex;align-items:center;justify-content:space-between;font-size:.82rem}
+.mtool-panel-close{position:absolute;top:4px;right:8px;background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;padding:2px 5px;line-height:1;z-index:1}
+.mtool-panel-close:hover{color:var(--red)}
+.mtool-panel-row{display:flex;align-items:center;justify-content:space-between;font-size:.82rem;padding-right:18px}
 .mtool-panel-row span{font-weight:700;color:var(--blue)}
 .mtool-panel input[type=range]{width:100%;accent-color:var(--blue)}
 .mtool-hint{font-size:.73rem;color:var(--muted);line-height:1.45}
@@ -751,8 +753,8 @@ header .spacer{flex:1}
   font-size:13px;color:#fff;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
 .poi-ctr{font-size:24px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))}
-#realMap.commute-mode,#realMap.sv-mode{cursor:crosshair !important}
-#realMap.commute-mode .leaflet-interactive,#realMap.sv-mode .leaflet-interactive{cursor:crosshair !important}
+#realMap.commute-mode,#realMap.sv-mode,#realMap.poi-mode{cursor:crosshair !important}
+#realMap.commute-mode .leaflet-interactive,#realMap.sv-mode .leaflet-interactive,#realMap.poi-mode .leaflet-interactive{cursor:crosshair !important}
 
 /* ── Street View modal ── */
 .sv-modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -1914,17 +1916,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <!-- Toolbar unificado (esquina superior derecha) -->
     <div class="map-tools-tr" id="mapToolsTR">
-      <button class="mtool-btn" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Buscar por radio<span class="mtool-sub">Dibuja un área en el mapa</span></button>
-      <button class="mtool-btn" id="polyToggle" onclick="togglePolyMode()">⬟ Buscar por polígono<span class="mtool-sub">Dibuja un área libre en el mapa</span></button>
+      <button class="mtool-btn" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Radio<span class="mtool-sub">Dibuja un área en el mapa</span></button>
+      <button class="mtool-btn" id="polyToggle" onclick="togglePolyMode()">⬟ Área<span class="mtool-sub">Dibuja un polígono libre</span></button>
       <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()">🚗 Traslado<span class="mtool-sub">Tiempo de viaje al destino</span></button>
-      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Colegios, bancos, restaurantes…</span></button>
+      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Colegios, bancos, parques…</span></button>
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()">👁️ Street View<span class="mtool-sub">Vista de calle de Google</span></button>
-      <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en tiempo real</span></button>
+      <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en vivo</span></button>
       <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()">📐 Catastro<span class="mtool-sub">Lotes por distrito en Lima</span></button>
     </div>
 
     <!-- Paneles de herramientas (se abren a la izquierda del toolbar) -->
     <div class="radius-panel" id="radiusPanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
       <div class="mtool-panel-row"><b>⬤ Buscar por radio</b></div>
       <div class="radius-hint" id="radiusHint">Haz clic en el mapa para centrar el área de búsqueda</div>
       <div class="radius-slider-row">
@@ -1935,14 +1938,16 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
 
     <div class="poly-panel" id="polyPanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
       <div class="mtool-panel-row"><b>⬟ Buscar por polígono</b></div>
       <div class="poly-hint" id="polyHint">Haz clic en el mapa para agregar vértices</div>
-      <button class="poly-finish-btn" id="polyFinishBtn" onclick="finishPoly()">✓ Cerrar y filtrar</button>
-      <button class="poly-undo-btn" id="polyUndoBtn" onclick="undoPolyPoint()">↩ Deshacer último punto</button>
+      <button class="poly-finish-btn" id="polyFinishBtn" onclick="finishPoly()">✓ Cerrar polígono</button>
+      <button class="poly-undo-btn" id="polyUndoBtn" onclick="undoPolyPoint()">↩ Deshacer punto</button>
       <button class="poly-clear" onclick="clearPoly()">✕ Limpiar polígono</button>
     </div>
 
     <div class="mtool-panel" id="commutePanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
       <div class="mtool-panel-row"><b>🚗 Tiempo de traslado</b><span id="commuteLabel">30 min</span></div>
       <div class="commute-modes" id="commuteModes">
         <button class="commute-mode-btn active" data-mode="car" onclick="setCommuteTransport('car')">🚗 Auto</button>
@@ -1956,14 +1961,16 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
 
     <div class="mtool-panel" id="poiPanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
       <div class="mtool-panel-row"><b>📍 Establecimientos cerca</b><span id="poiRadiusLabel">800 m</span></div>
       <input type="range" min="300" max="3000" step="100" value="800" id="poiRadiusSlider" oninput="setPoiRadius(this.value)"/>
       <div class="poi-chips" id="poiChips"></div>
-      <div class="mtool-hint">Datos de HERE Maps. Acércate al barrio que te interese (zoom ≥ 13).</div>
+      <div class="mtool-hint">Haz clic en el mapa para centrar el área de búsqueda.</div>
       <button class="mtool-clear" onclick="clearPoi()">✕ Quitar marcadores</button>
     </div>
 
     <div class="mtool-panel" id="catastroPanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
       <div class="mtool-panel-row"><b>📐 Catastro de lotes</b></div>
       <div class="mtool-hint" id="catastroHint">Activa el catastro y acércate a un distrito disponible.</div>
       <div class="mtool-hint" style="font-size:.68rem">Lima Metropolitana · se carga por distrito al acercar el mapa (zoom ≥ 14).</div>
@@ -2199,10 +2206,11 @@ const S = {
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
   keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
+  activeTool:null,
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
-  catastroOn:false, poiRadius:800,
+  poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
 
@@ -2236,7 +2244,7 @@ function getFiltered(){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
       if(dist>S.radiusMeters) return false;
     }
-    if(S.polyFinished && S.polyPoints.length>=3 && GEO[p.id]){
+    if(S.polyPoints.length>=3 && GEO[p.id]){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
@@ -2440,6 +2448,7 @@ function renderCards(list){
 // ─────────────────────── LEAFLET MAP ───────────────────────
 let leafletMap=null;
 let leafletMarkers={};
+let _baseLayer=null;
 
 function _createTileLayer(){
   if(HERE_API_KEY){
@@ -2456,32 +2465,91 @@ function _createTileLayer(){
 function initMap(){
   leafletMap=L.map('realMap',{zoomControl:false,attributionControl:true})
     .setView([-12.0800,-77.0200],12);
-  _createTileLayer().addTo(leafletMap);
+  _baseLayer=_createTileLayer();
+  _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
-  leafletMap.on('dblclick',onMapDblClick);
   leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
 }
 
-// ─────────────────────── RADIUS SEARCH ───────────────────────
+// ═══════════════════ HERRAMIENTAS DE MAPA (exclusividad mutua) ═══════════════════
 let radiusCircle=null;
+let polyLayer=null;
 
-function toggleRadiusMode(){
-  if(S.polyMode){ _deactivatePoly(); }
-  _deactivateMapToolModes();
-  S.radiusMode=!S.radiusMode;
-  const btn=document.getElementById('radiusToggle');
-  const panel=document.getElementById('radiusPanel');
-  const mapEl=document.getElementById('realMap');
-  btn.classList.toggle('active',S.radiusMode);
-  panel.classList.toggle('open',S.radiusMode);
-  mapEl.classList.toggle('radius-mode',S.radiusMode);
-  if(!S.radiusMode){ clearRadius(); }
+function _deactivateAllTools(){
+  const m=document.getElementById('realMap');
+  // Radius
+  if(S.radiusMode||S.radiusCenter){
+    S.radiusMode=false; S.radiusCenter=null;
+    if(radiusCircle){ radiusCircle.remove(); radiusCircle=null; }
+    document.getElementById('radiusToggle')?.classList.remove('active');
+    document.getElementById('radiusPanel')?.classList.remove('open');
+    m?.classList.remove('radius-mode');
+    document.getElementById('radiusHint').textContent='Haz clic en el mapa para centrar el área de búsqueda';
+  }
+  // Polygon
+  if(S.polyMode||S.polyFinished||S.polyPoints.length){
+    S.polyMode=false; S.polyPoints=[]; S.polyFinished=false;
+    if(polyLayer){ polyLayer.remove(); polyLayer=null; }
+    document.getElementById('polyToggle')?.classList.remove('active');
+    document.getElementById('polyPanel')?.classList.remove('open');
+    m?.classList.remove('poly-mode');
+    document.getElementById('polyHint').textContent='Haz clic en el mapa para agregar vértices';
+    document.getElementById('polyFinishBtn')?.classList.remove('visible');
+    document.getElementById('polyUndoBtn')?.classList.remove('visible');
+  }
+  // Commute
+  if(S.commuteMode||S.commute){
+    S.commuteMode=false; S.commute=null;
+    if(commuteMarker){ commuteMarker.remove(); commuteMarker=null; }
+    if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
+    if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
+    if(_commuteIsoDebounce){ clearTimeout(_commuteIsoDebounce); _commuteIsoDebounce=null; }
+    document.getElementById('commuteToggle')?.classList.remove('active');
+    document.getElementById('commutePanel')?.classList.remove('open');
+    m?.classList.remove('commute-mode');
+    _commuteInfo();
+  }
+  // POI
+  if(S.poiMode){
+    S.poiMode=false;
+    Object.values(poiMarkers).forEach(a=>a.forEach(mk=>mk.remove()));
+    poiMarkers={};
+    _poiClearCenter();
+    document.getElementById('poiToggle')?.classList.remove('active');
+    document.getElementById('poiPanel')?.classList.remove('open');
+    m?.classList.remove('poi-mode');
+  }
+  // Street View
+  if(S.svMode){
+    S.svMode=false;
+    document.getElementById('svToggle')?.classList.remove('active');
+    m?.classList.remove('sv-mode');
+  }
+  // Traffic
+  if(S.trafficOn){
+    S.trafficOn=false;
+    if(_baseLayer && HERE_API_KEY) _baseLayer.setUrl('https://maps.hereapi.com/v3/base/mc/{z}/{x}/{y}/png8?style=explore.day&size=256&apiKey='+HERE_API_KEY);
+    document.getElementById('trafficToggle')?.classList.remove('active');
+  }
+  // Catastro
+  if(S.catastroOn){
+    S.catastroOn=false;
+    if(catastroLayer) catastroLayer.clearLayers();
+    _catastroLoaded.clear();
+    document.getElementById('catastroToggle')?.classList.remove('active');
+    document.getElementById('catastroPanel')?.classList.remove('open');
+  }
+  S.activeTool=null;
+  applyFilters();
 }
+
+function closeActiveTool(){ _deactivateAllTools(); }
 
 function onMapClick(e){
   if(S.svMode){ openStreetView(e.latlng.lat,e.latlng.lng,'Street View'); return; }
   if(S.commuteMode){ setCommuteDest(e.latlng); return; }
+  if(S.poiMode){ _setPoiCenter(e.latlng); return; }
   if(S.polyMode && !S.polyFinished){ addPolyPoint(e.latlng); return; }
   if(!S.radiusMode) return;
   S.radiusCenter=e.latlng;
@@ -2489,50 +2557,57 @@ function onMapClick(e){
   drawRadiusCircle();
   applyFilters();
 }
-function onMapDblClick(e){
-  if(S.polyMode && !S.polyFinished && S.polyPoints.length>=3){
-    L.DomEvent.stop(e);
-    finishPoly();
+
+// ─────────────────────── RADIUS SEARCH ───────────────────────
+function toggleRadiusMode(){
+  const wasActive=S.radiusMode;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='radius'; S.radiusMode=true;
+    document.getElementById('radiusToggle').classList.add('active');
+    document.getElementById('radiusPanel').classList.add('open');
+    document.getElementById('realMap').classList.add('radius-mode');
   }
+}
+function drawRadiusCircle(){
+  if(radiusCircle){ radiusCircle.remove(); }
+  if(!S.radiusCenter) return;
+  radiusCircle=L.circle(S.radiusCenter,{radius:S.radiusMeters,color:'#0891b2',weight:2,fillColor:'#0891b2',fillOpacity:.08}).addTo(leafletMap);
+}
+function updateRadius(val){
+  S.radiusMeters=Number(val);
+  document.getElementById('radiusLabel').textContent=(val/1000).toFixed(1)+' km';
+  if(S.radiusCenter){ drawRadiusCircle(); applyFilters(); }
+}
+function clearRadius(){
+  S.radiusCenter=null;
+  if(radiusCircle){ radiusCircle.remove(); radiusCircle=null; }
+  document.getElementById('radiusHint').textContent='Haz clic en el mapa para centrar el área de búsqueda';
+  applyFilters();
 }
 
 // ─────────────────────── POLYGON SEARCH ───────────────────────
-let polyLayer=null;
-
 function togglePolyMode(){
-  if(S.radiusMode){ toggleRadiusMode(); }
-  _deactivateMapToolModes();
-  S.polyMode=!S.polyMode;
-  const btn=document.getElementById('polyToggle');
-  const panel=document.getElementById('polyPanel');
-  const mapEl=document.getElementById('realMap');
-  btn.classList.toggle('active',S.polyMode);
-  panel.classList.toggle('open',S.polyMode);
-  mapEl.classList.toggle('poly-mode',S.polyMode);
-  // In unified toolbar, don't hide other buttons
-  if(!S.polyMode){ clearPoly(); }
-}
-function _deactivatePoly(){
-  S.polyMode=false;
-  document.getElementById('polyToggle').classList.remove('active');
-  document.getElementById('polyPanel').classList.remove('open');
-  document.getElementById('realMap').classList.remove('poly-mode');
-  // radiusToggle stays visible in unified toolbar
-  clearPoly();
+  const wasActive=S.polyMode;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='poly'; S.polyMode=true;
+    document.getElementById('polyToggle').classList.add('active');
+    document.getElementById('polyPanel').classList.add('open');
+    document.getElementById('realMap').classList.add('poly-mode');
+  }
 }
 function addPolyPoint(latlng){
   S.polyPoints.push(latlng);
   _updatePolyLayer();
   const n=S.polyPoints.length;
-  const hint=document.getElementById('polyHint');
-  const finBtn=document.getElementById('polyFinishBtn');
-  const undoBtn=document.getElementById('polyUndoBtn');
-  undoBtn.classList.add('visible');
+  document.getElementById('polyUndoBtn').classList.add('visible');
   if(n>=3){
-    hint.textContent=`${n} vértices · doble clic o "Cerrar" para filtrar`;
-    finBtn.classList.add('visible');
+    document.getElementById('polyHint').textContent=`${n} vértices · sigue agregando o cierra el polígono`;
+    document.getElementById('polyFinishBtn').classList.add('visible');
+    applyFilters();
   } else {
-    hint.textContent=`${n} vértice${n>1?'s':''} · agrega ${3-n} más`;
+    document.getElementById('polyHint').textContent=`${n} vértice${n>1?'s':''} · agrega ${3-n} más`;
   }
 }
 function undoPolyPoint(){
@@ -2540,19 +2615,17 @@ function undoPolyPoint(){
   S.polyPoints.pop();
   _updatePolyLayer();
   const n=S.polyPoints.length;
-  const hint=document.getElementById('polyHint');
-  const finBtn=document.getElementById('polyFinishBtn');
-  const undoBtn=document.getElementById('polyUndoBtn');
   if(n===0){
-    hint.textContent='Haz clic en el mapa para agregar vértices';
-    undoBtn.classList.remove('visible');
-    finBtn.classList.remove('visible');
+    document.getElementById('polyHint').textContent='Haz clic en el mapa para agregar vértices';
+    document.getElementById('polyUndoBtn').classList.remove('visible');
+    document.getElementById('polyFinishBtn').classList.remove('visible');
   } else if(n<3){
-    hint.textContent=`${n} vértice${n>1?'s':''} · agrega ${3-n} más`;
-    finBtn.classList.remove('visible');
+    document.getElementById('polyHint').textContent=`${n} vértice${n>1?'s':''} · agrega ${3-n} más`;
+    document.getElementById('polyFinishBtn').classList.remove('visible');
   } else {
-    hint.textContent=`${n} vértices · doble clic o "Cerrar" para filtrar`;
+    document.getElementById('polyHint').textContent=`${n} vértices · sigue agregando o cierra el polígono`;
   }
+  applyFilters();
 }
 function _updatePolyLayer(){
   if(polyLayer){ polyLayer.remove(); polyLayer=null; }
@@ -2570,15 +2643,14 @@ function finishPoly(){
   if(S.polyPoints.length<3) return;
   S.polyFinished=true;
   _updatePolyLayer();
-  document.getElementById('polyHint').textContent=`Polígono activo · ${S.polyPoints.length} vértices`;
+  document.getElementById('polyHint').textContent=`Polígono cerrado · ${S.polyPoints.length} vértices`;
   document.getElementById('polyFinishBtn').classList.remove('visible');
   document.getElementById('polyUndoBtn').classList.remove('visible');
   document.getElementById('realMap').classList.remove('poly-mode');
   applyFilters();
 }
 function clearPoly(){
-  S.polyPoints=[];
-  S.polyFinished=false;
+  S.polyPoints=[]; S.polyFinished=false;
   if(polyLayer){ polyLayer.remove(); polyLayer=null; }
   document.getElementById('polyHint').textContent='Haz clic en el mapa para agregar vértices';
   document.getElementById('polyFinishBtn')?.classList.remove('visible');
@@ -2594,53 +2666,6 @@ function pointInPolygon(coord,poly){
     if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
   }
   return inside;
-}
-
-function drawRadiusCircle(){
-  if(radiusCircle){ radiusCircle.remove(); }
-  if(!S.radiusCenter) return;
-  radiusCircle=L.circle(S.radiusCenter,{
-    radius:S.radiusMeters,
-    color:'#0891b2',weight:2,
-    fillColor:'#0891b2',fillOpacity:.08
-  }).addTo(leafletMap);
-}
-
-function updateRadius(val){
-  S.radiusMeters=Number(val);
-  const km=(val/1000).toFixed(1);
-  document.getElementById('radiusLabel').textContent=km+' km';
-  if(S.radiusCenter){ drawRadiusCircle(); applyFilters(); }
-}
-
-function clearRadius(){
-  S.radiusCenter=null;
-  if(radiusCircle){ radiusCircle.remove(); radiusCircle=null; }
-  document.getElementById('radiusHint').textContent='Haz clic en el mapa para centrar el área de búsqueda';
-  applyFilters();
-}
-
-// ═══════════════════ HERRAMIENTAS DE MAPA: TRASLADO / CERCA DE TI / STREET VIEW ═══════════════════
-// Estos tres tools aplican al único mapa de la app, compartido por Comprar, Alquilar e Históricos.
-
-function _deactivateMapToolModes(){
-  // Apaga los modos de captura de clic de las herramientas nuevas (sin borrar resultados).
-  if(S.commuteMode){
-    S.commuteMode=false;
-    document.getElementById('commuteToggle')?.classList.remove('active');
-    document.getElementById('commutePanel')?.classList.remove('open');
-    document.getElementById('realMap')?.classList.remove('commute-mode');
-  }
-  _closeSVMode();
-}
-function _deactivateRadiusPoly(){
-  if(S.radiusMode){
-    S.radiusMode=false;
-    document.getElementById('radiusToggle')?.classList.remove('active');
-    document.getElementById('radiusPanel')?.classList.remove('open');
-    document.getElementById('realMap')?.classList.remove('radius-mode');
-  }
-  if(S.polyMode){ _deactivatePoly(); }
 }
 
 // ── Tiempo de traslado (commute) ──────────────────────────────
@@ -2708,18 +2733,20 @@ function setCommuteTransport(mode){
     applyFilters();
     _commuteInfo();
     if(_commuteIsoDebounce) clearTimeout(_commuteIsoDebounce);
-    _commuteIsoDebounce=setTimeout(()=>{ _fetchAndDrawIsoline(); },300);
+    _commuteIsoDebounce=setTimeout(()=>{ _fetchAndDrawIsoline(); },400);
   }
 }
 
 function toggleCommuteMode(){
-  const on=!S.commuteMode;
-  _deactivateRadiusPoly();
-  _closeSVMode();
-  S.commuteMode=on;
-  document.getElementById('commuteToggle').classList.toggle('active',on);
-  document.getElementById('commutePanel').classList.toggle('open',on);
-  document.getElementById('realMap').classList.toggle('commute-mode',on);
+  const wasActive=S.commuteMode;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='commute'; S.commuteMode=true;
+    document.getElementById('commuteToggle').classList.add('active');
+    document.getElementById('commutePanel').classList.add('open');
+    document.getElementById('realMap').classList.add('commute-mode');
+    _commuteInfo();
+  }
 }
 
 async function setCommuteDest(latlng){
@@ -2739,15 +2766,16 @@ async function _fetchAndDrawIsoline(){
   if(coords && coords.length>2){
     S.commute.isoCoords=coords;
     _drawIsoLayer();
-    applyFilters();
-    _commuteInfo();
+  } else if(!coords){
+    toast('No se pudo obtener el isócrono. Se muestra un estimado.');
   }
+  applyFilters();
+  _commuteInfo();
 }
 
 function _drawIsoLayer(){
   if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
   if(!S.commute || !S.commute.isoCoords || !leafletMap) return;
-  // Remove fallback circle when we have real isoline
   if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
   commuteIsoLayer=L.polygon(S.commute.isoCoords,{color:'#0e7490',weight:2,dashArray:'6 4',fillColor:'#0891b2',fillOpacity:0.08}).addTo(leafletMap);
 }
@@ -2757,10 +2785,9 @@ function updateCommute(val){
   if(S.commute){
     S.commute.maxMin=parseInt(val);
     S.commute.isoCoords=null;
-    drawCommute(); // show fallback circle while loading
+    drawCommute();
     applyFilters();
     _commuteInfo();
-    // Debounce isoline re-fetch
     if(_commuteIsoDebounce) clearTimeout(_commuteIsoDebounce);
     _commuteIsoDebounce=setTimeout(()=>{ _fetchAndDrawIsoline(); },600);
   }
@@ -2771,7 +2798,6 @@ function drawCommute(){
   if(commuteMarker) commuteMarker.remove();
   const icon=L.divIcon({className:'',html:'<div class="commute-dest">📍</div>',iconSize:[34,34],iconAnchor:[17,30]});
   commuteMarker=L.marker([S.commute.lat,S.commute.lng],{icon}).addTo(leafletMap);
-  // If we already have isoline coords, draw polygon; otherwise fallback circle
   if(S.commute.isoCoords && S.commute.isoCoords.length>2){
     if(commuteCircle){ commuteCircle.remove(); commuteCircle=null; }
     _drawIsoLayer();
@@ -2791,7 +2817,7 @@ function _commuteInfo(){
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo '+modeLabel+'.'; return; }
   const n=getFiltered().length;
   const method=S.commute.isoCoords?'':'(aprox.) ';
-  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min '+modeLabel+' '+method+'del destino.';
+  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min '+modeLabel+' '+method+'del destino. Tiempo referencial al momento de la consulta.';
 }
 
 function clearCommute(){
@@ -2806,14 +2832,14 @@ function clearCommute(){
 
 // ── Cerca de ti — POIs via HERE Browse API ─────────
 const POI_CATS={
-  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',here:'600-6200'},
-  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',here:'600-6300-0066'},
-  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510'},
-  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',here:'800-8000'},
-  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',here:'600-6400'},
-  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',here:'100-1000,100-1100'},
-  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7010'},
-  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100'}
+  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',here:'600-6200-0062,600-6200-0061,600-6200-0063'},
+  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',here:'600-6300-0066,600-6300-0067,600-6300-0068'},
+  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510-0202,550-5510-0204,550-5510-0205,550-5510-0000'},
+  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',here:'800-8000-0159,800-8000-0158,800-8000-0160'},
+  farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',here:'600-6400-0000,600-6400-0058'},
+  restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',here:'100-1000-0000,100-1000-0001,100-1100-0000'},
+  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7010-0108,700-7010-0109,700-7010-0103'},
+  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100-0035,400-4100-0036,400-4100-0000'}
 };
 let poiMarkers={};
 let _poiLoading={};
@@ -2831,17 +2857,27 @@ function _poiClearCenter(){
   if(poiCenterMarker){ poiCenterMarker.remove(); poiCenterMarker=null; }
   if(poiCenterCircle){ poiCenterCircle.remove(); poiCenterCircle=null; }
 }
+function _setPoiCenter(latlng){
+  _poiCenter={lat:latlng.lat,lng:latlng.lng};
+  _poiDrawCenter();
+  const active=Object.keys(poiMarkers);
+  if(active.length){
+    active.forEach(k=>{ poiMarkers[k].forEach(m=>m.remove()); delete poiMarkers[k]; });
+    active.forEach(k=>loadPoi(k));
+  }
+  buildPoiChips();
+  toast('📍 Centro actualizado. Elige categorías para ver establecimientos.');
+}
 function togglePoiPanel(){
-  const panel=document.getElementById('poiPanel');
-  const open=!panel.classList.contains('open');
-  panel.classList.toggle('open',open);
-  document.getElementById('poiToggle').classList.toggle('active',open);
-  if(open){
-    if(leafletMap){ const c=leafletMap.getCenter(); _poiCenter={lat:c.lat,lng:c.lng}; _poiDrawCenter(); }
-    if(leafletMap && leafletMap.getZoom()<13) toast('🔍 Acércate al barrio que te interese para ver establecimientos cercanos');
+  const wasActive=S.poiMode;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='poi'; S.poiMode=true;
+    document.getElementById('poiToggle').classList.add('active');
+    document.getElementById('poiPanel').classList.add('open');
+    document.getElementById('realMap').classList.add('poi-mode');
     buildPoiChips();
-  } else {
-    _poiClearCenter();
+    toast('📍 Haz clic en el mapa para centrar el área de búsqueda');
   }
 }
 function setPoiRadius(val){
@@ -2914,20 +2950,16 @@ function clearPoi(){
   buildPoiChips();
 }
 
-// ── Tráfico en tiempo real (HERE Traffic Flow tiles) ─────────
-let trafficLayer=null;
+// ── Tráfico en tiempo real (HERE base tiles con feature=traffic) ─────────
 function toggleTraffic(){
-  if(!leafletMap||!HERE_API_KEY) return;
-  const btn=document.getElementById('trafficToggle');
-  if(trafficLayer){
-    trafficLayer.remove();
-    trafficLayer=null;
-    btn.classList.remove('active');
-  } else {
-    trafficLayer=L.tileLayer('https://traffic.maps.hereapi.com/v3/flow/mc/{z}/{x}/{y}/png8?style=relative&apiKey='+HERE_API_KEY,{
-      maxZoom:20, opacity:0.65, attribution:'© HERE Traffic'
-    }).addTo(leafletMap);
-    btn.classList.add('active');
+  if(!leafletMap||!HERE_API_KEY||!_baseLayer) return;
+  const wasActive=S.trafficOn;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='traffic'; S.trafficOn=true;
+    _baseLayer.setUrl('https://maps.hereapi.com/v3/base/mc/{z}/{x}/{y}/png8?style=explore.day&size=256&features=traffic&apiKey='+HERE_API_KEY);
+    document.getElementById('trafficToggle').classList.add('active');
+    toast('🚦 Tráfico activado. Las vías se muestran en color según la congestión.');
   }
 }
 
@@ -3022,11 +3054,14 @@ function _catastroHint(msg){
 }
 
 function toggleCatastro(){
-  S.catastroOn=!S.catastroOn;
-  document.getElementById('catastroToggle').classList.toggle('active',S.catastroOn);
-  document.getElementById('catastroPanel').classList.toggle('open',S.catastroOn);
-  if(S.catastroOn){ _catastroHint(); _catastroAuto(); }
-  else if(catastroLayer){ catastroLayer.clearLayers(); }
+  const wasActive=S.catastroOn;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='catastro'; S.catastroOn=true;
+    document.getElementById('catastroToggle').classList.add('active');
+    document.getElementById('catastroPanel').classList.add('open');
+    _catastroHint(); _catastroAuto();
+  }
 }
 function clearCatastro(){
   if(catastroLayer) catastroLayer.clearLayers();
@@ -3036,19 +3071,13 @@ function clearCatastro(){
 
 // ── Street View (Google) ──────────────────────────────────────
 function toggleSVMode(){
-  const on=!S.svMode;
-  _deactivateRadiusPoly();
-  if(S.commuteMode) toggleCommuteMode();
-  S.svMode=on;
-  document.getElementById('svToggle').classList.toggle('active',on);
-  document.getElementById('realMap').classList.toggle('sv-mode',on);
-  if(on) toast('👁️ Haz clic en el mapa para ver Street View');
-}
-function _closeSVMode(){
-  if(S.svMode){
-    S.svMode=false;
-    document.getElementById('svToggle')?.classList.remove('active');
-    document.getElementById('realMap')?.classList.remove('sv-mode');
+  const wasActive=S.svMode;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='sv'; S.svMode=true;
+    document.getElementById('svToggle').classList.add('active');
+    document.getElementById('realMap').classList.add('sv-mode');
+    toast('👁️ Haz clic en el mapa para ver Street View');
   }
 }
 function openStreetView(lat,lng,label){
@@ -3076,12 +3105,14 @@ function detailStreetView(id){
 function detailNearby(id){
   const c=GEO[id]; if(!c){ toast('Esta propiedad no tiene ubicación en el mapa'); return; }
   closeDetail();
+  _deactivateAllTools();
+  S.activeTool='poi'; S.poiMode=true;
   if(leafletMap) leafletMap.setView(c,16,{animate:true,duration:.5});
   _poiCenter={lat:c[0],lng:c[1]};
   _poiDrawCenter();
-  const panel=document.getElementById('poiPanel');
-  panel.classList.add('open');
+  document.getElementById('poiPanel').classList.add('open');
   document.getElementById('poiToggle').classList.add('active');
+  document.getElementById('realMap').classList.add('poi-mode');
   buildPoiChips();
   toast('📍 Elige categorías para ver establecimientos cercanos');
 }
@@ -3355,13 +3386,12 @@ async function _fetchGeo(q){
 }
 
 function _activateRadiusAt(lat,lng,label){
+  _deactivateAllTools();
   S.query='';
-  if(S.polyMode) _deactivatePoly();
-  S.radiusMode=true;
+  S.activeTool='radius'; S.radiusMode=true;
   S.radiusCenter=L.latLng(lat,lng);
   document.getElementById('radiusToggle').classList.add('active');
   document.getElementById('radiusPanel').classList.add('open');
-  document.getElementById('realMap').classList.remove('radius-mode');
   document.getElementById('radiusHint').textContent='📍 '+label;
   document.getElementById('searchQ').placeholder='📍 '+label;
   drawRadiusCircle();
@@ -3419,19 +3449,7 @@ async function _flyToDistrictGeo(district){
 function pickGeoResult(lat,lng,label){
   document.getElementById('searchQ').value='';
   document.getElementById('sgDrop').style.display='none';
-  S.query='';
-  // Activar radio centrado en la ubicación
-  if(S.polyMode) _deactivatePoly();
-  S.radiusMode=true;
-  S.radiusCenter=L.latLng(lat,lng);
-  document.getElementById('radiusToggle').classList.add('active');
-  document.getElementById('radiusPanel').classList.add('open');
-  document.getElementById('realMap').classList.remove('radius-mode');
-  document.getElementById('radiusHint').textContent='📍 '+label;
-  document.getElementById('searchQ').placeholder='📍 '+label;
-  drawRadiusCircle();
-  leafletMap.setView([lat,lng],15,{animate:true,duration:.6});
-  applyFilters();
+  _activateRadiusAt(lat,lng,label);
 }
 function hideSuggestions(){
   setTimeout(()=>{document.getElementById('sgDrop').style.display='none';},150);
