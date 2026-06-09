@@ -1178,6 +1178,7 @@ body.show-home{overflow:auto;height:auto}
 #homeView .search-box input::placeholder{color:#94a3b8}
 #homeView .search-box .btn-search{background:linear-gradient(135deg,var(--amber),var(--amber2));color:#fff;border:none;padding:15px 28px;font-size:.92rem;font-weight:700;white-space:nowrap;transition:opacity .12s;display:flex;align-items:center;gap:7px}
 #homeView .search-box .btn-search:hover{opacity:.9}
+#homeView .search-box .btn-search-ai-home{background:linear-gradient(135deg,#4338ca,#6366f1)}
 
 /* AUTOCOMPLETE */
 #homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow:hidden;display:none}
@@ -1416,6 +1417,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="search-box">
         <input type="text" id="heroQ" placeholder="¿En qué distrito o urbanización buscas?" oninput="onSearchLanding(this.value)" onkeydown="if(event.key==='Enter')goSearch()" autocomplete="off"/>
         <button class="btn-search" onclick="goSearch()">🔍 Buscar</button>
+        <button class="btn-search btn-search-ai-home" onclick="goSearchAI()">✨ Buscar con IA</button>
       </div>
       <div class="sg-drop" id="sgDropLanding"></div>
     </div>
@@ -5011,6 +5013,18 @@ function goToApp(hash){
     document.getElementById('heroQ').value=label;
     document.getElementById('sgDropLanding').style.display='none';
     _lastGeoL={lat,lng,label};
+  }
+  function goSearchAI(){
+    const q=document.getElementById('heroQ').value.trim();
+    document.getElementById('sgDropLanding').style.display='none';
+    goToApp();
+    setTimeout(()=>{
+      setSearchMode('ai');
+      if(q){
+        document.getElementById('aiSearchQ').value=q;
+        runAiSearch();
+      }
+    },300);
   }
   function goSearch(){
     const q=document.getElementById('heroQ').value.trim();
