@@ -240,6 +240,7 @@ header .spacer{flex:1}
   font-size:.78rem;cursor:pointer;transition:all .12s;font-family:inherit;
 }
 .ai-chip:hover{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.ai-actions-row{display:flex;align-items:center;gap:8px}
 /* ── Classic search row ── */
 .classic-search-row{display:flex;gap:10px;margin-bottom:12px}
 .classic-search-row.hidden{display:none}
@@ -1694,6 +1695,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <input type="text" id="aiSearchQ" placeholder="Ej: Depa 3 dorm San Isidro hasta 800 mil soles"
         onkeydown="if(event.key==='Enter')runAiSearch()"/>
       <button class="btn-ai-search" onclick="runAiSearch()">Buscar con IA</button>
+    </div>
+    <div class="ai-actions-row">
+      <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="adv-toggle-btn" onclick="toggleAdv()">
+        Más filtros <span class="adv-arrow">▼</span>
+      </button>
     </div>
     <div class="ai-chips">
       <span class="ai-chips-label">Prueba:</span>
@@ -3494,9 +3501,8 @@ function toggleAdvFeat(chip,feat){
 
 function toggleAdv(){
   const p=document.getElementById('advPanel');
-  const b=document.getElementById('advBtn');
   const open=p.classList.toggle('open');
-  b.classList.toggle('open',open);
+  document.querySelectorAll('.adv-toggle-btn').forEach(b=>b.classList.toggle('open',open));
   setTimeout(recalcBody,250);
 }
 
