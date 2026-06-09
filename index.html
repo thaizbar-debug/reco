@@ -1696,7 +1696,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         onblur="hideSuggestions()"/>
       <div class="sg-drop" id="sgDrop"></div>
     </div>
-    <button class="btn-search" onclick="applyFilters()">Buscar</button>
+    <button class="btn-search" onclick="smartSearch()">Buscar</button>
   </div>
 
   <!-- AI search -->
@@ -3229,8 +3229,16 @@ function hideSuggestions(){
 function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
   if(e.key==='Enter'){
-    S.query=document.getElementById('searchQ').value.trim();
-    hideSuggestions();applyFilters();
+    const q=document.getElementById('searchQ').value.trim();
+    hideSuggestions();
+    if(_looksLikeNaturalQuery(q)){
+      document.getElementById('aiSearchQ').value=q;
+      setSearchMode('ai');
+      runAiSearch();
+    } else {
+      S.query=q;
+      applyFilters();
+    }
   }
 }
 
@@ -3255,6 +3263,27 @@ function setBeds(btn,val){
   document.querySelectorAll('#bedsSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.beds=val; applyFilters();
+}
+
+function _looksLikeNaturalQuery(text){
+  if(!text) return false;
+  const q=text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return /\bdepa(?:rtamento)?s?\b|\bcasas?\b|\bterrenos?\b|\boficinas?\b|\blocal(?:es)?\b/.test(q)
+    || /\d\s*(?:dorm|hab|cuarto|dormitorio|habitaci|bano|bath)/.test(q)
+    || /\bhasta\b|\bbajo\b|\bmenos de\b|\bdesde\b|\bmas de\b/.test(q)
+    || /\d+\s*(?:mil|k|m)\b/.test(q)
+    || /\bbanco\b|\bremate\b|\balquil|\brenta\b/.test(q)
+    || /\bjardin\b|\bpiscina\b|\bterraza\b|\bcochera\b|\bvista\b/.test(q);
+}
+function smartSearch(){
+  const q=document.getElementById('searchQ').value.trim();
+  if(_looksLikeNaturalQuery(q)){
+    document.getElementById('aiSearchQ').value=q;
+    setSearchMode('ai');
+    runAiSearch();
+  } else {
+    applyFilters();
+  }
 }
 
 // ─────────────────────── AI SEARCH (local parser) ───────────────────────
@@ -5039,6 +5068,7 @@ function goToApp(hash){
   function goSearch(){
     const q=document.getElementById('heroQ').value.trim();
     document.getElementById('sgDropLanding').style.display='none';
+    if(_looksLikeNaturalQuery(q)){goSearchAI();return;}
     const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
     const op=opMap[_tab]||'venta';
     goToApp('#op='+op);
