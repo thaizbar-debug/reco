@@ -3699,6 +3699,7 @@ function showGatePanel(p){
 }
 
 function unlockAndOpen(id){
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login');return;}
   S.unlockedIds.add(id);
   S.keysLeft--;
   document.getElementById('keyCount').textContent=S.keysLeft;
@@ -3715,7 +3716,7 @@ function pinClick(id){
 }
 
 // ─────────────────────── MODAL ───────────────────────
-function openModal(){ document.getElementById('modal').classList.add('open'); }
+function openModal(){ if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para comprar llaves');openAuthModal('login');return;} document.getElementById('modal').classList.add('open'); }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 
 function selectPlan(el,name,price,qty){
@@ -3726,6 +3727,7 @@ function selectPlan(el,name,price,qty){
 }
 
 function simulatePay(){
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para realizar un pago');openAuthModal('login');return;}
   const {name,qty}=S.selectedPlan;
   S.keysLeft+=qty;
   document.getElementById('keyCount').textContent=S.keysLeft;
@@ -4569,6 +4571,7 @@ function _pubShowBulkPreview(rows){
     </div>`;
 }
 function _pubBulkSubmit(n,cost){
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar inmuebles');openAuthModal('login');return;}
   if(S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft}). Compra más llaves.`);return;}
   S.keysLeft-=cost;
   document.getElementById('keyCount').textContent=S.keysLeft;
