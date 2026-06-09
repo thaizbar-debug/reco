@@ -194,6 +194,61 @@ header .spacer{flex:1}
   background:linear-gradient(160deg,#0e7490 0%,#0891b2 55%,#06b6d4 100%);
   padding:18px 20px 14px;
 }
+/* ── Search mode toggle (Clásica / Reco IA) ── */
+.search-mode-toggle{display:flex;gap:4px;margin-bottom:12px}
+.search-mode-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 18px;border-radius:99px;border:none;
+  font-size:.82rem;font-weight:700;cursor:pointer;
+  transition:all .18s;font-family:inherit;
+}
+.search-mode-btn.classic{background:rgba(255,255,255,.18);color:rgba(255,255,255,.8)}
+.search-mode-btn.classic.active{background:#fff;color:var(--txt)}
+.search-mode-btn.ai{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}
+.search-mode-btn.ai.active{background:linear-gradient(135deg,#f97316,#ec4899);color:#fff}
+.search-mode-btn .mode-dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.6}
+.search-mode-btn.active .mode-dot{opacity:1}
+.search-mode-btn .ai-sparkle{font-size:.9rem}
+/* ── AI search row ── */
+.ai-search-row{display:none;flex-direction:column;gap:10px}
+.ai-search-row.active{display:flex}
+.ai-input-wrap{
+  display:flex;gap:10px;
+  background:rgba(255,255,255,.97);border-radius:14px;
+  padding:6px 6px 6px 16px;align-items:center;
+  box-shadow:0 0 0 2.5px rgba(249,115,22,.35);
+}
+.ai-input-wrap .ai-sparkle-icon{font-size:1.1rem;flex-shrink:0}
+.ai-input-wrap input{
+  flex:1;border:none;background:transparent;outline:none;
+  font-size:.95rem;color:var(--txt);padding:8px 0;
+}
+.ai-input-wrap input::placeholder{color:#9ca3af}
+.btn-ai-search{
+  background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff;border:none;
+  padding:10px 22px;border-radius:10px;
+  font-size:.88rem;font-weight:700;white-space:nowrap;
+  cursor:pointer;transition:opacity .15s;font-family:inherit;
+}
+.btn-ai-search:hover{opacity:.88}
+.btn-ai-search:disabled{opacity:.5;cursor:not-allowed}
+.ai-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ai-chips-label{color:rgba(255,255,255,.55);font-size:.78rem;font-weight:600}
+.ai-chip{
+  background:rgba(255,255,255,.95);color:var(--txt);
+  border:none;padding:6px 14px;border-radius:99px;
+  font-size:.78rem;cursor:pointer;transition:all .12s;font-family:inherit;
+}
+.ai-chip:hover{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.ai-status{font-size:.8rem;color:rgba(255,255,255,.8);padding:4px 0;display:none;align-items:center;gap:6px}
+.ai-status.visible{display:flex}
+.ai-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-error{color:#fca5a5;font-size:.78rem;display:none}
+.ai-error.visible{display:block}
+/* ── Classic search row ── */
+.classic-search-row{display:flex;gap:10px;margin-bottom:12px}
+.classic-search-row.hidden{display:none}
 .search-row{display:flex;gap:10px;margin-bottom:12px}
 .search-input-wrap{flex:1;position:relative}
 .search-input-wrap input{
@@ -1615,7 +1670,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
 <!-- ══════ SEARCH HERO ══════ -->
 <div class="search-hero" id="hero">
-  <div class="search-row">
+  <!-- Mode toggle -->
+  <div class="search-mode-toggle">
+    <button class="search-mode-btn classic active" onclick="setSearchMode('classic')">
+      <span class="mode-dot"></span> Clásica
+    </button>
+    <button class="search-mode-btn ai" onclick="setSearchMode('ai')">
+      <span class="ai-sparkle">✨</span> Reco IA
+    </button>
+  </div>
+
+  <!-- Classic search -->
+  <div class="search-row classic-search-row" id="classicSearch">
     <div class="search-input-wrap">
       <span class="search-icon">🔍</span>
       <input type="text" id="searchQ" placeholder="Buscar por distrito, dirección o urbanización…"
@@ -1625,6 +1691,24 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="sg-drop" id="sgDrop"></div>
     </div>
     <button class="btn-search" onclick="applyFilters()">Buscar</button>
+  </div>
+
+  <!-- AI search -->
+  <div class="ai-search-row" id="aiSearch">
+    <div class="ai-input-wrap">
+      <span class="ai-sparkle-icon">✨</span>
+      <input type="text" id="aiSearchQ" placeholder="Ej: Depa 3 dorm San Isidro hasta 800 mil soles"
+        onkeydown="if(event.key==='Enter')runAiSearch()"/>
+      <button class="btn-ai-search" id="btnAiSearch" onclick="runAiSearch()">Buscar con IA</button>
+    </div>
+    <div class="ai-status" id="aiStatus"><span class="ai-spinner"></span> <span id="aiStatusText">Analizando tu búsqueda…</span></div>
+    <div class="ai-error" id="aiError"></div>
+    <div class="ai-chips">
+      <span class="ai-chips-label">Prueba:</span>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Depa 3 dorm Miraflores hasta 800 mil</button>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Casa jardín La Molina bajo 350k</button>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Prop banco Surco bajo 1M</button>
+    </div>
   </div>
 
   <div class="filters-row">
@@ -3163,6 +3247,164 @@ function setBeds(btn,val){
   btn.classList.add('active');
   S.beds=val; applyFilters();
 }
+
+// ─────────────────────── AI SEARCH ───────────────────────
+let _aiMode=false;
+function setSearchMode(mode){
+  _aiMode=mode==='ai';
+  document.querySelectorAll('.search-mode-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.search-mode-btn.'+mode).classList.add('active');
+  document.getElementById('classicSearch').classList.toggle('hidden',_aiMode);
+  document.getElementById('aiSearch').classList.toggle('active',_aiMode);
+  const filtersRow=document.querySelector('.filters-row');
+  if(filtersRow) filtersRow.style.display=_aiMode?'none':'';
+  setTimeout(recalcBody,50);
+}
+function fillAiChip(btn){
+  const q=btn.textContent.replace(/^Ej:\s*/,'');
+  document.getElementById('aiSearchQ').value=q;
+  document.getElementById('aiSearchQ').focus();
+}
+async function runAiSearch(){
+  const q=document.getElementById('aiSearchQ').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('btnAiSearch');
+  const status=document.getElementById('aiStatus');
+  const statusText=document.getElementById('aiStatusText');
+  const errEl=document.getElementById('aiError');
+  btn.disabled=true;
+  status.classList.add('visible');
+  errEl.classList.remove('visible');
+  statusText.textContent='Analizando tu búsqueda…';
+  try{
+    const filters=await parseAiQuery(q);
+    applyAiFilters(filters);
+    status.classList.remove('visible');
+  }catch(e){
+    errEl.textContent='Error al procesar: '+e.message+'. Intenta reformular.';
+    errEl.classList.add('visible');
+    status.classList.remove('visible');
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+function _getDistrictList(){
+  const ds=[...new Set(properties.map(p=>p.district))];
+  return ds.length?ds.join(', '):'Miraflores, San Isidro, Surco, La Molina, Barranco, San Borja, Jesús María, Lince, Pueblo Libre, Magdalena, San Miguel, Surquillo, Chorrillos, Lima';
+}
+
+async function parseAiQuery(query){
+  const districtList=_getDistrictList();
+  const systemPrompt=`Eres un parser de búsqueda inmobiliaria en Lima, Perú. Extrae filtros estructurados del texto del usuario.
+
+Distritos disponibles: ${districtList}
+
+Responde SOLO un JSON válido (sin markdown, sin explicación) con estos campos opcionales:
+{
+  "op": "Venta"|"Alquiler" (default "Venta"; "comprar"→"Venta", "alquilar"→"Alquiler"),
+  "type": "Departamento"|"Casa"|"Terreno"|"Oficina"|"Local" (si se menciona; "depa"→"Departamento"),
+  "district": "nombre exacto del distrito" (de la lista, null si no se menciona),
+  "beds": número mínimo de dormitorios (null si no se menciona),
+  "baths": número mínimo de baños (null si no se menciona),
+  "minPrice": precio mínimo en soles (null si no se menciona),
+  "maxPrice": precio máximo en soles (null si no se menciona; "800 mil"→800000, "1M"→1000000, "350k"→350000),
+  "minArea": área mínima en m² (null si no se menciona),
+  "bankOnly": true solo si menciona "banco", "remate" o "adjudicación",
+  "features": array de features mencionadas como "Jardín", "Piscina", "Terraza", "Cochera", "Ascensor" (array vacío si ninguna)
+}
+
+Reglas:
+- Los precios en Perú son en soles (S/) por defecto a menos que diga "dólares" o "USD"
+- Si dice dólares, multiplica por 3.7 para convertir a soles
+- "hasta X" o "bajo X" o "menos de X" → maxPrice = X
+- "desde X" o "más de X" → minPrice = X
+- Responde SOLO el JSON, nada más`;
+
+  const resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': _aiApiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-haiku-4-5-20251001',
+      max_tokens:300,
+      system:systemPrompt,
+      messages:[{role:'user',content:query}]
+    })
+  });
+  if(!resp.ok){
+    const err=await resp.text();
+    throw new Error('API error: '+resp.status);
+  }
+  const data=await resp.json();
+  const text=data.content[0].text.trim();
+  const jsonMatch=text.match(/\{[\s\S]*\}/);
+  if(!jsonMatch) throw new Error('No se pudo interpretar la respuesta');
+  return JSON.parse(jsonMatch[0]);
+}
+
+function applyAiFilters(f){
+  clearFilters();
+  if(f.op){
+    S.op=f.op;
+    document.querySelectorAll('#opSeg button').forEach(b=>{
+      b.classList.remove('active');
+      if((f.op==='Venta'&&b.textContent==='Comprar')||(f.op==='Alquiler'&&b.textContent==='Alquilar'))
+        b.classList.add('active');
+    });
+  }
+  if(f.type){
+    S.type=f.type;
+    document.getElementById('typeSel').value=f.type;
+  }
+  if(f.district){
+    S.query=f.district;
+    document.getElementById('searchQ').value=f.district;
+  }
+  if(f.beds){
+    S.beds=f.beds;
+    document.querySelectorAll('#bedsSeg button').forEach(b=>{
+      b.classList.remove('active');
+      const v=b.textContent.trim();
+      if((f.beds>=4&&v==='4+')||v===String(f.beds)) b.classList.add('active');
+    });
+  }
+  if(f.baths) S.baths=f.baths;
+  if(f.minPrice) S.minPrice=f.minPrice;
+  if(f.maxPrice) S.maxPrice=f.maxPrice;
+  if(f.minArea) S.minArea=f.minArea;
+  if(f.bankOnly){
+    S.bankOnly=true;
+    document.getElementById('bankOnly').checked=true;
+  }
+  if(f.features&&f.features.length) S.features=f.features;
+  const list=getFiltered();
+  renderCards(list);
+  try{renderPins(list);}catch(e){}
+  setSearchMode('classic');
+  const filtersRow=document.querySelector('.filters-row');
+  if(filtersRow) filtersRow.style.display='';
+}
+
+let _aiApiKey='';
+function _promptAiKey(){
+  const k=prompt('Ingresa tu API Key de Anthropic (Claude) para activar la búsqueda con IA.\n\nPuedes obtener una en console.anthropic.com\n\nLa key se guarda solo en tu navegador.');
+  if(k&&k.trim()){
+    _aiApiKey=k.trim();
+    try{localStorage.setItem('reco_ai_key',_aiApiKey);}catch(e){}
+  }
+  return !!_aiApiKey;
+}
+(function(){try{_aiApiKey=localStorage.getItem('reco_ai_key')||'';}catch(e){}}());
+const _origSetSearchMode=setSearchMode;
+setSearchMode=function(mode){
+  if(mode==='ai'&&!_aiApiKey){if(!_promptAiKey())return;}
+  _origSetSearchMode(mode);
+};
 // ── View modes & panel toggle ──
 let _viewMode='list';
 function setViewMode(mode,btn){
