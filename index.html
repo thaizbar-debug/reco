@@ -1178,7 +1178,12 @@ body.show-home{overflow:auto;height:auto}
 #homeView .search-box input::placeholder{color:#94a3b8}
 #homeView .search-box .btn-search{background:linear-gradient(135deg,var(--amber),var(--amber2));color:#fff;border:none;padding:15px 28px;font-size:.92rem;font-weight:700;white-space:nowrap;transition:opacity .12s;display:flex;align-items:center;gap:7px}
 #homeView .search-box .btn-search:hover{opacity:.9}
-#homeView .search-box .btn-search-ai-home{background:linear-gradient(135deg,#4338ca,#6366f1)}
+#homeView .hero-ai-row{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+#homeView .hero-ai-btn{background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;border:none;padding:6px 16px;border-radius:99px;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .12s;font-family:inherit;white-space:nowrap}
+#homeView .hero-ai-btn:hover{opacity:.88}
+#homeView .hero-ai-hint{font-size:.76rem;color:rgba(255,255,255,.5);font-weight:600}
+#homeView .hero-ai-chip{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:99px;font-size:.74rem;cursor:pointer;transition:all .12s;font-family:inherit;white-space:nowrap}
+#homeView .hero-ai-chip:hover{background:rgba(255,255,255,.28);color:#fff}
 
 /* AUTOCOMPLETE */
 #homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow:hidden;display:none}
@@ -1417,9 +1422,14 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="search-box">
         <input type="text" id="heroQ" placeholder="¿En qué distrito o urbanización buscas?" oninput="onSearchLanding(this.value)" onkeydown="if(event.key==='Enter')goSearch()" autocomplete="off"/>
         <button class="btn-search" onclick="goSearch()">🔍 Buscar</button>
-        <button class="btn-search btn-search-ai-home" onclick="goSearchAI()">✨ Buscar con IA</button>
       </div>
       <div class="sg-drop" id="sgDropLanding"></div>
+      <div class="hero-ai-row">
+        <button class="hero-ai-btn" onclick="goSearchAI()">✨ Reco IA</button>
+        <span class="hero-ai-hint">Prueba:</span>
+        <button class="hero-ai-chip" onclick="document.getElementById('heroQ').value=this.textContent;goSearchAI()">Depa 3 dorm Miraflores hasta 800 mil</button>
+        <button class="hero-ai-chip" onclick="document.getElementById('heroQ').value=this.textContent;goSearchAI()">Casa con jardín La Molina bajo 350k</button>
+      </div>
     </div>
   </div>
 </section>
