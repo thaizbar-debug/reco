@@ -1294,7 +1294,7 @@ body.show-home{overflow:auto;height:auto}
 .auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
 .auth-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
 .auth-head{padding:28px 28px 0}
-.auth-logo{font-size:1.1rem;font-weight:800;color:var(--blue);margin-bottom:14px;letter-spacing:-.02em}
+.auth-logo{margin-bottom:14px;text-align:center}.auth-logo img{height:70px;width:auto}
 .auth-tabs{display:flex;gap:0;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:0}
 .auth-tab{flex:1;padding:9px 16px;text-align:center;font-size:.82rem;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);border:none;font-family:inherit;transition:all .15s}
 .auth-tab.active{background:var(--blue);color:#fff}
@@ -5005,7 +5005,7 @@ function _applyLandingHash(){
   <div class="auth-box">
     <button class="auth-close" onclick="closeAuthModal()">✕</button>
     <div class="auth-head">
-      <div class="auth-logo">reco</div>
+      <div class="auth-logo"><img src="data/reco_logo.jpg" alt="reco"/></div>
       <div class="auth-tabs">
         <button class="auth-tab active" id="authTabLogin" onclick="switchAuthTab('login')">Ingresar</button>
         <button class="auth-tab" id="authTabRegister" onclick="switchAuthTab('register')">Crear cuenta</button>
@@ -5017,27 +5017,22 @@ function _applyLandingHash(){
       <!-- LOGIN -->
       <div class="auth-panel active" id="panelLogin">
         <p class="auth-panel-sub" style="margin-top:14px">Accede a tu histórico, llaves y alertas guardadas.</p>
-        <button class="auth-google-btn" onclick="signInWithGoogle()">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
-          Continuar con Google
-        </button>
-        <div class="auth-divider">o con email</div>
         <label class="auth-label">Email</label>
         <input class="auth-input" type="email" id="loginEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
         <label class="auth-label">Contraseña</label>
         <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
         <a class="auth-forgot" onclick="switchAuthTab('forgot')">¿Olvidaste tu contraseña?</a>
         <button class="auth-submit" id="loginBtn" onclick="signInWithEmail()">Ingresar</button>
+        <div class="auth-divider">o continuar con</div>
+        <button class="auth-google-btn" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
+          Continuar con Google
+        </button>
         <p class="auth-switch">¿Primera vez? <a onclick="switchAuthTab('register')">Crear cuenta gratis</a></p>
       </div>
       <!-- REGISTER -->
       <div class="auth-panel" id="panelRegister">
         <p class="auth-panel-sub" style="margin-top:14px">Tu primera consulta es <strong>gratis</strong> al registrarte.</p>
-        <button class="auth-google-btn" onclick="signInWithGoogle()">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
-          Registrarse con Google
-        </button>
-        <div class="auth-divider">o con email</div>
         <label class="auth-label">Nombre completo</label>
         <input class="auth-input" type="text" id="registerName" placeholder="Tu nombre" autocomplete="name"/>
         <label class="auth-label">Email</label>
@@ -5047,6 +5042,11 @@ function _applyLandingHash(){
         <label class="auth-label">Confirmar contraseña</label>
         <input class="auth-input" type="password" id="registerPassword2" placeholder="Repite la contraseña" autocomplete="new-password"/>
         <button class="auth-submit" id="registerBtn" onclick="registerWithEmail()">Crear cuenta</button>
+        <div class="auth-divider">o registrarse con</div>
+        <button class="auth-google-btn" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
+          Registrarse con Google
+        </button>
         <p class="auth-switch">¿Ya tienes cuenta? <a onclick="switchAuthTab('login')">Ingresar</a></p>
       </div>
       <!-- FORGOT PASSWORD -->
