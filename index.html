@@ -1700,6 +1700,11 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="ai-chip" onclick="fillAiChip(this)">Ej: Depa 3 dorm Miraflores hasta 800 mil</button>
       <button class="ai-chip" onclick="fillAiChip(this)">Ej: Casa jardín La Molina bajo 350k</button>
       <button class="ai-chip" onclick="fillAiChip(this)">Ej: Prop banco Surco bajo 1M</button>
+      <span style="flex:1"></span>
+      <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="adv-toggle-btn" onclick="toggleAdv()">
+        Más filtros <span class="adv-arrow">▼</span>
+      </button>
     </div>
   </div>
 
@@ -3248,13 +3253,7 @@ function setSearchMode(mode){
   document.querySelector('.search-mode-btn.'+mode).classList.add('active');
   document.getElementById('classicSearch').classList.toggle('hidden',_aiMode);
   document.getElementById('aiSearch').classList.toggle('active',_aiMode);
-  const hide=_aiMode?'none':'';
-  document.getElementById('opSeg').style.display=hide;
-  document.getElementById('typeSel').style.display=hide;
-  document.getElementById('dormsLabel').style.display=hide;
-  document.getElementById('bedsSeg').style.display=hide;
-  document.getElementById('bankCheck').style.display=hide;
-  document.querySelectorAll('.filters-row > .f-label').forEach(el=>el.style.display=hide);
+  document.querySelector('.filters-row').style.display=_aiMode?'none':'';
   setTimeout(recalcBody,50);
 }
 function fillAiChip(btn){
