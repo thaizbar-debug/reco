@@ -240,12 +240,6 @@ header .spacer{flex:1}
   font-size:.78rem;cursor:pointer;transition:all .12s;font-family:inherit;
 }
 .ai-chip:hover{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.ai-status{font-size:.8rem;color:rgba(255,255,255,.8);padding:4px 0;display:none;align-items:center;gap:6px}
-.ai-status.visible{display:flex}
-.ai-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.ai-error{color:#fca5a5;font-size:.78rem;display:none}
-.ai-error.visible{display:block}
 /* ── Classic search row ── */
 .classic-search-row{display:flex;gap:10px;margin-bottom:12px}
 .classic-search-row.hidden{display:none}
@@ -1699,10 +1693,8 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <span class="ai-sparkle-icon">✨</span>
       <input type="text" id="aiSearchQ" placeholder="Ej: Depa 3 dorm San Isidro hasta 800 mil soles"
         onkeydown="if(event.key==='Enter')runAiSearch()"/>
-      <button class="btn-ai-search" id="btnAiSearch" onclick="runAiSearch()">Buscar con IA</button>
+      <button class="btn-ai-search" onclick="runAiSearch()">Buscar con IA</button>
     </div>
-    <div class="ai-status" id="aiStatus"><span class="ai-spinner"></span> <span id="aiStatusText">Analizando tu búsqueda…</span></div>
-    <div class="ai-error" id="aiError"></div>
     <div class="ai-chips">
       <span class="ai-chips-label">Prueba:</span>
       <button class="ai-chip" onclick="fillAiChip(this)">Ej: Depa 3 dorm Miraflores hasta 800 mil</button>
@@ -3248,7 +3240,7 @@ function setBeds(btn,val){
   S.beds=val; applyFilters();
 }
 
-// ─────────────────────── AI SEARCH ───────────────────────
+// ─────────────────────── AI SEARCH (local parser) ───────────────────────
 let _aiMode=false;
 function setSearchMode(mode){
   _aiMode=mode==='ai';
@@ -3265,86 +3257,142 @@ function fillAiChip(btn){
   document.getElementById('aiSearchQ').value=q;
   document.getElementById('aiSearchQ').focus();
 }
-async function runAiSearch(){
+function runAiSearch(){
   const q=document.getElementById('aiSearchQ').value.trim();
   if(!q) return;
-  const btn=document.getElementById('btnAiSearch');
-  const status=document.getElementById('aiStatus');
-  const statusText=document.getElementById('aiStatusText');
-  const errEl=document.getElementById('aiError');
-  btn.disabled=true;
-  status.classList.add('visible');
-  errEl.classList.remove('visible');
-  statusText.textContent='Analizando tu búsqueda…';
-  try{
-    const filters=await parseAiQuery(q);
-    applyAiFilters(filters);
-    status.classList.remove('visible');
-  }catch(e){
-    errEl.textContent='Error al procesar: '+e.message+'. Intenta reformular.';
-    errEl.classList.add('visible');
-    status.classList.remove('visible');
-  }finally{
-    btn.disabled=false;
+  const filters=parseLocalQuery(q);
+  applyAiFilters(filters);
+}
+
+function parseLocalQuery(raw){
+  const q=raw.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const f={op:null,type:null,district:null,beds:null,baths:null,
+           minPrice:null,maxPrice:null,minArea:null,bankOnly:false,features:[]};
+
+  // — Operation —
+  if(/\balquil|\brenta|\barriend/.test(q)) f.op='Alquiler';
+  else f.op='Venta';
+
+  // — Property type —
+  const typeMap=[
+    [/\bdepa(?:rtamento)?s?\b/,'Departamento'],
+    [/\bcasas?\b/,'Casa'],
+    [/\bterrenos?\b/,'Terreno'],
+    [/\boficinas?\b/,'Oficina'],
+    [/\blocal(?:es)?\b/,'Local']
+  ];
+  for(const[rx,val] of typeMap){if(rx.test(q)){f.type=val;break;}}
+
+  // — District (fuzzy match against real data) —
+  const districts=[...new Set(properties.map(p=>p.district))];
+  const qNorm=q;
+  let bestDist=null, bestLen=0;
+  for(const d of districts){
+    const dn=d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if(qNorm.includes(dn) && dn.length>bestLen){
+      bestDist=d; bestLen=dn.length;
+    }
   }
-}
-
-function _getDistrictList(){
-  const ds=[...new Set(properties.map(p=>p.district))];
-  return ds.length?ds.join(', '):'Miraflores, San Isidro, Surco, La Molina, Barranco, San Borja, Jesús María, Lince, Pueblo Libre, Magdalena, San Miguel, Surquillo, Chorrillos, Lima';
-}
-
-async function parseAiQuery(query){
-  const districtList=_getDistrictList();
-  const systemPrompt=`Eres un parser de búsqueda inmobiliaria en Lima, Perú. Extrae filtros estructurados del texto del usuario.
-
-Distritos disponibles: ${districtList}
-
-Responde SOLO un JSON válido (sin markdown, sin explicación) con estos campos opcionales:
-{
-  "op": "Venta"|"Alquiler" (default "Venta"; "comprar"→"Venta", "alquilar"→"Alquiler"),
-  "type": "Departamento"|"Casa"|"Terreno"|"Oficina"|"Local" (si se menciona; "depa"→"Departamento"),
-  "district": "nombre exacto del distrito" (de la lista, null si no se menciona),
-  "beds": número mínimo de dormitorios (null si no se menciona),
-  "baths": número mínimo de baños (null si no se menciona),
-  "minPrice": precio mínimo en soles (null si no se menciona),
-  "maxPrice": precio máximo en soles (null si no se menciona; "800 mil"→800000, "1M"→1000000, "350k"→350000),
-  "minArea": área mínima en m² (null si no se menciona),
-  "bankOnly": true solo si menciona "banco", "remate" o "adjudicación",
-  "features": array de features mencionadas como "Jardín", "Piscina", "Terraza", "Cochera", "Ascensor" (array vacío si ninguna)
-}
-
-Reglas:
-- Los precios en Perú son en soles (S/) por defecto a menos que diga "dólares" o "USD"
-- Si dice dólares, multiplica por 3.7 para convertir a soles
-- "hasta X" o "bajo X" o "menos de X" → maxPrice = X
-- "desde X" o "más de X" → minPrice = X
-- Responde SOLO el JSON, nada más`;
-
-  const resp=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json',
-      'x-api-key': _aiApiKey,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({
-      model:'claude-haiku-4-5-20251001',
-      max_tokens:300,
-      system:systemPrompt,
-      messages:[{role:'user',content:query}]
-    })
-  });
-  if(!resp.ok){
-    const err=await resp.text();
-    throw new Error('API error: '+resp.status);
+  if(!bestDist){
+    const aliases={
+      'surco':'Santiago de Surco','sjl':'San Juan de Lurigancho',
+      'sjm':'San Juan de Miraflores','smp':'San Martin de Porres',
+      'ves':'Villa El Salvador','vmt':'Villa María del Triunfo',
+      'cercado':'Cercado de Lima','los olivos':'Los Olivos',
+      'comas':'Comas','rimac':'Rímac','ate':'Ate',
+      'san isidro':'San Isidro','miraflores':'Miraflores',
+      'la molina':'La Molina','san borja':'San Borja',
+      'barranco':'Barranco','jesus maria':'Jesús María',
+      'lince':'Lince','pueblo libre':'Pueblo Libre',
+      'magdalena':'Magdalena del Mar','san miguel':'San Miguel',
+      'surquillo':'Surquillo','chorrillos':'Chorrillos',
+      'independencia':'Independencia','carabayllo':'Carabayllo',
+      'callao':'Callao','la victoria':'La Victoria',
+      'breña':'Breña','brena':'Breña',
+      'santa anita':'Santa Anita','el agustino':'El Agustino',
+      'chaclacayo':'Chaclacayo','lurin':'Lurín',
+      'punta hermosa':'Punta Hermosa','ancon':'Ancón',
+      'ventanilla':'Ventanilla','bellavista':'Bellavista',
+      'la perla':'La Perla','la punta':'La Punta',
+    };
+    for(const[alias,real] of Object.entries(aliases)){
+      if(qNorm.includes(alias)){bestDist=real;break;}
+    }
   }
-  const data=await resp.json();
-  const text=data.content[0].text.trim();
-  const jsonMatch=text.match(/\{[\s\S]*\}/);
-  if(!jsonMatch) throw new Error('No se pudo interpretar la respuesta');
-  return JSON.parse(jsonMatch[0]);
+  f.district=bestDist;
+
+  // — Bedrooms —
+  const bedsRx=/(\d)\s*(?:dorm|hab|cuarto|dormitorio|habitaci)/;
+  const bedsM=q.match(bedsRx);
+  if(bedsM) f.beds=parseInt(bedsM[1]);
+
+  // — Bathrooms —
+  const bathsRx=/(\d)\s*(?:bano|baño|bath)/;
+  const bathsM=q.match(bathsRx);
+  if(bathsM) f.baths=parseInt(bathsM[1]);
+
+  // — Price parsing —
+  function parsePrice(s){
+    s=s.replace(/,/g,'').replace(/\s+/g,'');
+    let mult=1;
+    if(/millone?s?|mm/.test(s)){mult=1000000;s=s.replace(/millone?s?|mm/g,'');}
+    else if(/mil\b/.test(s)){mult=1000;s=s.replace(/mil/g,'');}
+    else if(/[mk]$/i.test(s)){
+      const c=s.slice(-1).toLowerCase();
+      mult=c==='m'?1000000:1000;
+      s=s.slice(0,-1);
+    }
+    const n=parseFloat(s);
+    if(isNaN(n)) return null;
+    let val=n*mult;
+    if(val>0&&val<500) val*=1000;
+    return val;
+  }
+  const isDollar=/dolar|usd|\$us|\bus\$/i.test(raw);
+  const fxRate=isDollar?3.7:1;
+
+  const maxRx=/(?:hasta|bajo|menos de|maximo?|max|por debajo de|no m[aá]s de|under|below)\s+(?:s\/\.?\s*|s\/\s*)?([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+  const maxM=raw.toLowerCase().match(maxRx);
+  if(maxM){ const v=parsePrice(maxM[1]); if(v) f.maxPrice=Math.round(v*fxRate); }
+
+  const minRx=/(?:desde|m[aá]s de|minimo?|min|a partir de|over|above)\s+(?:s\/\.?\s*|s\/\s*)?([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+  const minM=raw.toLowerCase().match(minRx);
+  if(minM){ const v=parsePrice(minM[1]); if(v) f.minPrice=Math.round(v*fxRate); }
+
+  if(!f.maxPrice&&!f.minPrice){
+    const loosePrice=/(?:s\/\.?\s*|s\/\s*)([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+    const lm=raw.match(loosePrice);
+    if(lm){ const v=parsePrice(lm[1]); if(v) f.maxPrice=Math.round(v*fxRate); }
+  }
+
+  // — Area —
+  const areaRx=/(\d+)\s*(?:m2|m²|metros?\s*(?:cuadrados)?)/i;
+  const areaM=raw.match(areaRx);
+  if(areaM) f.minArea=parseInt(areaM[1]);
+
+  // — Bank properties —
+  if(/\bbanco\b|\bremate|\badjudica|\bremata/.test(q)) f.bankOnly=true;
+
+  // — Features —
+  const featureMap=[
+    [/\bjardin\b/,'Jardín'],[/\bpiscina\b/,'Piscina'],[/\bterraza\b/,'Terraza'],
+    [/\bcochera\b|\bestacionamiento\b|\bgarage\b|\bgaraje\b/,'Depósito'],
+    [/\bascensor\b|\belevador\b/,'Recepción'],
+    [/\bgimnasio\b|\bgym\b/,'Gimnasio'],[/\bsauna\b|\bspa\b/,'Sauna/Spa'],
+    [/\bjacuzzi\b/,'Jacuzzi'],[/\bbalcon\b/,'Balcón'],
+    [/\bvista\s*(?:al\s*)?mar\b/,'Vista al mar'],
+    [/\bvista\s*(?:a\s*)?parque\b/,'Vista a parque'],
+    [/\barea\s*verde|areas\s*verde/,'Áreas verdes'],
+    [/\bparrilla\b|\bbbq\b/,'Zona de Parrilla (BBQ)'],
+    [/\bjuegos\s*infantil/,'Juegos infantiles'],
+    [/\bpatio\b/,'Patio'],[/\bdeposito\b/,'Depósito'],
+  ];
+  for(const[rx,feat] of featureMap){
+    if(rx.test(q)&&!f.features.includes(feat)) f.features.push(feat);
+  }
+
+  return f;
 }
 
 function applyAiFilters(f){
@@ -3389,22 +3437,6 @@ function applyAiFilters(f){
   const filtersRow=document.querySelector('.filters-row');
   if(filtersRow) filtersRow.style.display='';
 }
-
-let _aiApiKey='';
-function _promptAiKey(){
-  const k=prompt('Ingresa tu API Key de Anthropic (Claude) para activar la búsqueda con IA.\n\nPuedes obtener una en console.anthropic.com\n\nLa key se guarda solo en tu navegador.');
-  if(k&&k.trim()){
-    _aiApiKey=k.trim();
-    try{localStorage.setItem('reco_ai_key',_aiApiKey);}catch(e){}
-  }
-  return !!_aiApiKey;
-}
-(function(){try{_aiApiKey=localStorage.getItem('reco_ai_key')||'';}catch(e){}}());
-const _origSetSearchMode=setSearchMode;
-setSearchMode=function(mode){
-  if(mode==='ai'&&!_aiApiKey){if(!_promptAiKey())return;}
-  _origSetSearchMode(mode);
-};
 // ── View modes & panel toggle ──
 let _viewMode='list';
 function setViewMode(mode,btn){
