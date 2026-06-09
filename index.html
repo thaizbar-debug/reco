@@ -4184,6 +4184,7 @@ const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','S
 const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
 
 function openPublish(){
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
   _ps=1;_pubTab='single';
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
@@ -4476,6 +4477,7 @@ function _pn(){
 }
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 function _ppub(){
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
   if(S.keysLeft<3){toast('⚠️ Necesitas al menos 3 llaves para publicar');return;}
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
