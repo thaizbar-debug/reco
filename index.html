@@ -240,7 +240,6 @@ header .spacer{flex:1}
   font-size:.78rem;cursor:pointer;transition:all .12s;font-family:inherit;
 }
 .ai-chip:hover{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.filter-actions-row{display:flex;align-items:center;gap:8px;justify-content:flex-end;margin-top:4px}
 /* ── Classic search row ── */
 .classic-search-row{display:flex;gap:10px;margin-bottom:12px}
 .classic-search-row.hidden{display:none}
@@ -1737,13 +1736,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       </span>
     </label>
 
-  </div>
-
-  <div class="filter-actions-row" id="filterActionsRow">
-    <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
-    <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()" style="margin-left:0">
-      Más filtros <span class="adv-arrow">▼</span>
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+      <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()" style="margin-left:0">
+        Más filtros <span class="adv-arrow">▼</span>
+      </button>
+    </div>
   </div>
 
   <!-- Advanced panel -->
@@ -3250,8 +3248,13 @@ function setSearchMode(mode){
   document.querySelector('.search-mode-btn.'+mode).classList.add('active');
   document.getElementById('classicSearch').classList.toggle('hidden',_aiMode);
   document.getElementById('aiSearch').classList.toggle('active',_aiMode);
-  const filtersRow=document.querySelector('.filters-row');
-  if(filtersRow) filtersRow.style.display=_aiMode?'none':'';
+  const hide=_aiMode?'none':'';
+  document.getElementById('opSeg').style.display=hide;
+  document.getElementById('typeSel').style.display=hide;
+  document.getElementById('dormsLabel').style.display=hide;
+  document.getElementById('bedsSeg').style.display=hide;
+  document.getElementById('bankCheck').style.display=hide;
+  document.querySelectorAll('.filters-row > .f-label').forEach(el=>el.style.display=hide);
   setTimeout(recalcBody,50);
 }
 function fillAiChip(btn){
