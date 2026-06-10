@@ -505,14 +505,14 @@ header .spacer{flex:1}
 .res-list.view-list .badge{font-size:.58rem;padding:2px 6px}
 .res-list.view-list .card-sqm{font-size:.68rem}
 /* ── View: 2 columnas ── */
-.res-list.view-2col{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
-.res-list.view-2col .p-card{margin-bottom:0;display:block}
+.res-list.view-2col{display:grid!important;grid-template-columns:1fr 1fr;gap:8px;grid-auto-rows:min-content;align-content:start}
+.res-list.view-2col .p-card{margin-bottom:0;display:block;min-height:0}
 .res-list.view-2col>.area-summary-bar,.res-list.view-3col>.area-summary-bar{grid-column:1/-1}
 .res-list.view-2col>div[style]{grid-column:1/-1}
 .res-list.view-3col>div[style]{grid-column:1/-1}
 /* ── View: 3 columnas ── */
-.res-list.view-3col{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.res-list.view-3col .p-card{margin-bottom:0;display:block}
+.res-list.view-3col{display:grid!important;grid-template-columns:1fr 1fr 1fr;gap:8px;grid-auto-rows:min-content;align-content:start}
+.res-list.view-3col .p-card{margin-bottom:0;display:block;min-height:0}
 .res-list.view-3col .card-img{height:90px}
 .res-list.view-3col .card-body{padding:8px 10px}
 .res-list.view-3col .card-addr{font-size:.8rem}
@@ -2396,8 +2396,7 @@ function renderCards(list){
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
       : '';
-    return `
-    <div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')">
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')">
       <div class="card-img">
         <div class="cimg-track" id="cimgt-${pid}">${slides}</div>
         ${arrows}${dots}
@@ -3157,6 +3156,7 @@ function setViewMode(mode,btn){
   if(mode==='3col') rl.classList.add('view-3col');
   document.querySelectorAll('#viewToggle button').forEach(b=>b.classList.remove('active'));
   if(btn)btn.classList.add('active');
+  applyFilters();
 }
 function togglePanelView(panel){
   const body=document.getElementById('appBody');
