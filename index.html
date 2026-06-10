@@ -2121,10 +2121,13 @@ function driveImg(fileId){
 // Genera URL de vista de PDF desde Drive
 function drivePdf(fileId){ return `https://drive.google.com/file/d/${fileId}/view`; }
 
-// Devuelve arrays de fotos (hasta 8) y PDFs (hasta 3) para una propiedad
+const _driveAssetsCache = {};
 function driveAssets(p){
   const id = (typeof p === 'object' && p !== null) ? p.id : p;
   const op = (typeof p === 'object' && p !== null) ? p.op : null;
+  const cacheKey = id + '|' + (op || '');
+  if(_driveAssetsCache[cacheKey]) return _driveAssetsCache[cacheKey];
+
   const numId = String(id).match(/^(\d+)/)?.[1] || String(id);
   const suffix = op === 'Histórico' ? 'His' : op === 'Alquiler' ? 'Alq' : op === 'Venta' ? 'Com' : null;
   const typedKey = suffix ? (numId + '-' + suffix) : null;
@@ -2133,7 +2136,6 @@ function driveAssets(p){
   const photos = ['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8']
                  .map(k=>entry[k]).filter(Boolean).map(driveImg);
 
-  // Structured PDF buttons for histórico: [{url, label}, ...]
   const partidas = [];
   if(entry.pdf_main) partidas.push({url: drivePdf(entry.pdf_main), label: 'Partida'});
   Object.keys(entry).filter(k=>k.startsWith('pdf_dep_')).sort().forEach(k=>{
@@ -2146,7 +2148,9 @@ function driveAssets(p){
     partidas.push({url: drivePdf(entry[k]), label: 'Partida servicio'});
   });
 
-  return { photos, partidas };
+  const result = { photos, partidas };
+  _driveAssetsCache[cacheKey] = result;
+  return result;
 }
 
 
@@ -2165,6 +2169,7 @@ async function loadData(){
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     DRIVE_FILES = data.drive || {};
+    Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
     GEO = {};
     properties.forEach(p=>{
@@ -3691,6 +3696,7 @@ function onPriceInputBlur(){
   document.getElementById('minPriceSlider').value=Math.min(minV,cfg.max);
   document.getElementById('maxPriceSlider').value=Math.max(Math.min(maxV,cfg.max),minV);
   _updateSliderUI();
+  applyFilters();
 }
 
 function clearFilters(){
@@ -3701,7 +3707,13 @@ function clearFilters(){
   const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
   const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
   const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
+  _priceTab='precio'; _priceCur='soles';
+  document.getElementById('tabPrecio').classList.add('active');
+  document.getElementById('tabSqm').classList.remove('active');
+  document.getElementById('curSoles').classList.add('active');
+  document.getElementById('curDolar').classList.remove('active');
   _resetPriceSliders();
+  buildPriceHistogram();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
@@ -3737,12 +3749,18 @@ function resetAll(){
   const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
   const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
   const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
+  _priceTab='precio'; _priceCur='soles';
+  document.getElementById('tabPrecio').classList.add('active');
+  document.getElementById('tabSqm').classList.remove('active');
+  document.getElementById('curSoles').classList.add('active');
+  document.getElementById('curDolar').classList.remove('active');
   _resetPriceSliders();
+  buildPriceHistogram();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
@@ -5132,13 +5150,16 @@ function goToApp(hash){
     document.getElementById('sgDropLanding').style.display='none';
     const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
     const op=opMap[_tab]||'venta';
-    goToApp('#op='+op);
     if(_lastGeoL){
-      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`;
+      goToApp('#op='+op);
+      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}&op=${op}`;
       if(typeof _applyLandingHash==='function')_applyLandingHash();
     } else if(q){
-      window.location.hash='#q='+encodeURIComponent(q);
+      goToApp('#op='+op);
+      window.location.hash='#q='+encodeURIComponent(q)+'&op='+op;
       if(typeof _applyLandingHash==='function')_applyLandingHash();
+    } else {
+      goToApp('#op='+op);
     }
   }
   document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
@@ -5146,8 +5167,8 @@ function goToApp(hash){
   function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');document.body.style.overflow='';}
   document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun();});
   Object.assign(window,{onSearchLanding:onSearchLanding,goSearch:goSearch,
-    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,setTab:setTab,goTab:goTab,
-    openAnun:openAnun,closeAnun:closeAnun});
+    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,pickGoogleLanding:pickGoogleLanding,
+    setTab:setTab,goTab:goTab,openAnun:openAnun,closeAnun:closeAnun});
 })();
 
 // ─────────────────────── INIT ───────────────────────
@@ -5183,8 +5204,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 function _applyLandingHash(){
   const h=window.location.hash;
   if(!h) return;
+  const opMatch=h.match(/[&?]op=([^&]+)/);
+  if(opMatch){
+    const labelMap={venta:'Comprar',alquiler:'Alquilar',historico:'Histórico'};
+    const label=labelMap[opMatch[1].toLowerCase()];
+    if(label){
+      const btn=[...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+      if(btn) btn.click();
+    }
+  }
   if(h.startsWith('#q=')){
-    const q=decodeURIComponent(h.slice(3));
+    const q=decodeURIComponent(h.slice(3).split('&')[0]);
     if(q){
       document.getElementById('searchQ').value=q;
       S.query=q;
@@ -5193,7 +5223,8 @@ function _applyLandingHash(){
       if(isDistrict) _flyToDistrictGeo(q);
     }
   } else if(h.startsWith('#geo=')){
-    const parts=h.slice(5).split(',');
+    const raw=h.slice(5).split('&')[0];
+    const parts=raw.split(',');
     if(parts.length>=2){
       const lat=parseFloat(parts[0]);
       const lng=parseFloat(parts[1]);
