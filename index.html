@@ -2273,7 +2273,7 @@ function getFiltered(){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
       if(dist>S.radiusMeters) return false;
     }
-    if(S.polyPoints.length>=3 && GEO[p.id]){
+    if(S.polyFinished && S.polyPoints.length>=3 && GEO[p.id]){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
@@ -2286,7 +2286,7 @@ function getFiltered(){
   if(sort==='price_asc') list.sort((a,b)=>a.price-b.price);
   else if(sort==='price_desc') list.sort((a,b)=>b.price-a.price);
   else if(sort==='area_desc') list.sort((a,b)=>b.area-a.area);
-  else if(sort==='new') list.sort((a,b)=>a.age-b.age);
+  else if(sort==='new') list.sort((a,b)=>(a.age??Infinity)-(b.age??Infinity));
   // Comprar y Alquiler: con foto primero (sort estable, preserva orden interno)
   list.sort((a,b)=>{
     if(a.op==='Histórico'||b.op==='Histórico') return 0;
@@ -2299,7 +2299,7 @@ function getFiltered(){
 
 // ─────────────────────── RENDER CARDS ───────────────────────
 function fmtPrice(p){ return p>=1000000? (p/1000000).toFixed(1)+'M' : p>=1000? Math.round(p/1000)+'K' : p.toString(); }
-function sqmPrice(p){ return Math.round(p.price/p.area); }
+function sqmPrice(p){ return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0; }
 function sqmPriceNet(p){
   if(p.op==='Venta') return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
   return 0;
@@ -2475,7 +2475,11 @@ function initMap(){
   _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
-  leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
+  let _mapMoveTimer=null;
+  leafletMap.on('zoomend moveend',()=>{
+    clearTimeout(_mapMoveTimer);
+    _mapMoveTimer=setTimeout(()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); },150);
+  });
 }
 
 // ═══════════════════ HERRAMIENTAS DE MAPA (exclusividad mutua) ═══════════════════
@@ -4429,7 +4433,7 @@ function openFullReport(id){
       const years = +document.getElementById('frSimYears').value||1;
       const rate  = (+document.getElementById('frSimRate').value||0)/100/12;
       const dn = price*down/100, loan = price-dn, n = years*12;
-      const monthly = loan*rate/(1-Math.pow(1+rate,-n));
+      const monthly = rate>0 ? loan*rate/(1-Math.pow(1+rate,-n)) : loan/n;
       const f = v => cur+' '+Math.round(v).toLocaleString();
       document.getElementById('frResDown').textContent    = f(dn);
       document.getElementById('frResLoan').textContent    = f(loan);
