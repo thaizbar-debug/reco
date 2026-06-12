@@ -182,7 +182,7 @@ header .spacer{flex:1}
   display:none;position:absolute;top:44px;right:0;
   background:#fff;border:1px solid var(--border);
   border-radius:var(--r);box-shadow:var(--sh2);
-  min-width:180px;overflow:hidden;z-index:9;
+  min-width:180px;overflow:hidden;z-index:201;
 }
 .user-wrap{position:relative}
 .user-wrap:hover .user-dropdown{display:block}
@@ -1084,9 +1084,19 @@ header .spacer{flex:1}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ══════════════ RESPONSIVE ══════════════ */
+/* ── mobile toggle lista/mapa ── */
+.mobile-map-toggle{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:150;
+  background:var(--blue);color:#fff;border:none;padding:10px 22px;border-radius:99px;
+  font-size:.85rem;font-weight:700;font-family:inherit;box-shadow:0 4px 16px rgba(8,145,178,.4);
+  cursor:pointer;transition:background .15s,transform .15s;}
+.mobile-map-toggle:hover{background:var(--blue-dark);}
+.mobile-map-toggle:active{transform:translateX(-50%) scale(.95);}
 @media(max-width:900px){
+  .mobile-map-toggle{display:flex;align-items:center;gap:6px;}
   .map-panel{display:none}
   .results-panel{width:100%}
+  .app-body.mobile-map .map-panel{display:block;width:100%;position:absolute;inset:0;z-index:5}
+  .app-body.mobile-map .results-panel{display:none}
   .detail-panel{width:100vw}
   .plans-grid{grid-template-columns:1fr 1fr}
   .nav-phone{display:none}
@@ -2002,6 +2012,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   </div>
 </div>
+<button class="mobile-map-toggle" id="mobileMapToggle" onclick="toggleMobileMap()">🗺️ Ver mapa</button>
 
 <!-- ══════ DETAIL PANEL ══════ -->
 <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
@@ -4350,7 +4361,7 @@ function openFullReport(id){
         <div class="fr-price-block">
           <div>
             <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Precio de venta':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${cur} ${fmtN(p.price)}</div>
+            <div class="fr-price-ask">${cur} ${fmtN(isHist?getHistTotal(p):p.price)}</div>
             <div class="fr-price-meta">
               ${sqm>0?`<span class="fr-price-pill">${cur} ${fmtN(sqm)} / m²</span>`:''}
               ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
@@ -4509,16 +4520,26 @@ function _cimgApply(pid, total){
   const hcurr = document.getElementById('dh-curr-'+pid);
   if(hcurr) hcurr.textContent = idx+1;
 }
+let _modalDepth=0;
+function _lockScroll(){ _modalDepth++; document.body.style.overflow='hidden'; }
+function _unlockScroll(){ _modalDepth=Math.max(0,_modalDepth-1); if(_modalDepth===0) document.body.style.overflow=''; }
 let _lbPhotos=[], _lbIdx=0;
 function openLightbox(photos, startIdx){
   _lbPhotos=photos; _lbIdx=startIdx||0;
   _lbRender();
   document.getElementById('photoLightbox').classList.add('open');
-  document.body.style.overflow='hidden';
+  _lockScroll();
+  document.addEventListener('keydown',_lbKey);
 }
 function closeLightbox(){
   document.getElementById('photoLightbox').classList.remove('open');
-  document.body.style.overflow='';
+  _unlockScroll();
+  document.removeEventListener('keydown',_lbKey);
+}
+function _lbKey(e){
+  if(e.key==='Escape') closeLightbox();
+  else if(e.key==='ArrowLeft') lbMove(-1);
+  else if(e.key==='ArrowRight') lbMove(1);
 }
 function lbMove(dir){
   _lbIdx=(_lbIdx+dir+_lbPhotos.length)%_lbPhotos.length;
@@ -4585,7 +4606,7 @@ function openPublish(){
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
-  document.body.style.overflow='hidden';
+  _lockScroll();
   if(window._pubCover){const _c=window._pubCover;window._pubCover=null;setTimeout(()=>_c.remove(),350);}
   renderPublish();
 }
@@ -4593,7 +4614,7 @@ function closePublish(){
   if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}
   document.getElementById('pubOverlay').classList.remove('open');
   document.getElementById('pubModal').classList.remove('open');
-  document.body.style.overflow='';
+  _unlockScroll();
 }
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
@@ -4974,24 +4995,55 @@ function _pubBulkSubmit(n,cost){
 // ─────────────────────── HOME / ROUTER ───────────────────────
 function goHome(){
   document.body.classList.add('show-home');
-  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  try{history.pushState({view:'home'},'',location.pathname+location.search);}catch(e){}
   window.scrollTo(0,0);
 }
 function goToApp(hash){
   hash = hash || '';
   document.body.classList.remove('show-home');
   if(hash==='#publish'){
-    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    try{history.pushState({view:'publish'},'',location.pathname+location.search);}catch(e){}
     if(typeof openPublish==='function') openPublish();
     return;
   }
-  if(hash){ try{window.location.hash=hash;}catch(e){} }
-  else { try{history.replaceState(null,'',location.pathname+location.search);}catch(e){} }
+  if(hash){ try{history.pushState({view:'app',hash:hash},'','');window.location.hash=hash;}catch(e){} }
+  else { try{history.pushState({view:'app'},'',location.pathname+location.search);}catch(e){} }
   window._hashNav = hash;
   if(typeof recalcBody==='function') recalcBody();
   try{ if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60); }catch(e){}
   if(typeof applyHashNav==='function') applyHashNav();
   if(typeof _applyLandingHash==='function') _applyLandingHash();
+}
+window.addEventListener('popstate',function(e){
+  const h=window.location.hash;
+  const state=e.state;
+  if(state&&state.view==='home'||(!h&&!state)){
+    document.body.classList.add('show-home');
+    window.scrollTo(0,0);
+  } else {
+    document.body.classList.remove('show-home');
+    if(typeof recalcBody==='function') recalcBody();
+    try{if(leafletMap)setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);}catch(e){}
+    if(h){
+      window._hashNav=h;
+      if(typeof applyHashNav==='function') applyHashNav();
+      if(typeof _applyLandingHash==='function') _applyLandingHash();
+    }
+  }
+});
+let _mobileMapOn=false;
+function toggleMobileMap(){
+  _mobileMapOn=!_mobileMapOn;
+  const body=document.getElementById('appBody');
+  const btn=document.getElementById('mobileMapToggle');
+  if(_mobileMapOn){
+    body.classList.add('mobile-map');
+    btn.innerHTML='📋 Ver lista';
+    if(leafletMap) setTimeout(()=>leafletMap.invalidateSize(),60);
+  } else {
+    body.classList.remove('mobile-map');
+    btn.innerHTML='🗺️ Ver mapa';
+  }
 }
 
 // ─────────────────────── LANDING (home) — lógica encapsulada ───────────────────────
@@ -5167,8 +5219,8 @@ function goToApp(hash){
     }
   }
   document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
-  function openAnun(){document.getElementById('anunOverlay').classList.add('open');document.body.style.overflow='hidden';}
-  function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');document.body.style.overflow='';}
+  function openAnun(){document.getElementById('anunOverlay').classList.add('open');_lockScroll();}
+  function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');_unlockScroll();}
   document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun();});
   Object.assign(window,{onSearchLanding:onSearchLanding,goSearch:goSearch,
     pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,pickGoogleLanding:pickGoogleLanding,
