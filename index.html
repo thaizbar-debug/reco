@@ -182,7 +182,7 @@ header .spacer{flex:1}
   display:none;position:absolute;top:44px;right:0;
   background:#fff;border:1px solid var(--border);
   border-radius:var(--r);box-shadow:var(--sh2);
-  min-width:180px;overflow:hidden;z-index:9;
+  min-width:180px;overflow:hidden;z-index:201;
 }
 .user-wrap{position:relative}
 .user-wrap:hover .user-dropdown{display:block}
@@ -1084,9 +1084,19 @@ header .spacer{flex:1}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* ══════════════ RESPONSIVE ══════════════ */
+/* ── mobile toggle lista/mapa ── */
+.mobile-map-toggle{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:150;
+  background:var(--blue);color:#fff;border:none;padding:10px 22px;border-radius:99px;
+  font-size:.85rem;font-weight:700;font-family:inherit;box-shadow:0 4px 16px rgba(8,145,178,.4);
+  cursor:pointer;transition:background .15s,transform .15s;}
+.mobile-map-toggle:hover{background:var(--blue-dark);}
+.mobile-map-toggle:active{transform:translateX(-50%) scale(.95);}
 @media(max-width:900px){
+  .mobile-map-toggle{display:flex;align-items:center;gap:6px;}
   .map-panel{display:none}
   .results-panel{width:100%}
+  .app-body.mobile-map .map-panel{display:block;width:100%;position:absolute;inset:0;z-index:5}
+  .app-body.mobile-map .results-panel{display:none}
   .detail-panel{width:100vw}
   .plans-grid{grid-template-columns:1fr 1fr}
   .nav-phone{display:none}
@@ -2002,6 +2012,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   </div>
 </div>
+<button class="mobile-map-toggle" id="mobileMapToggle" onclick="toggleMobileMap()">🗺️ Ver mapa</button>
 
 <!-- ══════ DETAIL PANEL ══════ -->
 <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
@@ -2121,10 +2132,13 @@ function driveImg(fileId){
 // Genera URL de vista de PDF desde Drive
 function drivePdf(fileId){ return `https://drive.google.com/file/d/${fileId}/view`; }
 
-// Devuelve arrays de fotos (hasta 8) y PDFs (hasta 3) para una propiedad
+const _driveAssetsCache = {};
 function driveAssets(p){
   const id = (typeof p === 'object' && p !== null) ? p.id : p;
   const op = (typeof p === 'object' && p !== null) ? p.op : null;
+  const cacheKey = id + '|' + (op || '');
+  if(_driveAssetsCache[cacheKey]) return _driveAssetsCache[cacheKey];
+
   const numId = String(id).match(/^(\d+)/)?.[1] || String(id);
   const suffix = op === 'Histórico' ? 'His' : op === 'Alquiler' ? 'Alq' : op === 'Venta' ? 'Com' : null;
   const typedKey = suffix ? (numId + '-' + suffix) : null;
@@ -2133,7 +2147,6 @@ function driveAssets(p){
   const photos = ['foto1','foto2','foto3','foto4','foto5','foto6','foto7','foto8']
                  .map(k=>entry[k]).filter(Boolean).map(driveImg);
 
-  // Structured PDF buttons for histórico: [{url, label}, ...]
   const partidas = [];
   if(entry.pdf_main) partidas.push({url: drivePdf(entry.pdf_main), label: 'Partida'});
   Object.keys(entry).filter(k=>k.startsWith('pdf_dep_')).sort().forEach(k=>{
@@ -2146,7 +2159,9 @@ function driveAssets(p){
     partidas.push({url: drivePdf(entry[k]), label: 'Partida servicio'});
   });
 
-  return { photos, partidas };
+  const result = { photos, partidas };
+  _driveAssetsCache[cacheKey] = result;
+  return result;
 }
 
 
@@ -2165,6 +2180,7 @@ async function loadData(){
     if(!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     DRIVE_FILES = data.drive || {};
+    Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
     GEO = {};
     properties.forEach(p=>{
@@ -2268,7 +2284,7 @@ function getFiltered(){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
       if(dist>S.radiusMeters) return false;
     }
-    if(S.polyPoints.length>=3 && GEO[p.id]){
+    if(S.polyFinished && S.polyPoints.length>=3 && GEO[p.id]){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
@@ -2281,7 +2297,7 @@ function getFiltered(){
   if(sort==='price_asc') list.sort((a,b)=>a.price-b.price);
   else if(sort==='price_desc') list.sort((a,b)=>b.price-a.price);
   else if(sort==='area_desc') list.sort((a,b)=>b.area-a.area);
-  else if(sort==='new') list.sort((a,b)=>a.age-b.age);
+  else if(sort==='new') list.sort((a,b)=>(a.age??Infinity)-(b.age??Infinity));
   // Comprar y Alquiler: con foto primero (sort estable, preserva orden interno)
   list.sort((a,b)=>{
     if(a.op==='Histórico'||b.op==='Histórico') return 0;
@@ -2294,7 +2310,7 @@ function getFiltered(){
 
 // ─────────────────────── RENDER CARDS ───────────────────────
 function fmtPrice(p){ return p>=1000000? (p/1000000).toFixed(1)+'M' : p>=1000? Math.round(p/1000)+'K' : p.toString(); }
-function sqmPrice(p){ return Math.round(p.price/p.area); }
+function sqmPrice(p){ return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0; }
 function sqmPriceNet(p){
   if(p.op==='Venta') return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
   return 0;
@@ -2470,7 +2486,11 @@ function initMap(){
   _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
-  leafletMap.on('zoomend moveend',()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); });
+  let _mapMoveTimer=null;
+  leafletMap.on('zoomend moveend',()=>{
+    clearTimeout(_mapMoveTimer);
+    _mapMoveTimer=setTimeout(()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); },150);
+  });
 }
 
 // ═══════════════════ HERRAMIENTAS DE MAPA (exclusividad mutua) ═══════════════════
@@ -3691,6 +3711,7 @@ function onPriceInputBlur(){
   document.getElementById('minPriceSlider').value=Math.min(minV,cfg.max);
   document.getElementById('maxPriceSlider').value=Math.max(Math.min(maxV,cfg.max),minV);
   _updateSliderUI();
+  applyFilters();
 }
 
 function clearFilters(){
@@ -3701,7 +3722,13 @@ function clearFilters(){
   const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
   const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
   const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
+  _priceTab='precio'; _priceCur='soles';
+  document.getElementById('tabPrecio').classList.add('active');
+  document.getElementById('tabSqm').classList.remove('active');
+  document.getElementById('curSoles').classList.add('active');
+  document.getElementById('curDolar').classList.remove('active');
   _resetPriceSliders();
+  buildPriceHistogram();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
@@ -3737,12 +3764,18 @@ function resetAll(){
   const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
   const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
   const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
+  _priceTab='precio'; _priceCur='soles';
+  document.getElementById('tabPrecio').classList.add('active');
+  document.getElementById('tabSqm').classList.remove('active');
+  document.getElementById('curSoles').classList.add('active');
+  document.getElementById('curDolar').classList.remove('active');
   _resetPriceSliders();
+  buildPriceHistogram();
   document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
@@ -4328,7 +4361,7 @@ function openFullReport(id){
         <div class="fr-price-block">
           <div>
             <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Precio de venta':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${cur} ${fmtN(p.price)}</div>
+            <div class="fr-price-ask">${cur} ${fmtN(isHist?getHistTotal(p):p.price)}</div>
             <div class="fr-price-meta">
               ${sqm>0?`<span class="fr-price-pill">${cur} ${fmtN(sqm)} / m²</span>`:''}
               ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
@@ -4411,7 +4444,7 @@ function openFullReport(id){
       const years = +document.getElementById('frSimYears').value||1;
       const rate  = (+document.getElementById('frSimRate').value||0)/100/12;
       const dn = price*down/100, loan = price-dn, n = years*12;
-      const monthly = loan*rate/(1-Math.pow(1+rate,-n));
+      const monthly = rate>0 ? loan*rate/(1-Math.pow(1+rate,-n)) : loan/n;
       const f = v => cur+' '+Math.round(v).toLocaleString();
       document.getElementById('frResDown').textContent    = f(dn);
       document.getElementById('frResLoan').textContent    = f(loan);
@@ -4487,16 +4520,26 @@ function _cimgApply(pid, total){
   const hcurr = document.getElementById('dh-curr-'+pid);
   if(hcurr) hcurr.textContent = idx+1;
 }
+let _modalDepth=0;
+function _lockScroll(){ _modalDepth++; document.body.style.overflow='hidden'; }
+function _unlockScroll(){ _modalDepth=Math.max(0,_modalDepth-1); if(_modalDepth===0) document.body.style.overflow=''; }
 let _lbPhotos=[], _lbIdx=0;
 function openLightbox(photos, startIdx){
   _lbPhotos=photos; _lbIdx=startIdx||0;
   _lbRender();
   document.getElementById('photoLightbox').classList.add('open');
-  document.body.style.overflow='hidden';
+  _lockScroll();
+  document.addEventListener('keydown',_lbKey);
 }
 function closeLightbox(){
   document.getElementById('photoLightbox').classList.remove('open');
-  document.body.style.overflow='';
+  _unlockScroll();
+  document.removeEventListener('keydown',_lbKey);
+}
+function _lbKey(e){
+  if(e.key==='Escape') closeLightbox();
+  else if(e.key==='ArrowLeft') lbMove(-1);
+  else if(e.key==='ArrowRight') lbMove(1);
 }
 function lbMove(dir){
   _lbIdx=(_lbIdx+dir+_lbPhotos.length)%_lbPhotos.length;
@@ -4563,7 +4606,7 @@ function openPublish(){
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
   document.getElementById('pubModal').classList.add('open');
-  document.body.style.overflow='hidden';
+  _lockScroll();
   if(window._pubCover){const _c=window._pubCover;window._pubCover=null;setTimeout(()=>_c.remove(),350);}
   renderPublish();
 }
@@ -4571,7 +4614,7 @@ function closePublish(){
   if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}
   document.getElementById('pubOverlay').classList.remove('open');
   document.getElementById('pubModal').classList.remove('open');
-  document.body.style.overflow='';
+  _unlockScroll();
 }
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
@@ -4952,24 +4995,55 @@ function _pubBulkSubmit(n,cost){
 // ─────────────────────── HOME / ROUTER ───────────────────────
 function goHome(){
   document.body.classList.add('show-home');
-  try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  try{history.pushState({view:'home'},'',location.pathname+location.search);}catch(e){}
   window.scrollTo(0,0);
 }
 function goToApp(hash){
   hash = hash || '';
   document.body.classList.remove('show-home');
   if(hash==='#publish'){
-    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+    try{history.pushState({view:'publish'},'',location.pathname+location.search);}catch(e){}
     if(typeof openPublish==='function') openPublish();
     return;
   }
-  if(hash){ try{window.location.hash=hash;}catch(e){} }
-  else { try{history.replaceState(null,'',location.pathname+location.search);}catch(e){} }
+  if(hash){ try{history.pushState({view:'app',hash:hash},'','');window.location.hash=hash;}catch(e){} }
+  else { try{history.pushState({view:'app'},'',location.pathname+location.search);}catch(e){} }
   window._hashNav = hash;
   if(typeof recalcBody==='function') recalcBody();
   try{ if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60); }catch(e){}
   if(typeof applyHashNav==='function') applyHashNav();
   if(typeof _applyLandingHash==='function') _applyLandingHash();
+}
+window.addEventListener('popstate',function(e){
+  const h=window.location.hash;
+  const state=e.state;
+  if(state&&state.view==='home'||(!h&&!state)){
+    document.body.classList.add('show-home');
+    window.scrollTo(0,0);
+  } else {
+    document.body.classList.remove('show-home');
+    if(typeof recalcBody==='function') recalcBody();
+    try{if(leafletMap)setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);}catch(e){}
+    if(h){
+      window._hashNav=h;
+      if(typeof applyHashNav==='function') applyHashNav();
+      if(typeof _applyLandingHash==='function') _applyLandingHash();
+    }
+  }
+});
+let _mobileMapOn=false;
+function toggleMobileMap(){
+  _mobileMapOn=!_mobileMapOn;
+  const body=document.getElementById('appBody');
+  const btn=document.getElementById('mobileMapToggle');
+  if(_mobileMapOn){
+    body.classList.add('mobile-map');
+    btn.innerHTML='📋 Ver lista';
+    if(leafletMap) setTimeout(()=>leafletMap.invalidateSize(),60);
+  } else {
+    body.classList.remove('mobile-map');
+    btn.innerHTML='🗺️ Ver mapa';
+  }
 }
 
 // ─────────────────────── LANDING (home) — lógica encapsulada ───────────────────────
@@ -5132,22 +5206,25 @@ function goToApp(hash){
     document.getElementById('sgDropLanding').style.display='none';
     const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
     const op=opMap[_tab]||'venta';
-    goToApp('#op='+op);
     if(_lastGeoL){
-      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`;
+      goToApp('#op='+op);
+      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}&op=${op}`;
       if(typeof _applyLandingHash==='function')_applyLandingHash();
     } else if(q){
-      window.location.hash='#q='+encodeURIComponent(q);
+      goToApp('#op='+op);
+      window.location.hash='#q='+encodeURIComponent(q)+'&op='+op;
       if(typeof _applyLandingHash==='function')_applyLandingHash();
+    } else {
+      goToApp('#op='+op);
     }
   }
   document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
-  function openAnun(){document.getElementById('anunOverlay').classList.add('open');document.body.style.overflow='hidden';}
-  function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');document.body.style.overflow='';}
+  function openAnun(){document.getElementById('anunOverlay').classList.add('open');_lockScroll();}
+  function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');_unlockScroll();}
   document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun();});
   Object.assign(window,{onSearchLanding:onSearchLanding,goSearch:goSearch,
-    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,setTab:setTab,goTab:goTab,
-    openAnun:openAnun,closeAnun:closeAnun});
+    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,pickGoogleLanding:pickGoogleLanding,
+    setTab:setTab,goTab:goTab,openAnun:openAnun,closeAnun:closeAnun});
 })();
 
 // ─────────────────────── INIT ───────────────────────
@@ -5183,8 +5260,17 @@ document.addEventListener('DOMContentLoaded',()=>{
 function _applyLandingHash(){
   const h=window.location.hash;
   if(!h) return;
+  const opMatch=h.match(/[&?]op=([^&]+)/);
+  if(opMatch){
+    const labelMap={venta:'Comprar',alquiler:'Alquilar',historico:'Histórico'};
+    const label=labelMap[opMatch[1].toLowerCase()];
+    if(label){
+      const btn=[...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+      if(btn) btn.click();
+    }
+  }
   if(h.startsWith('#q=')){
-    const q=decodeURIComponent(h.slice(3));
+    const q=decodeURIComponent(h.slice(3).split('&')[0]);
     if(q){
       document.getElementById('searchQ').value=q;
       S.query=q;
@@ -5193,7 +5279,8 @@ function _applyLandingHash(){
       if(isDistrict) _flyToDistrictGeo(q);
     }
   } else if(h.startsWith('#geo=')){
-    const parts=h.slice(5).split(',');
+    const raw=h.slice(5).split('&')[0];
+    const parts=raw.split(',');
     if(parts.length>=2){
       const lat=parseFloat(parts[0]);
       const lng=parseFloat(parts[1]);
