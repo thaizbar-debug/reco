@@ -465,11 +465,9 @@ const FEATURED=[
              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
              onerror="this.remove()"
              onload="this.closest('.prop-img').querySelector('.prop-emoji').style.display='none'">
-        ${p.photos.length > 1 ? `
         <button class="img-arrow img-arrow-left" onclick="event.stopPropagation();slideImg(${idx},-1)">&#10094;</button>
         <button class="img-arrow img-arrow-right" onclick="event.stopPropagation();slideImg(${idx},1)">&#10095;</button>
         <div class="img-dots">${p.photos.map((_,i) => `<span class="img-dot${i===0?' active':''}" data-dot="${idx}-${i}"></span>`).join('')}</div>
-        ` : ''}
         <div class="prop-badges"><span class="pbadge pb-venta">Venta</span><span class="pbadge pb-type">${p.type}</span></div>
       </div>
       <div class="prop-body">
