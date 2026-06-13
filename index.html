@@ -4761,6 +4761,9 @@ function applyHashNav(){
       const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
       if(btn) btn.click();
     }
+  } else if(params.age!==undefined || params.feat){
+    S.op='all';
+    document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
   }
   if(params.age!==undefined){
     const el=document.getElementById('maxAge');
