@@ -5294,25 +5294,47 @@ function applyHashNav(){
       const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
       if(btn) btn.click();
     }
-  } else if(params.age!==undefined || params.feat){
+    return;
+  }
+  if(params.age!==undefined || params.feat){
+    advFeats.clear();
+    document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
+    S.features=[];
     S.op='all';
     document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
-  }
-  if(params.age!==undefined){
-    const el=document.getElementById('maxAge');
-    if(el){el.value=params.age;S.maxAge=parseFloat(params.age);}
-  }
-  if(params.feat){
-    const featMap = {lujo:'Propiedad de Lujo o Exclusiva'};
-    const featName = featMap[params.feat.toLowerCase()];
-    if(featName){
-      S.features=[featName];
-      if(typeof advFeats!=='undefined') advFeats.add(featName);
-      const chip=[...document.querySelectorAll('.adv-chip')].find(c=>c.textContent.trim()==='Lujo o Exclusiva');
-      if(chip) chip.classList.add('on');
+    const maxAgEl=document.getElementById('maxAge');
+    if(params.age!==undefined){
+      if(maxAgEl){maxAgEl.value=params.age;}
+      S.maxAge=params.age===''?Infinity:parseFloat(params.age);
+    } else {
+      if(maxAgEl){maxAgEl.value='';}
+      S.maxAge=Infinity;
     }
+    if(params.feat){
+      const featMap = {lujo:'Propiedad de Lujo o Exclusiva'};
+      const featName = featMap[params.feat.toLowerCase()];
+      if(featName){
+        S.features=[featName];
+        advFeats.add(featName);
+        const chip=[...document.querySelectorAll('.adv-chip')].find(c=>c.textContent.trim()==='Lujo o Exclusiva');
+        if(chip) chip.classList.add('on');
+      }
+    }
+    S.query=document.getElementById('searchQ').value.trim();
+    S.type=document.getElementById('typeSel').value;
+    S.bankOnly=document.getElementById('bankOnly').checked;
+    S.sort=document.getElementById('sortSel').value;
+    S.minArea=parseFloat(document.getElementById('minArea').value)||0;
+    var _minATel=document.getElementById('minAreaTerr');
+    S.minAreaTerr=_minATel?parseFloat(_minATel.value)||0:0;
+    var _minFlEl=document.getElementById('minFloors');
+    S.minFloors=_minFlEl?parseFloat(_minFlEl.value)||0:0;
+    var _minFl2=document.getElementById('minFloor');
+    S.minFloor=_minFl2?parseFloat(_minFl2.value)||0:0;
+    var list=getFiltered();
+    renderCards(list);
+    try{renderPins(list);}catch(e){}
   }
-  if(params.age!==undefined||params.feat||params.op) applyFilters();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
