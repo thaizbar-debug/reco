@@ -120,16 +120,34 @@ header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,2
 /* PROPIEDADES */
 .section-label{font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--blue);background:#ecfeff;border:1px solid #a5f3fc;padding:3px 12px;border-radius:99px;display:inline-block;margin-bottom:12px}
 .section-title{font-size:clamp(1.4rem,3vw,2rem);font-weight:800;margin-bottom:8px;letter-spacing:-.3px}
-.props-section{padding:60px 5%;background:var(--bg)}
+.props-section{padding:30px 5%;background:var(--bg)}
 .props-inner{max-width:1160px;margin:0 auto}
-.sec-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:28px;gap:12px;flex-wrap:wrap}
+.sec-row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap}
 .sec-link{font-size:.82rem;color:var(--blue);font-weight:600}
 .sec-link:hover{text-decoration:underline}
-.props-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+/* Properties carousel wrapper */
+.props-carousel-wrap{position:relative}
+.props-grid{display:flex;gap:16px;overflow-x:auto;scroll-behavior:smooth;scrollbar-width:none;-ms-overflow-style:none;scroll-snap-type:x mandatory;padding:4px 0}
+.props-grid::-webkit-scrollbar{display:none}
+.props-grid>.prop-card{min-width:280px;max-width:300px;flex-shrink:0;scroll-snap-align:start}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:10;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.95);border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;color:var(--txt);transition:all .15s}
+.carousel-arrow:hover{background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.18);border-color:#a5f3fc}
+.carousel-arrow.disabled{opacity:.3;pointer-events:none}
+.carousel-arrow-left{left:-18px}
+.carousel-arrow-right{right:-18px}
+/* Image carousel arrows */
+.img-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.85);border:none;box-shadow:0 1px 4px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;color:#333;opacity:0;transition:opacity .18s}
+.prop-img:hover .img-arrow{opacity:1}
+.img-arrow:hover{background:#fff}
+.img-arrow-left{left:7px}
+.img-arrow-right{right:7px}
+.img-dots{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2}
+.img-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .15s}
+.img-dot.active{background:#fff}
 .prop-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:box-shadow .2s,transform .18s,border-color .2s}
 .prop-card:hover{box-shadow:var(--sh2);transform:translateY(-3px);border-color:#a5f3fc}
 .prop-img{height:168px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;position:relative;overflow:hidden}
-.prop-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.32))}
+.prop-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.32));pointer-events:none}
 .prop-badges{position:absolute;bottom:9px;left:9px;display:flex;gap:5px;z-index:1}
 .pbadge{padding:2px 8px;border-radius:99px;font-size:.65rem;font-weight:700;backdrop-filter:blur(4px)}
 .pb-venta{background:rgba(8,145,178,.88);color:#fff}
@@ -216,7 +234,7 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 .footer-legal a:hover{color:#fff}
 
 @media(max-width:900px){.why-grid,.aud-grid{grid-template-columns:1fr 1fr}.ad-card{grid-template-columns:1fr}.ad-photo{min-height:200px}}
-@media(max-width:700px){header{grid-template-columns:1fr auto;padding:0 16px}.nav-left{display:none}.footer-grid{grid-template-columns:1fr 1fr}.hero-content{padding:0 5% 44px}}
+@media(max-width:700px){header{grid-template-columns:1fr auto;padding:0 16px}.nav-left{display:none}.footer-grid{grid-template-columns:1fr 1fr}.hero-content{padding:0 5% 44px}.carousel-arrow-left{left:-6px}.carousel-arrow-right{right:-6px}.carousel-arrow{width:34px;height:34px;font-size:.9rem}}
 @media(max-width:560px){.why-grid,.aud-grid,.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;text-align:center}.tab{padding:7px 14px;font-size:.76rem}}
 </style>
 </head>
@@ -224,9 +242,9 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 
 <header>
   <nav class="nav-left">
-    <button class="nav-link" onclick="location.href='Versión final Thaiz.html#op=venta'">Comprar</button>
-    <button class="nav-link" onclick="location.href='Versión final Thaiz.html#op=alquiler'">Alquilar</button>
-    <button class="nav-link" onclick="location.href='Versión final Thaiz.html#op=historico'">Históricos</button>
+    <button class="nav-link" onclick="location.href='index.html#op=venta'">Comprar</button>
+    <button class="nav-link" onclick="location.href='index.html#op=alquiler'">Alquilar</button>
+    <button class="nav-link" onclick="location.href='index.html#op=historico'">Históricos</button>
   </nav>
   <div class="nav-center">
     <div class="logo" onclick="window.location='landing.html'">
@@ -234,9 +252,9 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
     </div>
   </div>
   <div class="nav-right">
-    <button class="btn-pub" onclick="location.href='Versión final Thaiz.html#publish'">Publicar inmueble</button>
+    <button class="btn-pub" onclick="location.href='index.html#publish'">Publicar inmueble</button>
     <button class="btn-ghost" onclick="openAnun()">Anunciarse</button>
-    <button class="btn-ingresar" onclick="window.location='Versión final Thaiz.html'">Ingresar</button>
+    <button class="btn-ingresar" onclick="window.location='index.html'">Ingresar</button>
   </div>
 </header>
 
@@ -248,9 +266,9 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
       <span class="line">Conoce el precio real.</span>
     </h1>
     <div class="tab-row">
-      <button class="tab active" onclick="location.href='Versión final Thaiz.html#op=venta'">Comprar</button>
-      <button class="tab" onclick="location.href='Versión final Thaiz.html#op=alquiler'">Alquilar</button>
-      <button class="tab" onclick="location.href='Versión final Thaiz.html#op=historico'">Históricos</button>
+      <button class="tab active" onclick="location.href='index.html#op=venta'">Comprar</button>
+      <button class="tab" onclick="location.href='index.html#op=alquiler'">Alquilar</button>
+      <button class="tab" onclick="location.href='index.html#op=historico'">Históricos</button>
     </div>
     <div class="search-wrap">
       <div class="search-box">
@@ -341,16 +359,58 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 
 <div class="props-section">
   <div class="props-inner">
-    <div class="sec-row">
-      <div>
-        <div class="section-label">En venta</div>
-        <h2 class="section-title" style="margin-top:6px">Propiedades destacadas</h2>
-      </div>
-      <a href="Versión final Thaiz.html" class="sec-link">Ver las 791 en venta →</a>
+    <h2 class="section-title">Propiedades destacadas</h2>
+
+    <div class="sec-row" style="margin-top:18px">
+      <div class="section-label">En venta</div>
+      <a href="index.html#op=venta" class="sec-link">Ver las 791 en venta →</a>
     </div>
-    <div class="props-grid" id="featuredGrid"></div>
-    <div class="view-all-wrap">
-      <a href="Versión final Thaiz.html" class="btn-view-all">Ver todas las propiedades →</a>
+    <div class="props-carousel-wrap">
+      <button class="carousel-arrow carousel-arrow-left" id="carouselLeftVenta" onclick="scrollCarousel('featuredGridVenta',-1)">&#10094;</button>
+      <div class="props-grid" id="featuredGridVenta"></div>
+      <button class="carousel-arrow carousel-arrow-right" id="carouselRightVenta" onclick="scrollCarousel('featuredGridVenta',1)">&#10095;</button>
+    </div>
+
+    <div class="sec-row" style="margin-top:28px">
+      <div class="section-label" style="background:#fef3c7;color:#d97706;border-color:#fcd34d">En alquiler</div>
+      <a href="index.html#op=alquiler" class="sec-link">Ver las 123 en alquiler →</a>
+    </div>
+    <div class="props-carousel-wrap">
+      <button class="carousel-arrow carousel-arrow-left" id="carouselLeftAlq" onclick="scrollCarousel('featuredGridAlq',-1)">&#10094;</button>
+      <div class="props-grid" id="featuredGridAlq"></div>
+      <button class="carousel-arrow carousel-arrow-right" id="carouselRightAlq" onclick="scrollCarousel('featuredGridAlq',1)">&#10095;</button>
+    </div>
+  </div>
+</div>
+
+<div class="props-section">
+  <div class="props-inner">
+    <h2 class="section-title">Propiedades de estreno</h2>
+
+    <div class="sec-row" style="margin-top:18px">
+      <div class="section-label" style="background:#d1fae5;color:#059669;border-color:#6ee7b7">A estrenar</div>
+      <a href="index.html#age=0" class="sec-link">Ver las 281 de estreno →</a>
+    </div>
+    <div class="props-carousel-wrap">
+      <button class="carousel-arrow carousel-arrow-left" id="carouselLeftEstreno" onclick="scrollCarousel('featuredGridEstreno',-1)">&#10094;</button>
+      <div class="props-grid" id="featuredGridEstreno"></div>
+      <button class="carousel-arrow carousel-arrow-right" id="carouselRightEstreno" onclick="scrollCarousel('featuredGridEstreno',1)">&#10095;</button>
+    </div>
+  </div>
+</div>
+
+<div class="props-section">
+  <div class="props-inner">
+    <h2 class="section-title">Propiedades de lujo</h2>
+
+    <div class="sec-row" style="margin-top:18px">
+      <div class="section-label" style="background:rgba(245,158,11,.15);color:var(--amber);border-color:rgba(245,158,11,.4)">Exclusivo</div>
+      <a href="index.html#feat=lujo" class="sec-link">Ver las 26 de lujo →</a>
+    </div>
+    <div class="props-carousel-wrap">
+      <button class="carousel-arrow carousel-arrow-left" id="carouselLeftLujo" onclick="scrollCarousel('featuredGridLujo',-1)">&#10094;</button>
+      <div class="props-grid" id="featuredGridLujo"></div>
+      <button class="carousel-arrow carousel-arrow-right" id="carouselRightLujo" onclick="scrollCarousel('featuredGridLujo',1)">&#10095;</button>
     </div>
   </div>
 </div>
@@ -387,14 +447,14 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
         <p class="footer-desc">La plataforma de valores inmobiliarios más completa de Lima. Precios de venta, alquiler e históricos de Registros Públicos.</p>
       </div>
       <div class="footer-col"><h4>Explorar</h4><ul>
-        <li><a href="Versión final Thaiz.html">Buscar inmuebles</a></li>
-        <li><a href="Versión final Thaiz.html">Departamentos</a></li>
-        <li><a href="Versión final Thaiz.html">Casas</a></li>
-        <li><a href="Versión final Thaiz.html">Históricos</a></li>
+        <li><a href="index.html">Buscar inmuebles</a></li>
+        <li><a href="index.html">Departamentos</a></li>
+        <li><a href="index.html">Casas</a></li>
+        <li><a href="index.html">Históricos</a></li>
       </ul></div>
       <div class="footer-col"><h4>Propietarios</h4><ul>
-        <li><a href="Versión final Thaiz.html">Publicar inmueble</a></li>
-        <li><a href="Versión final Thaiz.html">Valorizar mi inmueble</a></li>
+        <li><a href="index.html">Publicar inmueble</a></li>
+        <li><a href="index.html">Valorizar mi inmueble</a></li>
       </ul></div>
       <div class="footer-col"><h4>Empresa</h4><ul>
         <li><a href="#">Nosotros</a></li>
@@ -414,18 +474,57 @@ footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 </footer>
 
 <script>
-// Propiedades destacadas — datos exactos del mapa
-const FEATURED=[
-  {id:'1-TI01-24',  foto1:'1GJIrvJ4PzQr01eW6-V9YTJpNecGfFKIH', address:'Av. Gral. Juan Antonio Pezet 937, Dpto 201', district:'San Isidro',       type:'Departamento', price:550000,  cur:'$', area:178.78, beds:2, baths:2,   park:2, floor:2, floors:15, gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️'},
-  {id:'2-TI01-24',  foto1:'1Gaq9-gdjj7YUwHVsY7PXDNbPc-QSUqBR', address:'Av. Gral. Juan Antonio Pezet 937, Dpto 301', district:'San Isidro',       type:'Departamento', price:560000,  cur:'$', area:178.78, beds:2, baths:2,   park:2, floor:3, floors:15, gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️'},
-  {id:'3-TI01-24',  foto1:'1AtI1hUfip1yhZX9-Vd-JoVF2j1JMR3ow', address:'Av. Gral. Juan Antonio Pezet 937, Dpto 202', district:'San Isidro',       type:'Departamento', price:690000,  cur:'$', area:221.07, beds:3, baths:3,   park:2, floor:2, floors:15, gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️'},
-  {id:'34-CI-222-25',foto1:'1PxtusvSwLtmSyhlWPRFm8cMbHpLckDFZ', address:'Jirón Acapulco 555, Dpto Casa D',           district:'La Molina',        type:'Casa',         price:1000000, cur:'$', area:509,    beds:4, baths:4.5, park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏡'},
-  {id:'35-CI17-4-25',foto1:'1lLLfrlDaJmAEM6o_MI29rHOA3VspZOqk', address:'Calle Andalucía 1, Dpto 7',                 district:'Miraflores',       type:'Departamento', price:170000,  cur:'$', area:94,     beds:3, baths:2,   park:1, floor:1, floors:1,  gradient:'linear-gradient(135deg,#fb923c,#f97316)', emoji:'🏙️'},
-  {id:'36-CI1474-25',foto1:'1q1JCc4UoSZkx-zmMXXn1ip3eze75Dt9Q', address:'Calle Boulevard 106, Dpto 303',             district:'Santiago de Surco', type:'Departamento', price:188000,  cur:'$', area:105,    beds:2, baths:2,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️'},
-  {id:'41-CI1419-25',foto1:'1-kAUSVWEd2P2OmUoxZsHXHFUicyu3p_0', address:'Calle Carlos García Bedoya 175, Urb. Aurora',district:'Miraflores',       type:'Casa',         price:790000,  cur:'$', area:403,    beds:4, baths:3.5, park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏡'},
-  {id:'39-CI1743-25',foto1:'1AJGMqtiSUf0GPFDnqv3ycW1OW41Dnt2W', address:'Calle Manco Cápac 6, Dpto 7',               district:'Miraflores',       type:'Departamento', price:495000,  cur:'$', area:225,    beds:3, baths:3,   park:2, floor:7, floors:7,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️'},
+// Propiedades destacadas — Venta
+const FEATURED_VENTA=[
+  {id:'1-TI01-24',  photos:['18ufM0QPxpOagsu88QQRlWKzf1kEVzqdb','1KAUoPBLGH2dVgYRbYEOwJaWsvGY_ku-B','1QPumDX3K751cvRECD6oXTFQ5RQueKhfS','1JccucV8KYH3iQuQu7ROOPHdxqhq7sVL5','1_FZkhO16Jq5DrrN1TH_RF5q2dk4mmbdn','1GJIrvJ4PzQr01eW6-V9YTJpNecGfFKIH'], address:'Av. Gral. Juan Antonio Pezet 937, Dpto 201', district:'San Isidro',       type:'Departamento', price:550000,  cur:'$', area:178.78, beds:2, baths:2,   park:2, floor:2, floors:15, gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Venta'},
+  {id:'2-TI01-24',  photos:['1dSwXUro704Ep5qf_-ihY29PS8u7z2pqU','1wPpnfIlQcL5jEUl9SPy9yzmeF06U7FLp','1CvNmSm2exQATDLmLZRvm8dvtuFXQEMAT','15W-u6OwghCjxB64b_z4gtZH-DHTuZlUA','1F-Ps2bkBEBSzXfkvWBBghUfiLdLeH2aG','1Gaq9-gdjj7YUwHVsY7PXDNbPc-QSUqBR'], address:'Av. Gral. Juan Antonio Pezet 937, Dpto 301', district:'San Isidro',       type:'Departamento', price:560000,  cur:'$', area:178.78, beds:2, baths:2,   park:2, floor:3, floors:15, gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Venta'},
+  {id:'3-TI01-24',  photos:['1HaFE9ujfEmHizE0ph6KZPvUvQ7sBLHve','1wXEs3WGAxvTuAeiZnuYQS2Ut9dxMuCT-','1AtI1hUfip1yhZX9-Vd-JoVF2j1JMR3ow','1aJqy30GqqCcI67ri0XrrJtvTt46Pmlhj','1XdiPU6IbDS-lyxsn1M_kY6MzH4Ftj7ww','1RVoXP9XXW5-eJLlwDHjvKZJxK1GuDoi3'], address:'Av. Gral. Juan Antonio Pezet 937, Dpto 202', district:'San Isidro',       type:'Departamento', price:690000,  cur:'$', area:221.07, beds:3, baths:3,   park:2, floor:2, floors:15, gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Venta'},
+  {id:'34-CI-222-25',photos:['1PxtusvSwLtmSyhlWPRFm8cMbHpLckDFZ'], address:'Jirón Acapulco 555, Dpto Casa D',           district:'La Molina',        type:'Casa',         price:1000000, cur:'$', area:509,    beds:4, baths:4.5, park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏡', op:'Venta'},
+  {id:'35-CI17-4-25',photos:['1lLLfrlDaJmAEM6o_MI29rHOA3VspZOqk'], address:'Calle Andalucía 1, Dpto 7',                 district:'Miraflores',       type:'Departamento', price:170000,  cur:'$', area:94,     beds:3, baths:2,   park:1, floor:1, floors:1,  gradient:'linear-gradient(135deg,#fb923c,#f97316)', emoji:'🏙️', op:'Venta'},
+  {id:'36-CI1474-25',photos:['1MJr0EibjM12fQ2AcnaYdtFDMMU5xQOrh','1TrRAxQG3vmyLICcMBVYVevfs7nJ5PAiY','15WxFS7qYy4tYd9-pT148m-Wp0B8ov028','1l0_Fbx3CwOgqV2btwC1q6pXFkIvGLQ8n','1l5ZLi9DziVjJodS7POsXTCEaCiz15AAK','11yjxR4lME5xQed_-JcBYwaGA0CLBwZ5E','1Vgfmi6zinUECPeWVQ5Hs9gsTSHKH9ANb','1tPZWIgsKMWtH2ilH7Xb8cCR67P2Yk8QW'], address:'Calle Boulevard 106, Dpto 303',             district:'Santiago de Surco', type:'Departamento', price:188000,  cur:'$', area:105,    beds:2, baths:2,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Venta'},
+  {id:'41-CI1419-25',photos:['1jyKrpnvdybgKY2xiYWRBOCi40w-YgnoH','1ujK0MQDrnzukMdFS9mo4Hz1KK6JtYm_a','17ewKH46atHBHXTM_-06kCt4NdJagd4dn','1R3XCHKnWxrKCPTDmEaMkg2NNTOtDCB6G','1I821by1Ip4XSaf7k56WG0snWdF5JiOpg','1xnyw9NR2Vz3KfVdrMh02q72lZlA0k_xd','194qRGhFLgaJg2Lc40uEBNMhH9jRpYvnb','1s71aYKZQFYlVsIzM37ryz8rFzsfM-zS0'], address:'Calle Carlos García Bedoya 175, Urb. Aurora',district:'Miraflores',       type:'Casa',         price:790000,  cur:'$', area:403,    beds:4, baths:3.5, park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏡', op:'Venta'},
+  {id:'39-CI1743-25',photos:['1AJGMqtiSUf0GPFDnqv3ycW1OW41Dnt2W'], address:'Calle Manco Cápac 6, Dpto 7',               district:'Miraflores',       type:'Departamento', price:495000,  cur:'$', area:225,    beds:3, baths:3,   park:2, floor:7, floors:7,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Venta'},
 ];
-(function renderFeatured(){
+
+// Propiedades destacadas — Alquiler
+const FEATURED_ALQ=[
+  {id:'10-CI16-1-25', photos:['1ZrCnvrfE5VmgobFMn1npmIPoten-pj2z','1A2hfFcl2kLEW3-W1SHBQRvJwU97TG8zP','1xUvRvggsYjhmbuu_uQEFH2hdi14D_Tb9','1go84W9HSiSJnSk8a0Xn8htN8V9_obCsc','1Urvg6qcwuATMvpQX4lHIXaSFrR2bpPjz','1NeJv29l7YixznsMnqo2CdN62J0ImFXXi','1aj2EV1zIhC2xP6HL8WAZ0DvmhrN2Kgau'], address:'Av. Lima Polo Hunt, Dpto 301',              district:'Santiago de Surco', type:'Departamento', price:1200,   cur:'$', area:94,     beds:3, baths:2,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Alquiler'},
+  {id:'11-CI17-3-25', photos:['1e47-FBQ7M66z_dSp-KLrIrfhcLzKzguR','1Dduku3kHqWcstrc7BIOJ67AEBWrmJEEx','1EHOT_niD1-gCjqGHmzF4DMkGKpBd_7UK','1yq_pIWh7e0vGzJ9VaPrOuE0ikW-cO5qA','1KNT-BEnt78YmP8nBrqH-TZQ0RQciYRc0','1mYWkGB2FMxlIw0bkMMs1iHu1hCJx0Q63'], address:'Calle Buenos Aires 2, Dpto 3',              district:'Miraflores',       type:'Departamento', price:1300,   cur:'$', area:94,     beds:3, baths:2,   park:1, floor:1, floors:1,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Alquiler'},
+  {id:'30-CI1413-25', photos:['1lFZxwEy5-eCZ0ftLbbP810vdsV9olTgc','1nf5LlN4Qg-pNRXQQnUzgkOZYkIrgnqzo','1MBcrAZ_UOU2Xym_LdpbvYL8aReNckJ4p','1m5-FhHbdLzHSv_JVJv4r-XuIYZpfDDb0','14JThCHTVoTWM70f-aYVUPCP0C_OeJiOG','1qGjMBp2up0D6gYJubA5sRVRHd3cExSh7','1lHg_AaajFkSzf2EYfQJ7HhaXhS7XN-o1','1cQHtn160NzmEHkrYjOBCqOAexXtUMWed'], address:'Av. Gral. Juan Antonio Pezet 375, Dpto 501', district:'San Isidro',       type:'Departamento', price:12000,  cur:'$', area:798,    beds:4, baths:4,   park:7, floor:5, floors:5,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Alquiler'},
+  {id:'17-CI1620-25', photos:['1L3vDTG-wtZxDt5xeUXo5uyLNvIDMZ4fc','11xb2kyqtlk3MkSMQwo5e1uT29URl7rip','1G_b9CysqZgyxGYXkrJJlG115jqjVymiJ','14HT9cgBJGVOFO8IJ-EMj2tmvFADcD1Db','1GUUTwjU-Gm9zJwLiiNhGtDMDSsJnEXCm','1gvvVZdkeFTPKQ_qhhOCeVQDZ61B3fsfO','1LDvapvoR4RiGjHDh1Gb83al9HU3rhe1f','1rOGhm2tpQDK3qjv6usUxUfWHLBRI7nom'], address:'Calle Conde de la Vega 333, Urb. Chacarilla',district:'Santiago de Surco', type:'Casa',         price:3500,   cur:'$', area:600,    beds:3, baths:2,   park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏡', op:'Alquiler'},
+  {id:'224-RP6338-25',photos:['1EjBnUdQSA8RPFAlUrEvnMH5uywKouaSy','1csgMxgV7gTzsxWtgLwDc-cm8c5XTHz7U','1gjS_BOXU-KzTEMFzFK_Sl6xSWi3QLciJ','1e2SY6O6_yUMJVLisjry4fiA7atLhHNNL','1s_PR8Lc25niH2jH3yYtLxdkEybez4puV','1ciUrk_vBxXLqxTG5S1l7qBa06O1u3H9X','1cK2-U4PDPGyHk1G2JFyAEi61LJmiQVUI','14h0_g4M16kDLQ_FixR-6SeZxbnamxAxb'], address:'Av. Primavera 1985',                        district:'Santiago de Surco', type:'Departamento', price:1300,   cur:'$', area:163,    beds:4, baths:4,   park:2, floor:1, floors:2,  gradient:'linear-gradient(135deg,#fb923c,#f97316)', emoji:'🏙️', op:'Alquiler'},
+  {id:'263-RP4792-25',photos:['16S3YVGEdN85kUMsIdevENn55wxOS_r9D','1AvoTry36r6FxO_Iy60MzntSl01pwCmvT','1T5ldvAxqshEcoift3tE46rYm5RB_2Zk2','17a0t80oylDkK7AWfNPZhtLJQUKP7XWBx','1fMhyzIhxSpAE60hAtCpdyUyGyoSuIoN3','1iQV_OAWAV620S1G6Gsq4wqBmOGBVllON','1Q8GUCEH6i6JoWq3aZTe9vfSCWyCbPYSU','1uyLOytVaz2SPUsh0bHtACAcEeLm5Ldxu'], address:'Paseo Real 139',                            district:'La Molina',        type:'Departamento', price:600,    cur:'$', area:50,     beds:2, baths:1,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Alquiler'},
+  {id:'286-RP3786-25',photos:['1o0lxdi8p8cdA1ej54bTOLShPOLzxq6_F','14g2YmyflqWC3m9M2I_7jNDxyWf8Ao7Vo','1J8YKgAo7hKpBAW_RcEi9KJH5UrNBGlkw','1ltcuq9TrcjCWX8NG3eq1qBjVUtjCIdwZ','1-2k5HAEquSQlkLDz8SI6T9pM21KUG7Dx','1pOi7ZUUDmu_LypGQdz0ddCtx_79Xp_Hk','1BglaAnrMm9gelgv5AxQxX8K-A9BtfQAi','1M5CH57yMFkXTwLSPfbKwdSWKgwxo89YQ'], address:'Condominio Asia Azul',                      district:'Asia',             type:'Casa',         price:3600,   cur:'$', area:123,    beds:4, baths:3,   park:2, floor:0, floors:0,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏡', op:'Alquiler'},
+  {id:'31-CI1753-25', photos:['1Vv4qUGJzahmUIBSjuz_shTi-DdlCy51z','1GZiMcjgrqLzDchucjc3Ds-_QKS7_QDl3','16RxQA9tSlHQfr2xEex3gJr_c7j5hW6Lh','19i58SRoczCdIUoWHf1dhsnHv5Ab2gd81','1XIrzuDgDkZaLnJ3Cq22eFXiYGORLci5x','1oLMEPrAmWdarfZFy67WgYkymDjIS7Aff','15xwhQSopFhA6hVsGegI75NhZnqL-Xi5Y','1P4hSVcOqBSNF3pmut4I_UNL4eUyD8eRB'], address:'Malecón Playa La Quebrada 1',               district:'Punta Negra',      type:'Casa',         price:9500,   cur:'$', area:500,    beds:8, baths:5,   park:3, floor:0, floors:0,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏡', op:'Alquiler'},
+];
+
+// Propiedades de Estreno (mix venta + alquiler)
+const FEATURED_ESTRENO=[
+  {id:'157-CI1706-25',photos:['1X6tRa2sTZqzR8KkEt2FH3ELXAUh3Adyz','1hGN8FgtFGxuFOHyJsI7rN9aW_breoJ09','1FCbXEo-Aarkijjh8viStenM4inJMIL3T','1xRkHO-yunyEhMqmM-6RcHFxBV8Spai3y','1hgxPY1dI0y8znG_iwnV7AO8Z9nq1uARU','1QPugWB_rN56fqtDobBqyISYHZox0_EIa','1snncsxPQ1dyIpGcrvJI-52FTmWAHyaHf','10tE17dcSquEiP2l_gnFQixdocqQeCOTf'], address:'Av. José Pardo 1543, Dpto AX3',              district:'Miraflores',       type:'Departamento', price:151900,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:3, floors:23, gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Venta'},
+  {id:'178-CI1660-25',photos:['15LEOHGAXfY2TXGpS4ksB4Gie9uXwAJ5b','1DkKwYDta_WbNbc7xTiuTBSejPM_euEZE','1B4KEcrUeT0clf-84LdX5Y8GGKGGHE3Uo','1Tf6tQqaBYzSf2Ps_PYZpBr0G6aldc7tZ','14SF2_FqDbpAKDpVbgsFc6HLoDrCkQIDB','1UvIh4n08UHydifv5vTE-2TuAooJzlWMe','1PYHYfUd5vOeYgM130ucKBuJBimUeEpvo','1mKCgPrrZtOeS718x9pL_dHgLk26y1irD'], address:'Av. José Ramírez Gastón 375, Dpto 201-302',  district:'Miraflores',       type:'Departamento', price:287288,  cur:'$', area:111,    beds:2, baths:2.5, park:1, floor:2, floors:6,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Venta'},
+  {id:'166-CI1716-25',photos:['1CDwVD6OMlUTMALWybPjFiC4RfiRp-DmZ','1cQNx7VUj7xZORDqk6taQnD5vj5RSp41K','1WXoGLoESbZKazhl27WhFth1IKMNWXGXe','1zMCuO20pOLbs5XTF5iQ3ad1qgiaqafWA','1jvd56mSU7DzqxYoyHBDNHOeAJ16YSiY1','1IyjveHC2U_iFWcvMgm0o_tMzO0glv8bU','1jNzsC_BypQGSghWHqjTFqtUswxYB--G3','1luYLHneVeNc1uo0IuT8iZVaZkDtvzTxp'], address:'Av. José Pardo 1543, Dpto AX8c',             district:'Miraflores',       type:'Departamento', price:147400,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Venta'},
+  {id:'167-CI1715-25',photos:['1dyy29NibiN8qwKqyLEHpiaoMBy3py8ZF','1HtqKYzCggB1SJEXxGDLGFuAX6awTMIuP','1eUEq2DxzrxWNGXnsVCWPQ0ddV0Dqo1sQ','16X_W4YRZw2Q9arlnHbHwylr7jcWg58nI','1udAC9Zpr1VMG123rb38XMLECh3HcK8nv','1TOS2Qtmh52guzEZu9qIBonKLAcM3GGOp','1hY_FoQX4KdmpovtEFbv-dlGUkrsnrh75','1EifHxHZbKUIVts8fTtzaN7ZMTPQBpzB3'], address:'Av. José Pardo 1543, Dpto AX8i',             district:'Miraflores',       type:'Departamento', price:141000,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#fb923c,#f97316)', emoji:'🏙️', op:'Venta'},
+  {id:'294-RP3445-25',photos:['11IngRbzRlD-5Fl5UvuDc593NJ8zaHSQD','1wib6eS3CXXb99RulKHR1wWf-aq-IpMYS','1JrLoaqBRpphslzZCax2JNgxucLxgOqb3','1nTWsd3tN_cJzyHfM6GRBZqRrqAKjvmeu','1zdSzcrLZby6wt0JUjdjsBT8UkWCkelxd','1MvnnJfJYtce_1gOVyu816bQHNx4uWjHy','1hCMH10e70IqFcd7uEEQ3RMjfWVXvH6F7','1op1itDGszcIuu9zBshPCEyd4NAZnhyRf'], address:'Av. Las Palmeras 51',                        district:'San Bartolo',      type:'Departamento', price:850,    cur:'$', area:66,     beds:3, baths:2,   park:1, floor:9, floors:9,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Alquiler'},
+  {id:'296-RP3353-25',photos:['1Qpg4ES7hdRSEZuYr13HKtmOFhiobsms5','1gnjHkqcT-abe05tDpdJhmdgxvSKg70rP','1mtvv1eCk5mF5VqMnlf7f3-2XXNpDqU9d','1GlifUweaazppbWfn62pG00RteMrjqoCj','1UHoKcCS7k-1B2thhOK0M4fxi8SUWLtGS','1dn0dS03WMOJcSeLHyLUAGUROIUNufkUw','1LGzT-xBhU10G0QP3-OnIC3gprAFOiAkm','1CGoZNCNrHybyj3WIYejwfoTbu2XFq8sJ'], address:'Av. Principal 818',                          district:'Surquillo',        type:'Departamento', price:720,    cur:'$', area:48,     beds:2, baths:2,   park:1, floor:9, floors:9,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Alquiler'},
+  {id:'365-RP0198-25',photos:['1W6otvJ31Q5AQRpPfcf0g5vt6xrzKqeuT','1Qq3ica05BVq8ZZmDQtN0YtWVFhEsDgCq','1DVpGLNcv_yNc6lDA4l33sp6RiA_K8DqD','1OYDrA90Dy0ty0c1NnwoIshl-PoW4NrDs','1kgIXk5xhKRt9vIS-s_6V9ep-qt-n4kPV','1bFvVH3W1O87BVhrs9g7YAth14-o8_pJY','1a6HkfiM_r8yZ4-ZiMEOOyc-ldkohmdW6','1sfTJyyYl-5rR5gdnvEsk07rgF3LWEKFv'], address:'Av. La Paz 118',                             district:'San Miguel',       type:'Departamento', price:1950,   cur:'S/', area:78,     beds:2, baths:2,   park:2, floor:7, floors:7,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Alquiler'},
+  {id:'263-RP4792-25b',photos:['16S3YVGEdN85kUMsIdevENn55wxOS_r9D','1AvoTry36r6FxO_Iy60MzntSl01pwCmvT','1T5ldvAxqshEcoift3tE46rYm5RB_2Zk2','17a0t80oylDkK7AWfNPZhtLJQUKP7XWBx','1fMhyzIhxSpAE60hAtCpdyUyGyoSuIoN3','1iQV_OAWAV620S1G6Gsq4wqBmOGBVllON','1Q8GUCEH6i6JoWq3aZTe9vfSCWyCbPYSU','1uyLOytVaz2SPUsh0bHtACAcEeLm5Ldxu'], address:'Paseo Real 139',                            district:'La Molina',        type:'Departamento', price:600,    cur:'$', area:50,     beds:2, baths:1,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Alquiler'},
+];
+
+// Propiedades de Lujo (mix venta + alquiler)
+const FEATURED_LUJO=[
+  {id:'37-CI1476-25', photos:['1GkYmnbwIpNizXnVQ4_rc2IX4HeS2Jfj7','1PLQyhJPuARyNe8icNXWhLcsmP_Rno0ue','1zhp9171lQoVWvQLn9FlxfKQvbGO3pyfz','18_FBrcGdsOC3Xmg9H-feFeXyBJhM0hgk','10SECdWQBBYn-iLyEcI9Q64BBOU4aYwhA','1fpziEoaswV9gpdnkKjqPTecOu-GyNyy3','1lqS90oueXEYQEL1F68bnPnouuw-rU6xX','1hoob05nuH7a_dWK8BR2I0fIE7pilSwNv'], address:'Calle Bresciani 153, Dpto 501 D',            district:'Barranco',         type:'Departamento', price:2400000, cur:'$', area:595,    beds:6, baths:6.5, park:5, floor:5, floors:5,  gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
+  {id:'118-CI1508-25',photos:['1APiOfUkhPHRlPbE8f15VmTdBMvncoi6Z','1ngteKClxvYMHWiNPZltBbn0N4pmnCPJd','1nxP-55YFo6MQbqnAQr-5COvhO_vSxrwt','1Wee4NhI-tceFcu9u0p15CFP0VfVNepgI','1Dcqn3R1HQRvmtnTywlJplYqWbBHUr8jg','1X6TbwfUxGeMcGS_laG7GJJHU5NmWbn4x','1KZP4Ycr79dSOuRlWkZJB0ryPt5k7o3Er','1-YZm26PLH3zXKD9F0M9HbhlqFz3rgLWd'], address:'Calle Las Viñas 126, Dpto 204',              district:'Miraflores',       type:'Departamento', price:716112,  cur:'$', area:244,    beds:3, baths:3.5, park:2, floor:2, floors:4,  gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Venta'},
+  {id:'130-CI1724-25',photos:['18AIVTP85Db3JIJ6Fub9Eo9qK-gFZTANj','1mxbqxdGV1a6PbLVkA2F_U9N9ucDW7de9','1ebb4YHpsBP-F-okq2fANOBVglD2i27Q3','1iaerxxnRkx-JmWTg2x2NNyyULZEb-T0A','1tDT4Jf1J28HQX7wCYc7GWGfH9j5xk_99','11HYU1OmfHMNZZ74QusYtXnYonGdm4HAb','1raAy3tufhfY-Y4N57Kylxi-Y7dyL6oZZ','1ZvVJNJ8hWG_EpZ8In9ZbuwYTNO_ER2I0'], address:'Calle José Nicolás Rodrigo 250, Magna Haus', district:'Santiago de Surco', type:'Departamento', price:350000,  cur:'$', area:172,    beds:3, baths:3.5, park:2, floor:1, floors:4,  gradient:'linear-gradient(135deg,#0c3547,#1a5276)', emoji:'🏙️', op:'Venta'},
+  {id:'466-RP4664-25',photos:['1708hHTjQJyU2DB1yQ7Ebi461RetBuC7u','1BBYZ4Qy8OSrM8cPvHcYQD9rYBbeYC8xe','1ySDwJG8tWwU-7A6sHg4wz0SiHmwBR8hD','1ZEVV_v0kaZlUbmjSCxIyyQAbCjokWpGH','1jZ05Isbi82hWcHm2eJnPNAERDzUyBc7r','1cEQbSMaDjryvlNo-NawsPq2ZTBre7ZvS','1c3k25OEWTqtDeOSjMiWj3VVQOnmdd9id','1hNtxJ9D1YwK-6MaSHdNEgOxog2PIGz9M'], address:'Av. Manuel Villarán 460',                    district:'Miraflores',       type:'Departamento', price:220000,  cur:'$', area:114,    beds:3, baths:3.5, park:3, floor:3, floors:3,  gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
+  {id:'157-CI1706-25b',photos:['1X6tRa2sTZqzR8KkEt2FH3ELXAUh3Adyz','1hGN8FgtFGxuFOHyJsI7rN9aW_breoJ09','1FCbXEo-Aarkijjh8viStenM4inJMIL3T','1xRkHO-yunyEhMqmM-6RcHFxBV8Spai3y','1hgxPY1dI0y8znG_iwnV7AO8Z9nq1uARU','1QPugWB_rN56fqtDobBqyISYHZox0_EIa','1snncsxPQ1dyIpGcrvJI-52FTmWAHyaHf','10tE17dcSquEiP2l_gnFQixdocqQeCOTf'], address:'Av. José Pardo 1543, Dpto AX3',              district:'Miraflores',       type:'Departamento', price:151900,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:3, floors:23, gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Venta'},
+  {id:'166-CI1716-25b',photos:['1CDwVD6OMlUTMALWybPjFiC4RfiRp-DmZ','1cQNx7VUj7xZORDqk6taQnD5vj5RSp41K','1WXoGLoESbZKazhl27WhFth1IKMNWXGXe','1zMCuO20pOLbs5XTF5iQ3ad1qgiaqafWA','1jvd56mSU7DzqxYoyHBDNHOeAJ16YSiY1','1IyjveHC2U_iFWcvMgm0o_tMzO0glv8bU','1jNzsC_BypQGSghWHqjTFqtUswxYB--G3','1luYLHneVeNc1uo0IuT8iZVaZkDtvzTxp'], address:'Av. José Pardo 1543, Dpto AX8c',             district:'Miraflores',       type:'Departamento', price:147400,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#0c3547,#1a5276)', emoji:'🏙️', op:'Venta'},
+  {id:'167-CI1715-25b',photos:['1dyy29NibiN8qwKqyLEHpiaoMBy3py8ZF','1HtqKYzCggB1SJEXxGDLGFuAX6awTMIuP','1eUEq2DxzrxWNGXnsVCWPQ0ddV0Dqo1sQ','16X_W4YRZw2Q9arlnHbHwylr7jcWg58nI','1udAC9Zpr1VMG123rb38XMLECh3HcK8nv','1TOS2Qtmh52guzEZu9qIBonKLAcM3GGOp','1hY_FoQX4KdmpovtEFbv-dlGUkrsnrh75','1EifHxHZbKUIVts8fTtzaN7ZMTPQBpzB3'], address:'Av. José Pardo 1543, Dpto AX8i',             district:'Miraflores',       type:'Departamento', price:141000,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
+  {id:'30-CI1413-25b', photos:['1lFZxwEy5-eCZ0ftLbbP810vdsV9olTgc','1nf5LlN4Qg-pNRXQQnUzgkOZYkIrgnqzo','1MBcrAZ_UOU2Xym_LdpbvYL8aReNckJ4p','1m5-FhHbdLzHSv_JVJv4r-XuIYZpfDDb0','14JThCHTVoTWM70f-aYVUPCP0C_OeJiOG','1qGjMBp2up0D6gYJubA5sRVRHd3cExSh7','1lHg_AaajFkSzf2EYfQJ7HhaXhS7XN-o1','1cQHtn160NzmEHkrYjOBCqOAexXtUMWed'], address:'Av. Gral. Juan Antonio Pezet 375, Dpto 501', district:'San Isidro',       type:'Departamento', price:12000,   cur:'$', area:798,    beds:4, baths:4,   park:7, floor:5, floors:5,  gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Alquiler'},
+];
+
+const ALL_FEATURED = [...FEATURED_VENTA, ...FEATURED_ALQ, ...FEATURED_ESTRENO, ...FEATURED_LUJO];
+
+function renderCarousel(items, containerId, badgeClass, badgeLabel) {
   const fmt = n => n.toLocaleString('es-PE');
   const sqm = p => Math.round(p.price / p.area).toLocaleString('es-PE');
   const loc = p => {
@@ -433,16 +532,24 @@ const FEATURED=[
     if(p.floor > 1 && p.floors > 1) s += ' · Piso ' + p.floor + '/' + p.floors;
     return s;
   };
-  const baths = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
-  document.getElementById('featuredGrid').innerHTML = FEATURED.map(p => `
-    <div class="prop-card" onclick="location.href='Versión final Thaiz.html#prop=${encodeURIComponent(p.id)}'">
+  const bathsFmt = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
+  const imgUrl = id => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+  const offsets = {featuredGridVenta:0, featuredGridAlq:FEATURED_VENTA.length, featuredGridEstreno:FEATURED_VENTA.length+FEATURED_ALQ.length, featuredGridLujo:FEATURED_VENTA.length+FEATURED_ALQ.length+FEATURED_ESTRENO.length};
+  const globalOffset = offsets[containerId] || 0;
+  document.getElementById(containerId).innerHTML = items.map((p, i) => {
+    const idx = globalOffset + i;
+    return `
+    <div class="prop-card" data-card="${idx}" onclick="location.href='index.html#prop=${encodeURIComponent(p.id)}'">
       <div class="prop-img" style="background:${p.gradient}">
         <span class="prop-emoji">${p.emoji}</span>
-        <img src="https://drive.google.com/thumbnail?id=${p.foto1}&sz=w800"
+        <img class="prop-photo" src="${imgUrl(p.photos[0])}"
              style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"
              onerror="this.remove()"
              onload="this.closest('.prop-img').querySelector('.prop-emoji').style.display='none'">
-        <div class="prop-badges"><span class="pbadge pb-venta">Venta</span><span class="pbadge pb-type">${p.type}</span></div>
+        <button class="img-arrow img-arrow-left" onclick="event.stopPropagation();slideImg(${idx},-1)">&#10094;</button>
+        <button class="img-arrow img-arrow-right" onclick="event.stopPropagation();slideImg(${idx},1)">&#10095;</button>
+        <div class="img-dots">${p.photos.map((_,di) => `<span class="img-dot${di===0?' active':''}" data-dot="${idx}-${di}"></span>`).join('')}</div>
+        <div class="prop-badges"><span class="pbadge ${p.op==='Alquiler'?'pb-alq':'pb-venta'}">${p.op==='Alquiler'?'Alquiler':'Venta'}</span><span class="pbadge pb-type">${p.type}</span></div>
       </div>
       <div class="prop-body">
         <div class="prop-addr">${p.address}</div>
@@ -450,14 +557,69 @@ const FEATURED=[
         <div class="prop-specs">
           <span class="prop-spec">📏 ${p.area % 1 === 0 ? p.area : p.area.toFixed(0)} m²</span>
           <span class="prop-spec">🛏 ${p.beds}</span>
-          <span class="prop-spec">🚿 ${baths(p.baths)}</span>
+          <span class="prop-spec">🚿 ${bathsFmt(p.baths)}</span>
           <span class="prop-spec">🚗 ${p.park}</span>
         </div>
-        <div class="prop-price">${p.cur} ${fmt(p.price)}</div>
+        <div class="prop-price">${p.cur} ${fmt(p.price)}${p.op==='Alquiler'?' /mes':''}</div>
         <div class="prop-sqm">${p.cur} ${sqm(p)} / m²</div>
       </div>
-    </div>`).join('');
-})();
+    </div>`;
+  }).join('');
+}
+
+renderCarousel(FEATURED_VENTA, 'featuredGridVenta', 'pb-venta', 'Venta');
+renderCarousel(FEATURED_ALQ, 'featuredGridAlq', 'pb-alq', 'Alquiler');
+renderCarousel(FEATURED_ESTRENO, 'featuredGridEstreno', 'pb-venta', 'Estreno');
+renderCarousel(FEATURED_LUJO, 'featuredGridLujo', 'pb-venta', 'Lujo');
+
+// Image carousel per card
+const imgIndexes = ALL_FEATURED.map(() => 0);
+function slideImg(cardIdx, dir) {
+  const p = ALL_FEATURED[cardIdx];
+  const total = p.photos.length;
+  imgIndexes[cardIdx] = (imgIndexes[cardIdx] + dir + total) % total;
+  const newIdx = imgIndexes[cardIdx];
+  const card = document.querySelector(`[data-card="${cardIdx}"]`);
+  const img = card.querySelector('.prop-photo');
+  const url = `https://drive.google.com/thumbnail?id=${p.photos[newIdx]}&sz=w800`;
+  if (img) {
+    img.src = url;
+  } else {
+    const propImg = card.querySelector('.prop-img');
+    const newImg = document.createElement('img');
+    newImg.className = 'prop-photo';
+    newImg.src = url;
+    newImg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover';
+    newImg.onerror = function(){ this.remove(); };
+    newImg.onload = function(){ this.closest('.prop-img').querySelector('.prop-emoji').style.display='none'; };
+    propImg.insertBefore(newImg, propImg.children[1]);
+  }
+  card.querySelectorAll('.img-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === newIdx);
+  });
+}
+
+// Properties carousel navigation
+function scrollCarousel(gridId, dir) {
+  const grid = document.getElementById(gridId);
+  const cardWidth = grid.querySelector('.prop-card').offsetWidth + 16;
+  grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
+}
+function initCarouselArrows(gridId, leftId, rightId) {
+  const grid = document.getElementById(gridId);
+  const leftBtn = document.getElementById(leftId);
+  const rightBtn = document.getElementById(rightId);
+  function update() {
+    leftBtn.classList.toggle('disabled', grid.scrollLeft <= 0);
+    rightBtn.classList.toggle('disabled', grid.scrollLeft >= grid.scrollWidth - grid.clientWidth - 2);
+  }
+  grid.addEventListener('scroll', update);
+  update();
+}
+initCarouselArrows('featuredGridVenta', 'carouselLeftVenta', 'carouselRightVenta');
+initCarouselArrows('featuredGridAlq', 'carouselLeftAlq', 'carouselRightAlq');
+initCarouselArrows('featuredGridEstreno', 'carouselLeftEstreno', 'carouselRightEstreno');
+initCarouselArrows('featuredGridLujo', 'carouselLeftLujo', 'carouselRightLujo');
 
 const DISTRICTS=['San Isidro','Miraflores','Santiago de Surco','Barranco','La Molina','San Borja','San Miguel','San Bartolo','Jesús María','Pueblo Libre','Magdalena del Mar','Lince','Chorrillos','Surquillo','San Luis','El Agustino','La Victoria','Breña','Rímac','Independencia','Los Olivos','Comas','Ate','Santa Anita','San Juan de Lurigancho','Villa El Salvador','Villa María del Triunfo','San Juan de Miraflores','Lurin','Pachacamac'];
 const PROP_SUGGESTIONS=[
@@ -541,7 +703,7 @@ async function _fetchGeoLanding(q){
 function pickLanding(val){
   document.getElementById('heroQ').value=val;
   document.getElementById('sgDropLanding').style.display='none';
-  window.location='Versión final Thaiz.html#q='+encodeURIComponent(val);
+  window.location='index.html#q='+encodeURIComponent(val);
 }
 function pickGeoLanding(lat,lng,label){
   document.getElementById('heroQ').value=label;
@@ -552,9 +714,9 @@ function goSearch(){
   const q=document.getElementById('heroQ').value.trim();
   document.getElementById('sgDropLanding').style.display='none';
   if(_lastGeoL){
-    window.location=`Versión final Thaiz.html#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`;
+    window.location=`index.html#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}`;
   } else {
-    window.location='Versión final Thaiz.html'+(q?'#q='+encodeURIComponent(q):'');
+    window.location='index.html'+(q?'#q='+encodeURIComponent(q):'');
   }
 }
 document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('sgDropLanding').style.display='none';});
