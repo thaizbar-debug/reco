@@ -1315,6 +1315,62 @@ body.show-home{overflow:auto;height:auto}
 #homeView .footer-legal a{font-size:.7rem;color:rgba(255,255,255,.3);transition:color .12s}
 #homeView .footer-legal a:hover{color:#fff}
 
+/* LEGAL OVERLAYS */
+.legal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
+.legal-overlay.open{opacity:1;pointer-events:all}
+.legal-modal{background:#fff;border-radius:20px;width:100%;max-width:760px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+.legal-overlay.open .legal-modal{transform:translateY(0);opacity:1}
+.legal-modal-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.legal-modal-close{background:none;border:1.5px solid var(--border);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0;color:var(--muted);transition:background .12s}
+.legal-modal-close:hover{background:var(--light)}
+.legal-hero{margin-bottom:0}
+.legal-eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+.legal-hero h1{font-size:1.5rem;font-weight:900;letter-spacing:-.3px;line-height:1.15;margin-bottom:8px}
+.legal-lead{font-size:.92rem;color:var(--muted);line-height:1.6}
+.legal-meta{display:flex;gap:16px;margin-top:14px;font-size:.82rem;color:var(--muted);line-height:1.55}
+.legal-meta div{flex:1;padding:12px;background:var(--light);border-radius:var(--r);border:1px solid var(--border)}
+.legal-meta strong{color:var(--txt)}
+.legal-doc{padding:0 28px 28px}
+.legal-doc section{margin-top:22px}
+.legal-doc h2{font-size:1rem;font-weight:800;margin-bottom:8px;color:var(--txt)}
+.legal-doc h3{font-size:.88rem;font-weight:700;margin:12px 0 4px;color:var(--txt)}
+.legal-doc p{font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:6px}
+.legal-doc ul{font-size:.85rem;color:var(--muted);line-height:1.65;padding-left:20px;margin-bottom:6px}
+.legal-doc a{color:var(--blue);text-decoration:underline}
+.legal-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+.legal-foot p{font-size:.78rem;color:var(--muted)}
+.rec-form{padding:0 28px 28px}
+.rec-section{margin-top:22px}
+.rec-section h2{font-size:1rem;font-weight:800;margin-bottom:12px;color:var(--txt)}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rec-col-2{grid-column:1/-1}
+.rec-field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.rec-field input,.rec-field select,.rec-field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;background:var(--surface);transition:border-color .14s;outline:none;color:var(--txt)}
+.rec-field input:focus,.rec-field select:focus,.rec-field textarea:focus{border-color:var(--blue)}
+.rec-field textarea{resize:vertical;font-family:inherit}
+.rec-counter{font-size:.7rem;color:var(--muted);text-align:right;margin-top:3px}
+.rec-pills{display:flex;gap:8px}
+.rec-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.85rem;cursor:pointer;transition:border-color .14s,background .14s}
+.rec-pill input{display:none}
+.rec-pill.active{border-color:var(--blue);background:#ecfeff;color:var(--blue);font-weight:700}
+.rec-legal{font-size:.78rem;color:var(--muted);line-height:1.6;padding:16px 28px 0}
+.rec-legal a{color:var(--blue);text-decoration:underline}
+.rec-actions{padding:16px 28px 28px;display:flex;gap:10px}
+.rec-actions .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .12s}
+.rec-actions .btn-primary:hover{opacity:.88}
+.rec-actions .btn-ghost{background:none;border:1.5px solid var(--border);padding:12px 22px;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--muted);transition:background .12s}
+.rec-actions .btn-ghost:hover{background:var(--light)}
+.rec-success{text-align:center;padding:60px 28px}
+.rec-success-badge{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.rec-success h1{font-size:1.4rem;font-weight:900;margin-bottom:8px}
+.rec-success-code{margin:20px auto;padding:16px 24px;background:var(--light);border:1.5px solid var(--border);border-radius:var(--r);display:inline-block}
+.rec-success-code span{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.rec-success-code strong{font-size:1.1rem;color:var(--txt)}
+.rec-success-actions{margin-top:24px;display:flex;gap:10px;justify-content:center}
+.rec-success-actions .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer}
+.rec-success-actions .btn-ghost{background:none;border:1.5px solid var(--border);padding:12px 22px;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--muted)}
+@media(max-width:600px){.rec-grid{grid-template-columns:1fr}.legal-meta{flex-direction:column}}
+
 @media(max-width:900px){#homeView .why-grid,#homeView .aud-grid{grid-template-columns:1fr 1fr}#homeView .ad-card{grid-template-columns:1fr}#homeView .ad-photo{min-height:200px}}
 @media(max-width:700px){#homeView header{grid-template-columns:1fr auto;padding:0 16px}#homeView .nav-left{display:none}#homeView .footer-grid{grid-template-columns:1fr 1fr}#homeView .hero-content{padding:0 5% 44px}}
 @media(max-width:560px){#homeView .why-grid,#homeView .aud-grid,#homeView .footer-grid{grid-template-columns:1fr}#homeView .footer-bottom{flex-direction:column;text-align:center}#homeView .tab{padding:7px 14px;font-size:.76rem}}
@@ -1589,9 +1645,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="footer-bottom">
       <p>© 2026 Reco · Lima, Perú · VANET DATA S.A.C. RUC 20553966800</p>
       <div class="footer-legal">
-        <a href="#">Términos de uso</a>
-        <a href="#">Privacidad</a>
-        <a href="#">Libro de Reclamaciones</a>
+        <a href="javascript:void(0)" onclick="openLegal('terminosOverlay')">Términos de uso</a>
+        <a href="javascript:void(0)" onclick="openLegal('privacidadOverlay')">Privacidad</a>
+        <a href="javascript:void(0)" onclick="openLegal('reclamacionesOverlay');renderReclamaciones()">Libro de Reclamaciones</a>
       </div>
     </div>
   </div>
@@ -1650,6 +1706,77 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
   </div>
 </div>
+</div>
+
+<!-- LEGAL: TÉRMINOS -->
+<div class="legal-overlay" id="terminosOverlay" onclick="if(event.target===this)closeLegal('terminosOverlay')">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <div class="legal-hero">
+        <div class="legal-eyebrow">Documento legal · Vigente desde Mayo 2026</div>
+        <h1>Términos y Condiciones Generales de Uso</h1>
+        <p class="legal-lead">Los presentes Términos regulan el uso de la plataforma Reco, ofrecida por <strong>VANET DATA S.A.C.</strong> (RUC 20553966800). Al usar la Plataforma, EL USUARIO declara haberlos leído, comprendido y aceptado.</p>
+      </div>
+      <button class="legal-modal-close" onclick="closeLegal('terminosOverlay')">✕</button>
+    </div>
+    <article class="legal-doc">
+      <section><h2>1. Condiciones generales y su aceptación</h2>
+        <p>Los presentes Términos regulan el uso de la plataforma Reco, creada y ofrecida por <strong>VANET DATA S.A.C.</strong>, con RUC No. 20553966800 y domicilio en Avenida Manuel Olguín No. 327, distrito de Santiago de Surco, Lima.</p>
+        <p>Estos Términos son aplicables a cada usuario, sean personas naturales o jurídicas, que tengan cuenta y/o utilicen la Plataforma. El uso de la Plataforma implica la aceptación expresa y plena de todos los Términos.</p>
+        <p>RECO se reserva el derecho de modificar estos Términos en cualquier momento, notificando mediante su publicación en la Plataforma.</p>
+      </section>
+      <section><h2>2. Objeto</h2>
+        <p>A través de la Plataforma, RECO provee: (1) Visualización de información referencial de inmuebles en Lima Metropolitana; (2) Publicación y promoción de inmuebles; (3) Adquisición de información sobre valorizaciones históricas.</p>
+      </section>
+      <section><h2>3. Condiciones de acceso</h2>
+        <h3>3.1 Uso</h3><p>El acceso es de uso personal. EL USUARIO no está autorizado a modificar, copiar, distribuir ni reproducir el software o la información obtenida.</p>
+        <h3>3.2 Reembolsos</h3><p>RECO se limita a la provisión de información referencial y no realiza reembolsos de ninguna índole.</p>
+        <h3>3.3 Propiedad intelectual</h3><p>RECO es titular de todos los derechos de propiedad intelectual de la Plataforma. La cesión de estos derechos está expresamente prohibida.</p>
+        <h3>3.4 Privacidad</h3><p>Los datos personales están protegidos bajo la Ley 29733. Revisa el <a href="javascript:void(0)" onclick="closeLegal('terminosOverlay');openLegal('privacidadOverlay')">Aviso de Privacidad</a>.</p>
+      </section>
+      <section><h2>4. Misceláneos</h2>
+        <h3>4.1 Ley aplicable</h3><p>Estos Términos están sujetos a las leyes de la República del Perú.</p>
+        <h3>4.2 Notificaciones</h3><p>Cualquier reclamo debe notificarse a: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
+        <h3>4.3 Jurisdicción</h3><p>EL USUARIO se somete a la jurisdicción de los tribunales de Lima Cercado.</p>
+      </section>
+      <footer class="legal-foot"><p>VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
+    </article>
+  </div>
+</div>
+
+<!-- LEGAL: PRIVACIDAD -->
+<div class="legal-overlay" id="privacidadOverlay" onclick="if(event.target===this)closeLegal('privacidadOverlay')">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <div class="legal-hero">
+        <div class="legal-eyebrow">Protección de datos · Ley 29733</div>
+        <h1>Aviso de Privacidad</h1>
+        <p class="legal-lead">VANET DATA S.A.C. ("RECO"), con domicilio en Av. Manuel Olguín 327, Santiago de Surco, Lima, RUC 20553966800, actúa como responsable del tratamiento de los datos personales.</p>
+      </div>
+      <button class="legal-modal-close" onclick="closeLegal('privacidadOverlay')">✕</button>
+    </div>
+    <article class="legal-doc">
+      <section><h2>1. Banco de datos</h2><p>RECO es titular del banco de datos <em>"Usuarios Web"</em>.</p></section>
+      <section><h2>2. Finalidad del tratamiento</h2>
+        <h3>Esenciales</h3><ul><li>Gestión de la relación comercial y contractual.</li><li>Prestación de servicios ofrecidos por RECO.</li><li>Procesamiento de pagos.</li><li>Cumplimiento de obligaciones legales.</li></ul>
+        <h3>Adicionales</h3><ul><li>Envío de comunicaciones comerciales y promocionales.</li></ul>
+      </section>
+      <section><h2>3. Datos recopilados</h2><p>Nombre, apellidos, dirección, correo electrónico, teléfono, datos bancarios y otros necesarios para cumplir con las finalidades descritas.</p></section>
+      <section><h2>4. Medidas de seguridad</h2><p>RECO implementa medidas técnicas, administrativas y físicas para garantizar la seguridad e integridad de los datos.</p></section>
+      <section><h2>5. Derechos del titular</h2>
+        <p>EL USUARIO puede ejercer derechos de acceso, rectificación, cancelación, oposición y portabilidad mediante solicitud escrita.</p>
+        <p>Puede presentar reclamaciones ante la Autoridad Nacional de Protección de Datos: Calle Scipión Llona 350, Miraflores, Lima.</p>
+      </section>
+      <section><h2>6. Cookies</h2><p>Este sitio utiliza cookies para mejorar la experiencia. Al navegar, EL USUARIO acepta su uso.</p></section>
+      <footer class="legal-foot"><p>Contacto DPO: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a></p></footer>
+    </article>
+  </div>
+</div>
+
+<!-- LEGAL: LIBRO DE RECLAMACIONES -->
+<div class="legal-overlay" id="reclamacionesOverlay" onclick="if(event.target===this)closeLegal('reclamacionesOverlay')">
+  <div class="legal-modal" id="reclamacionesModal">
+  </div>
 </div>
 
 <!-- ══════ HEADER ══════ -->
@@ -5415,6 +5542,70 @@ const forgotEmailEl = document.getElementById('forgotEmail');
 if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') sendPasswordReset();
 });
+
+// ── Legal overlays ───────────────────────────────────────────
+function openLegal(id){document.getElementById(id).classList.add('open');document.body.style.overflow='hidden';}
+function closeLegal(id){document.getElementById(id).classList.remove('open');document.body.style.overflow='';}
+
+// ── Libro de Reclamaciones ───────────────────────────────────
+var _recForm={tipo:'reclamo',bien:'servicio',nombres:'',apellidos:'',documentoTipo:'DNI',documentoNumero:'',email:'',telefono:'',domicilio:'',departamento:'Lima',provincia:'Lima',distrito:'',esMenor:false,apoderado:'',montoReclamado:'',descripcionBien:'',detalle:'',pedido:''};
+var _recSubmitted=null;
+
+function renderReclamaciones(){
+  var modal=document.getElementById('reclamacionesModal');
+  if(_recSubmitted){
+    modal.innerHTML='<div class="legal-modal-head"><div></div><button class="legal-modal-close" onclick="closeLegal(\'reclamacionesOverlay\')">✕</button></div><div class="rec-success"><div class="rec-success-badge">✓</div><h1>Reclamo registrado</h1><p class="legal-lead">Hemos recibido tu '+_recSubmitted.tipo+'. En máximo <strong>30 días calendario</strong> recibirás respuesta en <strong>'+_recSubmitted.email+'</strong>.</p><div class="rec-success-code"><span>Código de seguimiento</span><strong>'+_recSubmitted.codigo+'</strong></div><div class="rec-success-actions"><button class="btn-primary" onclick="_recReset()">Registrar otro</button><button class="btn-ghost" onclick="closeLegal(\'reclamacionesOverlay\');_recReset()">Volver al inicio</button></div></div>';
+    return;
+  }
+  modal.innerHTML='<div class="legal-modal-head"><div class="legal-hero"><div class="legal-eyebrow">INDECOPI · Código de Protección al Consumidor (Ley 29571)</div><h1>Libro de Reclamaciones</h1><p class="legal-lead">Conforme al Código de Protección y Defensa del Consumidor, puedes registrar tu queja o reclamo. Respondemos en máximo <strong>30 días calendario</strong>.</p><div class="legal-meta"><div><strong>Queja:</strong> disconformidad no relacionada con los servicios; malestar respecto a la atención.</div><div><strong>Reclamo:</strong> disconformidad relacionada con los servicios prestados.</div></div></div><button class="legal-modal-close" onclick="closeLegal(\'reclamacionesOverlay\')">✕</button></div>'+
+  '<div class="rec-form"><div class="rec-section"><h2>1. Identificación del consumidor</h2><div class="rec-grid">'+
+  '<div class="rec-field"><label>Nombres *</label><input id="rNombres" value="'+_recForm.nombres+'" oninput="_recForm.nombres=this.value" placeholder="Nombre(s)"></div>'+
+  '<div class="rec-field"><label>Apellidos *</label><input id="rApellidos" value="'+_recForm.apellidos+'" oninput="_recForm.apellidos=this.value" placeholder="Apellido(s)"></div>'+
+  '<div class="rec-field"><label>Tipo de documento</label><select oninput="_recForm.documentoTipo=this.value"><option'+ (_recForm.documentoTipo==='DNI'?' selected':'')+'>DNI</option><option'+(_recForm.documentoTipo==='CE'?' selected':'')+'>CE</option><option>Pasaporte</option><option>RUC</option></select></div>'+
+  '<div class="rec-field"><label>Número *</label><input id="rDocNum" value="'+_recForm.documentoNumero+'" oninput="_recForm.documentoNumero=this.value" placeholder="Número de documento"></div>'+
+  '<div class="rec-field"><label>Email *</label><input type="email" id="rEmail" value="'+_recForm.email+'" oninput="_recForm.email=this.value" placeholder="tu@email.com"></div>'+
+  '<div class="rec-field"><label>Teléfono *</label><input id="rTel" value="'+_recForm.telefono+'" oninput="_recForm.telefono=this.value" placeholder="+51 999 999 999"></div>'+
+  '<div class="rec-field rec-col-2"><label>Domicilio</label><input value="'+_recForm.domicilio+'" oninput="_recForm.domicilio=this.value" placeholder="Dirección completa"></div>'+
+  '<div class="rec-field"><label>Departamento</label><input value="'+_recForm.departamento+'" oninput="_recForm.departamento=this.value"></div>'+
+  '<div class="rec-field"><label>Provincia</label><input value="'+_recForm.provincia+'" oninput="_recForm.provincia=this.value"></div>'+
+  '<div class="rec-field"><label>Distrito *</label><input id="rDist" value="'+_recForm.distrito+'" oninput="_recForm.distrito=this.value" placeholder="Ej: Miraflores"></div>'+
+  '</div></div>'+
+  '<div class="rec-section"><h2>2. Identificación del bien contratado</h2><div class="rec-grid">'+
+  '<div class="rec-field"><label>Tipo</label><div class="rec-pills"><label class="rec-pill'+(_recForm.bien==='servicio'?' active':'')+'"><input type="radio" name="recBien" value="servicio" '+(_recForm.bien==='servicio'?'checked':'')+' onchange="_recForm.bien=\'servicio\';_updRecPills()"> Servicio</label><label class="rec-pill'+(_recForm.bien==='producto'?' active':'')+'"><input type="radio" name="recBien" value="producto" '+(_recForm.bien==='producto'?'checked':'')+' onchange="_recForm.bien=\'producto\';_updRecPills()"> Producto</label></div></div>'+
+  '<div class="rec-field"><label>Monto reclamado (S/ — opcional)</label><input type="number" value="'+_recForm.montoReclamado+'" oninput="_recForm.montoReclamado=this.value" placeholder="0.00"></div>'+
+  '<div class="rec-field rec-col-2"><label>Descripción del bien/servicio *</label><input value="'+_recForm.descripcionBien+'" oninput="_recForm.descripcionBien=this.value" placeholder="Ej: Suscripción Reco Pro, valuación de propiedad…"></div>'+
+  '</div></div>'+
+  '<div class="rec-section"><h2>3. Detalle de la reclamación</h2><div class="rec-grid">'+
+  '<div class="rec-field"><label>Tipo</label><div class="rec-pills"><label class="rec-pill'+(_recForm.tipo==='reclamo'?' active':'')+'"><input type="radio" name="recTipo" value="reclamo" '+(_recForm.tipo==='reclamo'?'checked':'')+' onchange="_recForm.tipo=\'reclamo\';_updRecPills()"> Reclamo</label><label class="rec-pill'+(_recForm.tipo==='queja'?' active':'')+'"><input type="radio" name="recTipo" value="queja" '+(_recForm.tipo==='queja'?'checked':'')+' onchange="_recForm.tipo=\'queja\';_updRecPills()"> Queja</label></div></div>'+
+  '<div></div>'+
+  '<div class="rec-field rec-col-2"><label>Detalle — ¿qué ocurrió? * (mín. 20 caracteres)</label><textarea id="rDetalle" rows="5" oninput="_recForm.detalle=this.value;document.getElementById(\'cntD\').textContent=this.value.length" placeholder="Describe los hechos con la mayor precisión posible.">'+_recForm.detalle+'</textarea><div class="rec-counter"><span id="cntD">'+_recForm.detalle.length+'</span>/1500</div></div>'+
+  '<div class="rec-field rec-col-2"><label>Tu pedido * (mín. 10 caracteres)</label><textarea id="rPedido" rows="3" oninput="_recForm.pedido=this.value;document.getElementById(\'cntP\').textContent=this.value.length" placeholder="¿Qué solución esperas? Reembolso, atención, corrección…">'+_recForm.pedido+'</textarea><div class="rec-counter"><span id="cntP">'+_recForm.pedido.length+'</span>/600</div></div>'+
+  '</div></div></div>'+
+  '<div class="rec-legal">Al enviar declaras que la información es veraz. Reco usará tus datos solo para atender tu reclamo, conforme a la Ley 29733 y el <a href="javascript:void(0)" onclick="closeLegal(\'reclamacionesOverlay\');openLegal(\'privacidadOverlay\')">Aviso de Privacidad</a>.</div>'+
+  '<div class="rec-actions"><button class="btn-primary" onclick="_recSubmit()">Enviar reclamo</button><button class="btn-ghost" onclick="_recReset()">Limpiar formulario</button></div>';
+}
+
+function _updRecPills(){document.querySelectorAll('#reclamacionesModal .rec-pill').forEach(function(p){var i=p.querySelector('input');p.classList.toggle('active',i&&i.checked);});}
+
+function _recReset(){_recSubmitted=null;_recForm={tipo:'reclamo',bien:'servicio',nombres:'',apellidos:'',documentoTipo:'DNI',documentoNumero:'',email:'',telefono:'',domicilio:'',departamento:'Lima',provincia:'Lima',distrito:'',esMenor:false,apoderado:'',montoReclamado:'',descripcionBien:'',detalle:'',pedido:''};renderReclamaciones();}
+
+function _recSubmit(){
+  var f=_recForm,errs=[];
+  if(!f.nombres.trim())errs.push('nombres');
+  if(!f.apellidos.trim())errs.push('apellidos');
+  if(!f.documentoNumero.trim())errs.push('número de documento');
+  if(!/^\S+@\S+\.\S+$/.test(f.email))errs.push('email válido');
+  if(!f.telefono.trim())errs.push('teléfono');
+  if(!f.distrito.trim())errs.push('distrito');
+  if(f.descripcionBien.trim().length<5)errs.push('descripción del bien');
+  if(f.detalle.trim().length<20)errs.push('detalle (mín. 20 caracteres)');
+  if(f.pedido.trim().length<10)errs.push('pedido (mín. 10 caracteres)');
+  if(errs.length){alert('Completa: '+errs.slice(0,3).join(', ')+(errs.length>3?'…':''));return;}
+  var codigo='REC-'+Date.now().toString(36).toUpperCase();
+  _recSubmitted={tipo:f.tipo,email:f.email,codigo:codigo};
+  renderReclamaciones();
+  document.getElementById('reclamacionesModal').scrollTop=0;
+}
 </script>
 
 
