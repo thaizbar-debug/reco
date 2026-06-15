@@ -1303,7 +1303,7 @@ body.show-home{overflow:auto;height:auto}
 #homeView footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 #homeView .footer-inner{max-width:1160px;margin:0 auto}
 #homeView .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:32px}
-#homeView .footer-logo{font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:9px}
+#homeView .footer-logo{margin-bottom:12px;line-height:0}
 #homeView .footer-desc{font-size:.8rem;line-height:1.65;max-width:240px;color:rgba(255,255,255,.45)}
 #homeView .footer-col h4{font-size:.68rem;font-weight:700;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:11px}
 #homeView .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:7px}
@@ -1369,6 +1369,16 @@ body.show-home{overflow:auto;height:auto}
 .rec-success-actions{margin-top:24px;display:flex;gap:10px;justify-content:center}
 .rec-success-actions .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer}
 .rec-success-actions .btn-ghost{background:none;border:1.5px solid var(--border);padding:12px 22px;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.faq-list{padding:0 28px 28px}
+.faq-group{margin-top:24px}
+.faq-cat{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:10px}
+.faq-items{display:flex;flex-direction:column;gap:8px}
+.faq-item{border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);transition:border-color .2s,box-shadow .2s}
+.faq-item[open]{border-color:var(--blue);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.faq-item summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;font-size:.88rem;font-weight:600;color:var(--txt)}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-icon{font-size:1.1rem;font-weight:300;color:var(--blue);width:22px;text-align:center;flex-shrink:0}
+.faq-a{padding:0 18px 16px;margin:0;font-size:.85rem;line-height:1.65;color:var(--muted)}
 @media(max-width:600px){.rec-grid{grid-template-columns:1fr}.legal-meta{flex-direction:column}}
 
 @media(max-width:900px){#homeView .why-grid,#homeView .aud-grid{grid-template-columns:1fr 1fr}#homeView .ad-card{grid-template-columns:1fr}#homeView .ad-photo{min-height:200px}}
@@ -1623,23 +1633,20 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="footer-inner">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo">reco</div>
+        <div class="footer-logo"><img src="data:image/png;base64,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" alt="reco" style="height:32px;width:auto;filter:brightness(0) invert(1)"/></div>
         <p class="footer-desc">La plataforma de valores inmobiliarios más completa de Lima. Precios de venta, alquiler e históricos de Registros Públicos.</p>
       </div>
       <div class="footer-col"><h4>Explorar</h4><ul>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Buscar inmuebles</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Departamentos</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Casas</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Históricos</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=venta')">Comprar</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=alquiler')">Alquilar</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=historico')">Históricos</a></li>
       </ul></div>
       <div class="footer-col"><h4>Propietarios</h4><ul>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Publicar inmueble</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Valorizar mi inmueble</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#publish')">Publicar inmueble</a></li>
       </ul></div>
       <div class="footer-col"><h4>Empresa</h4><ul>
-        <li><a href="#">Nosotros</a></li>
-        <li><a href="#">Anunciarse</a></li>
-        <li><a href="#">Contacto</a></li>
+        <li><a href="javascript:void(0)" onclick="openLegal('contactoOverlay')">Contacto</a></li>
+        <li><a href="javascript:void(0)" onclick="openLegal('faqsOverlay')">FAQs</a></li>
       </ul></div>
     </div>
     <div class="footer-bottom">
@@ -1776,6 +1783,53 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- LEGAL: LIBRO DE RECLAMACIONES -->
 <div class="legal-overlay" id="reclamacionesOverlay" onclick="if(event.target===this)closeLegal('reclamacionesOverlay')">
   <div class="legal-modal" id="reclamacionesModal">
+  </div>
+</div>
+
+<!-- FAQS -->
+<div class="legal-overlay" id="faqsOverlay" onclick="if(event.target===this)closeLegal('faqsOverlay')">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <div class="legal-hero">
+        <div class="legal-eyebrow">Centro de ayuda</div>
+        <h1>Preguntas frecuentes</h1>
+        <p class="legal-lead">Si no encuentras lo que buscas, escríbenos a <a href="mailto:contacto@reco.pe">contacto@reco.pe</a> o revisa nuestros <a href="javascript:void(0)" onclick="closeLegal('faqsOverlay');openLegal('terminosOverlay')">Términos y Condiciones</a>.</p>
+      </div>
+      <button class="legal-modal-close" onclick="closeLegal('faqsOverlay')">✕</button>
+    </div>
+    <div class="faq-list" id="faqListContainer"></div>
+  </div>
+</div>
+
+<!-- CONTACTO -->
+<div class="legal-overlay" id="contactoOverlay" onclick="if(event.target===this)closeLegal('contactoOverlay')">
+  <div class="legal-modal">
+    <div class="legal-modal-head">
+      <div class="legal-hero">
+        <div class="legal-eyebrow">Escríbenos</div>
+        <h1>Contacto</h1>
+        <p class="legal-lead">¿Tienes alguna consulta, sugerencia o comentario? Completa el formulario y te responderemos a la brevedad.</p>
+      </div>
+      <button class="legal-modal-close" onclick="closeLegal('contactoOverlay')">✕</button>
+    </div>
+    <div class="rec-form">
+      <div class="rec-section">
+        <div class="rec-grid">
+          <div class="rec-field"><label>Nombre *</label><input id="ctNombre" placeholder="Tu nombre"></div>
+          <div class="rec-field"><label>Email *</label><input type="email" id="ctEmail" placeholder="tu@email.com"></div>
+          <div class="rec-field rec-col-2"><label>Asunto *</label><input id="ctAsunto" placeholder="¿Sobre qué nos escribes?"></div>
+          <div class="rec-field rec-col-2"><label>Mensaje *</label><textarea id="ctMensaje" rows="5" placeholder="Escribe tu mensaje aquí…"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="rec-actions">
+      <button class="btn-primary" onclick="enviarContacto()">Enviar mensaje</button>
+    </div>
+    <div class="contact-alt" style="padding:0 28px 28px;font-size:.82rem;color:var(--muted);line-height:1.6">
+      <p>También puedes escribirnos directamente a:</p>
+      <p style="margin-top:6px"><a href="mailto:contacto@reco.pe" style="color:var(--blue);font-weight:700">contacto@reco.pe</a> — Consultas generales</p>
+      <p><a href="mailto:webmaster@recosac.com" style="color:var(--blue);font-weight:700">webmaster@recosac.com</a> — Temas legales y técnicos</p>
+    </div>
   </div>
 </div>
 
@@ -5605,6 +5659,75 @@ function _recSubmit(){
   _recSubmitted={tipo:f.tipo,email:f.email,codigo:codigo};
   renderReclamaciones();
   document.getElementById('reclamacionesModal').scrollTop=0;
+}
+
+// ── FAQs ─────────────────────────────────────────────────────
+var FAQS=[
+  {cat:'Sobre Reco',items:[
+    {q:'¿Qué es Reco y para quién está pensado?',a:'Reco es una plataforma de inteligencia inmobiliaria para Lima. Te dice si una propiedad vale lo que piden, basándose en transacciones reales de SUNARP, no en avisos. Útil para compradores, inversionistas, tasadores, bancos y desarrolladores.'},
+    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, sumando un veredicto IA (sobrevalorado / justo / oportunidad), liquidez de la zona, yield estimado y señales predictivas por distrito.'},
+    {q:'¿Qué distritos cubren?',a:'Cobertura completa en 43 distritos de Lima Metropolitana. Estamos ampliando al Callao y balnearios del sur.'},
+  ]},
+  {cat:'Datos y metodología',items:[
+    {q:'¿De dónde viene la información de precios?',a:'De transacciones inscritas en SUNARP (compraventas, hipotecas, transferencias), enriquecidas con data catastral y señales de mercado.'},
+    {q:'¿Cuántas transacciones tienen indexadas?',a:'Más de 847,000 transacciones, actualizadas diariamente a las 06:00 a. m.'},
+    {q:'¿Qué tan preciso es el modelo de valorización?',a:'El margen de error promedio (MAPE) del modelo Reco IA es de ±4.2% en distritos con buena profundidad de mercado. En cada análisis mostramos el intervalo de confianza y los comparables utilizados.'},
+    {q:'¿Reemplaza a una tasación oficial?',a:'No. Reco entrega información referencial para tomar mejores decisiones, pero no sustituye la tasación de un perito registrado ante la SBS.'},
+  ]},
+  {cat:'Uso de la plataforma',items:[
+    {q:'¿Cómo analizo una propiedad?',a:'Escribe la dirección en el buscador. En 5 segundos recibes el veredicto, comparables, yield estimado y score de inversión.'},
+    {q:'¿Qué es el buscador con IA en español?',a:'Puedes escribir en lenguaje natural — "depa en Miraflores de 3 dormitorios hasta 600 mil dólares" — y Reco IA traduce eso a filtros automáticamente.'},
+  ]},
+  {cat:'Planes y pagos',items:[
+    {q:'¿Es gratis?',a:'El acceso al mapa de calor y al veredicto rápido es gratuito. Los reportes históricos detallados y la información de SUNARP se cobran por "llaves" (consultas).'},
+    {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos el plan Oro con API de valorización, integraciones SUNARP en vivo y reportes en lote. Escríbenos a contacto@reco.pe.'},
+    {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
+  ]},
+  {cat:'Privacidad y soporte',items:[
+    {q:'¿Necesito crear cuenta para usar Reco?',a:'Para el veredicto básico y el mapa de calor, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
+    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733). Revisa el Aviso de Privacidad en el pie de página.'},
+    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página. Respondemos en máximo 30 días calendario.'},
+    {q:'¿Cómo contacto al equipo?',a:'Escríbenos a contacto@reco.pe. Para temas legales: webmaster@recosac.com.'},
+  ]},
+];
+(function buildFaqs(){
+  var container=document.getElementById('faqListContainer');
+  if(!container)return;
+  var html='';
+  FAQS.forEach(function(g){
+    html+='<section class="faq-group"><h2 class="faq-cat">'+g.cat+'</h2><div class="faq-items">';
+    g.items.forEach(function(f,i){
+      html+='<details class="faq-item"'+(i===0?' open':'')+'><summary><span class="faq-q">'+f.q+'</span><span class="faq-icon">'+(i===0?'–':'+')+'</span></summary><p class="faq-a">'+f.a+'</p></details>';
+    });
+    html+='</div></section>';
+  });
+  container.innerHTML=html;
+  document.querySelectorAll('.faq-item').forEach(function(d){
+    d.addEventListener('toggle',function(){var ico=d.querySelector('.faq-icon');if(ico)ico.textContent=d.open?'–':'+';});
+  });
+})();
+
+// ── Contacto ─────────────────────────────────────────────────
+function enviarContacto(){
+  var nombre=document.getElementById('ctNombre').value.trim();
+  var email=document.getElementById('ctEmail').value.trim();
+  var asunto=document.getElementById('ctAsunto').value.trim();
+  var mensaje=document.getElementById('ctMensaje').value.trim();
+  var errs=[];
+  if(!nombre)errs.push('nombre');
+  if(!/^\S+@\S+\.\S+$/.test(email))errs.push('email válido');
+  if(!asunto)errs.push('asunto');
+  if(mensaje.length<10)errs.push('mensaje (mín. 10 caracteres)');
+  if(errs.length){alert('Completa: '+errs.join(', '));return;}
+  var mailTo='contacto@reco.pe';
+  var subject=encodeURIComponent(asunto);
+  var body=encodeURIComponent('Nombre: '+nombre+'\nEmail: '+email+'\n\n'+mensaje);
+  window.open('mailto:'+mailTo+'?subject='+subject+'&body='+body,'_self');
+  alert('Se abrirá tu cliente de correo para enviar el mensaje. ¡Gracias por escribirnos!');
+  document.getElementById('ctNombre').value='';
+  document.getElementById('ctEmail').value='';
+  document.getElementById('ctAsunto').value='';
+  document.getElementById('ctMensaje').value='';
 }
 </script>
 
