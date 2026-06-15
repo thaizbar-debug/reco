@@ -33,7 +33,8 @@
   --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
   --sh2:0 8px 32px rgba(0,0,0,.12);
 }
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+html{height:100%}
+body{min-height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
 a{text-decoration:none;color:inherit}
 button{cursor:pointer;font-family:inherit}
 input,select{font-family:inherit}
@@ -1112,7 +1113,7 @@ body.show-legal #homeView,
 body.show-legal > header,
 body.show-legal > .search-hero,
 body.show-legal > .app-body{display:none !important}
-body.show-legal{overflow:auto;height:auto;background:#fff}
+body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 .legal-page-nav{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
 .legal-page-nav .logo{display:flex;align-items:center;cursor:pointer}
 .legal-page-nav .logo img{height:36px;width:auto}
@@ -5162,9 +5163,23 @@ function applyHashNav(){
   }
 }
 
+// ── Legal page routing (declared here so DOMContentLoaded can use it) ──
+var LEGAL_PAGES={terminos:'pageTerminos',privacidad:'pagePrivacidad',reclamaciones:'pageReclamaciones',faqs:'pageFaqs',contacto:'pageContacto'};
+function showLegalPage(page){
+  document.body.classList.remove('show-home');
+  document.body.classList.add('show-legal');
+  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
+  var el=document.getElementById(LEGAL_PAGES[page]);
+  if(el)el.classList.add('active');
+  if(page==='reclamaciones'&&typeof renderReclamaciones==='function')renderReclamaciones();
+  window.scrollTo(0,0);
+}
+function hideLegalPages(){
+  document.body.classList.remove('show-legal');
+  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
-  // El mapa no debe ser un punto único de fallo: si Leaflet no carga,
-  // la lista, los filtros y la navegación deben seguir funcionando.
   try{ initMap(); }catch(e){ console.warn('Mapa no disponible:', e && e.message); }
   recalcBody();
   window.addEventListener('resize',recalcBody);
@@ -5619,22 +5634,6 @@ const forgotEmailEl = document.getElementById('forgotEmail');
 if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') sendPasswordReset();
 });
-
-// ── Legal page routing ───────────────────────────────────────
-var LEGAL_PAGES={terminos:'pageTerminos',privacidad:'pagePrivacidad',reclamaciones:'pageReclamaciones',faqs:'pageFaqs',contacto:'pageContacto'};
-function showLegalPage(page){
-  document.body.classList.remove('show-home');
-  document.body.classList.add('show-legal');
-  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
-  var el=document.getElementById(LEGAL_PAGES[page]);
-  if(el)el.classList.add('active');
-  if(page==='reclamaciones')renderReclamaciones();
-  window.scrollTo(0,0);
-}
-function hideLegalPages(){
-  document.body.classList.remove('show-legal');
-  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
-}
 
 // ── Libro de Reclamaciones ───────────────────────────────────
 var _recForm={tipo:'reclamo',bien:'servicio',nombres:'',apellidos:'',documentoTipo:'DNI',documentoNumero:'',email:'',telefono:'',domicilio:'',departamento:'Lima',provincia:'Lima',distrito:'',esMenor:false,apoderado:'',montoReclamado:'',descripcionBien:'',detalle:'',pedido:''};
