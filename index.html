@@ -1106,8 +1106,10 @@ header .spacer{flex:1}
 body.show-home #homeView{display:block}
 body.show-home > header,
 body.show-home > .search-hero,
-body.show-home > .app-body{display:none !important}
+body.show-home > .app-body,
+body.show-home > #userSection{display:none !important}
 body.show-home{overflow:auto;height:auto}
+body.show-user > #homeView{display:none !important}
 
 /* ═══ landing styles (scoped) ═══ */
 /* HEADER */
@@ -4689,6 +4691,7 @@ function _pubBulkSubmit(n,cost){
 
 // ─────────────────────── HOME / ROUTER ───────────────────────
 function goHome(){
+  document.body.classList.remove('show-user');
   document.body.classList.add('show-home');
   try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
   window.scrollTo(0,0);
@@ -4696,6 +4699,7 @@ function goHome(){
 function goToApp(hash){
   hash = hash || '';
   document.body.classList.remove('show-home');
+  document.body.classList.remove('show-user');
   if(hash==='#publish'){
     try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
     if(typeof openPublish==='function') openPublish();
@@ -5522,21 +5526,65 @@ function removeFav(id) {
 // ── LLAVES ──
 function renderLlaves(el) {
   var hist = _getKeyHistory();
+  var usedKeys = hist.filter(function(h) { return h.type === 'use' && h.propId; });
+  var buyKeys = hist.filter(function(h) { return h.type === 'buy'; });
   var html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">🔑 Mis llaves</div>'
     + '<div class="us-keys-balance">'
     + '<div><div class="us-keys-count">'+S.keysLeft+'</div><div class="us-keys-label">llave'+(S.keysLeft!==1?'s':'')+' disponible'+(S.keysLeft!==1?'s':'')+'</div></div>'
     + '<button class="us-keys-buy" onclick="closeUserSection();openModal()">🛒 Comprar llaves</button>'
     + '</div>';
-  html += '<div class="us-card"><div class="us-card-title">Historial de transacciones</div>';
+
+  // Llaves usadas - propiedades desbloqueadas
+  html += '<div class="us-subtitle">🔓 Propiedades desbloqueadas</div>';
+  if (usedKeys.length) {
+    html += usedKeys.map(function(h) {
+      var p = h.propId ? properties.find(function(x) { return x.id === h.propId; }) : null;
+      var d = new Date(h.date);
+      var dateStr = d.toLocaleDateString('es-PE', {day:'numeric', month:'short', year:'numeric'});
+      if (p) {
+        return '<div class="us-prop-card" onclick="closeUserSection();goToApp(\'#prop='+p.id+'\')">'
+          + (function(){ var assets=driveAssets(p); var photo=assets.photos.length?assets.photos[0]:''; return photo ? '<img class="us-prop-img" src="'+photo+'" loading="lazy">' : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">'+p.emoji+'</div>'; })()
+          + '<div class="us-prop-info">'
+          + '<div class="us-prop-addr">'+p.address+'</div>'
+          + '<div class="us-prop-dist">📍 '+p.district+' · '+p.type+'</div>'
+          + '<div class="us-prop-price">'+p.cur+' '+fmtPrice(p.op==="Histórico"?getHistTotal(p):p.price)+'</div>'
+          + '<div class="us-prop-specs">Desbloqueado el '+dateStr+'</div>'
+          + '</div></div>';
+      } else {
+        return '<div class="us-prop-card"><div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🔓</div><div class="us-prop-info"><div class="us-prop-addr">'+(h.propLabel||'Propiedad')+'</div><div class="us-prop-specs">Desbloqueado el '+dateStr+'</div></div></div>';
+      }
+    }).join('');
+  } else {
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔓</div><p>Aún no has desbloqueado propiedades.<br>Usa una llave en una propiedad histórica para verla aquí.</p></div></div>';
+  }
+
+  // Historial de compras
+  html += '<div class="us-subtitle">🛒 Historial de compras</div>';
+  html += '<div class="us-card">';
+  if (buyKeys.length) {
+    html += buyKeys.map(function(h) {
+      var d = new Date(h.date);
+      var dateStr = d.toLocaleDateString('es-PE', {day:'numeric', month:'short', year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+      return '<div class="us-hist-item"><div class="us-hist-icon bought">🛒</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Compra de llaves')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
+    }).join('');
+  } else {
+    html += '<div class="us-empty"><div class="us-empty-icon">🛒</div><p>No has comprado llaves aún.</p></div>';
+  }
+  html += '</div>';
+
+  // Historial completo
+  html += '<div class="us-subtitle">📋 Todas las transacciones</div>';
+  html += '<div class="us-card">';
   if (hist.length) {
     html += hist.map(function(h) {
       var d = new Date(h.date);
       var dateStr = d.toLocaleDateString('es-PE', {day:'numeric', month:'short', year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
       if (h.type === 'buy') {
-        return '<div class="us-hist-item"><div class="us-hist-icon bought">🛒</div><div class="us-hist-detail"><div class="us-hist-title">Compra de llaves</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
+        return '<div class="us-hist-item"><div class="us-hist-icon bought">🛒</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Compra de llaves')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
       } else {
-        return '<div class="us-hist-item"><div class="us-hist-icon used">🔓</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Propiedad desbloqueada')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount neg">-1 🔑</div></div>';
+        var clickable = h.propId ? ' onclick="closeUserSection();goToApp(\'#prop='+h.propId+'\')" style="cursor:pointer"' : '';
+        return '<div class="us-hist-item"'+clickable+'><div class="us-hist-icon used">🔓</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Propiedad desbloqueada')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount neg">-'+h.qty+' 🔑</div></div>';
       }
     }).join('');
   } else {
