@@ -174,19 +174,23 @@ header .spacer{flex:1}
   position:relative;
 }
 .user-dropdown{
-  display:none;position:absolute;top:44px;right:0;
+  display:none;position:absolute;top:36px;right:0;
+  padding-top:8px;
+  z-index:9;
+}
+.user-dropdown-inner{
   background:#fff;border:1px solid var(--border);
   border-radius:var(--r);box-shadow:var(--sh2);
-  min-width:180px;overflow:hidden;z-index:9;
+  min-width:180px;overflow:hidden;
 }
 .user-wrap{position:relative}
-.user-wrap.open .user-dropdown{display:block}
-.user-dropdown .u-header{padding:14px 16px;background:var(--light);border-bottom:1px solid var(--border)}
-.user-dropdown .u-name{font-weight:700;font-size:.9rem}
-.user-dropdown .u-email{font-size:.78rem;color:var(--muted)}
-.user-dropdown a{display:flex;align-items:center;gap:9px;padding:10px 16px;font-size:.85rem;color:var(--txt);transition:background .1s}
-.user-dropdown a:hover{background:var(--light)}
-.user-dropdown hr{border:none;border-top:1px solid var(--border)}
+.user-wrap:hover .user-dropdown,.user-wrap.open .user-dropdown{display:block}
+.user-dropdown-inner .u-header{padding:14px 16px;background:var(--light);border-bottom:1px solid var(--border)}
+.user-dropdown-inner .u-name{font-weight:700;font-size:.9rem}
+.user-dropdown-inner .u-email{font-size:.78rem;color:var(--muted)}
+.user-dropdown-inner a{display:flex;align-items:center;gap:9px;padding:10px 16px;font-size:.85rem;color:var(--txt);transition:background .1s}
+.user-dropdown-inner a:hover{background:var(--light)}
+.user-dropdown-inner hr{border:none;border-top:1px solid var(--border)}
 
 /* ══════════════ SEARCH HERO ══════════════ */
 .search-hero{
@@ -1686,16 +1690,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="user-wrap" id="appUserWrap" style="display:none">
     <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV</button>
     <div class="user-dropdown">
-      <div class="u-header">
-        <div class="u-name" id="appUserName">Usuario</div>
-        <div class="u-email" id="appUserEmail">email</div>
+      <div class="user-dropdown-inner">
+        <div class="u-header">
+          <div class="u-name" id="appUserName">Usuario</div>
+          <div class="u-email" id="appUserEmail">email</div>
+        </div>
+        <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
+        <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
+        <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
+        <a href="#" onclick="event.preventDefault();openUserSection('myPublications')">📋 Mis publicaciones</a>
+        <hr/>
+        <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
       </div>
-      <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
-      <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
-      <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
-      <a href="#" onclick="event.preventDefault();openUserSection('myPublications')">📋 Mis publicaciones</a>
-      <hr/>
-      <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
     </div>
   </div>
 </header>
@@ -5478,15 +5484,17 @@ auth.onAuthStateChanged(function(user) {
         <div class="user-wrap" style="position:relative">
           <button class="user-btn" onclick="toggleUserDropdown(this)">${_getInitials(user.displayName || user.email)}</button>
           <div class="user-dropdown">
-            <div class="u-header">
-              <div class="u-name">${user.displayName || user.email}</div>
-              <div class="u-email">${user.email}</div>
+            <div class="user-dropdown-inner">
+              <div class="u-header">
+                <div class="u-name">${user.displayName || user.email}</div>
+                <div class="u-email">${user.email}</div>
+              </div>
+              <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
+              <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
+              <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
+              <hr/>
+              <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
             </div>
-            <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
-            <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
-            <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
-            <hr/>
-            <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
           </div>
         </div>`;
     } else {
