@@ -3634,7 +3634,8 @@ function openDetail(id){
       <div class="detail-price-row">
         <div>
           <div class="detail-price">${p.cur} ${(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString()}</div>
-          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':''}</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':p.op==='Histórico'?'Valor total de la transacción':''}</div>
+          ${p.op==='Histórico'&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${p.cur} ${getHistPropPrice(p).toLocaleString()}</strong></div>`:''}
         </div>
         ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${p.cur} ${sqm.toLocaleString()}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
         ${p.bank?'<span class="badge badge-bank" style="font-size:.78rem">🏦 Prop. de Banco</span>':''}
@@ -4020,8 +4021,9 @@ function openFullReport(id){
         <!-- PRECIO + SPECS -->
         <div class="fr-price-block">
           <div>
-            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Precio de venta':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${cur} ${fmtN(p.price)}</div>
+            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Valor total de la transacción':'Precio solicitado'}</div>
+            <div class="fr-price-ask">${cur} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
+            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${cur} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
             <div class="fr-price-meta">
               ${sqm>0?`<span class="fr-price-pill">${cur} ${fmtN(sqm)} / m²</span>`:''}
               ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
@@ -4031,7 +4033,7 @@ function openFullReport(id){
         </div>
 
         <div class="fr-specs-grid">
-          <div class="fr-spec-cell"><div class="fr-spec-val">${p.area}</div><div class="fr-spec-lbl">m² ${p.area>0&&p.area===p.area?'techados':''}</div></div>
+          <div class="fr-spec-cell"><div class="fr-spec-val">${p.area}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
           ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.beds}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
           ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.baths}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
           ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${parkCount(p)}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
