@@ -1323,19 +1323,60 @@ body.show-home{overflow:auto;height:auto}
 @media(max-width:700px){#homeView header{grid-template-columns:1fr auto;padding:0 16px}#homeView .nav-left{display:none}#homeView .footer-grid{grid-template-columns:1fr 1fr}#homeView .hero-content{padding:0 5% 44px}}
 @media(max-width:560px){#homeView .why-grid,#homeView .aud-grid,#homeView .footer-grid{grid-template-columns:1fr}#homeView .footer-bottom{flex-direction:column;text-align:center}#homeView .tab{padding:7px 14px;font-size:.76rem}}
 
-/* ══ USER SECTION MODALS ══ */
-.usec-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-.usec-overlay.open{display:flex}
-.usec-box{background:#fff;border-radius:18px;width:min(520px,95vw);max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
-.usec-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
-.usec-head{padding:24px 28px 0;font-size:1.1rem;font-weight:700;color:var(--txt)}
-.usec-body{padding:20px 28px 28px}
-.usec-field{margin-bottom:14px}
-.usec-field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:4px}
-.usec-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:inherit;background:var(--light);color:var(--txt)}
-.usec-field input:disabled{opacity:.6}
-.usec-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9rem}
-.usec-empty span{display:block;font-size:2rem;margin-bottom:10px}
+/* ══ USER SECTION VIEWS ══ */
+#userSection{display:none;position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:150;background:var(--bg);overflow-y:auto}
+body.show-user #userSection{display:block}
+body.show-user > .search-hero,body.show-user > .app-body{display:none !important}
+.us-container{max-width:720px;margin:0 auto;padding:32px 20px 60px}
+.us-back{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-size:.85rem;font-weight:600;cursor:pointer;padding:6px 0;margin-bottom:20px;font-family:inherit}
+.us-back:hover{color:var(--txt)}
+.us-title{font-size:1.4rem;font-weight:800;color:var(--txt);margin-bottom:24px}
+.us-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.us-card-title{font-size:.95rem;font-weight:700;margin-bottom:16px;color:var(--txt)}
+.us-field{margin-bottom:16px}
+.us-field:last-child{margin-bottom:0}
+.us-field label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.03em}
+.us-field-row{display:flex;gap:10px;align-items:center}
+.us-field input{flex:1;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:inherit;background:#fff;color:var(--txt)}
+.us-field input:disabled{background:var(--light);color:var(--muted)}
+.us-btn-edit{padding:8px 16px;border:1.5px solid var(--border);border-radius:9px;font-size:.8rem;font-weight:600;background:#fff;color:var(--txt);cursor:pointer;font-family:inherit;white-space:nowrap}
+.us-btn-edit:hover{background:var(--light)}
+.us-btn-save{padding:8px 16px;border:none;border-radius:9px;font-size:.8rem;font-weight:600;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;white-space:nowrap}
+.us-btn-save:hover{opacity:.9}
+.us-btn-cancel{padding:8px 16px;border:1.5px solid var(--border);border-radius:9px;font-size:.8rem;font-weight:600;background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;white-space:nowrap}
+.us-empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.us-empty-icon{font-size:2.5rem;margin-bottom:12px}
+.us-empty p{font-size:.9rem;line-height:1.5}
+.us-subtitle{font-size:1rem;font-weight:700;color:var(--txt);margin:32px 0 14px;display:flex;align-items:center;gap:8px}
+.us-prop-card{display:flex;gap:14px;background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;cursor:pointer;transition:box-shadow .12s,border-color .12s}
+.us-prop-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08);border-color:#94a3b8}
+.us-prop-img{width:90px;height:68px;border-radius:8px;object-fit:cover;background:var(--light);flex-shrink:0}
+.us-prop-info{flex:1;min-width:0}
+.us-prop-addr{font-size:.85rem;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.us-prop-dist{font-size:.78rem;color:var(--muted);margin:2px 0}
+.us-prop-price{font-size:.85rem;font-weight:700;color:var(--blue)}
+.us-prop-specs{font-size:.75rem;color:var(--muted);margin-top:2px}
+.us-prop-remove{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px 8px;border-radius:6px;align-self:flex-start;flex-shrink:0}
+.us-prop-remove:hover{background:#fee2e2;color:#dc2626}
+.us-keys-balance{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:14px;padding:20px 24px;margin-bottom:20px}
+.us-keys-count{font-size:2rem;font-weight:800;color:var(--blue)}
+.us-keys-label{font-size:.9rem;color:var(--txt);font-weight:600}
+.us-keys-buy{margin-left:auto;padding:10px 20px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:10px;color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(245,158,11,.35)}
+.us-keys-buy:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,158,11,.45)}
+.us-hist-item{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
+.us-hist-item:last-child{border-bottom:none}
+.us-hist-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.us-hist-icon.used{background:#fef3c7}
+.us-hist-icon.bought{background:#d1fae5}
+.us-hist-detail{flex:1}
+.us-hist-title{font-size:.85rem;font-weight:600;color:var(--txt)}
+.us-hist-sub{font-size:.78rem;color:var(--muted)}
+.us-hist-amount{font-size:.85rem;font-weight:700;text-align:right}
+.us-hist-amount.neg{color:#dc2626}
+.us-hist-amount.pos{color:#059669}
+.us-tabs{display:flex;gap:0;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:20px}
+.us-tab{flex:1;padding:9px 16px;text-align:center;font-size:.82rem;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);border:none;font-family:inherit;transition:all .15s}
+.us-tab.active{background:var(--blue);color:#fff}
 
 /* ══ AUTH MODAL ══ */
 .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
@@ -1695,10 +1736,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="u-name" id="appUserName">Usuario</div>
           <div class="u-email" id="appUserEmail">email</div>
         </div>
-        <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
-        <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
-        <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
-        <a href="#" onclick="event.preventDefault();openUserSection('myPublications')">📋 Mis publicaciones</a>
+        <a href="#perfil" onclick="navigateUserSection('perfil')">👤 Mi perfil</a>
+        <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
+        <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
+        <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
         <hr/>
         <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
       </div>
@@ -3587,6 +3628,7 @@ function openDetail(id){
   const p=properties.find(x=>x.id===id);
   if(!p){ console.log('[reco] property not found:', id); return; }
   S.selectedId=id;
+  addRecent(id);
   applyFilters();
 
   // Histórico requires a key — show gate if not yet unlocked
@@ -3676,7 +3718,7 @@ function openDetail(id){
       </div>
 
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
-        <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Inmueble guardado ❤️')">❤️ Guardar</button>
+        <button id="favBtn-${p.id}" style="flex:1;background:${isFavorite(p.id)?'#fef2f2':'var(--bg)'};border:1.5px solid ${isFavorite(p.id)?'#fca5a5':'var(--border)'};padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toggleFavorite('${p.id}');var b=this;b.style.background=isFavorite('${p.id}')?'#fef2f2':'var(--bg)';b.style.borderColor=isFavorite('${p.id}')?'#fca5a5':'var(--border)';b.textContent=isFavorite('${p.id}')?'❤️ Guardado':'🤍 Guardar'">${isFavorite(p.id)?'❤️ Guardado':'🤍 Guardar'}</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
         ${p.op==='Histórico'?`<button style="flex:1;background:var(--accent);border:none;padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:700;color:#fff;cursor:pointer" onclick="openFullReport('${p.id}')">📋 Ver informe</button>`:''}
       </div>
@@ -3764,6 +3806,8 @@ function unlockAndOpen(id){
   S.unlockedIds.add(id);
   S.keysLeft--;
   document.getElementById('keyCount').textContent=S.keysLeft;
+  var p=properties.find(function(x){return x.id===id;});
+  addKeyHistoryEntry('use', 1, id, p ? p.address+', '+p.district : id);
   toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
   openDetail(id);
   applyFilters();
@@ -3791,6 +3835,7 @@ function simulatePay(){
   const {name,qty}=S.selectedPlan;
   S.keysLeft+=qty;
   document.getElementById('keyCount').textContent=S.keysLeft;
+  addKeyHistoryEntry('buy', qty, null, 'Plan '+name);
   closeModal();
   const pending=S.pendingUnlockId;
   S.pendingUnlockId=null;
@@ -3997,7 +4042,7 @@ function openFullReport(id){
         <div class="fr-breadcrumb">${p.district} › ${p.address.length>40?p.address.slice(0,40)+'…':p.address}</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="fr-btn-ghost" onclick="toast('Guardado ❤️')">♡ Guardar</button>
+        <button class="fr-btn-ghost" onclick="toggleFavorite('${p.id}');this.textContent=isFavorite('${p.id}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
         ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
       </div>
     </nav>
@@ -4543,6 +4588,10 @@ function _ppub(){
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
   S.keysLeft-=3;
   document.getElementById('keyCount').textContent=S.keysLeft;
+  addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
+  var pubs = _getMyPubs();
+  pubs.unshift({address:_pd.address,district:_pd.district,type:_pd.type,currency:_pd.currency,price:_pd.price,title:_pd.title,date:new Date().toISOString()});
+  _saveMyPubs(pubs);
   toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
   setTimeout(()=>closePublish(),1800);
 }
@@ -5204,73 +5253,9 @@ function _applyLandingHash(){
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
 </style>
 
-<!-- ══ USER SECTION MODALS ══════════════════════════════════ -->
-
-<!-- Mi perfil -->
-<div class="usec-overlay" id="profileOverlay" onclick="if(event.target===this)closeUserSection('profile')">
-  <div class="usec-box">
-    <button class="usec-close" onclick="closeUserSection('profile')">✕</button>
-    <div class="usec-head">👤 Mi perfil</div>
-    <div class="usec-body">
-      <div class="usec-field">
-        <label>Nombre</label>
-        <input type="text" id="profileName" disabled>
-      </div>
-      <div class="usec-field">
-        <label>Correo electrónico</label>
-        <input type="email" id="profileEmail" disabled>
-      </div>
-      <div class="usec-field">
-        <label>Miembro desde</label>
-        <input type="text" id="profileSince" disabled>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Mis búsquedas guardadas -->
-<div class="usec-overlay" id="savedSearchesOverlay" onclick="if(event.target===this)closeUserSection('savedSearches')">
-  <div class="usec-box">
-    <button class="usec-close" onclick="closeUserSection('savedSearches')">✕</button>
-    <div class="usec-head">🔍 Mis búsquedas guardadas</div>
-    <div class="usec-body">
-      <div class="usec-empty" id="savedSearchesEmpty">
-        <span>🔍</span>
-        Aún no tienes búsquedas guardadas.<br>Guarda tus búsquedas favoritas para acceder rápidamente.
-      </div>
-      <div id="savedSearchesList"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Historial de llaves -->
-<div class="usec-overlay" id="keyHistoryOverlay" onclick="if(event.target===this)closeUserSection('keyHistory')">
-  <div class="usec-box">
-    <button class="usec-close" onclick="closeUserSection('keyHistory')">✕</button>
-    <div class="usec-head">🔑 Historial de llaves</div>
-    <div class="usec-body">
-      <div class="usec-empty" id="keyHistoryEmpty">
-        <span>🔑</span>
-        No tienes historial de llaves aún.<br>Aquí podrás ver las llaves que has comprado y utilizado.
-      </div>
-      <div id="keyHistoryList"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Mis publicaciones -->
-<div class="usec-overlay" id="myPublicationsOverlay" onclick="if(event.target===this)closeUserSection('myPublications')">
-  <div class="usec-box">
-    <button class="usec-close" onclick="closeUserSection('myPublications')">✕</button>
-    <div class="usec-head">📋 Mis publicaciones</div>
-    <div class="usec-body">
-      <div class="usec-empty" id="myPublicationsEmpty">
-        <span>📋</span>
-        No tienes publicaciones aún.<br>Publica tu primer inmueble para que aparezca aquí.
-      </div>
-      <div id="myPublicationsList"></div>
-    </div>
-  </div>
+<!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
+<div id="userSection">
+  <div class="us-container" id="userSectionContent"></div>
 </div>
 
 <!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
@@ -5357,24 +5342,259 @@ document.addEventListener('click', function(e) {
   });
 });
 
-function openUserSection(section) {
+// ─────────────────────── FAVORITES & RECENTS (localStorage) ───────────────────────
+function _getFavorites() { try { return JSON.parse(localStorage.getItem('reco_favs') || '[]'); } catch(e) { return []; } }
+function _saveFavorites(arr) { localStorage.setItem('reco_favs', JSON.stringify(arr)); }
+function _getRecents() { try { return JSON.parse(localStorage.getItem('reco_recents') || '[]'); } catch(e) { return []; } }
+function _saveRecents(arr) { localStorage.setItem('reco_recents', JSON.stringify(arr)); }
+function _getKeyHistory() { try { return JSON.parse(localStorage.getItem('reco_key_hist') || '[]'); } catch(e) { return []; } }
+function _saveKeyHistory(arr) { localStorage.setItem('reco_key_hist', JSON.stringify(arr)); }
+function _getMyPubs() { try { return JSON.parse(localStorage.getItem('reco_my_pubs') || '[]'); } catch(e) { return []; } }
+function _saveMyPubs(arr) { localStorage.setItem('reco_my_pubs', JSON.stringify(arr)); }
+
+function toggleFavorite(id) {
+  var favs = _getFavorites();
+  var idx = favs.indexOf(id);
+  if (idx >= 0) { favs.splice(idx, 1); toast('Eliminado de favoritos'); }
+  else { favs.unshift(id); toast('Guardado en favoritos ❤️'); }
+  _saveFavorites(favs);
+  return idx < 0;
+}
+function isFavorite(id) { return _getFavorites().indexOf(id) >= 0; }
+
+function addRecent(id) {
+  var recents = _getRecents();
+  recents = recents.filter(function(r) { return r !== id; });
+  recents.unshift(id);
+  if (recents.length > 20) recents = recents.slice(0, 20);
+  _saveRecents(recents);
+}
+
+function addKeyHistoryEntry(type, qty, propId, propLabel) {
+  var hist = _getKeyHistory();
+  hist.unshift({ type: type, qty: qty, propId: propId || null, propLabel: propLabel || '', date: new Date().toISOString() });
+  _saveKeyHistory(hist);
+}
+
+// ─────────────────────── USER SECTION NAVIGATION ───────────────────────
+function navigateUserSection(section) {
+  event && event.preventDefault();
   document.querySelectorAll('.user-wrap.open').forEach(function(w) { w.classList.remove('open'); });
-  document.getElementById(section + 'Overlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-  if (section === 'profile') {
-    var u = auth.currentUser;
-    if (u) {
-      document.getElementById('profileName').value = u.displayName || '';
-      document.getElementById('profileEmail').value = u.email || '';
-      var created = u.metadata && u.metadata.creationTime;
-      document.getElementById('profileSince').value = created ? new Date(created).toLocaleDateString('es-PE', {year:'numeric',month:'long',day:'numeric'}) : '';
+  document.body.classList.remove('show-home');
+  document.body.classList.add('show-user');
+  window.location.hash = section;
+  renderUserSection(section);
+}
+function closeUserSection() {
+  document.body.classList.remove('show-user');
+  history.replaceState(null, '', location.pathname + location.search);
+}
+
+function renderUserSection(section) {
+  var el = document.getElementById('userSectionContent');
+  if (section === 'perfil') renderPerfil(el);
+  else if (section === 'favoritos') renderFavoritos(el);
+  else if (section === 'llaves') renderLlaves(el);
+  else if (section === 'publicaciones') renderPublicaciones(el);
+  else { closeUserSection(); return; }
+}
+
+function _propCard(p, opts) {
+  opts = opts || {};
+  var assets = driveAssets(p);
+  var photo = assets.photos.length ? assets.photos[0] : '';
+  var imgHtml = photo ? '<img class="us-prop-img" src="'+photo+'" loading="lazy">' : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">'+p.emoji+'</div>';
+  var removeBtn = opts.onRemove ? '<button class="us-prop-remove" onclick="event.stopPropagation();'+opts.onRemove+'" title="Eliminar">✕</button>' : '';
+  return '<div class="us-prop-card" onclick="closeUserSection();goToApp(\'#prop='+p.id+'\')">'
+    + imgHtml
+    + '<div class="us-prop-info">'
+    + '<div class="us-prop-addr">'+p.address+'</div>'
+    + '<div class="us-prop-dist">📍 '+p.district+' · '+p.type+'</div>'
+    + '<div class="us-prop-price">'+p.cur+' '+fmtPrice(p.op==="Histórico"?getHistTotal(p):p.price)+'</div>'
+    + '<div class="us-prop-specs">'+p.area+' m²'+(p.beds?' · '+p.beds+' hab':'')+(p.baths?' · '+p.baths+' baños':'')+'</div>'
+    + '</div>'
+    + removeBtn
+    + '</div>';
+}
+
+// ── PERFIL ──
+function renderPerfil(el) {
+  var u = auth.currentUser;
+  if (!u) { closeUserSection(); openAuthModal('login'); return; }
+  var created = u.metadata && u.metadata.creationTime;
+  var since = created ? new Date(created).toLocaleDateString('es-PE', {year:'numeric', month:'long', day:'numeric'}) : '';
+  el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">👤 Mi perfil</div>'
+    + '<div class="us-card">'
+    + '<div class="us-card-title">Información personal</div>'
+    + '<div class="us-field"><label>Nombre completo</label><div class="us-field-row"><input type="text" id="usProfileName" value="'+(u.displayName||'')+'" disabled><button class="us-btn-edit" id="usNameEditBtn" onclick="usEditField(\'name\')">Editar</button></div></div>'
+    + '<div class="us-field"><label>Correo electrónico</label><div class="us-field-row"><input type="email" id="usProfileEmail" value="'+(u.email||'')+'" disabled><button class="us-btn-edit" id="usEmailEditBtn" onclick="usEditField(\'email\')">Editar</button></div></div>'
+    + '<div class="us-field"><label>Contraseña</label><div class="us-field-row"><input type="password" id="usProfilePass" value="••••••••" disabled><button class="us-btn-edit" id="usPassEditBtn" onclick="usEditField(\'pass\')">Cambiar</button></div></div>'
+    + '<div class="us-field"><label>Miembro desde</label><div class="us-field-row"><input type="text" value="'+since+'" disabled></div></div>'
+    + '</div>'
+    + '<div id="usProfileMsg" style="margin-top:12px;font-size:.85rem;text-align:center"></div>';
+}
+function usEditField(field) {
+  if (field === 'name') {
+    var inp = document.getElementById('usProfileName');
+    var btn = document.getElementById('usNameEditBtn');
+    if (inp.disabled) {
+      inp.disabled = false; inp.focus(); btn.innerHTML = '<span class="us-btn-save" style="padding:0">Guardar</span>';
+      btn.onclick = function() { usSaveName(); };
     }
+  } else if (field === 'email') {
+    var inp = document.getElementById('usProfileEmail');
+    var btn = document.getElementById('usEmailEditBtn');
+    if (inp.disabled) {
+      inp.disabled = false; inp.focus(); btn.innerHTML = '<span class="us-btn-save" style="padding:0">Guardar</span>';
+      btn.onclick = function() { usSaveEmail(); };
+    }
+  } else if (field === 'pass') {
+    var inp = document.getElementById('usProfilePass');
+    var btn = document.getElementById('usPassEditBtn');
+    inp.type = 'password'; inp.value = ''; inp.placeholder = 'Nueva contraseña'; inp.disabled = false; inp.focus();
+    btn.innerHTML = '<span class="us-btn-save" style="padding:0">Guardar</span>';
+    btn.onclick = function() { usSavePass(); };
   }
 }
-function closeUserSection(section) {
-  document.getElementById(section + 'Overlay').classList.remove('open');
-  document.body.style.overflow = '';
+function usSaveName() {
+  var val = document.getElementById('usProfileName').value.trim();
+  var msg = document.getElementById('usProfileMsg');
+  if (!val) { msg.innerHTML = '<span style="color:#dc2626">Ingresa un nombre</span>'; return; }
+  auth.currentUser.updateProfile({ displayName: val }).then(function() {
+    msg.innerHTML = '<span style="color:#059669">✓ Nombre actualizado</span>';
+    renderPerfil(document.getElementById('userSectionContent'));
+    var nameEls = document.querySelectorAll('.u-name');
+    nameEls.forEach(function(e) { e.textContent = val; });
+  }).catch(function(e) { msg.innerHTML = '<span style="color:#dc2626">'+e.message+'</span>'; });
 }
+function usSaveEmail() {
+  var val = document.getElementById('usProfileEmail').value.trim();
+  var msg = document.getElementById('usProfileMsg');
+  if (!val) { msg.innerHTML = '<span style="color:#dc2626">Ingresa un email</span>'; return; }
+  auth.currentUser.updateEmail(val).then(function() {
+    msg.innerHTML = '<span style="color:#059669">✓ Email actualizado</span>';
+    renderPerfil(document.getElementById('userSectionContent'));
+  }).catch(function(e) { msg.innerHTML = '<span style="color:#dc2626">'+e.message+'</span>'; });
+}
+function usSavePass() {
+  var val = document.getElementById('usProfilePass').value;
+  var msg = document.getElementById('usProfileMsg');
+  if (val.length < 6) { msg.innerHTML = '<span style="color:#dc2626">La contraseña debe tener al menos 6 caracteres</span>'; return; }
+  auth.currentUser.updatePassword(val).then(function() {
+    msg.innerHTML = '<span style="color:#059669">✓ Contraseña actualizada</span>';
+    renderPerfil(document.getElementById('userSectionContent'));
+  }).catch(function(e) { msg.innerHTML = '<span style="color:#dc2626">'+e.message+'</span>'; });
+}
+
+// ── FAVORITOS ──
+function renderFavoritos(el) {
+  var favIds = _getFavorites();
+  var recentIds = _getRecents();
+  var html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">❤️ Mis favoritos</div>';
+  if (favIds.length) {
+    html += favIds.map(function(id) {
+      var p = properties.find(function(x) { return x.id === id; });
+      if (!p) return '';
+      return _propCard(p, { onRemove: "removeFav('"+id+"')" });
+    }).join('');
+  } else {
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">❤️</div><p>No tienes propiedades guardadas aún.<br>Usa el botón ❤️ en el detalle de una propiedad para guardarla.</p></div></div>';
+  }
+  html += '<div class="us-subtitle">🕐 Búsquedas recientes</div>';
+  var recentProps = recentIds.map(function(id) { return properties.find(function(x) { return x.id === id; }); }).filter(Boolean);
+  if (recentProps.length) {
+    html += recentProps.slice(0, 10).map(function(p) { return _propCard(p); }).join('');
+  } else {
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🕐</div><p>Aún no has visto propiedades.<br>Las propiedades que visites aparecerán aquí automáticamente.</p></div></div>';
+  }
+  el.innerHTML = html;
+}
+function removeFav(id) {
+  var favs = _getFavorites();
+  favs = favs.filter(function(f) { return f !== id; });
+  _saveFavorites(favs);
+  renderFavoritos(document.getElementById('userSectionContent'));
+  toast('Eliminado de favoritos');
+}
+
+// ── LLAVES ──
+function renderLlaves(el) {
+  var hist = _getKeyHistory();
+  var html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">🔑 Mis llaves</div>'
+    + '<div class="us-keys-balance">'
+    + '<div><div class="us-keys-count">'+S.keysLeft+'</div><div class="us-keys-label">llave'+(S.keysLeft!==1?'s':'')+' disponible'+(S.keysLeft!==1?'s':'')+'</div></div>'
+    + '<button class="us-keys-buy" onclick="closeUserSection();openModal()">🛒 Comprar llaves</button>'
+    + '</div>';
+  html += '<div class="us-card"><div class="us-card-title">Historial de transacciones</div>';
+  if (hist.length) {
+    html += hist.map(function(h) {
+      var d = new Date(h.date);
+      var dateStr = d.toLocaleDateString('es-PE', {day:'numeric', month:'short', year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
+      if (h.type === 'buy') {
+        return '<div class="us-hist-item"><div class="us-hist-icon bought">🛒</div><div class="us-hist-detail"><div class="us-hist-title">Compra de llaves</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
+      } else {
+        return '<div class="us-hist-item"><div class="us-hist-icon used">🔓</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Propiedad desbloqueada')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount neg">-1 🔑</div></div>';
+      }
+    }).join('');
+  } else {
+    html += '<div class="us-empty"><div class="us-empty-icon">📋</div><p>No tienes transacciones aún.<br>Compra llaves o desbloquea propiedades para ver tu historial.</p></div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── PUBLICACIONES ──
+function renderPublicaciones(el) {
+  var pubs = _getMyPubs();
+  var html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">📋 Mis publicaciones</div>';
+  if (pubs.length) {
+    html += pubs.map(function(pub, i) {
+      return '<div class="us-prop-card">'
+        + '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>'
+        + '<div class="us-prop-info">'
+        + '<div class="us-prop-addr">'+(pub.address||pub.title||'Publicación '+(i+1))+'</div>'
+        + '<div class="us-prop-dist">📍 '+(pub.district||'Sin distrito')+' · '+(pub.type||'Inmueble')+'</div>'
+        + '<div class="us-prop-price">'+(pub.currency||'USD')+' '+(pub.price||'—')+'</div>'
+        + '</div>'
+        + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub('+i+')" title="Eliminar">✕</button>'
+        + '</div>';
+    }).join('');
+  } else {
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📋</div><p>No tienes publicaciones aún.<br>Publica tu primer inmueble para verlo aquí.</p></div></div>';
+  }
+  html += '<div style="text-align:center;margin-top:20px"><button class="us-keys-buy" onclick="closeUserSection();openPublish()">+ Publicar inmueble</button></div>';
+  el.innerHTML = html;
+}
+function removeMyPub(idx) {
+  var pubs = _getMyPubs();
+  pubs.splice(idx, 1);
+  _saveMyPubs(pubs);
+  renderPublicaciones(document.getElementById('userSectionContent'));
+  toast('Publicación eliminada');
+}
+
+// handle hash on load / popstate for user sections
+function _checkUserHash() {
+  var h = window.location.hash.replace('#','');
+  if (['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0) {
+    if (!auth.currentUser) return;
+    document.body.classList.remove('show-home');
+    document.body.classList.add('show-user');
+    renderUserSection(h);
+  }
+}
+window.addEventListener('popstate', function() {
+  var h = window.location.hash.replace('#','');
+  if (['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0) {
+    _checkUserHash();
+  } else if (document.body.classList.contains('show-user')) {
+    document.body.classList.remove('show-user');
+  }
+});
 
 function openAuthModal(tab) {
   document.getElementById('authOverlay').classList.add('open');
@@ -5489,9 +5709,10 @@ auth.onAuthStateChanged(function(user) {
                 <div class="u-name">${user.displayName || user.email}</div>
                 <div class="u-email">${user.email}</div>
               </div>
-              <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
-              <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
-              <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
+              <a href="#perfil" onclick="navigateUserSection('perfil')">👤 Mi perfil</a>
+              <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
+              <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
+              <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
               <hr/>
               <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
             </div>
@@ -5519,6 +5740,8 @@ auth.onAuthStateChanged(function(user) {
       appUserWrap.style.display    = 'none';
     }
   }
+  if (user) _checkUserHash();
+  else if (document.body.classList.contains('show-user')) closeUserSection();
 });
 document.getElementById('authOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeAuthModal();
