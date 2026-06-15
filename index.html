@@ -354,6 +354,10 @@ header .spacer{flex:1}
 .detail-ad-title{font-size:.82rem;font-weight:700;color:var(--txt)}
 .detail-ad-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
 .detail-ad-cta{font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap;flex-shrink:0}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skel{background:linear-gradient(90deg,var(--light) 25%,var(--border) 50%,var(--light) 75%);background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:6px}
+.skel-header{width:100%;height:200px;border-radius:0}
+.skel-line{height:14px}
 .bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
   background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
   border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
@@ -3567,6 +3571,22 @@ function openDetail(id){
   const p=properties.find(x=>x.id===id);
   if(!p){ console.log('[reco] property not found:', id); return; }
   S.selectedId=id;
+
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-skeleton">
+      <div class="skel skel-header"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="skel skel-line" style="width:60%;height:22px"></div>
+        <div class="skel skel-line" style="width:40%;height:16px"></div>
+        <div style="display:flex;gap:10px">${'<div class="skel" style="flex:1;height:52px;border-radius:8px"></div>'.repeat(4)}</div>
+        <div class="skel skel-line" style="width:80%;height:14px"></div>
+        <div class="skel skel-line" style="width:100%;height:60px"></div>
+      </div>
+    </div>`;
+  document.getElementById('detailOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailPanel').scrollTop = 0;
+
   applyFilters();
 
   // Histórico requires a key — show gate if not yet unlocked
@@ -3684,6 +3704,7 @@ function openDetail(id){
 
   document.getElementById('detailOverlay').classList.add('open');
   document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailPanel').scrollTop = 0;
 
   // scroll card into view
   const card=document.getElementById('card-'+id);
@@ -4078,7 +4099,7 @@ function openFullReport(id){
   // Inicializar simulador si aplica
   if(!isHist && !isAlq){
     function calcSim(){
-      const price = +document.getElementById('frSimPrice').value||0;
+      const price = +(document.getElementById('frSimPrice').value.replace(/[^0-9]/g,''))||0;
       const down  = +document.getElementById('frSimDown').value||0;
       const years = +document.getElementById('frSimYears').value||1;
       const rate  = (+document.getElementById('frSimRate').value||0)/100/12;
@@ -4089,7 +4110,15 @@ function openFullReport(id){
       document.getElementById('frResLoan').textContent    = f(loan);
       document.getElementById('frResMonthly').textContent = f(monthly);
     }
-    document.querySelectorAll('.fr-sim-input').forEach(el=>el.addEventListener('input',calcSim));
+    const priceInput = document.getElementById('frSimPrice');
+    function fmtSimPrice(){
+      const raw = priceInput.value.replace(/[^0-9]/g,'');
+      priceInput.value = raw ? Number(raw).toLocaleString() : '';
+      calcSim();
+    }
+    priceInput.addEventListener('input', fmtSimPrice);
+    priceInput.value = Number(p.price).toLocaleString();
+    document.querySelectorAll('.fr-sim-input:not(#frSimPrice)').forEach(el=>el.addEventListener('input',calcSim));
     calcSim();
   }
 }
@@ -4141,6 +4170,27 @@ document.addEventListener('touchend', e => {
 // ─────────────────────── MINI-CARRUSEL CARDS ─────────────────
 const _cimgIdx = {};
 const _detailPhotos = {};
+
+// Touch/swipe en carrusel del panel lateral
+let _cimgTouchX = null, _cimgTouchPid = null;
+document.addEventListener('touchstart', e => {
+  const header = e.target.closest('.detail-header');
+  if(!header) return;
+  const track = header.querySelector('[id^="cimgt-"]');
+  if(!track) return;
+  _cimgTouchPid = track.id.replace('cimgt-','');
+  _cimgTouchX = e.touches[0].clientX;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if(_cimgTouchX === null || !_cimgTouchPid) return;
+  const dx = e.changedTouches[0].clientX - _cimgTouchX;
+  if(Math.abs(dx) > 40){
+    const pid = _cimgTouchPid;
+    const total = (_detailPhotos[pid]||[]).length;
+    if(total > 1) cimgMove(pid, dx < 0 ? 1 : -1, total);
+  }
+  _cimgTouchX = null; _cimgTouchPid = null;
+}, {passive:true});
 function cimgMove(pid, dir, total){
   _cimgIdx[pid] = ((_cimgIdx[pid]||0) + dir + total) % total;
   _cimgApply(pid, total);
