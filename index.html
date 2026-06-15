@@ -179,11 +179,8 @@ header .spacer{flex:1}
   border-radius:var(--r);box-shadow:var(--sh2);
   min-width:180px;overflow:hidden;z-index:9;
 }
-.user-dropdown::before{
-  content:'';position:absolute;top:-10px;left:0;right:0;height:10px;
-}
 .user-wrap{position:relative}
-.user-wrap:hover .user-dropdown,.user-wrap:focus-within .user-dropdown{display:block}
+.user-wrap.open .user-dropdown{display:block}
 .user-dropdown .u-header{padding:14px 16px;background:var(--light);border-bottom:1px solid var(--border)}
 .user-dropdown .u-name{font-weight:700;font-size:.9rem}
 .user-dropdown .u-email{font-size:.78rem;color:var(--muted)}
@@ -1687,7 +1684,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
-    <button class="user-btn" id="appUserInitials">MV</button>
+    <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV</button>
     <div class="user-dropdown">
       <div class="u-header">
         <div class="u-name" id="appUserName">Usuario</div>
@@ -5344,7 +5341,18 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'es';
 
+function toggleUserDropdown(btn) {
+  var wrap = btn.closest('.user-wrap');
+  wrap.classList.toggle('open');
+}
+document.addEventListener('click', function(e) {
+  document.querySelectorAll('.user-wrap.open').forEach(function(w) {
+    if (!w.contains(e.target)) w.classList.remove('open');
+  });
+});
+
 function openUserSection(section) {
+  document.querySelectorAll('.user-wrap.open').forEach(function(w) { w.classList.remove('open'); });
   document.getElementById(section + 'Overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   if (section === 'profile') {
@@ -5468,7 +5476,7 @@ auth.onAuthStateChanged(function(user) {
       homeUserWrap.style.display    = 'flex';
       homeUserWrap.innerHTML = `
         <div class="user-wrap" style="position:relative">
-          <button class="user-btn">${_getInitials(user.displayName || user.email)}</button>
+          <button class="user-btn" onclick="toggleUserDropdown(this)">${_getInitials(user.displayName || user.email)}</button>
           <div class="user-dropdown">
             <div class="u-header">
               <div class="u-name">${user.displayName || user.email}</div>
