@@ -199,6 +199,55 @@ header .spacer{flex:1}
   background:linear-gradient(160deg,#0e7490 0%,#0891b2 55%,#06b6d4 100%);
   padding:18px 20px 14px;
 }
+/* ── Search mode toggle (Clásica / Reco IA) ── */
+.search-mode-toggle{display:flex;gap:4px;margin-bottom:12px}
+.search-mode-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:7px 18px;border-radius:99px;border:none;
+  font-size:.82rem;font-weight:700;cursor:pointer;
+  transition:all .18s;font-family:inherit;
+}
+.search-mode-btn.classic{background:rgba(255,255,255,.18);color:rgba(255,255,255,.8)}
+.search-mode-btn.classic.active{background:#fff;color:var(--txt)}
+.search-mode-btn.ai{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7)}
+.search-mode-btn.ai.active{background:linear-gradient(135deg,#f97316,#ec4899);color:#fff}
+.search-mode-btn .mode-dot{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.6}
+.search-mode-btn.active .mode-dot{opacity:1}
+.search-mode-btn .ai-sparkle{font-size:.9rem}
+/* ── AI search row ── */
+.ai-search-row{display:none;flex-direction:column;gap:10px}
+.ai-search-row.active{display:flex}
+.ai-input-wrap{
+  display:flex;gap:10px;
+  background:rgba(255,255,255,.97);border-radius:14px;
+  padding:6px 6px 6px 16px;align-items:center;
+  box-shadow:0 0 0 2.5px rgba(249,115,22,.35);
+}
+.ai-input-wrap .ai-sparkle-icon{font-size:1.1rem;flex-shrink:0}
+.ai-input-wrap input{
+  flex:1;border:none;background:transparent;outline:none;
+  font-size:.95rem;color:var(--txt);padding:8px 0;
+}
+.ai-input-wrap input::placeholder{color:#9ca3af}
+.btn-ai-search{
+  background:linear-gradient(135deg,#4338ca,#6366f1);color:#fff;border:none;
+  padding:10px 22px;border-radius:10px;
+  font-size:.88rem;font-weight:700;white-space:nowrap;
+  cursor:pointer;transition:opacity .15s;font-family:inherit;
+}
+.btn-ai-search:hover{opacity:.88}
+.btn-ai-search:disabled{opacity:.5;cursor:not-allowed}
+.ai-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ai-chips-label{color:rgba(255,255,255,.55);font-size:.78rem;font-weight:600}
+.ai-chip{
+  background:rgba(255,255,255,.95);color:var(--txt);
+  border:none;padding:6px 14px;border-radius:99px;
+  font-size:.78rem;cursor:pointer;transition:all .12s;font-family:inherit;
+}
+.ai-chip:hover{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+/* ── Classic search row ── */
+.classic-search-row{display:flex;gap:10px;margin-bottom:12px}
+.classic-search-row.hidden{display:none}
 .search-row{display:flex;gap:10px;margin-bottom:12px}
 .search-input-wrap{flex:1;position:relative}
 .search-input-wrap input{
@@ -1132,6 +1181,12 @@ body.show-home{overflow:auto;height:auto}
 #homeView .search-box input::placeholder{color:#94a3b8}
 #homeView .search-box .btn-search{background:linear-gradient(135deg,var(--amber),var(--amber2));color:#fff;border:none;padding:15px 28px;font-size:.92rem;font-weight:700;white-space:nowrap;transition:opacity .12s;display:flex;align-items:center;gap:7px}
 #homeView .search-box .btn-search:hover{opacity:.9}
+#homeView .hero-ai-row{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+#homeView .hero-ai-btn{background:linear-gradient(135deg,#f97316,#ec4899);color:#fff;border:none;padding:6px 16px;border-radius:99px;font-size:.78rem;font-weight:700;cursor:pointer;transition:opacity .12s;font-family:inherit;white-space:nowrap}
+#homeView .hero-ai-btn:hover{opacity:.88}
+#homeView .hero-ai-hint{font-size:.76rem;color:rgba(255,255,255,.5);font-weight:600}
+#homeView .hero-ai-chip{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:99px;font-size:.74rem;cursor:pointer;transition:all .12s;font-family:inherit;white-space:nowrap}
+#homeView .hero-ai-chip:hover{background:rgba(255,255,255,.28);color:#fff}
 
 /* AUTOCOMPLETE */
 #homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow:hidden;display:none}
@@ -1372,6 +1427,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <button class="btn-search" onclick="goSearch()">🔍 Buscar</button>
       </div>
       <div class="sg-drop" id="sgDropLanding"></div>
+      <div class="hero-ai-row">
+        <button class="hero-ai-btn" onclick="goSearchAI()">✨ Reco IA</button>
+        <span class="hero-ai-hint">Prueba:</span>
+        <button class="hero-ai-chip" onclick="document.getElementById('heroQ').value=this.textContent;goSearchAI()">Depa 3 dorm Miraflores hasta 800 mil</button>
+        <button class="hero-ai-chip" onclick="document.getElementById('heroQ').value=this.textContent;goSearchAI()">Casa con jardín La Molina bajo 350k</button>
+      </div>
     </div>
   </div>
 </section>
@@ -1618,7 +1679,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
 <!-- ══════ SEARCH HERO ══════ -->
 <div class="search-hero" id="hero">
-  <div class="search-row">
+  <!-- Mode toggle -->
+  <div class="search-mode-toggle">
+    <button class="search-mode-btn classic active" onclick="setSearchMode('classic')">
+      <span class="mode-dot"></span> Clásica
+    </button>
+    <button class="search-mode-btn ai" onclick="setSearchMode('ai')">
+      <span class="ai-sparkle">✨</span> Reco IA
+    </button>
+  </div>
+
+  <!-- Classic search -->
+  <div class="search-row classic-search-row" id="classicSearch">
     <div class="search-input-wrap">
       <span class="search-icon">🔍</span>
       <input type="text" id="searchQ" placeholder="Buscar por distrito, dirección o urbanización…"
@@ -1627,7 +1699,28 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         onblur="hideSuggestions()"/>
       <div class="sg-drop" id="sgDrop"></div>
     </div>
-    <button class="btn-search" onclick="applyFilters()">Buscar</button>
+    <button class="btn-search" onclick="smartSearch()">Buscar</button>
+  </div>
+
+  <!-- AI search -->
+  <div class="ai-search-row" id="aiSearch">
+    <div class="ai-input-wrap">
+      <span class="ai-sparkle-icon">✨</span>
+      <input type="text" id="aiSearchQ" placeholder="Ej: Depa 3 dorm San Isidro hasta 800 mil soles"
+        onkeydown="if(event.key==='Enter')runAiSearch()"/>
+      <button class="btn-ai-search" onclick="runAiSearch()">Buscar con IA</button>
+    </div>
+    <div class="ai-chips">
+      <span class="ai-chips-label">Prueba:</span>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Depa 3 dorm Miraflores hasta 800 mil</button>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Casa jardín La Molina bajo 350k</button>
+      <button class="ai-chip" onclick="fillAiChip(this)">Ej: Prop banco Surco bajo 1M</button>
+      <span style="flex:1"></span>
+      <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="adv-toggle-btn" onclick="toggleAdv()">
+        Más filtros <span class="adv-arrow">▼</span>
+      </button>
+    </div>
   </div>
 
   <div class="filters-row">
@@ -3503,8 +3596,16 @@ function hideSuggestions(){
 function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
   if(e.key==='Enter'){
-    S.query=document.getElementById('searchQ').value.trim();
-    hideSuggestions();applyFilters();
+    const q=document.getElementById('searchQ').value.trim();
+    hideSuggestions();
+    if(_looksLikeNaturalQuery(q)){
+      document.getElementById('aiSearchQ').value=q;
+      setSearchMode('ai');
+      runAiSearch();
+    } else {
+      S.query=q;
+      applyFilters();
+    }
   }
 }
 
@@ -3529,6 +3630,224 @@ function setBeds(btn,val){
   document.querySelectorAll('#bedsSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.beds=val; applyFilters();
+}
+
+function _looksLikeNaturalQuery(text){
+  if(!text) return false;
+  const q=text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+  return /\bdepa(?:rtamento)?s?\b|\bcasas?\b|\bterrenos?\b|\boficinas?\b|\blocal(?:es)?\b/.test(q)
+    || /\d\s*(?:dorm|hab|cuarto|dormitorio|habitaci|bano|bath)/.test(q)
+    || /\bhasta\b|\bbajo\b|\bmenos de\b|\bdesde\b|\bmas de\b/.test(q)
+    || /\d+\s*(?:mil|k|m)\b/.test(q)
+    || /\bbanco\b|\bremate\b|\balquil|\brenta\b/.test(q)
+    || /\bjardin\b|\bpiscina\b|\bterraza\b|\bcochera\b|\bvista\b/.test(q);
+}
+function smartSearch(){
+  const q=document.getElementById('searchQ').value.trim();
+  if(_looksLikeNaturalQuery(q)){
+    document.getElementById('aiSearchQ').value=q;
+    setSearchMode('ai');
+    runAiSearch();
+  } else {
+    applyFilters();
+  }
+}
+
+// ─────────────────────── AI SEARCH (local parser) ───────────────────────
+let _aiMode=false;
+function setSearchMode(mode){
+  _aiMode=mode==='ai';
+  document.querySelectorAll('.search-mode-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.search-mode-btn.'+mode).classList.add('active');
+  document.getElementById('classicSearch').classList.toggle('hidden',_aiMode);
+  document.getElementById('aiSearch').classList.toggle('active',_aiMode);
+  document.querySelector('.filters-row').style.display=_aiMode?'none':'';
+  setTimeout(recalcBody,50);
+}
+function fillAiChip(btn){
+  const q=btn.textContent.replace(/^Ej:\s*/,'');
+  document.getElementById('aiSearchQ').value=q;
+  document.getElementById('aiSearchQ').focus();
+}
+function runAiSearch(){
+  const q=document.getElementById('aiSearchQ').value.trim();
+  if(!q) return;
+  const filters=parseLocalQuery(q);
+  applyAiFilters(filters);
+}
+
+function parseLocalQuery(raw){
+  const q=raw.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g,'');
+  const f={op:null,type:null,district:null,beds:null,baths:null,
+           minPrice:null,maxPrice:null,minArea:null,bankOnly:false,features:[]};
+
+  // — Operation —
+  if(/\balquil|\brenta|\barriend/.test(q)) f.op='Alquiler';
+  else f.op='Venta';
+
+  // — Property type —
+  const typeMap=[
+    [/\bdepa(?:rtamento)?s?\b/,'Departamento'],
+    [/\bcasas?\b/,'Casa'],
+    [/\bterrenos?\b/,'Terreno'],
+    [/\boficinas?\b/,'Oficina'],
+    [/\blocal(?:es)?\b/,'Local']
+  ];
+  for(const[rx,val] of typeMap){if(rx.test(q)){f.type=val;break;}}
+
+  // — District (fuzzy match against real data) —
+  const districts=[...new Set(properties.map(p=>p.district))];
+  const qNorm=q;
+  let bestDist=null, bestLen=0;
+  for(const d of districts){
+    const dn=d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+    if(qNorm.includes(dn) && dn.length>bestLen){
+      bestDist=d; bestLen=dn.length;
+    }
+  }
+  if(!bestDist){
+    const aliases={
+      'surco':'Santiago de Surco','sjl':'San Juan de Lurigancho',
+      'sjm':'San Juan de Miraflores','smp':'San Martin de Porres',
+      'ves':'Villa El Salvador','vmt':'Villa María del Triunfo',
+      'cercado':'Cercado de Lima','los olivos':'Los Olivos',
+      'comas':'Comas','rimac':'Rímac','ate':'Ate',
+      'san isidro':'San Isidro','miraflores':'Miraflores',
+      'la molina':'La Molina','san borja':'San Borja',
+      'barranco':'Barranco','jesus maria':'Jesús María',
+      'lince':'Lince','pueblo libre':'Pueblo Libre',
+      'magdalena':'Magdalena del Mar','san miguel':'San Miguel',
+      'surquillo':'Surquillo','chorrillos':'Chorrillos',
+      'independencia':'Independencia','carabayllo':'Carabayllo',
+      'callao':'Callao','la victoria':'La Victoria',
+      'breña':'Breña','brena':'Breña',
+      'santa anita':'Santa Anita','el agustino':'El Agustino',
+      'chaclacayo':'Chaclacayo','lurin':'Lurín',
+      'punta hermosa':'Punta Hermosa','ancon':'Ancón',
+      'ventanilla':'Ventanilla','bellavista':'Bellavista',
+      'la perla':'La Perla','la punta':'La Punta',
+    };
+    for(const[alias,real] of Object.entries(aliases)){
+      if(qNorm.includes(alias)){bestDist=real;break;}
+    }
+  }
+  f.district=bestDist;
+
+  // — Bedrooms —
+  const bedsRx=/(\d)\s*(?:dorm|hab|cuarto|dormitorio|habitaci)/;
+  const bedsM=q.match(bedsRx);
+  if(bedsM) f.beds=parseInt(bedsM[1]);
+
+  // — Bathrooms —
+  const bathsRx=/(\d)\s*(?:bano|baño|bath)/;
+  const bathsM=q.match(bathsRx);
+  if(bathsM) f.baths=parseInt(bathsM[1]);
+
+  // — Price parsing —
+  function parsePrice(s){
+    s=s.replace(/,/g,'').replace(/\s+/g,'');
+    let mult=1;
+    if(/millone?s?|mm/.test(s)){mult=1000000;s=s.replace(/millone?s?|mm/g,'');}
+    else if(/mil\b/.test(s)){mult=1000;s=s.replace(/mil/g,'');}
+    else if(/[mk]$/i.test(s)){
+      const c=s.slice(-1).toLowerCase();
+      mult=c==='m'?1000000:1000;
+      s=s.slice(0,-1);
+    }
+    const n=parseFloat(s);
+    if(isNaN(n)) return null;
+    let val=n*mult;
+    if(val>0&&val<500) val*=1000;
+    return val;
+  }
+  const isDollar=/dolar|usd|\$us|\bus\$/i.test(raw);
+  const fxRate=isDollar?3.7:1;
+
+  const maxRx=/(?:hasta|bajo|menos de|maximo?|max|por debajo de|no m[aá]s de|under|below)\s+(?:s\/\.?\s*|s\/\s*)?([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+  const maxM=raw.toLowerCase().match(maxRx);
+  if(maxM){ const v=parsePrice(maxM[1]); if(v) f.maxPrice=Math.round(v*fxRate); }
+
+  const minRx=/(?:desde|m[aá]s de|minimo?|min|a partir de|over|above)\s+(?:s\/\.?\s*|s\/\s*)?([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+  const minM=raw.toLowerCase().match(minRx);
+  if(minM){ const v=parsePrice(minM[1]); if(v) f.minPrice=Math.round(v*fxRate); }
+
+  if(!f.maxPrice&&!f.minPrice){
+    const loosePrice=/(?:s\/\.?\s*|s\/\s*)([0-9][0-9.,]*\s*(?:mil(?:lones?)?|mm|[mk])?)/i;
+    const lm=raw.match(loosePrice);
+    if(lm){ const v=parsePrice(lm[1]); if(v) f.maxPrice=Math.round(v*fxRate); }
+  }
+
+  // — Area —
+  const areaRx=/(\d+)\s*(?:m2|m²|metros?\s*(?:cuadrados)?)/i;
+  const areaM=raw.match(areaRx);
+  if(areaM) f.minArea=parseInt(areaM[1]);
+
+  // — Bank properties —
+  if(/\bbanco\b|\bremate|\badjudica|\bremata/.test(q)) f.bankOnly=true;
+
+  // — Features —
+  const featureMap=[
+    [/\bjardin\b/,'Jardín'],[/\bpiscina\b/,'Piscina'],[/\bterraza\b/,'Terraza'],
+    [/\bcochera\b|\bestacionamiento\b|\bgarage\b|\bgaraje\b/,'Depósito'],
+    [/\bascensor\b|\belevador\b/,'Recepción'],
+    [/\bgimnasio\b|\bgym\b/,'Gimnasio'],[/\bsauna\b|\bspa\b/,'Sauna/Spa'],
+    [/\bjacuzzi\b/,'Jacuzzi'],[/\bbalcon\b/,'Balcón'],
+    [/\bvista\s*(?:al\s*)?mar\b/,'Vista al mar'],
+    [/\bvista\s*(?:a\s*)?parque\b/,'Vista a parque'],
+    [/\barea\s*verde|areas\s*verde/,'Áreas verdes'],
+    [/\bparrilla\b|\bbbq\b/,'Zona de Parrilla (BBQ)'],
+    [/\bjuegos\s*infantil/,'Juegos infantiles'],
+    [/\bpatio\b/,'Patio'],[/\bdeposito\b/,'Depósito'],
+  ];
+  for(const[rx,feat] of featureMap){
+    if(rx.test(q)&&!f.features.includes(feat)) f.features.push(feat);
+  }
+
+  return f;
+}
+
+function applyAiFilters(f){
+  clearFilters();
+  if(f.op){
+    S.op=f.op;
+    document.querySelectorAll('#opSeg button').forEach(b=>{
+      b.classList.remove('active');
+      if((f.op==='Venta'&&b.textContent==='Comprar')||(f.op==='Alquiler'&&b.textContent==='Alquilar'))
+        b.classList.add('active');
+    });
+  }
+  if(f.type){
+    S.type=f.type;
+    document.getElementById('typeSel').value=f.type;
+  }
+  if(f.district){
+    S.query=f.district;
+    document.getElementById('searchQ').value=f.district;
+  }
+  if(f.beds){
+    S.beds=f.beds;
+    document.querySelectorAll('#bedsSeg button').forEach(b=>{
+      b.classList.remove('active');
+      const v=b.textContent.trim();
+      if((f.beds>=4&&v==='4+')||v===String(f.beds)) b.classList.add('active');
+    });
+  }
+  if(f.baths) S.baths=f.baths;
+  if(f.minPrice) S.minPrice=f.minPrice;
+  if(f.maxPrice) S.maxPrice=f.maxPrice;
+  if(f.minArea) S.minArea=f.minArea;
+  if(f.bankOnly){
+    S.bankOnly=true;
+    document.getElementById('bankOnly').checked=true;
+  }
+  if(f.features&&f.features.length) S.features=f.features;
+  const list=getFiltered();
+  renderCards(list);
+  try{renderPins(list);}catch(e){}
+  setSearchMode('classic');
+  const filtersRow=document.querySelector('.filters-row');
+  if(filtersRow) filtersRow.style.display='';
 }
 // ── View modes & panel toggle ──
 let _viewMode='list';
@@ -3588,9 +3907,8 @@ function toggleAdvFeat(chip,feat){
 
 function toggleAdv(){
   const p=document.getElementById('advPanel');
-  const b=document.getElementById('advBtn');
   const open=p.classList.toggle('open');
-  b.classList.toggle('open',open);
+  document.querySelectorAll('.adv-toggle-btn').forEach(b=>b.classList.toggle('open',open));
   setTimeout(recalcBody,250);
 }
 
@@ -5127,9 +5445,22 @@ function goToApp(hash){
     document.getElementById('sgDropLanding').style.display='none';
     _lastGeoL={lat,lng,label};
   }
+  function goSearchAI(){
+    const q=document.getElementById('heroQ').value.trim();
+    document.getElementById('sgDropLanding').style.display='none';
+    goToApp();
+    setTimeout(()=>{
+      setSearchMode('ai');
+      if(q){
+        document.getElementById('aiSearchQ').value=q;
+        runAiSearch();
+      }
+    },300);
+  }
   function goSearch(){
     const q=document.getElementById('heroQ').value.trim();
     document.getElementById('sgDropLanding').style.display='none';
+    if(_looksLikeNaturalQuery(q)){goSearchAI();return;}
     const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
     const op=opMap[_tab]||'venta';
     goToApp('#op='+op);
