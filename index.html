@@ -1322,6 +1322,20 @@ body.show-home{overflow:auto;height:auto}
 @media(max-width:700px){#homeView header{grid-template-columns:1fr auto;padding:0 16px}#homeView .nav-left{display:none}#homeView .footer-grid{grid-template-columns:1fr 1fr}#homeView .hero-content{padding:0 5% 44px}}
 @media(max-width:560px){#homeView .why-grid,#homeView .aud-grid,#homeView .footer-grid{grid-template-columns:1fr}#homeView .footer-bottom{flex-direction:column;text-align:center}#homeView .tab{padding:7px 14px;font-size:.76rem}}
 
+/* ══ USER SECTION MODALS ══ */
+.usec-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.usec-overlay.open{display:flex}
+.usec-box{background:#fff;border-radius:18px;width:min(520px,95vw);max-height:85vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
+.usec-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
+.usec-head{padding:24px 28px 0;font-size:1.1rem;font-weight:700;color:var(--txt)}
+.usec-body{padding:20px 28px 28px}
+.usec-field{margin-bottom:14px}
+.usec-field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+.usec-field input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:9px;font-size:.88rem;font-family:inherit;background:var(--light);color:var(--txt)}
+.usec-field input:disabled{opacity:.6}
+.usec-empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.9rem}
+.usec-empty span{display:block;font-size:2rem;margin-bottom:10px}
+
 /* ══ AUTH MODAL ══ */
 .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .auth-overlay.open{display:flex}
@@ -1679,10 +1693,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <div class="u-name" id="appUserName">Usuario</div>
         <div class="u-email" id="appUserEmail">email</div>
       </div>
-      <a href="#">👤 Mi perfil</a>
-      <a href="#">🔍 Mis búsquedas guardadas</a>
-      <a href="#">🔑 Historial de llaves</a>
-      <a href="#">📋 Mis publicaciones</a>
+      <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
+      <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
+      <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
+      <a href="#" onclick="event.preventDefault();openUserSection('myPublications')">📋 Mis publicaciones</a>
       <hr/>
       <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
     </div>
@@ -5187,6 +5201,75 @@ function _applyLandingHash(){
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
 </style>
 
+<!-- ══ USER SECTION MODALS ══════════════════════════════════ -->
+
+<!-- Mi perfil -->
+<div class="usec-overlay" id="profileOverlay" onclick="if(event.target===this)closeUserSection('profile')">
+  <div class="usec-box">
+    <button class="usec-close" onclick="closeUserSection('profile')">✕</button>
+    <div class="usec-head">👤 Mi perfil</div>
+    <div class="usec-body">
+      <div class="usec-field">
+        <label>Nombre</label>
+        <input type="text" id="profileName" disabled>
+      </div>
+      <div class="usec-field">
+        <label>Correo electrónico</label>
+        <input type="email" id="profileEmail" disabled>
+      </div>
+      <div class="usec-field">
+        <label>Miembro desde</label>
+        <input type="text" id="profileSince" disabled>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mis búsquedas guardadas -->
+<div class="usec-overlay" id="savedSearchesOverlay" onclick="if(event.target===this)closeUserSection('savedSearches')">
+  <div class="usec-box">
+    <button class="usec-close" onclick="closeUserSection('savedSearches')">✕</button>
+    <div class="usec-head">🔍 Mis búsquedas guardadas</div>
+    <div class="usec-body">
+      <div class="usec-empty" id="savedSearchesEmpty">
+        <span>🔍</span>
+        Aún no tienes búsquedas guardadas.<br>Guarda tus búsquedas favoritas para acceder rápidamente.
+      </div>
+      <div id="savedSearchesList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Historial de llaves -->
+<div class="usec-overlay" id="keyHistoryOverlay" onclick="if(event.target===this)closeUserSection('keyHistory')">
+  <div class="usec-box">
+    <button class="usec-close" onclick="closeUserSection('keyHistory')">✕</button>
+    <div class="usec-head">🔑 Historial de llaves</div>
+    <div class="usec-body">
+      <div class="usec-empty" id="keyHistoryEmpty">
+        <span>🔑</span>
+        No tienes historial de llaves aún.<br>Aquí podrás ver las llaves que has comprado y utilizado.
+      </div>
+      <div id="keyHistoryList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Mis publicaciones -->
+<div class="usec-overlay" id="myPublicationsOverlay" onclick="if(event.target===this)closeUserSection('myPublications')">
+  <div class="usec-box">
+    <button class="usec-close" onclick="closeUserSection('myPublications')">✕</button>
+    <div class="usec-head">📋 Mis publicaciones</div>
+    <div class="usec-body">
+      <div class="usec-empty" id="myPublicationsEmpty">
+        <span>📋</span>
+        No tienes publicaciones aún.<br>Publica tu primer inmueble para que aparezca aquí.
+      </div>
+      <div id="myPublicationsList"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
 <div class="auth-overlay" id="authOverlay">
   <div class="auth-box">
@@ -5260,6 +5343,24 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'es';
+
+function openUserSection(section) {
+  document.getElementById(section + 'Overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (section === 'profile') {
+    var u = auth.currentUser;
+    if (u) {
+      document.getElementById('profileName').value = u.displayName || '';
+      document.getElementById('profileEmail').value = u.email || '';
+      var created = u.metadata && u.metadata.creationTime;
+      document.getElementById('profileSince').value = created ? new Date(created).toLocaleDateString('es-PE', {year:'numeric',month:'long',day:'numeric'}) : '';
+    }
+  }
+}
+function closeUserSection(section) {
+  document.getElementById(section + 'Overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
 
 function openAuthModal(tab) {
   document.getElementById('authOverlay').classList.add('open');
@@ -5373,9 +5474,9 @@ auth.onAuthStateChanged(function(user) {
               <div class="u-name">${user.displayName || user.email}</div>
               <div class="u-email">${user.email}</div>
             </div>
-            <a href="#">👤 Mi perfil</a>
-            <a href="#">🔍 Mis búsquedas guardadas</a>
-            <a href="#">🔑 Historial de llaves</a>
+            <a href="#" onclick="event.preventDefault();openUserSection('profile')">👤 Mi perfil</a>
+            <a href="#" onclick="event.preventDefault();openUserSection('savedSearches')">🔍 Mis búsquedas guardadas</a>
+            <a href="#" onclick="event.preventDefault();openUserSection('keyHistory')">🔑 Historial de llaves</a>
             <hr/>
             <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
           </div>
