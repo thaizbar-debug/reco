@@ -2388,13 +2388,18 @@ function _pickTopFeatures(p){
 
 function _stripAddress(desc, address){
   if(!desc || !address) return desc || '';
-  const parts = address.split(',').map(s=>s.trim()).filter(Boolean);
-  let cleaned = desc;
-  parts.forEach(part => {
-    if(part.length >= 4) cleaned = cleaned.split(part).join('');
-  });
-  cleaned = cleaned.replace(/^[\s,.\-·:;]+/, '').replace(/[\s,.\-·:;]+$/, '');
-  return cleaned || desc;
+  const addr = address.replace(/,/g,'').trim();
+  const words = addr.split(/\s+/).filter(w => w.length >= 3);
+  if(words.length < 2) return desc;
+  const lines = desc.split(/\n|<br\s*\/?>|\.(?=\s)/);
+  const first = (lines[0]||'').toLowerCase();
+  let matchCount = 0;
+  words.forEach(w => { if(first.includes(w.toLowerCase())) matchCount++; });
+  if(matchCount >= Math.min(3, words.length)){
+    const removed = desc.replace(lines[0], '').replace(/^[\s,.\-·:;<br>/]+/i, '');
+    return removed || desc;
+  }
+  return desc;
 }
 function sqmPrice(p){ return Math.round(p.price/p.area); }
 function sqmPriceNet(p){
@@ -3701,12 +3706,12 @@ function openDetail(id){
 
       ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, assets.partidas):''}
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
-        <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Inmueble guardado')">Guardar</button>
-        <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado')">Compartir</button>
-      </div>
-
       <button class="detail-view-more" onclick="openFullReport('${p.id}')">Ver Más Detalles</button>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Inmueble guardado')">❤️ Guardar</button>
+        <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado')">🔗 Compartir</button>
+      </div>
 
       <div class="detail-ad-wrap">
         <div class="detail-ad-badge">Publicidad</div>
