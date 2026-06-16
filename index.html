@@ -2529,8 +2529,8 @@ function renderCards(list){
       ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
       : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji}</div></div>`;
     const arrows = photos.length > 1
-      ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${pid}',-1,${photos.length})">‹</button>
-         <button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${pid}',1,${photos.length})">›</button>`
+      ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${pid}',-1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+         <button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${pid}',1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>`
       : '';
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
