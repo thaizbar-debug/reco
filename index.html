@@ -3698,9 +3698,6 @@ function openDetail(id){
         ${_pickTopFeatures(p).map(f=>`<span class="feat-tag">${f}</span>`).join('')}
       </div>
 
-      <div class="section-title">Descripción</div>
-      <div class="detail-desc">${_stripAddress(p.desc, p.address)}</div>
-
       ${buildValChart(p)}
       ${buildTasChart(p.district, false)}
 
