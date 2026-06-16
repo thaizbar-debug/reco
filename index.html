@@ -3655,8 +3655,8 @@ function openDetail(id){
       </div>
       <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(_detailPhotos['${dpid}'],_cimgIdx['${dpid}']||0)"></div>
       ${photos.length>1?`
-        <button class="cimg-arr cimg-arr-l" style="z-index:3" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})">‹</button>
-        <button class="cimg-arr cimg-arr-r" style="z-index:3" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})">›</button>
+        <button style="position:absolute;top:50%;left:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})">‹</button>
+        <button style="position:absolute;top:50%;right:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})">›</button>
         <div style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:#fff;font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;z-index:4;"><span id="dh-curr-${dpid}">1</span>/${photos.length}</div>
         <div class="cimg-dot-row" style="bottom:48px;z-index:3" id="cdots-${dpid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${dpid}',${i},${photos.length})"></div>`).join('')}</div>
       `:''}
