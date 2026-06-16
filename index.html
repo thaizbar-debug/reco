@@ -3681,9 +3681,10 @@ function openDetail(id){
 
       <div class="detail-specs-grid">
         <div class="spec-box"><div class="sv">${p.area} m²</div><div class="sk">Área</div></div>
-        ${p.beds>0?`<div class="spec-box"><div class="sv">${p.beds}</div><div class="sk">Dormitorios</div></div>`:''}
-        ${p.baths>0?`<div class="spec-box"><div class="sv">${p.baths}</div><div class="sk">Baños</div></div>`:''}
-        ${parkCount(p)>0?`<div class="spec-box"><div class="sv">${parkCount(p)}</div><div class="sk">Estacionamientos</div></div>`:''}
+        <div class="spec-box"><div class="sv">${p.beds>0?p.beds:'—'}</div><div class="sk">Dormitorios</div></div>
+        <div class="spec-box"><div class="sv">${p.baths>0?p.baths:'—'}</div><div class="sk">Baños</div></div>
+        <div class="spec-box"><div class="sv">${parkCount(p)>0?parkCount(p):'—'}</div><div class="sk">Estacionamientos</div></div>
+        <div class="spec-box"><div class="sv">${(p.sun?.depositos||0)>0?p.sun.depositos:'—'}</div><div class="sk">Depósitos</div></div>
         <div class="spec-box"><div class="sv">${p.age}</div><div class="sk">Años</div></div>
       </div>
 
