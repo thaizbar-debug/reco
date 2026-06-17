@@ -529,6 +529,7 @@ header .spacer{flex:1}
 .res-list.view-2col .card-feats{display:flex;max-height:26px;overflow:hidden}
 .res-list.view-2col>.area-summary-bar,.res-list.view-3col>.area-summary-bar{width:100%}
 .res-list.view-2col>div[style],.res-list.view-3col>div[style]{width:100%}
+.res-list.view-2col>.empty,.res-list.view-3col>.empty{width:100%}
 /* ── View: 3 columnas ── */
 .res-list.view-3col{display:flex!important;flex-wrap:wrap;gap:10px}
 .res-list.view-3col .p-card{margin-bottom:0;width:calc(33.333% - 6.667px);flex-shrink:0}
@@ -595,9 +596,13 @@ header .spacer{flex:1}
   backdrop-filter:blur(4px);
 }
 .badge-op{background:rgba(8,145,178,.88);color:#fff}
+.badge-op-venta{background:rgba(8,145,178,.88);color:#fff}
+.badge-op-alquiler{background:rgba(6,182,212,.88);color:#fff}
+.badge-op-historico{background:rgba(245,158,11,.9);color:#fff}
 .badge-bank{background:rgba(245,158,11,.9);color:#fff}
 .badge-new{background:rgba(16,185,129,.9);color:#fff}
 .badge-type{background:rgba(255,255,255,.85);color:var(--blue)}
+.card-price-locked{color:var(--muted);letter-spacing:.5px}
 
 .card-body{padding:11px 13px}
 .card-addr{font-weight:700;font-size:.88rem;margin-bottom:2px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -2282,13 +2287,6 @@ function getFiltered(){
   else if(sort==='price_desc') list.sort((a,b)=>b.price-a.price);
   else if(sort==='area_desc') list.sort((a,b)=>b.area-a.area);
   else if(sort==='new') list.sort((a,b)=>a.age-b.age);
-  // Comprar y Alquiler: con foto primero (sort estable, preserva orden interno)
-  list.sort((a,b)=>{
-    if(a.op==='Histórico'||b.op==='Histórico') return 0;
-    const aHas=driveAssets(a).photos.length>0?0:1;
-    const bHas=driveAssets(b).photos.length>0?0:1;
-    return aHas-bHas;
-  });
   return list;
 }
 
@@ -2414,10 +2412,10 @@ function renderCards(list){
   const spatialActive=(S.radiusCenter)||(S.polyFinished&&S.polyPoints.length>=3);
   const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
 
-  el.innerHTML=tablePrefix+list.map(p=>{
+  el.innerHTML=tablePrefix+list.map((p,_idx)=>{
     const cardAssets=driveAssets(p);
     const photos=cardAssets.photos;
-    const pid=p.id.replace(/[^a-zA-Z0-9]/g,'_');
+    const pid=_idx+'_'+p.id.replace(/[^a-zA-Z0-9]/g,'_');
     const slides = photos.length
       ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
       : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji}</div></div>`;
@@ -2428,7 +2426,11 @@ function renderCards(list){
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
       : '';
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-op">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom"><div><div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}</div>${p.op==='Histórico'?S.unlockedIds.has(p.id)?`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`:`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`}</div></div></div>`;
+    const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
+    const priceHtml=histLocked
+      ?`<div class="card-price card-price-locked">🔒 ${p.cur} ••• ••• ••</div>`
+      :`<div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}`;
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-op badge-op-${p.op==='Venta'?'venta':p.op==='Alquiler'?'alquiler':'historico'}">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom"><div>${priceHtml}</div>${p.op==='Histórico'?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`):`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
@@ -3742,7 +3744,7 @@ function resetAll(){
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'all',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
   applyFilters();
 }
 
