@@ -611,8 +611,9 @@ header .spacer{flex:1}
 .spec{display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--muted)}
 .spec span:first-child{font-size:.95rem}
 .card-bottom{display:flex;align-items:center;justify-content:space-between}
-.card-price{font-size:1.05rem;font-weight:800;color:var(--blue)}
-.card-sqm{display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:3px 10px;font-size:.74rem;font-weight:700;color:#1d4ed8}
+.card-price-row{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.card-price{font-size:1.05rem;font-weight:800;color:var(--blue);white-space:nowrap}
+.card-sqm{display:inline-flex;align-items:center;gap:5px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:3px 10px;font-size:.74rem;font-weight:700;color:#1d4ed8;white-space:nowrap}
 .card-sqm-lbl{font-weight:400;color:#3b82f6;font-size:.68rem;white-space:nowrap}
 .card-detail-btn{
   background:var(--light);border:1.5px solid var(--border);
@@ -2428,9 +2429,18 @@ function renderCards(list){
       : '';
     const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
     const priceHtml=histLocked
-      ?`<div class="card-price card-price-locked">🔒 ${p.cur} •••</div>`
-      :`<div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}`;
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom"><div>${priceHtml}</div>${p.op==='Histórico'?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`):`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`}</div></div></div>`;
+      ?`<div class="card-price-row"><div class="card-price card-price-locked">🔒 ${p.cur} •••</div></div>`
+      :`<div class="card-price-row"><div class="card-price">${p.cur} ${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${Math.round(s).toLocaleString('en-US')}</div>`:''})()}</div>`;
+    const optSpecs=[];
+    if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
+    if(p.baths>0) optSpecs.push(`<span class="spec"><span>🚿</span>${p.baths}</span>`);
+    if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`);
+    if(p.age===0) optSpecs.push('<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>');
+    const specsHtml=`<span class="spec"><span>📐</span>${p.area} m²</span>`+optSpecs.slice(0,3).join('');
+    const bottomBtn=p.op==='Histórico'
+      ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`)
+      :'';
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
