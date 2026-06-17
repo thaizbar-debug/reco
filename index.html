@@ -1367,6 +1367,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="nav-right">
     <button class="btn-pub" onclick="goToApp('#publish')">Publicar inmueble</button>
     <button class="btn-ghost" onclick="openAnun()">Anunciarse</button>
+    <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="homeKeyCount">0</span></button>
     <button class="btn-ingresar" id="homeIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
     <div id="homeUserWrap" style="display:none;align-items:center;position:relative"></div>
   </div>
@@ -3726,10 +3727,16 @@ function showGatePanel(p){
     </div>`;
 }
 
+function updateKeyCount(){
+  document.getElementById('keyCount').textContent=S.keysLeft;
+  const home=document.getElementById('homeKeyCount');
+  if(home)home.textContent=S.keysLeft;
+}
+
 function unlockAndOpen(id){
   S.unlockedIds.add(id);
   S.keysLeft--;
-  document.getElementById('keyCount').textContent=S.keysLeft;
+  updateKeyCount();
   toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
   openDetail(id);
   applyFilters();
@@ -3756,7 +3763,7 @@ function selectPlan(el,name,price,qty){
 function simulatePay(){
   const {name,qty}=S.selectedPlan;
   S.keysLeft+=qty;
-  document.getElementById('keyCount').textContent=S.keysLeft;
+  updateKeyCount();
   closeModal();
   const pending=S.pendingUnlockId;
   S.pendingUnlockId=null;
@@ -4508,7 +4515,7 @@ function _ppub(){
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
   S.keysLeft-=3;
-  document.getElementById('keyCount').textContent=S.keysLeft;
+  updateKeyCount();
   toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
   setTimeout(()=>closePublish(),1800);
 }
@@ -4597,7 +4604,7 @@ function _pubShowBulkPreview(rows){
 function _pubBulkSubmit(n,cost){
   if(S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft}). Compra más llaves.`);return;}
   S.keysLeft-=cost;
-  document.getElementById('keyCount').textContent=S.keysLeft;
+  updateKeyCount();
   toast(`🚀 ¡${n} inmueble${n!==1?'s':''} enviado${n!==1?'s':''}! Los revisaremos en 24h.`);
   setTimeout(()=>closePublish(),1800);
 }
