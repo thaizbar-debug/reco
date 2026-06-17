@@ -2435,7 +2435,6 @@ function renderCards(list){
     if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
     if(p.baths>0) optSpecs.push(`<span class="spec"><span>🚿</span>${p.baths}</span>`);
     if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`);
-    if(p.age===0) optSpecs.push('<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>');
     const specsHtml=`<span class="spec"><span>📐</span>${p.area} m²</span>`+optSpecs.slice(0,3).join('');
     const bottomBtn=p.op==='Histórico'
       ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`)
