@@ -2433,8 +2433,8 @@ function renderCards(list){
       : '';
     const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
     const priceHtml=histLocked
-      ?`<div class="card-price-row"><div class="card-price card-price-locked">🔒 ${p.cur} •••</div></div>`
-      :`<div class="card-price-row"><div class="card-price">${p.cur} ${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${Math.round(s).toLocaleString('en-US')}</div>`:''})()}</div>`;
+      ?`<div class="card-price-row"><div class="card-price card-price-locked">🔒 ${p.cur}•••</div></div>`
+      :`<div class="card-price-row"><div class="card-price">${p.cur}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur}${Math.round(s).toLocaleString('en-US')}</div>`:''})()}</div>`;
     const optSpecs=[];
     if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
     if(p.baths>0) optSpecs.push(`<span class="spec"><span>🚿</span>${p.baths}</span>`);
