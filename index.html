@@ -61,17 +61,6 @@ header .spacer{flex:1}
 .nav-phone{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:.82rem;padding:6px 12px;border-radius:99px;border:1px solid var(--border)}
 .nav-phone:hover{background:var(--light)}
 
-.keys-badge{
-  display:flex;align-items:center;gap:7px;
-  background:linear-gradient(135deg,#fef3c7,#fde68a);
-  border:1.5px solid #fcd34d;
-  border-radius:99px;padding:5px 14px;
-  font-size:.82rem;font-weight:700;color:#92400e;
-  cursor:pointer;transition:box-shadow .15s;
-}
-.keys-badge:hover{box-shadow:0 0 0 3px #fde68a}
-.keys-badge .count{background:#f59e0b;color:#fff;border-radius:99px;padding:1px 7px;font-size:.75rem}
-
 .btn-publish{
   background:transparent;border:1.5px solid var(--border);
   color:var(--txt);padding:7px 15px;border-radius:var(--r);font-size:.82rem;font-weight:600;
@@ -166,6 +155,7 @@ header .spacer{flex:1}
   transition:transform .12s,box-shadow .12s;
 }
 .btn-buy-keys:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(245,158,11,.45)}
+.btn-buy-keys .count{background:rgba(255,255,255,.3);color:#fff;border-radius:99px;padding:1px 7px;font-size:.75rem}
 
 .user-btn{
   width:36px;height:36px;border-radius:99px;
@@ -1662,11 +1652,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-publish" onclick="openPublish()">Publicar inmueble</button>
 
-  <div class="keys-badge" onclick="openModal()">
-    🔑 Mis llaves <span class="count" id="keyCount">0</span>
-  </div>
-
-  <button class="btn-buy-keys" onclick="openModal()">🛒 Comprar llaves</button>
+  <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="keyCount">0</span></button>
 
   <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
