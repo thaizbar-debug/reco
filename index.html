@@ -38,7 +38,8 @@ const GOOGLE_MAPS_KEY='';
   --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
   --sh2:0 8px 32px rgba(0,0,0,.12);
 }
-html,body{height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+html{height:100%}
+body{min-height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
 a{text-decoration:none;color:inherit}
 button{cursor:pointer;font-family:inherit}
 input,select{font-family:inherit}
@@ -1110,6 +1111,21 @@ body.show-home > .search-hero,
 body.show-home > .app-body{display:none !important}
 body.show-home{overflow:auto;height:auto}
 
+/* ══════════════ LEGAL PAGE VIEW ══════════════ */
+.legal-page-view{display:none}
+body.show-legal .legal-page-view.active{display:block}
+body.show-legal #homeView,
+body.show-legal > header,
+body.show-legal > .search-hero,
+body.show-legal > .app-body{display:none !important}
+body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
+.legal-page-nav{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.legal-page-nav .logo{display:flex;align-items:center;cursor:pointer}
+.legal-page-nav .logo img{height:36px;width:auto}
+.legal-page-nav .legal-back{background:none;border:1.5px solid var(--border);padding:7px 16px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;transition:background .12s}
+.legal-page-nav .legal-back:hover{background:var(--light);color:var(--txt)}
+.legal-page-wrap{max-width:760px;margin:0 auto;padding:40px 24px 60px}
+
 /* ═══ landing styles (scoped) ═══ */
 /* HEADER */
 #homeView header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-cyan);display:flex;align-items:center;padding:0 20px;gap:14px}
@@ -1298,7 +1314,7 @@ body.show-home{overflow:auto;height:auto}
 #homeView footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 #homeView .footer-inner{max-width:1160px;margin:0 auto}
 #homeView .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:36px;margin-bottom:32px}
-#homeView .footer-logo{font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:9px}
+#homeView .footer-logo{margin-bottom:12px;line-height:0}
 #homeView .footer-desc{font-size:.8rem;line-height:1.65;max-width:240px;color:rgba(255,255,255,.45)}
 #homeView .footer-col h4{font-size:.68rem;font-weight:700;color:#fff;letter-spacing:.5px;text-transform:uppercase;margin-bottom:11px}
 #homeView .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:7px}
@@ -1309,6 +1325,65 @@ body.show-home{overflow:auto;height:auto}
 #homeView .footer-legal{display:flex;gap:14px}
 #homeView .footer-legal a{font-size:.7rem;color:rgba(255,255,255,.3);transition:color .12s}
 #homeView .footer-legal a:hover{color:#fff}
+
+/* LEGAL PAGES */
+.legal-hero{margin-bottom:0}
+.legal-eyebrow{font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+.legal-hero h1{font-size:1.5rem;font-weight:900;letter-spacing:-.3px;line-height:1.15;margin-bottom:8px}
+.legal-lead{font-size:.92rem;color:var(--muted);line-height:1.6}
+.legal-meta{display:flex;gap:16px;margin-top:14px;font-size:.82rem;color:var(--muted);line-height:1.55}
+.legal-meta div{flex:1;padding:12px;background:var(--light);border-radius:var(--r);border:1px solid var(--border)}
+.legal-meta strong{color:var(--txt)}
+.legal-doc{padding:0}
+.legal-doc section{margin-top:22px}
+.legal-doc h2{font-size:1rem;font-weight:800;margin-bottom:8px;color:var(--txt)}
+.legal-doc h3{font-size:.88rem;font-weight:700;margin:12px 0 4px;color:var(--txt)}
+.legal-doc p{font-size:.85rem;color:var(--muted);line-height:1.65;margin-bottom:6px}
+.legal-doc ul{font-size:.85rem;color:var(--muted);line-height:1.65;padding-left:20px;margin-bottom:6px}
+.legal-doc a{color:var(--blue);text-decoration:underline}
+.legal-foot{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+.legal-foot p{font-size:.78rem;color:var(--muted)}
+.rec-form{padding:0}
+.rec-section{margin-top:22px}
+.rec-section h2{font-size:1rem;font-weight:800;margin-bottom:12px;color:var(--txt)}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rec-col-2{grid-column:1/-1}
+.rec-field label{display:block;font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.03em}
+.rec-field input,.rec-field select,.rec-field textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;background:var(--surface);transition:border-color .14s;outline:none;color:var(--txt)}
+.rec-field input:focus,.rec-field select:focus,.rec-field textarea:focus{border-color:var(--blue)}
+.rec-field textarea{resize:vertical;font-family:inherit}
+.rec-counter{font-size:.7rem;color:var(--muted);text-align:right;margin-top:3px}
+.rec-pills{display:flex;gap:8px}
+.rec-pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.85rem;cursor:pointer;transition:border-color .14s,background .14s}
+.rec-pill input{display:none}
+.rec-pill.active{border-color:var(--blue);background:#ecfeff;color:var(--blue);font-weight:700}
+.rec-legal{font-size:.78rem;color:var(--muted);line-height:1.6;padding:16px 0 0}
+.rec-legal a{color:var(--blue);text-decoration:underline}
+.rec-actions{padding:16px 0 0;display:flex;gap:10px}
+.rec-actions .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .12s}
+.rec-actions .btn-primary:hover{opacity:.88}
+.rec-actions .btn-ghost{background:none;border:1.5px solid var(--border);padding:12px 22px;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--muted);transition:background .12s}
+.rec-actions .btn-ghost:hover{background:var(--light)}
+.rec-success{text-align:center;padding:60px 0}
+.rec-success-badge{width:64px;height:64px;border-radius:50%;background:var(--green);color:#fff;font-size:1.8rem;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.rec-success h1{font-size:1.4rem;font-weight:900;margin-bottom:8px}
+.rec-success-code{margin:20px auto;padding:16px 24px;background:var(--light);border:1.5px solid var(--border);border-radius:var(--r);display:inline-block}
+.rec-success-code span{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.rec-success-code strong{font-size:1.1rem;color:var(--txt)}
+.rec-success-actions{margin-top:24px;display:flex;gap:10px;justify-content:center}
+.rec-success-actions .btn-primary{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:12px 28px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer}
+.rec-success-actions .btn-ghost{background:none;border:1.5px solid var(--border);padding:12px 22px;border-radius:var(--r);font-size:.9rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.faq-list{padding:0}
+.faq-group{margin-top:24px}
+.faq-cat{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--blue);margin-bottom:10px}
+.faq-items{display:flex;flex-direction:column;gap:8px}
+.faq-item{border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface);transition:border-color .2s,box-shadow .2s}
+.faq-item[open]{border-color:var(--blue);box-shadow:0 4px 16px rgba(0,0,0,.06)}
+.faq-item summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;font-size:.88rem;font-weight:600;color:var(--txt)}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-icon{font-size:1.1rem;font-weight:300;color:var(--blue);width:22px;text-align:center;flex-shrink:0}
+.faq-a{padding:0 18px 16px;margin:0;font-size:.85rem;line-height:1.65;color:var(--muted)}
+@media(max-width:600px){.rec-grid{grid-template-columns:1fr}.legal-meta{flex-direction:column}}
 
 @media(max-width:900px){#homeView .why-grid,#homeView .aud-grid{grid-template-columns:1fr 1fr}#homeView .ad-card{grid-template-columns:1fr}#homeView .ad-photo{min-height:200px}}
 @media(max-width:700px){#homeView header{padding:0 16px;gap:8px}#homeView .keys-badge,#homeView .btn-buy-keys{display:none}#homeView .footer-grid{grid-template-columns:1fr 1fr}#homeView .hero-content{padding:0 5% 44px}}
@@ -1562,31 +1637,29 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="footer-inner">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo">reco</div>
+        <div class="footer-logo"><img src="data:image/png;base64,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" alt="reco" style="height:32px;width:auto;filter:brightness(0) invert(1)"/></div>
         <p class="footer-desc">La plataforma de valores inmobiliarios más completa de Lima. Precios de venta, alquiler e históricos de Registros Públicos.</p>
       </div>
       <div class="footer-col"><h4>Explorar</h4><ul>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Buscar inmuebles</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Departamentos</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Casas</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Históricos</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=venta')">Comprar</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=alquiler')">Alquilar</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#op=historico')">Históricos</a></li>
       </ul></div>
       <div class="footer-col"><h4>Propietarios</h4><ul>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Publicar inmueble</a></li>
-        <li><a href="javascript:void(0)" onclick="goToApp('')">Valorizar mi inmueble</a></li>
+        <li><a href="javascript:void(0)" onclick="goToApp('#publish')">Publicar inmueble</a></li>
       </ul></div>
       <div class="footer-col"><h4>Empresa</h4><ul>
-        <li><a href="#">Nosotros</a></li>
-        <li><a href="#">Anunciarse</a></li>
-        <li><a href="#">Contacto</a></li>
+        <li><a href="#contacto">Contacto</a></li>
+        <li><a href="#faqs">FAQs</a></li>
       </ul></div>
     </div>
     <div class="footer-bottom">
       <p>© 2026 Reco · Lima, Perú · VANET DATA S.A.C. RUC 20553966800</p>
       <div class="footer-legal">
-        <a href="#">Términos de uso</a>
-        <a href="#">Privacidad</a>
-        <a href="#">Libro de Reclamaciones</a>
+        <a href="#terminos">Términos de uso</a>
+        <a href="#privacidad">Privacidad</a>
+        <a href="#cookies">Cookies</a>
+        <a href="#reclamaciones">Libro de Reclamaciones</a>
       </div>
     </div>
   </div>
@@ -1645,6 +1718,307 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
   </div>
 </div>
+</div>
+
+<!-- ══════ PAGE: TÉRMINOS ══════ -->
+<div class="legal-page-view" id="pageTerminos">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">Documento legal · Vigente desde 2026</div>
+      <h1>Términos y Condiciones Generales de Uso</h1>
+      <p class="legal-lead">Los presentes Términos y Condiciones regulan el uso de la plataforma "Reco", ofrecida por <strong>VANET DATA S.A.C.</strong> (RUC 20553966800). Al usar la Plataforma, EL USUARIO declara haberlos leído, comprendido y aceptado.</p>
+    </div>
+    <article class="legal-doc">
+      <section><h2>1. Condiciones generales y su aceptación</h2>
+        <p>Los presentes Términos y Condiciones Generales de Uso (en adelante, los "Términos y Condiciones") regulan el uso de la plataforma "Reco" (en adelante, la "Plataforma"), la cual ha sido creada y es ofrecida por VANET DATA S.A.C., con RUC No. 20553966800 y domicilio en Avenida Manuel Olguín No. 327, distrito de Santiago de Surco, provincia y departamento de Lima. La representación legal está a cargo del señor Ricardo Ramon Barthelmess Saco, identificado con DNI No. 09868361, según consta en la partida electrónica No. 12927369 del Registro de Personas Jurídicas de la Oficina Registral de Lima (en adelante, "RECO").</p>
+        <p>Estos Términos y Condiciones son aplicables a cada usuario, sean personas naturales o jurídicas, nacionales o extranjeras, que tengan una cuenta en y/o utilicen la Plataforma (en adelante, "EL USUARIO"). EL USUARIO declara haber leído, comprendido y aceptado todas las condiciones establecidas en estos Términos y Condiciones, así como las Políticas de Privacidad y otros documentos incorporados por referencia, antes de su registro en la Plataforma. Asimismo, declara conocer que es requisito esencial que EL USUARIO sea mayor de edad, para poder utilizar la Plataforma y pueda realizar operaciones en la misma.</p>
+        <p>De igual modo, la utilización de la Plataforma confiere la condición de USUARIO y conlleva la aceptación expresa, plena y sin reservas de todas y cada uno de los Términos y Condiciones, desde el momento mismo del acceso a la Plataforma. En consecuencia, el hecho de hacer uso de la Plataforma constituye la aceptación de los presentes Términos y Condiciones.</p>
+        <p>RECO es una persona jurídica constituida de conformidad con las leyes de la República del Perú, cuyo objeto social es dedicarse, entre otras actividades, a la operación de la Plataforma, la cual es un sistema informático (software) de su titularidad, puesto a disposición del público bajo la forma de una página web que ha sido desarrollada, implementada y es administrada por RECO; y cuya utilización por parte de LOS USUARIOS se sujeta a estos Términos y Condiciones. La Plataforma proporciona información, herramientas y servicios relacionados con la compra, venta y alquiler, así como cualquier tema relacionado al mercado inmobiliario. De esta manera, la Plataforma permite a EL USUARIO obtener valorizaciones referenciales de propiedades inmuebles ubicadas dentro del espacio geográfico del Perú, a efectos de brindar información que pueda ser utilizada como una referencia por parte de EL USUARIO al momento de analizar, negociar y celebrar transacciones en el mercado inmobiliario.</p>
+        <p>EL USUARIO declara ser el único y exclusivo responsable de las decisiones que adopte en relación con el uso de la información obtenida a través de la Plataforma, las cuales pueden consistir, pero no se agotan, en la elección de un posible inmueble para una eventual compra o venta, y negociar el precio y celebrar el contrato de compraventa. EL USUARIO exime de cualquier responsabilidad a RECO, respecto a cualquier daño que pudiese sufrir en relación con cualquiera de las decisiones que pudiese tomar. De igual modo, EL USUARIO declara reconocer y aceptar que la información que pueda obtener a través de la Plataforma es referencial.</p>
+        <p>Estos Términos y Condiciones constituyen un acuerdo completo entre EL USUARIO y RECO, respecto al uso de la Plataforma, y prevalecen y reemplazan a otras comunicaciones, acuerdos o propuestas verbales o escritas entre EL USUARIO y RECO, respecto únicamente del tema en cuestión.</p>
+        <p>RECO se reserva el derecho de modificar estos Términos y Condiciones en cualquier momento, notificando a EL USUARIO la nueva versión con las modificaciones insertas mediante su publicación en la Plataforma, presumiendo la aceptación de estas, en caso de que el USUARIO continúe utilizando el servicio.</p>
+      </section>
+      <section><h2>2. Objeto</h2>
+        <p>A través de la Plataforma, RECO provee los siguientes servicios a EL USUARIO:</p>
+        <ul>
+          <li>La visualización de información referencial de los inmuebles ubicados en el espacio geográfico del Perú.</li>
+          <li>La publicación y promoción de inmuebles ubicados en el espacio geográfico del Perú para transacciones de compra, venta y alquiler.</li>
+          <li>La adquisición de información acerca de las transacciones históricas de compras y ventas respecto a los inmuebles indicados en el punto (i) anterior.</li>
+        </ul>
+        <p>RECO se reserva el derecho de dar de baja o modificar unilateralmente la configuración, presentación y condiciones de uso de la Plataforma en cualquier momento. Por lo tanto, cada vez que un USUARIO acceda a la Plataforma, deberá aceptar los Términos y Condiciones vigentes en ese momento.</p>
+      </section>
+      <section><h2>3. Condiciones de acceso y utilización de la Plataforma</h2>
+        <h3>3.1 Sobre el acceso y uso</h3>
+        <p>El acceso a la Plataforma se realiza ingresando a la página web www.recosac.com, a través de cualquier buscador web. Dicho acceso es de uso personal. Por lo tanto, EL USUARIO no está autorizado a modificar, copiar, distribuir, divulgar, transmitir, utilizar, reproducir, publicar, ceder o vender el software o la información obtenidas en la Plataforma.</p>
+        <p>Es obligatorio completar todos los campos del formulario de registro con datos válidos para poder utilizar los servicios que se brindan en la Plataforma. EL USUARIO deberá completar el formulario con su información personal de manera exacta, precisa y verdadera ("Datos Personales") y asume el compromiso de actualizar los Datos Personales conforme resulte necesario.</p>
+        <p>EL USUARIO se compromete a utilizar la Plataforma para fines estrictamente legales, conforme a la regulación vigente en la República del Perú. En ese sentido, EL USUARIO deberá abstenerse de: (i) hacer un uso no autorizado o fraudulento de la Plataforma; (ii) acceder o intentar acceder a recursos restringidos de la Plataforma; (iii) utilizar la Plataforma con fines o efectos ilícitos, ilegales, lesivos de los derechos e intereses de terceros, o que de cualquier forma puedan dañar, inutilizar, sobrecargar o impedir la normal utilización de la Plataforma; (iv) provocar daños en la Plataforma; (v) introducir o difundir virus informáticos u otros sistemas físicos o lógicos susceptibles de provocar daños; (vi) intentar acceder, utilizar y/o manipular los datos de RECO; (vii) reproducir o copiar, enlazar, distribuir, permitir el acceso del público a través de cualquier modalidad de comunicación pública, transformar o modificar los contenidos recopilados de la Plataforma sin la autorización del titular de los derechos o cuando esté legalmente permitido; (viii) obtener o intentar obtener los contenidos y los datos proporcionados por RECO empleando medios o procedimientos distintos de los que se hayan puesto a su disposición para este efecto.</p>
+        <h3>3.2 Requisitos para el uso de la Plataforma</h3>
+        <p><strong>Sobre la edad y capacidad de EL USUARIO:</strong> EL USUARIO declara ser mayor de edad y acepta las responsabilidades que ello conlleva. No es posible controlar que menores de edad hagan uso de la Plataforma ni realicen compras a través de esta. Por lo tanto, además de no asumir responsabilidad alguna al respecto, se comunica que los padres y tutores serán los únicos responsables de supervisar y asistir a los menores en la navegación y uso de la Plataforma.</p>
+        <p><strong>Sobre la capacidad legal de EL USUARIO:</strong> EL USUARIO declara ser plenamente capaz y competente para comprender y aceptar los Términos y Condiciones, y cualesquiera obligaciones, afirmaciones, representaciones y garantías establecidas en estos Términos y Condiciones, y se compromete a acatar y cumplir lo establecido en el presente texto.</p>
+        <p><strong>Garantías de EL USUARIO al utilizar la Plataforma:</strong> Al utilizar la Plataforma, EL USUARIO manifiesta y garantiza lo siguiente:</p>
+        <ul>
+          <li>Tener el derecho, autoridad y capacidad para aceptar, someterse y cumplir con todos los Términos y Condiciones.</li>
+          <li>Autorizar todos y cada uno de los pagos a través de su propia cuenta bancaria o tarjeta de crédito.</li>
+          <li>Cumplir con todas las normas y reglamentos de la institución financiera en la que mantenga cuenta bancaria o tarjeta de crédito.</li>
+        </ul>
+        <p><strong>Creación de Usuario y Contraseña:</strong> Para utilizar la Plataforma, es necesario crear un Usuario y Contraseña. La creación de estos es necesaria para el uso de la plataforma y para el pago de los productos o servicios.</p>
+        <h3>3.3 Uso de la Plataforma</h3>
+        <p>Para utilizar la Plataforma, EL USUARIO deberá aceptar necesariamente los presentes Términos y Condiciones.</p>
+        <p>EL USUARIO reconoce y acepta que cierta información será proporcionada por terceros (por ejemplo, publicidad registral emitida por la Superintendencia Nacional de los Registros Públicos – SUNARP), para lo cual RECO podrá adquirir dicha información para beneficio de EL USUARIO de conformidad con las leyes aplicables de la República del Perú.</p>
+        <p>La instrucción para efectuar la adquisición de dicha información se realiza a través de la Plataforma.</p>
+        <p>Se precisa que, en ningún extremo o sentido la información que EL USUARIO obtenga a través de la Plataforma reemplazará en forma alguna la publicidad registral operada y administrada exclusivamente por la SUNARP ni implicará la comercialización de esta.</p>
+        <h3>3.4 Reembolsos y/o reclamos</h3>
+        <p>EL USUARIO deberá cumplir con estos Términos y Condiciones, así como seguir los procedimientos estándares para reembolsos y reclamos relacionados a la Plataforma definidos por RECO. Es importante señalar que RECO se limita exclusivamente a la provisión de información referencial en el sector inmobiliario a través de la Plataforma y no realiza reembolsos de ninguna índole.</p>
+        <h3>3.5 Responsabilidad de EL USUARIO sobre impuestos</h3>
+        <p>El reporte y pago de cualquier impuesto aplicable que surja del uso de RECO es responsabilidad de EL USUARIO. En tal sentido, por el presente texto, EL USUARIO reconoce y acepta cumplir con todos y cada una de las leyes de impuestos aplicables, incluyendo el reporte y pago de todos los impuestos generados en conexión con todas las operaciones que efectúe por medio de la Plataforma.</p>
+        <h3>3.6 Propiedad Intelectual</h3>
+        <p>Queda claramente establecido que RECO tiene la titularidad, propiedad y la protección legal de todos los derechos de propiedad intelectual relativos a los productos, servicios, contenidos, información, signos distintivos, obras y en general respecto de cualquier bien de la Plataforma, así como los derechos de uso y explotación, incluyendo divulgación, publicación, reproducción, distribución y transformación.</p>
+        <p>La cesión de derechos de propiedad intelectual sobre la aplicación está expresamente prohibida. Esto incluye la reproducción, transformación, distribución, comunicación pública, puesta a disposición, extracción, reutilización o utilización de cualquier naturaleza, por cualquier medio o procedimiento, a menos que sea autorizado por el titular de los correspondientes derechos. El uso no autorizado de la información en la Plataforma, su reventa y cualquier violación de los derechos de Propiedad Intelectual de RECO conllevará responsabilidades legalmente establecidas.</p>
+        <p>EL USUARIO no adquiere derechos simplemente por el uso de los servicios y contenidos de la Plataforma. En ningún momento dicho uso se considerará como autorización o licencia para utilizarlos con fines distintos a los contemplados en los presentes Términos y Condiciones.</p>
+        <h3>3.7 Propiedad Intelectual de terceros</h3>
+        <p>EL USUARIO acuerda que las disposiciones establecidas en el párrafo anterior, respecto a la titularidad de los derechos de RECO, también son aplicables a los derechos de terceros, respecto de los servicios y contenidos de las páginas enlazadas a la Plataforma.</p>
+        <h3>3.8 Privacidad de la Información y Protección de Datos Personales</h3>
+        <p>RECO declara expresamente que todos los datos personales compartidos por EL USUARIO para el uso de la Plataforma se encontrarán protegidos bajo los alcances de la Ley de Protección de Datos Personales, Ley 29733, su Reglamento y normas modificatorias. Por ello, para el uso de la Plataforma, EL USUARIO deberá proporcionar datos de carácter personal para el correspondiente registro, los cuales serán objeto de tratamiento por RECO. La información personal se procesará y almacenará en servidores que mantienen estándares de seguridad y protección tanto física como tecnológica, conforme a la Ley de Protección de Datos Personales.</p>
+        <p>RECO asegura la confidencialidad en el tratamiento de los datos personales solicitados y la implementación de medidas técnicas y organizativas para garantizar la seguridad de dicha información. Para obtener más información sobre el tratamiento de los datos personales, se deberá revisar el <a href="#privacidad">Aviso de Privacidad</a> de la Plataforma.</p>
+        <h3>3.9 Responsabilidad de funcionamiento de la Plataforma</h3>
+        <p>RECO se compromete a realizar sus mayores esfuerzos para mantener el funcionamiento y la disponibilidad ininterrumpida de sus servicios en la Plataforma, así como a realizar sus mejores esfuerzos para minimizar errores en cualquier transmisión de información. Sin embargo, debido a la naturaleza de Internet, fallas en el suministro oportuno y/o veraz de información por parte de terceros o cualquier tipo de evento fuera de la esfera de control de RECO, no se puede garantizar la ausencia de eventos que dificulten el funcionamiento de la Plataforma y la veracidad de la información referencial.</p>
+        <p>El acceso a los servicios de RECO podría ocasionalmente suspenderse o restringirse para llevar a cabo trabajos de reparación o mantenimiento, o para la introducción de nuevos productos o servicios. Se procura limitar la frecuencia y duración de estas suspensiones o restricciones.</p>
+        <h3>3.10 Fallas en el sistema</h3>
+        <p>RECO no asume responsabilidad por daños, perjuicios o pérdidas sufridos por EL USUARIO debido a fallos en el sistema, servidor o servicio de Internet. Tampoco será responsable por virus que puedan infectar el equipo del USUARIO como resultado del acceso, uso o examen de su sitio web, o de cualquier transferencia de datos, archivos, imágenes, textos o audio contenidos en el mismo.</p>
+        <p>EL USUARIO no podrá atribuir a RECO responsabilidad alguna ni exigir compensación por daño emergente o lucro cesante debido a problemas técnicos o fallas en los sistemas o en el servicio de Internet. RECO no será responsable por errores u omisiones en su sitio causados por las mencionadas fallas.</p>
+        <h3>3.11 Tarifario</h3>
+        <p>EL USUARIO declara conocer que el servicio de obtención de información histórica de valorizaciones de inmuebles al cual se refiere la sección (iii) del numeral 2 de estos Términos y Condiciones está sujeto a costo, el cual se encuentra establecido en un tarifario. RECO se reserva el derecho de modificar el tarifario, comprometiéndose a informar oportunamente cualquier cambio y el plazo de su entrada en vigor. EL USUARIO tendrá derecho a terminar unilateralmente la relación contractual con RECO, en caso no esté de acuerdo con cualquier cambio en el tarifario.</p>
+      </section>
+      <section><h2>4. Misceláneos</h2>
+        <h3>4.1 Términos de Ley</h3>
+        <p>Estos Términos y Condiciones están sujetos a las leyes de la República del Perú y serán interpretados de acuerdo con las mismas, sin considerar principios de conflictos de ley. En caso de que alguna disposición de estos Términos y Condiciones sea declarada ilegal, nula o inaplicable por cualquier motivo, dicha disposición deberá interpretarse dentro del marco de este mismo documento y, en cualquier caso, no afectará la validez y aplicabilidad de las demás disposiciones restantes.</p>
+        <h3>4.2 Notificaciones</h3>
+        <p>Cualquier comentario, inquietud o reclamación respecto de los anteriores Términos y Condiciones, o la ejecución de cualquiera de éstos, deberá ser notificada por escrito a la siguiente dirección: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
+        <h3>4.3 Jurisdicción</h3>
+        <p>Todos los asuntos legales que surjan o estén relacionados con la Plataforma, deberán ser atendidos con y según lo determinado por la legislación peruana. EL USUARIO acepta someterse a la jurisdicción de los tribunales del distrito judicial de Lima Cercado, en cualquier proceso o acción legal.</p>
+        <h3>4.4 Suspensión y terminación de cuenta</h3>
+        <p>RECO se reserva el derecho de suspender o cancelar la cuenta de EL USUARIO, de manera temporal o definitiva, en cualquiera de los siguientes supuestos: (i) incumplimiento de estos Términos y Condiciones; (ii) uso fraudulento, ilícito o contrario a la buena fe de la Plataforma; (iii) inactividad de la cuenta por un periodo superior a veinticuatro (24) meses consecutivos; (iv) solicitud expresa de EL USUARIO; o (v) requerimiento de autoridad competente.</p>
+        <p>En caso de suspensión o cancelación, RECO notificará a EL USUARIO a la dirección de correo electrónico registrada en su cuenta, salvo que la medida obedezca a un requerimiento legal que impida dicha comunicación. EL USUARIO podrá solicitar la eliminación de su cuenta y de sus datos personales en cualquier momento, enviando una solicitud escrita a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>, la cual será atendida en un plazo máximo de diez (10) días hábiles, sin perjuicio de la obligación de RECO de conservar determinada información cuando así lo exija la legislación aplicable.</p>
+      </section>
+      <footer class="legal-foot"><p>VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
+    </article>
+  </div>
+</div>
+
+<!-- ══════ PAGE: PRIVACIDAD ══════ -->
+<div class="legal-page-view" id="pagePrivacidad">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">Protección de datos · Ley 29733</div>
+      <h1>Aviso de Privacidad</h1>
+      <p class="legal-lead"><strong>VANET DATA S.A.C.</strong> · Avenida Manuel Olguín No. 327, Santiago de Surco, Lima, Perú · RUC No. 20553966800</p>
+    </div>
+    <article class="legal-doc">
+      <section><h2>1. Responsable del tratamiento de datos personales</h2>
+        <p>VANET DATA S.A.C., en adelante "RECO", con domicilio en Avenida Manuel Olguín No. 327, Santiago de Surco, Lima, Perú, y representada legalmente por Ricardo Ramon Barthelmess Saco, identificado con DNI No. 09868361, según consta en la partida electrónica No. 12927369 del Registro de Personas Jurídicas de Lima, actúa como responsable del tratamiento de los datos personales, en estricto cumplimiento de la normativa vigente de protección de datos.</p>
+        <p>Este Aviso de Privacidad es aplicable a los servicios (en adelante, "USUARIO") proporcionados por RECO. EL USUARIO debe leer, comprender y aceptar todas las condiciones establecidas en este documento, antes de su registro como Usuario de la Plataforma. Asimismo, es requisito que EL USUARIO sea mayor de edad para poder utilizar la Plataforma y realizar compras en la misma.</p>
+      </section>
+      <section><h2>2. Finalidad del tratamiento de datos</h2>
+        <p>Los datos personales proporcionados por EL USUARIO serán tratados por RECO con las siguientes finalidades:</p>
+        <ul>
+          <li>Gestión y mantenimiento de la relación comercial y contractual.</li>
+          <li>Prestación de servicios y productos ofrecidos por RECO.</li>
+          <li>Procesamiento de pagos y transacciones relacionadas con nuestros servicios.</li>
+          <li>Cumplimiento de obligaciones legales y normativas aplicables.</li>
+        </ul>
+      </section>
+      <section><h2>3. Tipos de datos recopilados</h2>
+        <p>RECO podrá recopilar y tratar datos personales de EL USUARIO como nombre, apellidos, dirección, correo electrónico, número de teléfono, datos bancarios, entre otros, necesarios para cumplir con las finalidades establecidas.</p>
+      </section>
+      <section><h2>4. Base legal del tratamiento</h2>
+        <p>La recopilación y tratamiento de sus datos personales se basa en el consentimiento otorgado por EL USUARIO al utilizar los servicios y/o al proporcionar sus datos de manera directa. Asimismo, el tratamiento puede fundamentarse en la ejecución de un contrato o en el cumplimiento de obligaciones legales.</p>
+      </section>
+      <section><h2>5. Medidas de seguridad</h2>
+        <p>RECO implementa medidas técnicas, administrativas y físicas para garantizar la seguridad, confidencialidad e integridad de los datos personales de EL USUARIO, evitando su alteración, pérdida, tratamiento no autorizado o acceso no permitido.</p>
+      </section>
+      <section><h2>6. Transferencia y almacenamiento de datos</h2>
+        <p>Los datos personales de EL USUARIO podrán ser almacenados en servidores ubicados fuera del territorio peruano, operados por proveedores de servicios en la nube que cumplen con estándares internacionales de seguridad de la información. RECO garantiza que dichas transferencias internacionales de datos se realizan en cumplimiento del artículo 15 de la Ley 29733 y su Reglamento, asegurando un nivel de protección adecuado.</p>
+        <p>Asimismo, RECO podrá compartir datos personales con los siguientes terceros, exclusivamente para las finalidades descritas en este Aviso: (i) procesadores de pago, para la gestión de transacciones; (ii) la Superintendencia Nacional de los Registros Públicos (SUNARP), para la obtención de información registral; y (iii) proveedores de servicios tecnológicos que asisten en la operación de la Plataforma. En todos los casos, RECO exige a estos terceros el cumplimiento de medidas de seguridad equivalentes a las propias.</p>
+      </section>
+      <section><h2>7. Periodo de conservación de datos</h2>
+        <p>Los datos personales de EL USUARIO serán conservados mientras se mantenga vigente la relación comercial o contractual. Una vez finalizada dicha relación, los datos serán conservados durante un periodo máximo de cinco (5) años para el cumplimiento de obligaciones legales, contables y tributarias, o para la atención de posibles reclamaciones. Transcurrido dicho plazo, los datos serán eliminados o anonimizados de forma irreversible.</p>
+        <p>EL USUARIO podrá solicitar la eliminación anticipada de sus datos en cualquier momento, sin perjuicio de la obligación de RECO de conservar la información que sea legalmente exigible.</p>
+      </section>
+      <section><h2>8. Derechos del titular de datos (derechos ARCO)</h2>
+        <p>EL USUARIO puede ejercer los siguientes derechos respecto de sus datos personales, conforme a la Ley 29733:</p>
+        <ul>
+          <li><strong>Acceso:</strong> conocer qué datos personales suyos están siendo tratados por RECO.</li>
+          <li><strong>Rectificación:</strong> solicitar la corrección de datos inexactos o incompletos.</li>
+          <li><strong>Cancelación:</strong> solicitar la supresión de sus datos cuando ya no sean necesarios para las finalidades informadas.</li>
+          <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos por motivos legítimos.</li>
+          <li><strong>Revocación del consentimiento:</strong> retirar el consentimiento previamente otorgado para el tratamiento de datos.</li>
+        </ul>
+        <p>Para ejercer estos derechos, EL USUARIO deberá enviar una solicitud escrita a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>, indicando: nombre completo, número de documento de identidad, descripción del derecho que desea ejercer y documentación de respaldo cuando corresponda. RECO atenderá la solicitud en un plazo máximo de veinte (20) días hábiles, conforme a lo establecido por la normativa vigente.</p>
+        <p>Puede presentar reclamaciones ante la Autoridad Nacional de Protección de Datos Personales: Calle Scipión Llona 350, Miraflores, Lima.</p>
+      </section>
+      <section><h2>9. Cookies y tecnologías similares</h2>
+        <p>Este sitio web utiliza cookies y tecnologías similares para mejorar la experiencia del usuario. Para obtener información detallada sobre qué cookies utilizamos, sus finalidades y cómo gestionar sus preferencias, consulte nuestra <a href="#cookies">Política de Cookies</a>.</p>
+      </section>
+      <section><h2>10. Comunicaciones comerciales</h2>
+        <p>RECO podrá enviar comunicaciones comerciales, promociones y novedades a EL USUARIO a través de correo electrónico u otros canales, siempre que EL USUARIO haya otorgado su consentimiento previo. EL USUARIO podrá revocar dicho consentimiento en cualquier momento mediante el enlace de desuscripción incluido en cada comunicación, o enviando una solicitud a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
+      </section>
+      <section><h2>11. Modificaciones al Aviso de Privacidad</h2>
+        <p>RECO se reserva el derecho de modificar el presente Aviso de Privacidad. Cualquier cambio será notificado a través de nuestros canales de comunicación habituales y entrará en vigencia después de su publicación.</p>
+      </section>
+      <footer class="legal-foot"><p>Contacto: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> · VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
+    </article>
+  </div>
+</div>
+
+<!-- ══════ PAGE: POLÍTICA DE COOKIES ══════ -->
+<div class="legal-page-view" id="pageCookies">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGYAAAAjCAYAAABmSn+9AAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAdnJLH8AAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB+kIEwARBazwhMUAAAwPSURBVGje7VprlFTVlf72uedWVb+gmmdXd/WbDIqNM6OyVitG4zIDCiZmjTqaCToxA1Ex+EJQEVd88FJBBQZUfKwkQxSNo0OURI1vQSZigglGhdDvruoGmqa7+lVV956z86MefSn7VY3kz9Req1bfe87Z+5ze395n77PPBTKUoQydJNqw8zBt29tOGU2cfBpSyZf98q8z23rUlX0RviAU1tPa+7RQFsMn6HAkyns8RC/PqMz5n2f/s6Izo8q/AzA3vFY742CnvaGjT1VHLSASZUSjjIgV/xtlRK3YL5uow+8RK887bcy6LfNKOaPSkwTMVTtqbuoK60d6ItoYDJBYOxCxGLYdw2KySTvnTs298pkFlcGMWk+chPPl2rdr74ywXs8ChjQIUsZ/Az4D0gBEXMIhi8996cvud+Y/VePLqPVrBGbhrrrLosSrY8pHUvHHPzvAMQhm/Jnifheyeepr+7ufX/pyIJMgnCAZALBiX1N+p6Xf1IxsBsAc/6U8ZwuCrRmaU8Zogo5Hlx6Nss6jkWOHP3z89xn1nqDHhLS+VUiMT3iGKWNeYhqAx6SugixjyRkT3YUf33AqLf3mZHfVGHlxvlt82L+1AcLhI8GwvmfTW63ZGfWeYPC/47OGlr4oF6QGemVzk5vp/G3fnVKXyvj6F5205NXmx4M9+roEn2X1J2VTso3v/3X19G0ZFY/SYx6rD1YLAwVSOmKJBExJyHMblw0ECgBcdOpY3rf0tOvLs8UnCT7D6O83gUsz6j0BYDqUXWUMkHnluOjtX8yq2DOcgDEesXKgRKDb1qdn1Dt6kpLIr4khJaA1QRmAloAQeGskAi4+bew7X/zf0RivBLQGLJsxwSWmNo6Af+exkPlxZ1fVbWVFexNtW5paT2m37NyyLHftVb6J7UPxb2lqnd5m2e4il9n+H/7JtaNRwp7OLvn7ju7TupQyi92u1nlFk5rT4X+xpW1CfThcJon09NycL/9lgrf3hGPMipqm1VHmO5ljCk0cKlnhhs3V5U+MRIh/zWdspRxAp2UZet+q6cZQfGtqm8+LMr9gMxfMHj+2dHdH9+V9Wi+xmAsSAXCMNG5bXFb0qJNvbX2gKqp5ucV6rmLkJlNMolY30bZ8aay5rsR3aLh1r28IVncrdadizLWZZaLdRRSURM/km8ba64p9oYF432g75tkb6lmgwAsjmk9xZFPsErTLLcTDi8uKfj3qrUwDBwGACP1nE0lwm3TqSARc88uDU0yDvnLG6VX8+VB8Pw8czouwfsWOg7C7o/upkFLrEqDEiXOEeNXJ93Bd8/JuW30a1vpKJygAoJgLerW+pdWyvlhXF5g72NwftYdoTW3zI+2WvTui+VInKAAQZS7s1fqe1qj9+SP1gZmp/GvrAuUfd3b/oVfrDU5QAEADFNZ8bqettq+ubf7fjQ3BnFEBkyXow+SL6A/+IFyxcX+rOZyAjoj+YWriICWQ7aL3h+Lrsu0LFWNc4j2k1KzEc5YQyi1Iu4heur7EdzDRvq4u8GCX0g/o+PlLABEX0e8IeNojaC8lAUJ+l1Lb19UF5gw093sdoS29Wt/qLOx5hFBZQqgUoItCtnpzQ0OwMtG2sSFY2q3UBxbzNOfY7PianW19Wl/aaavXXznUZqYNzJJy/wGD6EByO4hbPAR89T3h5UMxX7L1QHnAUjenJg6mJPjHyleGPNkSTUxtcxG9N8mUVXdV+OXsCePk1JysHyf6HqkPXBhSaqlj7CsFLrNseWXxrPumlCxYVlF8Ro4hTjeJPotbrtGj9XMbG4LHzfNQXfP3w1rPT2aPRLvypVG9rMIv76rwy2K3qzxLiDUERClmJI/eVFpYkxjfaaufa8DvMKKnfS6z8s4Kv7y7otgYK41qF9G7Du87d39P+IFRnWMeqGlaajE/mLQUDUTjsUZo3FeR61mx6JQC28k498UD5aEwv9cX0SWphU2PxoHae6qmDjXx440tC1qi1pZkFkK09x9y3OdcVTApPND4FTVNf4gynxEHZcfyyuJLBhq3ubHFe8SyP1XMpXFPWL+swn+LQ04gylwIAG5B7/xzXs7FcyaOi6bKWVXbdJ6LROHt5UXJs9hj9YHvtttqu8PLblxW4d+cylvTG6ZtrUe2RjT/e9yzw15pFN9SVtSW1snfK42nBdCTtGYR244MCVjgn37e0Xdw0e76sxL9P9hRU2YR3hcGSgYqbJbmGRvStRCPoJWDgfJ4Y8upCVAEoLymsXAwOQtLfB3ZQtyVeLeZ5+3p7CIAeLQ+MCsBigD68qW8eiBQAGBZRfEHTlAAoFvpaxzrfX8gUACgMtvD+VJebxC1x73XoxjXpJUuA8Ci0sL2FTVNT0WZk5YlDYKOp78GsHP9WWWfAMAdOxsLajuj7xoGiqUBKEnQOuZlWgK5glpOL8995t00gTklJ2vQZOGYrc5xhqejlrr7vpomZ44A5w1GlHWWA5jxe0M90wD8Jar5HMdW+tuFJb5gmtvL2Q4P3zzU2IUlvq6VtU3PK8aNABBhrk4bGAAYZ8pVh6LWjxgY48zShIn33dK4FgBu2t2Qc6jPfo0FyhLAKc3xvzEQJ2cb96+/tDicrseMd5k9g/VlCaoM62TW4wXzj786ih1B+/ieTtseDwBhZp8jtnya7hotxLwtnhgcHG68Yuzrz9ZiW2v6Zf8S3xGXoFXHBWOD/uiSNPfeKr+1cl+zZOIdWvCZX7mbiScMeW7x59fnT30CoyEe/PLTYj6hq2sCWfFSunZY//j0S/HEDplyWKsn5Dh47VF5DABMMs31gUj0Wg1MFYQGr2FccvOUwh4AOKbUM7bg86UkaM3JU35iC9MaKPbIRR+NWns0hPVQjcPSj012mbNGjDegqr15nwKAKejLaNydbOaZo1jlZwCmx5d7IYCPh/GYbznW8adRA7OguCD8cF3zTb1abzVAF9xcVtgCAPcfaFoXiqhrnHFHOwDRGvBmi188f/mUD0Zt1kN4jFcab3crZWnAtJjzQ7Yqu7286KV0p8gRYkeP0o/F9/yz1tUF5iwuL/pNGiJ2JICJal60sSG4cVFpYfeAVYX64JnHbPs7/TENb4xqK0vQknL/m14ppy+vLK4DgPtrmhZaxLcl7l2+eqsJ5LjoyPQJnttOVkFvfnHBMYPoZ4n3Xq2f3NTQUjXQ2P9qCF69oqap5tH6wL+m9v2ktPCgmyhZA+xS6meP1QfPTh23/fBRc2Vt05Ora5t/vb4hmLxXGieNZwWg4turr9NWrz3Z2DJ2gMrANzqUeln3e3n9N/PH7Ej7HDMYPVTX/IMepbcyYl5x/McY/Xc3HtD3/vuiyu3pTJx6jpk9wVs60zumcYhi5eTWqLXPZp4Yt6ieLEOsHS/lSxPdZm1LODqjzbLnWczzud9Dlt9R4V/plLOxITjtqGXv0UB2XI6WRM9lGeINAbSFNZ9uM//IYp6aSBJ8LvPi+cUFrfH63sperZc5srNDAticZxh7NTirV+vzLc0/TMgnAHmGMef28qLffi3APNHY4g1GrSCAZOpp2U5AYkAZGlufvaDi6nS9IF1g4ueQmSGlX1fMucPJN4n2TzDlt24o8bWm9q2rC3wnpNSvGHAPG/AJO7OEmL203N8bq0R3i7eOdrzQp/XlI1GuSXTj8srizWmXZAbruL7E12ESbTkuIDmzMAl4TGoszJY3fi37FQ//SdqtZUW7vIYxwyNo7zCH1ReL3ObZA4ECAIvLi14dZ8oLJdEXQyiG3YI2FbncSVAAYMbYXF3tzf23XEPcS0Df4BkZHc4S4nujAWXYrWxTY4vniGXt1ox/SmYaCrGP/aKsPaDzHjyjdNdoJt7UELzokGU/EP8nOr49buycc/LHWCPlX1sXmB1hfZnN/I+KISRRWAAfeaXxwk9KC/84EhnPBQ+Lloh1RZj1XJt5mmKwi6iXCB/kS2PrwpLC/UPxb2gITo5ovSCi+dwo83gCyCWowUX0G5/btW1e4aSe0af4w9CKmqZKi/lPjP6c3LIYrHD3mqrSVcjQSaERff+1qrb5irDWLybdnPHGvd8ouSijvpNHYiSDllX4f+UWtCHO0Ohzm/Myqju5JEc68My83MWfhLoPAPjddSW+tozqMvT/kv4GmEGw6oqBG/IAAAAASUVORK5CYII=" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">Protección de datos · Ley 29733</div>
+      <h1>Política de Cookies</h1>
+      <p class="legal-lead"><strong>VANET DATA S.A.C.</strong> · Última actualización: junio 2026</p>
+    </div>
+    <article class="legal-doc">
+      <section><h2>1. ¿Qué son las cookies?</h2>
+        <p>Las cookies son pequeños archivos de texto que se almacenan en el dispositivo del usuario (computadora, tablet o teléfono móvil) cuando visita un sitio web. Permiten que el sitio recuerde información sobre la visita, como las preferencias de idioma y otros ajustes, para facilitar la siguiente visita y hacer que el sitio sea más útil.</p>
+      </section>
+      <section><h2>2. Tipos de cookies que utilizamos</h2>
+        <p>En la Plataforma Reco utilizamos los siguientes tipos de cookies:</p>
+        <h3>2.1 Cookies estrictamente necesarias</h3>
+        <p>Son esenciales para el funcionamiento de la Plataforma. Permiten la navegación y el uso de funciones básicas como el inicio de sesión, la gestión de la cuenta y la seguridad del sitio. Sin estas cookies, los servicios solicitados no pueden proporcionarse.</p>
+        <h3>2.2 Cookies de rendimiento y analítica</h3>
+        <p>Recopilan información sobre cómo los usuarios utilizan la Plataforma (páginas más visitadas, tiempo de permanencia, errores encontrados). Esta información se utiliza de forma agregada y anónima para mejorar el funcionamiento del sitio. Utilizamos Google Analytics, que recopila datos como dirección IP (anonimizada), tipo de navegador, sistema operativo, resolución de pantalla, páginas visitadas y duración de la sesión.</p>
+        <h3>2.3 Cookies de funcionalidad</h3>
+        <p>Permiten recordar las preferencias del usuario (como filtros de búsqueda, ubicación seleccionada o configuración de visualización) para ofrecer una experiencia personalizada.</p>
+        <h3>2.4 Cookies de terceros</h3>
+        <p>Algunos servicios de terceros integrados en la Plataforma pueden establecer sus propias cookies. Estos incluyen:</p>
+        <ul>
+          <li><strong>Google Analytics:</strong> análisis de uso y rendimiento del sitio.</li>
+          <li><strong>Google Maps:</strong> visualización de mapas e información georreferenciada.</li>
+          <li><strong>Pasarelas de pago:</strong> procesamiento seguro de transacciones.</li>
+        </ul>
+      </section>
+      <section><h2>3. Datos recopilados automáticamente</h2>
+        <p>Además de las cookies, durante la navegación en la Plataforma se recopilan automáticamente los siguientes datos técnicos:</p>
+        <ul>
+          <li>Dirección IP (anonimizada para fines analíticos).</li>
+          <li>Tipo y versión del navegador.</li>
+          <li>Sistema operativo y tipo de dispositivo.</li>
+          <li>Páginas visitadas y tiempo de permanencia.</li>
+          <li>URL de referencia (sitio web desde el cual se accedió a la Plataforma).</li>
+          <li>Geolocalización aproximada (a nivel de ciudad, derivada de la dirección IP).</li>
+        </ul>
+      </section>
+      <section><h2>4. Duración de las cookies</h2>
+        <p><strong>Cookies de sesión:</strong> se eliminan automáticamente al cerrar el navegador.</p>
+        <p><strong>Cookies persistentes:</strong> permanecen en el dispositivo durante un periodo determinado (entre 30 días y 2 años, según su finalidad) o hasta que el usuario las elimine manualmente.</p>
+      </section>
+      <section><h2>5. ¿Cómo gestionar las cookies?</h2>
+        <p>EL USUARIO puede configurar su navegador para bloquear o eliminar cookies en cualquier momento. A continuación se indican los enlaces a las instrucciones de los navegadores más utilizados:</p>
+        <ul>
+          <li>Google Chrome: Configuración → Privacidad y seguridad → Cookies</li>
+          <li>Mozilla Firefox: Opciones → Privacidad y seguridad</li>
+          <li>Safari: Preferencias → Privacidad</li>
+          <li>Microsoft Edge: Configuración → Cookies y permisos del sitio</li>
+        </ul>
+        <p>Tenga en cuenta que la desactivación de cookies puede afectar la funcionalidad de la Plataforma e impedir el uso de algunos servicios.</p>
+      </section>
+      <section><h2>6. Base legal</h2>
+        <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma. Para las cookies de analítica, funcionalidad y terceros, la base legal es el consentimiento de EL USUARIO, otorgado al continuar navegando en la Plataforma tras ser informado de su uso.</p>
+      </section>
+      <section><h2>7. Actualizaciones</h2>
+        <p>RECO podrá actualizar esta Política de Cookies para reflejar cambios en las prácticas de tratamiento o por motivos operativos, legales o regulatorios. Se recomienda revisar esta página periódicamente.</p>
+      </section>
+      <footer class="legal-foot"><p>Contacto: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> · VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
+    </article>
+  </div>
+</div>
+
+<!-- ══════ PAGE: LIBRO DE RECLAMACIONES ══════ -->
+<div class="legal-page-view" id="pageReclamaciones">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">INDECOPI · Código de Protección al Consumidor (Ley 29571)</div>
+      <h1>Libro de Reclamaciones</h1>
+      <p class="legal-lead">Conforme al Código de Protección y Defensa del Consumidor, puedes registrar tu queja o reclamo. Respondemos en máximo <strong>30 días calendario</strong>.</p>
+      <div class="legal-meta" style="margin-bottom:8px">
+        <div><strong>Queja:</strong> disconformidad no relacionada con los servicios; malestar respecto a la atención.</div>
+        <div><strong>Reclamo:</strong> disconformidad relacionada con los servicios prestados.</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin:32px 0 48px">
+      <a href="https://docs.google.com/forms/d/1P-E6fiv1T44dp_LwndcPtP6KCBfjZAutw0BkaBl3X0c/viewform" target="_blank" rel="noopener" class="btn-primary" style="display:inline-block;padding:16px 40px;font-size:16px;text-decoration:none;border-radius:10px">Registrar queja o reclamo</a>
+      <p style="margin-top:16px;color:#666;font-size:13px">Se abrirá el formulario oficial de Reco en una nueva pestaña.</p>
+    </div>
+    <div class="legal-foot">
+      <p><strong>Razón social:</strong> VANET DATA S.A.C. &nbsp;|&nbsp; <strong>RUC:</strong> 20553966800</p>
+      <p>Para consultas adicionales: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PAGE: FAQS ══════ -->
+<div class="legal-page-view" id="pageFaqs">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">Centro de ayuda</div>
+      <h1>Preguntas frecuentes</h1>
+      <p class="legal-lead">Si no encuentras lo que buscas, escríbenos a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> o revisa nuestros <a href="#terminos">Términos y Condiciones</a>.</p>
+    </div>
+    <div class="faq-list" id="faqListContainer"></div>
+  </div>
+</div>
+
+<!-- ══════ PAGE: CONTACTO ══════ -->
+<div class="legal-page-view" id="pageContacto">
+  <nav class="legal-page-nav">
+    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
+  </nav>
+  <div class="legal-page-wrap">
+    <div class="legal-hero">
+      <div class="legal-eyebrow">Escríbenos</div>
+      <h1>Contacto</h1>
+      <p class="legal-lead">¿Tienes alguna consulta, sugerencia o comentario? Completa el formulario y te responderemos a la brevedad.</p>
+    </div>
+    <div class="rec-form">
+      <div class="rec-section">
+        <div class="rec-grid">
+          <div class="rec-field"><label>Nombre *</label><input id="ctNombre" placeholder="Tu nombre"></div>
+          <div class="rec-field"><label>Email *</label><input type="email" id="ctEmail" placeholder="tu@email.com"></div>
+          <div class="rec-field rec-col-2"><label>Asunto *</label><input id="ctAsunto" placeholder="¿Sobre qué nos escribes?"></div>
+          <div class="rec-field rec-col-2"><label>Mensaje *</label><textarea id="ctMensaje" rows="5" placeholder="Escribe tu mensaje aquí…"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="rec-actions">
+      <button class="btn-primary" onclick="enviarContacto()">Enviar mensaje</button>
+    </div>
+    <div style="margin-top:24px;font-size:.82rem;color:var(--muted);line-height:1.6">
+      <p>También puedes escribirnos directamente a:</p>
+      <p style="margin-top:6px"><a href="mailto:webmaster@recosac.com" style="color:var(--blue);font-weight:700">webmaster@recosac.com</a> — Consultas generales, temas legales y técnicos</p>
+    </div>
+  </div>
 </div>
 
 <!-- ══════ HEADER ══════ -->
@@ -5138,12 +5512,14 @@ function _pubBulkSubmit(n,cost){
 
 // ─────────────────────── HOME / ROUTER ───────────────────────
 function goHome(){
+  hideLegalPages();
   document.body.classList.add('show-home');
   try{history.pushState({view:'home'},'',location.pathname+location.search);}catch(e){}
   window.scrollTo(0,0);
 }
 function goToApp(hash){
   hash = hash || '';
+  hideLegalPages();
   document.body.classList.remove('show-home');
   if(hash==='#publish'){
     try{history.pushState({view:'publish'},'',location.pathname+location.search);}catch(e){}
@@ -5503,16 +5879,37 @@ function applyHashNav(){
   }
 }
 
+// ── Legal page routing (declared here so DOMContentLoaded can use it) ──
+var LEGAL_PAGES={terminos:'pageTerminos',privacidad:'pagePrivacidad',cookies:'pageCookies',reclamaciones:'pageReclamaciones',faqs:'pageFaqs',contacto:'pageContacto'};
+function showLegalPage(page){
+  document.body.classList.remove('show-home');
+  document.body.classList.add('show-legal');
+  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
+  var el=document.getElementById(LEGAL_PAGES[page]);
+  if(el)el.classList.add('active');
+  // Reclamaciones now uses static Google Forms link
+  window.scrollTo(0,0);
+}
+function hideLegalPages(){
+  document.body.classList.remove('show-legal');
+  document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
+}
+
 document.addEventListener('DOMContentLoaded',()=>{
-  // El mapa no debe ser un punto único de fallo: si Leaflet no carga,
-  // la lista, los filtros y la navegación deben seguir funcionando.
   try{ initMap(); }catch(e){ console.warn('Mapa no disponible:', e && e.message); }
   recalcBody();
   window.addEventListener('resize',recalcBody);
-  if(!window.location.hash){document.body.classList.add('show-home');}
+  var initHash=window.location.hash.replace('#','');
+  if(LEGAL_PAGES[initHash]){showLegalPage(initHash);}
+  else if(!window.location.hash){document.body.classList.add('show-home');}
   window._hashNav = window.location.hash;
   if(window._hashNav === '#publish') openPublish();
-  loadData(); // applyHashNav called inside loadData after data ready
+  loadData();
+  window.addEventListener('hashchange',function(){
+    var h=window.location.hash.replace('#','');
+    if(LEGAL_PAGES[h]){showLegalPage(h);}
+    else{hideLegalPages();}
+  });
 });
 
 function _applyLandingHash(){
@@ -5963,6 +6360,75 @@ const forgotEmailEl = document.getElementById('forgotEmail');
 if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
   if (e.key === 'Enter') sendPasswordReset();
 });
+
+// ── FAQs ─────────────────────────────────────────────────────
+var FAQS=[
+  {cat:'Sobre Reco',items:[
+    {q:'¿Qué es Reco y para quién está pensado?',a:'Reco es una plataforma de inteligencia inmobiliaria para Lima. Te dice si una propiedad vale lo que piden, basándose en transacciones reales de SUNARP, no en avisos. Útil para compradores, inversionistas, tasadores, bancos y desarrolladores.'},
+    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, sumando un veredicto IA (sobrevalorado / justo / oportunidad), liquidez de la zona, yield estimado y señales predictivas por distrito.'},
+    {q:'¿Qué distritos cubren?',a:'Cobertura completa en 43 distritos de Lima Metropolitana. Estamos ampliando al Callao y balnearios del sur.'},
+  ]},
+  {cat:'Datos y metodología',items:[
+    {q:'¿De dónde viene la información de precios?',a:'De transacciones inscritas en SUNARP (compraventas, hipotecas, transferencias), enriquecidas con data catastral y señales de mercado.'},
+    {q:'¿Cuántas transacciones tienen indexadas?',a:'Más de 847,000 transacciones, actualizadas diariamente a las 06:00 a. m.'},
+    {q:'¿Qué tan preciso es el modelo de valorización?',a:'El margen de error promedio (MAPE) del modelo Reco IA es de ±4.2% en distritos con buena profundidad de mercado. En cada análisis mostramos el intervalo de confianza y los comparables utilizados.'},
+    {q:'¿Reemplaza a una tasación oficial?',a:'No. Reco entrega información referencial para tomar mejores decisiones, pero no sustituye la tasación de un perito registrado ante la SBS.'},
+  ]},
+  {cat:'Uso de la plataforma',items:[
+    {q:'¿Cómo analizo una propiedad?',a:'Escribe la dirección en el buscador. En 5 segundos recibes el veredicto, comparables, yield estimado y score de inversión.'},
+    {q:'¿Qué es el buscador con IA en español?',a:'Puedes escribir en lenguaje natural — "depa en Miraflores de 3 dormitorios hasta 600 mil dólares" — y Reco IA traduce eso a filtros automáticamente.'},
+  ]},
+  {cat:'Planes y pagos',items:[
+    {q:'¿Es gratis?',a:'El acceso al mapa de calor y al veredicto rápido es gratuito. Los reportes históricos detallados y la información de SUNARP se cobran por "llaves" (consultas).'},
+    {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos el plan Oro con API de valorización, integraciones SUNARP en vivo y reportes en lote. Escríbenos a webmaster@recosac.com.'},
+    {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
+  ]},
+  {cat:'Privacidad y soporte',items:[
+    {q:'¿Necesito crear cuenta para usar Reco?',a:'Para el veredicto básico y el mapa de calor, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
+    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733). Revisa el Aviso de Privacidad en el pie de página.'},
+    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página. Respondemos en máximo 30 días calendario.'},
+    {q:'¿Cómo contacto al equipo?',a:'Escríbenos a webmaster@recosac.com. Para temas legales: webmaster@recosac.com.'},
+  ]},
+];
+(function buildFaqs(){
+  var container=document.getElementById('faqListContainer');
+  if(!container)return;
+  var html='';
+  FAQS.forEach(function(g){
+    html+='<section class="faq-group"><h2 class="faq-cat">'+g.cat+'</h2><div class="faq-items">';
+    g.items.forEach(function(f,i){
+      html+='<details class="faq-item"'+(i===0?' open':'')+'><summary><span class="faq-q">'+f.q+'</span><span class="faq-icon">'+(i===0?'–':'+')+'</span></summary><p class="faq-a">'+f.a+'</p></details>';
+    });
+    html+='</div></section>';
+  });
+  container.innerHTML=html;
+  document.querySelectorAll('.faq-item').forEach(function(d){
+    d.addEventListener('toggle',function(){var ico=d.querySelector('.faq-icon');if(ico)ico.textContent=d.open?'–':'+';});
+  });
+})();
+
+// ── Contacto ─────────────────────────────────────────────────
+function enviarContacto(){
+  var nombre=document.getElementById('ctNombre').value.trim();
+  var email=document.getElementById('ctEmail').value.trim();
+  var asunto=document.getElementById('ctAsunto').value.trim();
+  var mensaje=document.getElementById('ctMensaje').value.trim();
+  var errs=[];
+  if(!nombre)errs.push('nombre');
+  if(!/^\S+@\S+\.\S+$/.test(email))errs.push('email válido');
+  if(!asunto)errs.push('asunto');
+  if(mensaje.length<10)errs.push('mensaje (mín. 10 caracteres)');
+  if(errs.length){alert('Completa: '+errs.join(', '));return;}
+  var mailTo='webmaster@recosac.com';
+  var subject=encodeURIComponent(asunto);
+  var body=encodeURIComponent('Nombre: '+nombre+'\nEmail: '+email+'\n\n'+mensaje);
+  window.open('mailto:'+mailTo+'?subject='+subject+'&body='+body,'_self');
+  alert('Se abrirá tu cliente de correo para enviar el mensaje. ¡Gracias por escribirnos!');
+  document.getElementById('ctNombre').value='';
+  document.getElementById('ctEmail').value='';
+  document.getElementById('ctAsunto').value='';
+  document.getElementById('ctMensaje').value='';
+}
 </script>
 
 
