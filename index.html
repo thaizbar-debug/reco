@@ -5150,7 +5150,7 @@ function goToApp(hash){
     if(typeof openPublish==='function') openPublish();
     return;
   }
-  if(hash){ try{history.pushState({view:'app',hash:hash},'','');window.location.hash=hash;}catch(e){} }
+  if(hash){ try{history.pushState({view:'app',hash:hash},'',hash);}catch(e){} }
   else { try{history.pushState({view:'app'},'',location.pathname+location.search);}catch(e){} }
   window._hashNav = hash;
   if(typeof recalcBody==='function') recalcBody();
@@ -5422,13 +5422,9 @@ function toggleMobileMap(){
     const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
     const op=opMap[_tab]||'venta';
     if(_lastGeoL){
-      goToApp('#op='+op);
-      window.location.hash=`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}&op=${op}`;
-      if(typeof _applyLandingHash==='function')_applyLandingHash();
+      goToApp(`#geo=${_lastGeoL.lat},${_lastGeoL.lng},${encodeURIComponent(_lastGeoL.label)}&op=${op}`);
     } else if(q){
-      goToApp('#op='+op);
-      window.location.hash='#q='+encodeURIComponent(q)+'&op='+op;
-      if(typeof _applyLandingHash==='function')_applyLandingHash();
+      goToApp('#q='+encodeURIComponent(q)+'&op='+op);
     } else {
       goToApp('#op='+op);
     }
