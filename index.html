@@ -1498,7 +1498,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:#d1fae5;color:#059669;border-color:#6ee7b7">A estrenar</div>
-      <a href="javascript:void(0)" onclick="goToApp('#age=0')" class="sec-link">Ver las 281 de estreno →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#age=0&op=venta')" class="sec-link">Ver las 257 en venta a estrenar →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftEstreno" onclick="scrollCarousel('featuredGridEstreno',-1)">&#10094;</button>
@@ -1514,7 +1514,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:rgba(245,158,11,.15);color:var(--amber);border-color:rgba(245,158,11,.4)">Exclusivo</div>
-      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo')" class="sec-link">Ver las 26 de lujo →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo&op=venta')" class="sec-link">Ver las 25 en venta de lujo →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftLujo" onclick="scrollCarousel('featuredGridLujo',-1)">&#10094;</button>
@@ -5108,8 +5108,8 @@ function goToApp(hash){
   }
   renderCarousel(FEATURED_VENTA, 'featuredGridVenta');
   renderCarousel(FEATURED_ALQ, 'featuredGridAlq');
-  renderCarousel(FEATURED_ESTRENO, 'featuredGridEstreno');
-  renderCarousel(FEATURED_LUJO, 'featuredGridLujo');
+  renderCarousel(FEATURED_ESTRENO.filter(p=>p.op==='Venta'), 'featuredGridEstreno');
+  renderCarousel(FEATURED_LUJO.filter(p=>p.op==='Venta'), 'featuredGridLujo');
   const imgIndexes = ALL_FEATURED.map(() => 0);
   function slideImg(cardIdx, dir) {
     const p = ALL_FEATURED[cardIdx]; const total = p.photos.length;
@@ -5300,8 +5300,10 @@ function applyHashNav(){
     advFeats.clear();
     document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
     S.features=[];
-    S.op='all';
-    document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
+    const opLabel=params.op?({venta:'Comprar',alquiler:'Alquilar',historico:'Histórico'}[params.op.toLowerCase()]||'Comprar'):'Comprar';
+    const opVal=params.op?({venta:'Venta',alquiler:'Alquiler',historico:'Histórico'}[params.op.toLowerCase()]||'Venta'):'Venta';
+    S.op=opVal;
+    document.querySelectorAll('#opSeg button').forEach(b=>b.classList.toggle('active',b.textContent.trim()===opLabel));
     const maxAgEl=document.getElementById('maxAge');
     if(params.age!==undefined){
       if(maxAgEl){maxAgEl.value=params.age;}
