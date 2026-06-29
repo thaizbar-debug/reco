@@ -1092,7 +1092,7 @@ header .spacer{flex:1}
 .mobile-map-toggle:hover{background:var(--blue-dark);}
 .mobile-map-toggle:active{transform:translateX(-50%) scale(.95);}
 @media(max-width:900px){
-  .mobile-map-toggle{display:flex;align-items:center;gap:6px;}
+  body:not(.show-home) .mobile-map-toggle{display:flex;align-items:center;gap:6px;}
   .map-panel{display:none}
   .results-panel{width:100%}
   .app-body.mobile-map .map-panel{display:block;width:100%;position:absolute;inset:0;z-index:5}
@@ -1874,12 +1874,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="price-inputs-row">
             <div class="price-input-group">
               <label>Mín</label>
-              <input type="text" id="minPriceInput" placeholder="Sin mín" onblur="onPriceInputBlur()"/>
+              <input type="text" inputmode="numeric" id="minPriceInput" placeholder="Sin mín" oninput="onPriceInputType(event)" onblur="onPriceInputBlur()"/>
             </div>
             <span class="price-input-sep">—</span>
             <div class="price-input-group">
               <label>Máx</label>
-              <input type="text" id="maxPriceInput" placeholder="Sin máx" onblur="onPriceInputBlur()"/>
+              <input type="text" inputmode="numeric" id="maxPriceInput" placeholder="Sin máx" oninput="onPriceInputType(event)" onblur="onPriceInputBlur()"/>
             </div>
           </div>
         </div>
@@ -2297,7 +2297,13 @@ function getFiltered(){
   if(sort==='price_asc') list.sort((a,b)=>a.price-b.price);
   else if(sort==='price_desc') list.sort((a,b)=>b.price-a.price);
   else if(sort==='area_desc') list.sort((a,b)=>b.area-a.area);
-  else if(sort==='new') list.sort((a,b)=>(a.age??Infinity)-(b.age??Infinity));
+  else if(sort==='new') list.sort((a,b)=>{
+    const ya=_newnessYear(a), yb=_newnessYear(b);
+    if(ya==null && yb==null) return 0;
+    if(ya==null) return 1;
+    if(yb==null) return -1;
+    return yb-ya;
+  });
   // Comprar y Alquiler: con foto primero (sort estable, preserva orden interno)
   list.sort((a,b)=>{
     if(a.op==='Histórico'||b.op==='Histórico') return 0;
@@ -3246,7 +3252,53 @@ function renderPins(list){
 }
 
 // ─────────────────────── APPLY FILTERS ───────────────────────
+// Parse "Mes Año" en español → año*12+mes (1..12). Soporta Setiembre/Septiembre. null si no parsea.
+const _MES_ES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,setiembre:9,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+function _parseFechaVenta(s){
+  if(!s) return null;
+  const m=String(s).trim().toLowerCase().match(/([a-zñé]+)\s+(\d{4})/);
+  if(!m) return null;
+  const mes=_MES_ES[m[1]];
+  if(!mes) return null;
+  return parseInt(m[2],10)*12+mes;
+}
+// Clave de transacción (Histórico) — preferencia: sun.fechaVenta (mes+año) → transactedAt → sufijo "-NN" del id
+function _txKey(p){
+  if(!p) return null;
+  const fv=p.sun&&p.sun.fechaVenta;
+  const k=_parseFechaVenta(fv);
+  if(k!=null) return k;
+  if(p.transactedAt){const d=new Date(p.transactedAt);if(!isNaN(d))return d.getFullYear()*12+(d.getMonth()+1);}
+  const m=String(p.id||'').match(/-(\d{2})$/);
+  if(!m) return null;
+  const yy=parseInt(m[1],10);
+  const yr=yy<50?2000+yy:1900+yy;
+  return yr*12+6;
+}
+// Clave de publicación (Venta/Alquiler) — listedAt → año*12+mes; null si no existe
+function _listedKey(p){
+  if(!p||!p.listedAt) return null;
+  const d=new Date(p.listedAt);
+  return isNaN(d)?null:d.getFullYear()*12+(d.getMonth()+1);
+}
+// Clave de "novedad" según operación
+function _newnessYear(p){
+  if(!p) return null;
+  return p.op==='Histórico' ? _txKey(p) : _listedKey(p);
+}
+// Texto del option "new" según la operación activa
+function _updateSortNewLabel(){
+  const sel=document.getElementById('sortSel'); if(!sel) return;
+  const opt=sel.querySelector('option[value="new"]'); if(!opt) return;
+  const op=S.op;
+  if(op==='Histórico')      opt.textContent='Transacción más reciente';
+  else if(op==='Venta')     opt.textContent='Publicación más reciente';
+  else if(op==='Alquiler')  opt.textContent='Publicación más reciente';
+  else                      opt.textContent='Más recientes';
+}
+
 function applyFilters(){
+  _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
   S.type=document.getElementById('typeSel').value;
   S.bankOnly=document.getElementById('bankOnly').checked;
@@ -3533,6 +3585,7 @@ function setOp(btn,val){
   document.querySelectorAll('#opSeg button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   S.op=val;
+  _updateSortNewLabel();
   S.selectedId=null;
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
@@ -3686,8 +3739,8 @@ function onDualSlider(){
   let maxV=parseFloat(maxEl.value);
   if(minV>maxV){minV=maxV;minEl.value=minV;}
   const cfg=_pcfg();
-  document.getElementById('minPriceInput').value=minV>cfg.min?fmtVal(minV,cfg):'';
-  document.getElementById('maxPriceInput').value=maxV<cfg.max?fmtVal(maxV,cfg):'';
+  document.getElementById('minPriceInput').value=minV>cfg.min?_formatThousands(minV):'';
+  document.getElementById('maxPriceInput').value=maxV<cfg.max?_formatThousands(maxV):'';
   _updateSliderUI();
   // real-time filter, mutually exclusive
   if(_priceTab==='precio'){
@@ -3700,17 +3753,52 @@ function onDualSlider(){
   applyFilters();
 }
 
+function _formatThousands(n){
+  const raw=String(n).replace(/[^\d]/g,'');
+  if(!raw) return '';
+  return raw.replace(/\B(?=(\d{3})+(?!\d))/g,',');
+}
+
+function onPriceInputType(e){
+  const el=e.target;
+  const prev=el.value;
+  const caret=el.selectionStart||0;
+  const digitsBeforeCaret=prev.slice(0,caret).replace(/[^\d]/g,'').length;
+  const formatted=_formatThousands(prev);
+  if(formatted===prev) return;
+  el.value=formatted;
+  let newCaret=formatted.length, seen=0;
+  if(digitsBeforeCaret===0){newCaret=0;}
+  else for(let i=0;i<formatted.length;i++){
+    if(/\d/.test(formatted[i])) seen++;
+    if(seen===digitsBeforeCaret){newCaret=i+1;break;}
+  }
+  el.setSelectionRange(newCaret,newCaret);
+}
+
 function onPriceInputBlur(){
   const cfg=_pcfg();
   const parseInput=id=>{
     const raw=document.getElementById(id).value.replace(/[^\d.]/g,'');
     return raw?parseFloat(raw):null;
   };
-  const minV=parseInput('minPriceInput')??cfg.min;
-  const maxV=parseInput('maxPriceInput')??cfg.max;
-  document.getElementById('minPriceSlider').value=Math.min(minV,cfg.max);
-  document.getElementById('maxPriceSlider').value=Math.max(Math.min(maxV,cfg.max),minV);
+  let minV=parseInput('minPriceInput')??cfg.min;
+  let maxV=parseInput('maxPriceInput')??cfg.max;
+  minV=Math.max(cfg.min,Math.min(minV,cfg.max));
+  maxV=Math.max(cfg.min,Math.min(maxV,cfg.max));
+  if(minV>maxV){const t=minV;minV=maxV;maxV=t;}
+  document.getElementById('minPriceSlider').value=minV;
+  document.getElementById('maxPriceSlider').value=maxV;
+  document.getElementById('minPriceInput').value=minV>cfg.min?_formatThousands(minV):'';
+  document.getElementById('maxPriceInput').value=maxV<cfg.max?_formatThousands(maxV):'';
   _updateSliderUI();
+  if(_priceTab==='precio'){
+    S.minPrice=minV>cfg.min?minV:0; S.maxPrice=maxV<cfg.max?maxV:Infinity;
+    S.minSqm=0; S.maxSqm=Infinity;
+  } else {
+    S.minSqm=minV>cfg.min?minV:0; S.maxSqm=maxV<cfg.max?maxV:Infinity;
+    S.minPrice=0; S.maxPrice=Infinity;
+  }
   applyFilters();
 }
 
@@ -4014,10 +4102,10 @@ function openDetail(id){
         </div>
       </div>
 
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px">
+      ${(p.op==='Histórico'||p.op==='Venta')?`<button style="width:100%;background:var(--blue);border:none;padding:12px;border-radius:var(--r);font-size:.88rem;font-weight:700;color:#fff;cursor:pointer;margin-top:4px" onclick="openFullReport('${p.id}')">📋 Ver informe completo</button>`:''}
+      <div style="display:flex;gap:10px;margin-top:8px">
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Inmueble guardado ❤️')">❤️ Guardar</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
-        ${p.op==='Histórico'?`<button style="flex:1;background:var(--accent);border:none;padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:700;color:#fff;cursor:pointer" onclick="openFullReport('${p.id}')">📋 Ver informe</button>`:''}
       </div>
 
       <div class="det-loc-row">
@@ -4580,7 +4668,7 @@ let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null
          hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
          beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
-         features:[],title:'',desc:'',photos:[]};
+         features:[],title:'',desc:'',photos:[],listedAt:null};
 const _SUGG=481000;
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
   'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
@@ -4894,6 +4982,7 @@ function _ppub(){
   if(S.keysLeft<3){toast('⚠️ Necesitas al menos 3 llaves para publicar');return;}
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
+  _pd.listedAt=new Date().toISOString();
   S.keysLeft-=3;
   document.getElementById('keyCount').textContent=S.keysLeft;var _hkc=document.getElementById('homeKeyCount');if(_hkc)_hkc.textContent=S.keysLeft;
   toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
@@ -5194,7 +5283,9 @@ function toggleMobileMap(){
   function pickLanding(val){
     document.getElementById('heroQ').value=val;
     document.getElementById('sgDropLanding').style.display='none';
-    goToApp('#q='+encodeURIComponent(val));
+    const opMap={comprar:'venta',alquilar:'alquiler',historicos:'historico'};
+    const op=opMap[_tab]||'venta';
+    goToApp('#q='+encodeURIComponent(val)+'&op='+op);
   }
   function pickGeoLanding(lat,lng,label){
     document.getElementById('heroQ').value=label;
