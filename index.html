@@ -2128,6 +2128,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
         <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
         <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
+        <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
         <hr/>
         <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
       </div>
@@ -6530,7 +6531,7 @@ async function _pullUserDataFromFirestore(){
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
       const h = window.location.hash.replace('#','');
-      if(['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
+      if(['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
         renderUserSection(h);
       }
     }
@@ -6600,7 +6601,129 @@ function renderUserSection(section) {
   else if (section === 'favoritos') renderFavoritos(el);
   else if (section === 'llaves') renderLlaves(el);
   else if (section === 'publicaciones') renderPublicaciones(el);
+  else if (section === 'admin') renderAdminPanel(el);
   else { closeUserSection(); return; }
+}
+
+// Mirror of the firestore.rules allowlist. If you change either, change both.
+const _ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
+function _isAdmin(){
+  const u = auth.currentUser;
+  return !!(u && u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
+}
+
+let _adminTab = 'pending';
+async function renderAdminPanel(el){
+  el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">🛡️ Moderación</div>'
+    + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
+  if(!_isAdmin()){
+    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+      + '<div class="us-title">🛡️ Moderación</div>'
+      + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>No tienes permisos de admin.</p></div></div>';
+    return;
+  }
+  let pubs = [];
+  let queryError = null;
+  try {
+    const snap = await db.collection('publications')
+      .where('status','==',_adminTab).get();
+    pubs = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b)=>{
+        const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
+  } catch(e){
+    queryError = e;
+    console.error('[reco] admin query failed:', e);
+  }
+
+  const tab = (key, label, count) => `<button onclick="_adminTab='${key}';renderAdminPanel(document.getElementById('userSectionContent'))" style="background:${_adminTab===key?'var(--blue)':'var(--bg)'};color:${_adminTab===key?'#fff':'var(--txt)'};border:1.5px solid ${_adminTab===key?'var(--blue)':'var(--border)'};padding:7px 14px;border-radius:var(--r);font-size:.82rem;font-weight:600;cursor:pointer">${label}${count!=null?' ('+count+')':''}</button>`;
+
+  let html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">🛡️ Moderación</div>'
+    + `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tab('pending','⏳ Pendientes')}${tab('approved','✓ Aprobadas')}${tab('rejected','✕ Rechazadas')}</div>`;
+
+  if(queryError){
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">Error al cargar publicaciones.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">'+(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
+  } else if(!pubs.length){
+    const emptyMsg = _adminTab==='pending' ? 'No hay publicaciones pendientes de revisión.' : _adminTab==='approved' ? 'Aún no has aprobado ninguna publicación.' : 'No has rechazado ninguna publicación.';
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📋</div><p>'+emptyMsg+'</p></div></div>';
+  } else {
+    html += pubs.map(pub => {
+      const thumb = (pub.photoUrls && pub.photoUrls[0])
+        ? `<div style="background:url('${pub.photoUrls[0]}') center/cover;height:160px;border-radius:8px 8px 0 0"></div>`
+        : '<div style="background:var(--light);display:flex;align-items:center;justify-content:center;font-size:2rem;height:160px;border-radius:8px 8px 0 0">🏠</div>';
+      const photosExtra = (pub.photoUrls && pub.photoUrls.length > 1) ? `<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:.7rem;padding:3px 8px;border-radius:99px">+${pub.photoUrls.length-1} fotos</span>` : '';
+      const actions = _adminTab==='pending'
+        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminApprove('${pub.id}')" style="flex:1;background:#10b981;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✓ Aprobar</button><button onclick="_adminReject('${pub.id}')" style="flex:1;background:#ef4444;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✕ Rechazar</button></div>`
+        : _adminTab==='approved'
+        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminUnapprove('${pub.id}')" style="flex:1;background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Volver a pendiente</button></div>`
+        : `<div style="display:flex;gap:8px;margin-top:12px">${pub.rejectionReason?`<div style="flex:1;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:8px 12px;border-radius:var(--r);font-size:.78rem"><strong>Razón:</strong> ${pub.rejectionReason}</div>`:''}<button onclick="_adminUnapprove('${pub.id}')" style="background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Re-evaluar</button></div>`;
+      return `<div class="us-card" style="padding:0;overflow:hidden">
+        <div style="position:relative">${thumb}${photosExtra}</div>
+        <div style="padding:14px 16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${pub.op||'Venta'}</span>
+            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${pub.type||'—'}</span>
+          </div>
+          <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">${pub.address||'—'}</div>
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📍 ${pub.district||'—'} · 📐 ${pub.area||'—'} m²${pub.beds>0?' · 🛏 '+pub.beds:''}${pub.baths>0?' · 🚿 '+pub.baths:''}</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-bottom:8px">${pub.currency==='PEN'?'S/':'$'} ${Number(pub.price||0).toLocaleString()}</div>
+          ${pub.desc?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:.78rem;color:var(--muted)">Ver descripción</summary><div style="font-size:.82rem;margin-top:6px;color:var(--txt);white-space:pre-wrap">${pub.desc}</div></details>`:''}
+          <div style="font-size:.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
+            👤 ${pub.userName||pub.userEmail||pub.userId||'—'} ${pub.userEmail&&pub.userName?`· ${pub.userEmail}`:''}
+          </div>
+          ${actions}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+
+async function _adminApprove(id){
+  if(!_isAdmin()) return;
+  try {
+    await db.collection('publications').doc(id).update({
+      status: 'approved',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: auth.currentUser.uid,
+      rejectionReason: firebase.firestore.FieldValue.delete()
+    });
+    toast('✓ Publicación aprobada');
+    renderAdminPanel(document.getElementById('userSectionContent'));
+  } catch(e){ console.error('[reco] approve failed:', e); toast('⚠️ Error al aprobar: '+e.message); }
+}
+async function _adminReject(id){
+  if(!_isAdmin()) return;
+  const reason = prompt('Razón del rechazo (visible para el usuario):', '');
+  if(reason === null) return; // user cancelled
+  try {
+    await db.collection('publications').doc(id).update({
+      status: 'rejected',
+      rejectionReason: reason || '',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: auth.currentUser.uid
+    });
+    toast('✕ Publicación rechazada');
+    renderAdminPanel(document.getElementById('userSectionContent'));
+  } catch(e){ console.error('[reco] reject failed:', e); toast('⚠️ Error al rechazar: '+e.message); }
+}
+async function _adminUnapprove(id){
+  if(!_isAdmin()) return;
+  if(!confirm('¿Volver esta publicación a estado pendiente?')) return;
+  try {
+    await db.collection('publications').doc(id).update({
+      status: 'pending',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: auth.currentUser.uid,
+      rejectionReason: firebase.firestore.FieldValue.delete()
+    });
+    toast('Movida a pendiente');
+    renderAdminPanel(document.getElementById('userSectionContent'));
+  } catch(e){ console.error('[reco] unapprove failed:', e); toast('⚠️ Error: '+e.message); }
 }
 
 function _propCard(p, opts) {
@@ -6882,7 +7005,7 @@ async function removeMyPub(id) {
 // handle hash on load / popstate for user sections
 function _checkUserHash() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0) {
     if (!auth.currentUser) return;
     document.body.classList.remove('show-home');
     document.body.classList.add('show-user');
@@ -6891,7 +7014,7 @@ function _checkUserHash() {
 }
 window.addEventListener('popstate', function() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0) {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
@@ -7015,6 +7138,7 @@ auth.onAuthStateChanged(function(user) {
               <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
               <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
               <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
+              ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
               <hr/>
               <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
             </div>
@@ -7037,7 +7161,9 @@ auth.onAuthStateChanged(function(user) {
       if (nameEl)     nameEl.textContent     = user.displayName || user.email;
       if (emailEl)    emailEl.textContent    = user.email;
       if (initialsEl) initialsEl.textContent = _getInitials(user.displayName || user.email);
+      document.querySelectorAll('.admin-only').forEach(el => { el.style.display = _isAdmin() ? '' : 'none'; });
     } else {
+      document.querySelectorAll('.admin-only').forEach(el => { el.style.display = 'none'; });
       appIngresarBtn.style.display = '';
       appUserWrap.style.display    = 'none';
     }
