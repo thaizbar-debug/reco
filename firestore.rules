@@ -2,6 +2,16 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Hardcoded admin allowlist. Edit this list to grant or revoke
+    // moderation rights. Phase 3 keeps the auth model simple; later
+    // phases may move this to custom claims or an /admins collection.
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email in [
+        'webmaster@recosac.com',
+        'sebastiand@recosac.com'
+      ];
+    }
+
     // /users/{uid}
     //
     // Each authenticated user can read and write only their own profile
@@ -37,18 +47,28 @@ service cloud.firestore {
     //           with a separate admin claim in Phase 3.
     // - delete: only the owner may delete their listing.
     match /publications/{pubId} {
+      // Read: approved listings are public; the owner sees their own
+      // regardless of status; admins see everything (so the moderation
+      // panel can list pending and rejected docs).
       allow read: if resource.data.status == 'approved'
-                  || (request.auth != null && resource.data.userId == request.auth.uid);
+                  || (request.auth != null && resource.data.userId == request.auth.uid)
+                  || isAdmin();
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.status == 'pending';
-      allow update: if request.auth != null
-                    && resource.data.userId == request.auth.uid
-                    && resource.data.status == 'pending'
-                    && request.resource.data.userId == resource.data.userId
-                    && request.resource.data.status == resource.data.status
-                    && request.resource.data.createdAt == resource.data.createdAt;
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Update: owner can edit while pending (without flipping status/
+      // userId/createdAt). Admin can change any field — typically just
+      // status and an optional rejectionReason / moderatedAt.
+      allow update: if (request.auth != null
+                       && resource.data.userId == request.auth.uid
+                       && resource.data.status == 'pending'
+                       && request.resource.data.userId == resource.data.userId
+                       && request.resource.data.status == resource.data.status
+                       && request.resource.data.createdAt == resource.data.createdAt)
+                    || isAdmin();
+      // Delete: owner or admin (admin can remove spam outright).
+      allow delete: if (request.auth != null && resource.data.userId == request.auth.uid)
+                    || isAdmin();
     }
 
     // Default deny for any other path
