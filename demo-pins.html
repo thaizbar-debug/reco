@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demo — Estilos de Pins para Mapa</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f1f5f9;color:#1e293b}
+h1{text-align:center;padding:18px 0 4px;font-size:1.3rem;font-weight:800;color:#1e3a5f}
+.subtitle{text-align:center;font-size:.82rem;color:#64748b;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:0 14px 14px;max-width:1400px;margin:0 auto}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.card-head{padding:10px 14px 6px;border-bottom:1px solid #e2e8f0}
+.card-head h2{font-size:.92rem;font-weight:700;color:#1e3a5f}
+.card-head p{font-size:.72rem;color:#94a3b8;margin-top:2px}
+.map-wrap{height:380px;position:relative;background:#dfe9f3;overflow:hidden}
+
+/* Map background grid pattern to simulate a map */
+.map-bg{position:absolute;inset:0;
+  background:
+    linear-gradient(90deg, rgba(200,215,230,.25) 1px, transparent 1px),
+    linear-gradient(rgba(200,215,230,.25) 1px, transparent 1px),
+    linear-gradient(135deg, #e8eff7 0%, #dfe9f3 30%, #e2ecda 60%, #dfe9f3 100%);
+  background-size: 40px 40px, 40px 40px, 100% 100%;
+}
+/* Simulated roads */
+.map-bg::before{content:'';position:absolute;inset:0;
+  background:
+    linear-gradient(90deg, transparent 20%, rgba(255,255,255,.5) 20%, rgba(255,255,255,.5) 20.5%, transparent 20.5%,
+                    transparent 50%, rgba(255,255,255,.5) 50%, rgba(255,255,255,.5) 50.5%, transparent 50.5%,
+                    transparent 78%, rgba(255,255,255,.5) 78%, rgba(255,255,255,.5) 78.5%, transparent 78.5%),
+    linear-gradient(transparent 25%, rgba(255,255,255,.5) 25%, rgba(255,255,255,.5) 25.5%, transparent 25.5%,
+                    transparent 55%, rgba(255,255,255,.5) 55%, rgba(255,255,255,.5) 55.5%, transparent 55.5%,
+                    transparent 82%, rgba(255,255,255,.5) 82%, rgba(255,255,255,.5) 82.5%, transparent 82.5%);
+}
+.map-bg::after{content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 15% 70%, rgba(180,210,180,.25) 0%, transparent 30%),
+    radial-gradient(ellipse at 75% 30%, rgba(180,210,180,.2) 0%, transparent 25%),
+    radial-gradient(ellipse at 50% 90%, rgba(170,200,230,.2) 0%, transparent 20%);
+}
+
+.pin{position:absolute;z-index:5;cursor:pointer}
+.pin:hover{z-index:20}
+.cluster{position:absolute;z-index:3;cursor:pointer}
+
+/* ══════ OPCION A — Airbnb/Booking ══════ */
+.pinA-pill{
+  background:#fff;color:#222;border-radius:20px;padding:5px 12px;
+  font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.18);
+  white-space:nowrap;border:1.5px solid #ddd;transition:all .15s;
+}
+.pin:hover .pinA-pill{box-shadow:0 4px 16px rgba(0,0,0,.25);transform:scale(1.06);border-color:#222}
+.pin.active .pinA-pill{background:#222;color:#fff;border-color:#222}
+.pinA-card{
+  display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
+  background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.22);
+  width:200px;overflow:hidden;margin-bottom:8px;
+}
+.pin:hover .pinA-card{display:block}
+.pinA-img{width:100%;height:100px;background:#c4d5e6;display:flex;align-items:center;justify-content:center;color:#7a9abb;font-size:28px}
+.pinA-card-body{padding:8px 10px}
+.pinA-card-body .price{font-weight:800;font-size:14px}
+.pinA-card-body .addr{font-size:11px;color:#64748b;margin-top:2px}
+.pinA-card-body .meta{font-size:10px;color:#94a3b8;margin-top:3px}
+.clusterA{
+  background:#fff;border:1.5px solid #ddd;border-radius:20px;padding:4px 12px;
+  font-size:12px;font-weight:700;color:#222;box-shadow:0 2px 8px rgba(0,0,0,.15);
+  white-space:nowrap;transition:all .15s;
+}
+.cluster:hover .clusterA{box-shadow:0 4px 14px rgba(0,0,0,.22);transform:scale(1.05);border-color:#222}
+
+/* ══════ OPCION B — Zillow/Redfin ══════ */
+.pinB-box{
+  border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);white-space:nowrap;transition:all .15s;border:2px solid;
+}
+.pinB-box.venta{background:#fff;color:#2563eb;border-color:#2563eb}
+.pinB-box.alquiler{background:#fff;color:#16a34a;border-color:#16a34a}
+.pinB-box.historico{background:#fff;color:#64748b;border-color:#94a3b8}
+.pin:hover .pinB-box{transform:scale(1.08)}
+.pin.active .pinB-box.venta{background:#2563eb;color:#fff}
+.pin.active .pinB-box.alquiler{background:#16a34a;color:#fff}
+.pinB-tail{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;margin-left:6px}
+.pinB-tail.venta{border-top:6px solid #2563eb}
+.pinB-tail.alquiler{border-top:6px solid #16a34a}
+.pinB-tail.historico{border-top:6px solid #94a3b8}
+.clusterB{
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:#fff;transition:all .15s;
+  box-shadow:0 2px 10px rgba(0,0,0,.25);border:2.5px solid rgba(255,255,255,.85);
+  background:linear-gradient(135deg,#3b82f6,#1d4ed8);
+}
+.clusterB.sm{width:36px;height:36px;font-size:12px}
+.clusterB.md{width:44px;height:44px;font-size:13px}
+.clusterB.lg{width:54px;height:54px;font-size:14px}
+.cluster:hover .clusterB{transform:scale(1.1)}
+
+/* ══════ OPCION C — Idealista ══════ */
+.pinC-dot{
+  width:12px;height:12px;border-radius:50%;background:#3b82f6;
+  border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);transition:all .15s;
+}
+.pin:hover .pinC-dot{transform:scale(1.4);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.pinC-dot.active{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.3)}
+.pinC-price{
+  background:rgba(255,255,255,.93);color:#1e293b;
+  border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;
+  box-shadow:0 1px 6px rgba(0,0,0,.12);border:1px solid #e2e8f0;
+  white-space:nowrap;transition:all .15s;
+}
+.pin:hover .pinC-price{transform:scale(1.06);box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.pinC-price.active{border-color:#3b82f6;background:#eff6ff}
+.clusterC{
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:700;color:#1e40af;transition:all .15s;
+  background:rgba(219,234,254,.85);border:2px solid rgba(59,130,246,.4);
+}
+.clusterC.sm{width:34px;height:34px;font-size:11px}
+.clusterC.md{width:42px;height:42px;font-size:12px}
+.clusterC.lg{width:52px;height:52px;font-size:14px}
+.cluster:hover .clusterC{transform:scale(1.08);background:rgba(219,234,254,.95)}
+
+/* ══════ OPCION D — Hibrido Premium ══════ */
+.pinD-pill{
+  background:#fff;border-radius:8px;padding:4px 10px;
+  font-size:12px;font-weight:700;color:#334155;
+  box-shadow:0 1px 6px rgba(0,0,0,.12);white-space:nowrap;
+  transition:all .18s;border-left:3px solid;
+}
+.pinD-pill.venta{border-left-color:#2563eb}
+.pinD-pill.alquiler{border-left-color:#16a34a}
+.pinD-pill.historico{border-left-color:#94a3b8}
+.pin:hover .pinD-pill{box-shadow:0 4px 16px rgba(0,0,0,.18);transform:translateY(-2px)}
+.pin.active .pinD-pill{border-left-width:4px;box-shadow:0 4px 16px rgba(37,99,235,.25)}
+.pinD-expand{
+  display:none;position:absolute;bottom:100%;left:0;
+  background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18);
+  width:190px;overflow:hidden;margin-bottom:6px;border:1px solid #e2e8f0;
+}
+.pin:hover .pinD-expand{display:block}
+.pinD-img{width:100%;height:85px;background:#c4d5e6;display:flex;align-items:center;justify-content:center;color:#7a9abb;font-size:24px}
+.pinD-expand-body{padding:6px 9px 8px}
+.pinD-expand-body .type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#64748b}
+.pinD-expand-body .price{font-weight:800;font-size:14px;color:#1e293b;margin-top:1px}
+.pinD-expand-body .detail{font-size:10px;color:#94a3b8;margin-top:2px}
+.clusterD{
+  background:#fff;border:2px solid #cbd5e1;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;color:#334155;transition:all .15s;
+  box-shadow:0 1px 6px rgba(0,0,0,.1);
+}
+.clusterD.sm{width:34px;height:34px;font-size:11px}
+.clusterD.md{width:42px;height:42px;font-size:13px}
+.clusterD.lg{width:52px;height:52px;font-size:14px}
+.cluster:hover .clusterD{transform:scale(1.08);border-color:#3b82f6;box-shadow:0 3px 12px rgba(37,99,235,.15)}
+
+/* Label overlay */
+.map-label{position:absolute;font-size:9px;color:rgba(80,100,120,.45);font-weight:600;letter-spacing:.3px;pointer-events:none;text-transform:uppercase}
+
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<h1>Comparativa de Estilos de Pins</h1>
+<p class="subtitle">Pasa el cursor sobre los pins para ver las interacciones hover. Los pins marcados tienen estado "activo/seleccionado".</p>
+
+<div class="grid">
+
+<!-- ══════════════ OPCION A ══════════════ -->
+<div class="card">
+  <div class="card-head">
+    <h2>Opcion A — Airbnb / Booking</h2>
+    <p>Pildoras blancas redondeadas · hover con mini-card (foto+info) · clusters como texto · seleccionado = negro</p>
+  </div>
+  <div class="map-wrap">
+    <div class="map-bg"></div>
+    <span class="map-label" style="top:42%;left:8%">San Isidro</span>
+    <span class="map-label" style="top:70%;left:55%">Surco</span>
+    <span class="map-label" style="top:18%;left:60%">La Molina</span>
+
+    <div class="pin" style="top:30%;left:25%">
+      <div class="pinA-card">
+        <div class="pinA-img">🏙️</div>
+        <div class="pinA-card-body">
+          <div class="price">$ 550,000</div>
+          <div class="addr">Av. Pezet 937, San Isidro</div>
+          <div class="meta">Departamento · 178 m² · 2 dorm</div>
+        </div>
+      </div>
+      <div class="pinA-pill">$550K</div>
+    </div>
+    <div class="pin" style="top:45%;left:40%">
+      <div class="pinA-card">
+        <div class="pinA-img">🏡</div>
+        <div class="pinA-card-body">
+          <div class="price">$ 1,500,000</div>
+          <div class="addr">Calle Monte Rosa 250, Surco</div>
+          <div class="meta">Casa · 350 m² · 5 dorm</div>
+        </div>
+      </div>
+      <div class="pinA-pill">$1.5M</div>
+    </div>
+    <div class="pin active" style="top:52%;left:58%">
+      <div class="pinA-pill">$325K</div>
+    </div>
+    <div class="pin" style="top:22%;left:65%">
+      <div class="pinA-card">
+        <div class="pinA-img">🏢</div>
+        <div class="pinA-card-body">
+          <div class="price">$2,100 / mes</div>
+          <div class="addr">Av. Salaverry 3120, Magdalena</div>
+          <div class="meta">Departamento · 95 m² · 2 dorm</div>
+        </div>
+      </div>
+      <div class="pinA-pill">$2,100/m</div>
+    </div>
+    <div class="pin" style="top:68%;left:30%"><div class="pinA-pill">$690K</div></div>
+    <div class="pin" style="top:38%;left:78%"><div class="pinA-pill">$405K</div></div>
+    <div class="pin" style="top:75%;left:72%"><div class="pinA-pill">$180K</div></div>
+    <div class="pin" style="top:60%;left:15%"><div class="pinA-pill">$900K</div></div>
+
+    <div class="cluster" style="top:10%;left:12%"><div class="clusterA">28 propiedades</div></div>
+    <div class="cluster" style="top:85%;left:45%"><div class="clusterA">44 propiedades</div></div>
+    <div class="cluster" style="top:15%;left:40%"><div class="clusterA">7 propiedades</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ OPCION B ══════════════ -->
+<div class="card">
+  <div class="card-head">
+    <h2>Opcion B — Zillow / Redfin</h2>
+    <p>Rectangulos con borde color por operacion · azul=venta, verde=alquiler, gris=historico · clusters con gradiente</p>
+  </div>
+  <div class="map-wrap">
+    <div class="map-bg"></div>
+    <span class="map-label" style="top:42%;left:8%">San Isidro</span>
+    <span class="map-label" style="top:70%;left:55%">Surco</span>
+    <span class="map-label" style="top:18%;left:60%">La Molina</span>
+
+    <div class="pin active" style="top:30%;left:25%">
+      <div class="pinB-box venta">$550K</div>
+      <div class="pinB-tail venta"></div>
+    </div>
+    <div class="pin" style="top:45%;left:40%">
+      <div class="pinB-box venta">$1.5M</div>
+      <div class="pinB-tail venta"></div>
+    </div>
+    <div class="pin" style="top:52%;left:58%">
+      <div class="pinB-box venta">$325K</div>
+      <div class="pinB-tail venta"></div>
+    </div>
+    <div class="pin" style="top:22%;left:65%">
+      <div class="pinB-box alquiler">$2,100/m</div>
+      <div class="pinB-tail alquiler"></div>
+    </div>
+    <div class="pin" style="top:68%;left:30%">
+      <div class="pinB-box venta">$690K</div>
+      <div class="pinB-tail venta"></div>
+    </div>
+    <div class="pin" style="top:38%;left:78%">
+      <div class="pinB-box venta">$405K</div>
+      <div class="pinB-tail venta"></div>
+    </div>
+    <div class="pin" style="top:75%;left:72%">
+      <div class="pinB-box historico">$180K</div>
+      <div class="pinB-tail historico"></div>
+    </div>
+    <div class="pin" style="top:60%;left:15%">
+      <div class="pinB-box alquiler">$1,800/m</div>
+      <div class="pinB-tail alquiler"></div>
+    </div>
+
+    <div class="cluster" style="top:8%;left:10%"><div class="clusterB lg">28</div></div>
+    <div class="cluster" style="top:83%;left:43%"><div class="clusterB lg">44</div></div>
+    <div class="cluster" style="top:13%;left:38%"><div class="clusterB sm">7</div></div>
+    <div class="cluster" style="top:88%;left:75%"><div class="clusterB md">16</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ OPCION C ══════════════ -->
+<div class="card">
+  <div class="card-head">
+    <h2>Opcion C — Idealista</h2>
+    <p>Puntos minimos a zoom lejano · precios discretos a zoom cercano · clusters semi-transparentes · lo mas limpio</p>
+  </div>
+  <div class="map-wrap">
+    <div class="map-bg"></div>
+    <span class="map-label" style="top:42%;left:8%">San Isidro</span>
+    <span class="map-label" style="top:70%;left:55%">Surco</span>
+    <span class="map-label" style="top:18%;left:60%">La Molina</span>
+
+    <!-- Dots (zoom lejano) -->
+    <div class="pin" style="top:30%;left:25%"><div class="pinC-dot"></div></div>
+    <div class="pin" style="top:45%;left:40%"><div class="pinC-dot"></div></div>
+    <div class="pin" style="top:22%;left:65%"><div class="pinC-dot"></div></div>
+    <div class="pin" style="top:60%;left:15%"><div class="pinC-dot"></div></div>
+    <div class="pin" style="top:33%;left:50%"><div class="pinC-dot active"></div></div>
+
+    <!-- Prices (zoom cercano) -->
+    <div class="pin" style="top:52%;left:58%"><div class="pinC-price">$325K</div></div>
+    <div class="pin" style="top:68%;left:30%"><div class="pinC-price">$690K</div></div>
+    <div class="pin" style="top:38%;left:78%"><div class="pinC-price active">$405K</div></div>
+    <div class="pin" style="top:75%;left:72%"><div class="pinC-price">$180K</div></div>
+    <div class="pin" style="top:80%;left:50%"><div class="pinC-price">$1.5M</div></div>
+
+    <div class="cluster" style="top:8%;left:10%"><div class="clusterC lg">28</div></div>
+    <div class="cluster" style="top:83%;left:43%"><div class="clusterC lg">44</div></div>
+    <div class="cluster" style="top:13%;left:38%"><div class="clusterC sm">7</div></div>
+    <div class="cluster" style="top:88%;left:75%"><div class="clusterC md">16</div></div>
+  </div>
+</div>
+
+<!-- ══════════════ OPCION D ══════════════ -->
+<div class="card">
+  <div class="card-head">
+    <h2>Opcion D — Hibrido Premium (recomendada)</h2>
+    <p>Pildoras blancas con borde-izquierdo color · hover expande mini-card · clusters blancos uniformes · distingue operacion</p>
+  </div>
+  <div class="map-wrap">
+    <div class="map-bg"></div>
+    <span class="map-label" style="top:42%;left:8%">San Isidro</span>
+    <span class="map-label" style="top:70%;left:55%">Surco</span>
+    <span class="map-label" style="top:18%;left:60%">La Molina</span>
+
+    <div class="pin" style="top:30%;left:25%">
+      <div class="pinD-expand">
+        <div class="pinD-img">🏙️</div>
+        <div class="pinD-expand-body">
+          <div class="type">Venta · Departamento</div>
+          <div class="price">$ 550,000</div>
+          <div class="detail">178 m² · 2 dorm, 2 baños</div>
+        </div>
+      </div>
+      <div class="pinD-pill venta">$550K</div>
+    </div>
+    <div class="pin" style="top:45%;left:40%">
+      <div class="pinD-expand">
+        <div class="pinD-img">🏡</div>
+        <div class="pinD-expand-body">
+          <div class="type">Venta · Casa</div>
+          <div class="price">$ 1,500,000</div>
+          <div class="detail">350 m² · 5 dorm, 4 baños</div>
+        </div>
+      </div>
+      <div class="pinD-pill venta">$1.5M</div>
+    </div>
+    <div class="pin active" style="top:52%;left:58%">
+      <div class="pinD-pill venta">$325K</div>
+    </div>
+    <div class="pin" style="top:22%;left:65%">
+      <div class="pinD-expand">
+        <div class="pinD-img">🏢</div>
+        <div class="pinD-expand-body">
+          <div class="type">Alquiler · Departamento</div>
+          <div class="price">$2,100 / mes</div>
+          <div class="detail">95 m² · 2 dorm, 1 baño</div>
+        </div>
+      </div>
+      <div class="pinD-pill alquiler">$2,100/m</div>
+    </div>
+    <div class="pin" style="top:68%;left:30%"><div class="pinD-pill venta">$690K</div></div>
+    <div class="pin" style="top:38%;left:78%"><div class="pinD-pill venta">$405K</div></div>
+    <div class="pin" style="top:75%;left:72%"><div class="pinD-pill historico">$180K</div></div>
+    <div class="pin" style="top:60%;left:15%">
+      <div class="pinD-expand">
+        <div class="pinD-img">🏡</div>
+        <div class="pinD-expand-body">
+          <div class="type">Alquiler · Casa</div>
+          <div class="price">$1,800 / mes</div>
+          <div class="detail">280 m² · 4 dorm, 3 baños</div>
+        </div>
+      </div>
+      <div class="pinD-pill alquiler">$1,800/m</div>
+    </div>
+
+    <div class="cluster" style="top:8%;left:10%"><div class="clusterD lg">28</div></div>
+    <div class="cluster" style="top:83%;left:43%"><div class="clusterD lg">44</div></div>
+    <div class="cluster" style="top:13%;left:38%"><div class="clusterD sm">7</div></div>
+    <div class="cluster" style="top:88%;left:75%"><div class="clusterD md">16</div></div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
