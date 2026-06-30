@@ -1618,7 +1618,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label">En venta</div>
-      <a href="javascript:void(0)" onclick="goToApp('#op=venta')" class="sec-link">Ver las 791 en venta →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#op=venta')" class="sec-link" data-count-key="venta">Ver las 791 en venta →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftVenta" onclick="scrollCarousel('featuredGridVenta',-1)">&#10094;</button>
@@ -1628,7 +1628,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:28px">
       <div class="section-label" style="background:#fef3c7;color:#d97706;border-color:#fcd34d">En alquiler</div>
-      <a href="javascript:void(0)" onclick="goToApp('#op=alquiler')" class="sec-link">Ver las 123 en alquiler →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#op=alquiler')" class="sec-link" data-count-key="alquiler">Ver las 123 en alquiler →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftAlq" onclick="scrollCarousel('featuredGridAlq',-1)">&#10094;</button>
@@ -1644,7 +1644,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:#d1fae5;color:#059669;border-color:#6ee7b7">A estrenar</div>
-      <a href="javascript:void(0)" onclick="goToApp('#age=0&op=venta')" class="sec-link">Ver las 257 en venta a estrenar →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#age=0&op=venta')" class="sec-link" data-count-key="estreno">Ver las 257 en venta a estrenar →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftEstreno" onclick="scrollCarousel('featuredGridEstreno',-1)">&#10094;</button>
@@ -1660,7 +1660,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:rgba(245,158,11,.15);color:var(--amber);border-color:rgba(245,158,11,.4)">Exclusivo</div>
-      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo&op=venta')" class="sec-link">Ver las 25 en venta de lujo →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo&op=venta')" class="sec-link" data-count-key="lujo">Ver las 25 en venta de lujo →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftLujo" onclick="scrollCarousel('featuredGridLujo',-1)">&#10094;</button>
@@ -2658,6 +2658,27 @@ function driveAssets(p){
 
 
 const DATA_URL = 'https://raw.githubusercontent.com/thaizbar-debug/reco/main/data/properties.json';
+function _updateLandingCounts(){
+  const hasPhoto=p=>driveAssets(p).photos.length>0;
+  const LUJO='Propiedad de Lujo o Exclusiva';
+  const counts={
+    venta:properties.filter(p=>p.op==='Venta'&&hasPhoto(p)).length,
+    alquiler:properties.filter(p=>p.op==='Alquiler'&&hasPhoto(p)).length,
+    estreno:properties.filter(p=>p.op==='Venta'&&p.age===0&&hasPhoto(p)).length,
+    lujo:properties.filter(p=>p.op==='Venta'&&(p.features||[]).includes(LUJO)&&hasPhoto(p)).length
+  };
+  const labels={
+    venta:n=>`Ver las ${n} en venta →`,
+    alquiler:n=>`Ver las ${n} en alquiler →`,
+    estreno:n=>`Ver las ${n} en venta a estrenar →`,
+    lujo:n=>`Ver las ${n} en venta de lujo →`
+  };
+  document.querySelectorAll('[data-count-key]').forEach(el=>{
+    const k=el.dataset.countKey;
+    if(labels[k]) el.textContent=labels[k](counts[k]);
+  });
+}
+
 let DRIVE_FILES = {};
 let properties = [];
 
@@ -2681,6 +2702,7 @@ async function loadData(){
     buildSuggestions();
     buildPriceHistogram();
     _resetPriceSliders();
+    _updateLandingCounts();
     applyFilters();
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
@@ -5900,15 +5922,6 @@ function applyHashNav(){
   }
   const params = {};
   h.replace(/^#/,'').split('&').forEach(p=>{const [k,v]=p.split('=');if(k)params[k]=decodeURIComponent(v||'');});
-  if(params.op){
-    const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
-    const label = labelMap[params.op.toLowerCase()];
-    if(label){
-      const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
-      if(btn) btn.click();
-    }
-    return;
-  }
   if(params.age!==undefined || params.feat){
     advFeats.clear();
     document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
@@ -5949,6 +5962,15 @@ function applyHashNav(){
     var list=getFiltered();
     renderCards(list);
     try{renderPins(list);}catch(e){}
+    return;
+  }
+  if(params.op){
+    const labelMap = {venta:'Comprar', alquiler:'Alquilar', historico:'Histórico'};
+    const label = labelMap[params.op.toLowerCase()];
+    if(label){
+      const btn = [...document.querySelectorAll('#opSeg button')].find(b=>b.textContent.trim()===label);
+      if(btn) btn.click();
+    }
   }
 }
 
