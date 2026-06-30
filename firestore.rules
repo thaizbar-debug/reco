@@ -21,6 +21,36 @@ service cloud.firestore {
       allow delete: if false; // never allow self-delete from client
     }
 
+    // /publications/{pubId}
+    //
+    // User-submitted property listings that go through moderation.
+    // - read: the owner can read their own publications regardless of
+    //         status; anyone (auth or not) can read approved listings,
+    //         because Phase 4 will surface them in the public search.
+    // - create: any authenticated user can create, but the new doc must
+    //           have userId == request.auth.uid and status == 'pending'.
+    //           This prevents users from forging ownership or skipping
+    //           moderation.
+    // - update: the owner may update their own listing only while it
+    //           is still pending, and may not change status, userId or
+    //           createdAt. Admin moderation will be done server-side or
+    //           with a separate admin claim in Phase 3.
+    // - delete: only the owner may delete their listing.
+    match /publications/{pubId} {
+      allow read: if resource.data.status == 'approved'
+                  || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.status == 'pending';
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && resource.data.status == 'pending'
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.status == resource.data.status
+                    && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;
