@@ -491,11 +491,12 @@ header .spacer{flex:1}
 .res-count strong{color:var(--txt);font-size:.95rem}
 .sort-sel{
   background:var(--light);border:1px solid var(--border);
-  padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
+  padding:5px 8px;border-radius:7px;font-size:.74rem;outline:none;color:var(--txt);
+  max-width:130px;min-width:0;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;flex-shrink:1;
 }
 .res-list{overflow-y:auto;flex:1;padding:8px}
 /* View mode toggle */
-.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;flex-shrink:0}
 .view-toggle button{background:none;border:none;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:.82rem;line-height:1;transition:background .12s,color .12s}
 .view-toggle button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .view-toggle button:hover:not(.active){color:var(--txt)}
@@ -538,6 +539,7 @@ header .spacer{flex:1}
 .res-list.view-2col .card-img{height:185px;width:auto;display:flex;align-items:center;justify-content:center;position:relative;min-height:185px}
 .res-list.view-2col .card-body{display:block;padding:12px 14px;flex:unset}
 .res-list.view-2col .card-feats{display:none}
+.res-list.view-2col .card-sqm{display:none}
 .res-list.view-2col .card-specs .spec:nth-child(4){display:none}
 .res-list.view-2col .card-price-row{gap:6px}
 .res-list.view-2col .card-bottom{gap:6px}
@@ -553,7 +555,7 @@ header .spacer{flex:1}
 .res-list.view-3col .card-addr{font-size:.84rem}
 .res-list.view-3col .card-price{font-size:.95rem}
 .res-list.view-3col .card-feats{display:none}
-.res-list.view-3col .card-specs .spec:nth-child(n+3){display:none}
+.res-list.view-3col .card-specs .spec:nth-child(n+2){display:none}
 .res-list.view-3col .card-sqm{display:none}
 .res-list.view-3col .card-price-row{gap:6px}
 
@@ -3025,11 +3027,11 @@ function renderCards(list){
       : '';
     const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
     const priceHtml=histLocked
-      ?`<div class="card-price-row"><div class="card-price card-price-locked">🔒 ${p.cur}•••</div></div>`
-      :`<div class="card-price-row"><div class="card-price">${p.cur}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur}${Math.round(s).toLocaleString('en-US')}</div>`:''})()}</div>`;
+      ?`<div class="card-price-row"><div class="card-price card-price-locked">${p.cur} 🔒</div></div>`
+      :`<div class="card-price-row"><div class="card-price">${p.cur}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm">${p.cur}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
     const optSpecs=[];
     if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
-    if(p.baths>0) optSpecs.push(`<span class="spec"><span>🚿</span>${p.baths}</span>`);
+    if(p.baths>0) optSpecs.push(`<span class="spec spec-baths"><span>🚿</span>${p.baths}</span>`);
     if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`);
     const specsHtml=`<span class="spec"><span>📐</span>${p.area} m²</span>`+optSpecs.slice(0,3).join('');
     const bottomBtn=p.op==='Histórico'
