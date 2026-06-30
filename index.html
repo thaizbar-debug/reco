@@ -10,6 +10,8 @@
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 const HERE_API_KEY='O1AIfY5b-VHgRC47aQrn3OQuXDCMyeuhqr67Xh5GsoI';
@@ -4777,6 +4779,7 @@ function updateKeyCount(){
   document.getElementById('keyCount').textContent=S.keysLeft;
   const home=document.getElementById('homeKeyCount');
   if(home)home.textContent=S.keysLeft;
+  if(typeof _syncToFirestore === 'function') _syncToFirestore({keysLeft: S.keysLeft});
 }
 
 function unlockAndOpen(id){
@@ -6435,6 +6438,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 auth.languageCode = 'es';
+const db = firebase.firestore();
+const storage = firebase.storage();
 
 function toggleUserDropdown(btn) {
   var wrap = btn.closest('.user-wrap');
@@ -6446,13 +6451,70 @@ document.addEventListener('click', function(e) {
   });
 });
 
+// ─────────────────────── USER DATA (localStorage cache + Firestore sync) ───────────────────────
+// Sync model: localStorage is a sync cache used by render functions. When the user is
+// logged in we mirror writes to Firestore (fire-and-forget) and pull from Firestore on
+// auth state change. Anonymous users keep using localStorage only.
+function _userDocRef(){
+  const u = auth.currentUser;
+  return u ? db.collection('users').doc(u.uid) : null;
+}
+function _syncToFirestore(patch){
+  const ref = _userDocRef();
+  if(!ref) return;
+  ref.set(patch, {merge:true}).catch(e => console.warn('[reco] Firestore write failed:', e.message));
+}
+async function _pullUserDataFromFirestore(){
+  const ref = _userDocRef();
+  if(!ref) return;
+  try {
+    const snap = await ref.get();
+    if(!snap.exists){
+      // First login: seed the doc from any local data the anonymous session may have
+      const seed = {
+        email: auth.currentUser.email || null,
+        displayName: auth.currentUser.displayName || null,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        favorites: _getFavorites(),
+        keyHistory: _getKeyHistory(),
+        keysLeft: S.keysLeft || 0
+      };
+      await ref.set(seed);
+      return;
+    }
+    const data = snap.data() || {};
+    if(Array.isArray(data.favorites)) localStorage.setItem('reco_favs', JSON.stringify(data.favorites));
+    if(Array.isArray(data.keyHistory)) localStorage.setItem('reco_key_hist', JSON.stringify(data.keyHistory));
+    if(typeof data.keysLeft === 'number'){
+      S.keysLeft = data.keysLeft;
+      if(typeof updateKeyCount === 'function') updateKeyCount();
+    }
+    // Re-render the user section if one is open
+    if(document.body.classList.contains('show-user')){
+      const h = window.location.hash.replace('#','');
+      if(['perfil','favoritos','llaves','publicaciones'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
+        renderUserSection(h);
+      }
+    }
+  } catch(e){
+    console.warn('[reco] Firestore read failed:', e.message);
+  }
+}
+function _clearUserCache(){
+  localStorage.removeItem('reco_favs');
+  localStorage.removeItem('reco_key_hist');
+  localStorage.removeItem('reco_my_pubs');
+  S.keysLeft = 0;
+  if(typeof updateKeyCount === 'function') updateKeyCount();
+}
+
 // ─────────────────────── FAVORITES & RECENTS (localStorage) ───────────────────────
 function _getFavorites() { try { return JSON.parse(localStorage.getItem('reco_favs') || '[]'); } catch(e) { return []; } }
-function _saveFavorites(arr) { localStorage.setItem('reco_favs', JSON.stringify(arr)); }
+function _saveFavorites(arr) { localStorage.setItem('reco_favs', JSON.stringify(arr)); _syncToFirestore({favorites: arr}); }
 function _getRecents() { try { return JSON.parse(localStorage.getItem('reco_recents') || '[]'); } catch(e) { return []; } }
 function _saveRecents(arr) { localStorage.setItem('reco_recents', JSON.stringify(arr)); }
 function _getKeyHistory() { try { return JSON.parse(localStorage.getItem('reco_key_hist') || '[]'); } catch(e) { return []; } }
-function _saveKeyHistory(arr) { localStorage.setItem('reco_key_hist', JSON.stringify(arr)); }
+function _saveKeyHistory(arr) { localStorage.setItem('reco_key_hist', JSON.stringify(arr)); _syncToFirestore({keyHistory: arr}); }
 function _getMyPubs() { try { return JSON.parse(localStorage.getItem('reco_my_pubs') || '[]'); } catch(e) { return []; } }
 function _saveMyPubs(arr) { localStorage.setItem('reco_my_pubs', JSON.stringify(arr)); }
 
@@ -6888,8 +6950,13 @@ auth.onAuthStateChanged(function(user) {
       appUserWrap.style.display    = 'none';
     }
   }
-  if (user) _checkUserHash();
-  else if (document.body.classList.contains('show-user')) closeUserSection();
+  if (user){
+    _pullUserDataFromFirestore();
+    _checkUserHash();
+  } else {
+    _clearUserCache();
+    if (document.body.classList.contains('show-user')) closeUserSection();
+  }
 });
 document.getElementById('authOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeAuthModal();
