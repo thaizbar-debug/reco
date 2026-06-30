@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // /users/{uid}
+    //
+    // Each authenticated user can read and write only their own profile
+    // document. The document holds favorites, keyHistory, keysLeft and
+    // basic profile metadata (email, displayName, createdAt).
+    //
+    // Note: the create rule also restricts which fields can be set so a
+    // user can't grant themselves keys by writing a giant keysLeft value
+    // on signup. keysLeft must start at 0; only server-side functions or
+    // admin should grant keys. (Phase 2/3 will enforce this server-side.)
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null
+                    && request.auth.uid == uid
+                    && (!('keysLeft' in request.resource.data) || request.resource.data.keysLeft == 0);
+      allow update: if request.auth != null && request.auth.uid == uid;
+      allow delete: if false; // never allow self-delete from client
+    }
+
+    // Default deny for any other path
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
