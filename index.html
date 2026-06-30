@@ -5605,20 +5605,58 @@ function _pn(){
   _ps=2;renderPublish();
 }
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
-function _ppub(){
+async function _uploadPublicationPhotos(pubId, photos){
+  if(!photos || !photos.length) return [];
+  const urls = [];
+  for(let i=0; i<photos.length; i++){
+    const dataUrl = photos[i];
+    const blob = await (await fetch(dataUrl)).blob();
+    const ref = storage.ref(`publications/${pubId}/${i}.jpg`);
+    const snap = await ref.put(blob);
+    urls.push(await snap.ref.getDownloadURL());
+  }
+  return urls;
+}
+
+async function _ppub(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
   if(S.keysLeft<3){toast('⚠️ Necesitas al menos 3 llaves para publicar');return;}
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
-  _pd.listedAt=new Date().toISOString();
-  S.keysLeft-=3;
-  document.getElementById('keyCount').textContent=S.keysLeft;var _hkc=document.getElementById('homeKeyCount');if(_hkc)_hkc.textContent=S.keysLeft;
-  addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
-  var pubs = _getMyPubs();
-  pubs.unshift({address:_pd.address,district:_pd.district,type:_pd.type,currency:_pd.currency,price:_pd.price,title:_pd.title,date:new Date().toISOString()});
-  _saveMyPubs(pubs);
-  toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
-  setTimeout(()=>closePublish(),1800);
+  const btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
+  if(btn) btn.disabled = true;
+  toast('📤 Subiendo publicación…');
+  try {
+    const pubData = {
+      userId: auth.currentUser.uid,
+      userEmail: auth.currentUser.email || null,
+      userName: auth.currentUser.displayName || null,
+      status: 'pending',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      listedAt: new Date().toISOString(),
+      address: _pd.address, district: _pd.district, lat: _pd.lat, lng: _pd.lng,
+      type: _pd.type, op: _pd.op, currency: _pd.currency,
+      price: Number(_pd.price)||0,
+      areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
+      beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
+      floor: _pd.floor, floors: _pd.floors, age: _pd.age,
+      estado: _pd.estado, ascensor: _pd.ascensor, amoblado: _pd.amoblado, petFriendly: _pd.petFriendly,
+      features: _pd.features || [], title: _pd.title, desc: _pd.desc,
+      photoUrls: []
+    };
+    const docRef = await db.collection('publications').add(pubData);
+    const photoUrls = await _uploadPublicationPhotos(docRef.id, _pd.photos || []);
+    if(photoUrls.length) await docRef.update({photoUrls});
+    S.keysLeft -= 3;
+    updateKeyCount();
+    addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
+    toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
+    setTimeout(()=>closePublish(),1800);
+  } catch(e){
+    console.error('[reco] publish failed:', e);
+    toast('⚠️ Error al publicar: '+(e.message||'desconocido'));
+    if(btn) btn.disabled = false;
+  }
 }
 // ── Carga masiva ──
 function _pubBulkHTML(){
@@ -6757,34 +6795,88 @@ function renderLlaves(el) {
 }
 
 // ── PUBLICACIONES ──
-function renderPublicaciones(el) {
-  var pubs = _getMyPubs();
-  var html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+function _pubStatusBadge(status){
+  if(status==='approved') return '<span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✓ Publicado</span>';
+  if(status==='rejected') return '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✕ Rechazado</span>';
+  return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏳ En revisión</span>';
+}
+async function renderPublicaciones(el) {
+  el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">📋 Mis publicaciones</div>'
+    + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
+  if(!auth.currentUser){
+    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+      + '<div class="us-title">📋 Mis publicaciones</div>'
+      + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>Inicia sesión para ver tus publicaciones.</p></div></div>';
+    return;
+  }
+  let pubs = [];
+  let queryError = null;
+  try {
+    const snap = await db.collection('publications')
+      .where('userId','==',auth.currentUser.uid)
+      .orderBy('createdAt','desc').get();
+    pubs = snap.docs.map(d => ({id:d.id, ...d.data()}));
+  } catch(e){
+    queryError = e;
+    console.error('[reco] read publications failed:', e);
+    // Fallback: drop the orderBy and sort client-side. This works without
+    // a composite index, at the cost of slightly more work in the client.
+    try {
+      const snap = await db.collection('publications')
+        .where('userId','==',auth.currentUser.uid).get();
+      pubs = snap.docs.map(d => ({id:d.id, ...d.data()}))
+        .sort((a,b)=>{
+          const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+          const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+          return tb - ta;
+        });
+      queryError = null; // fallback worked
+    } catch(e2){
+      console.error('[reco] fallback read also failed:', e2);
+    }
+  }
+  let html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">📋 Mis publicaciones</div>';
   if (pubs.length) {
-    html += pubs.map(function(pub, i) {
+    html += pubs.map(function(pub) {
+      const thumb = (pub.photoUrls && pub.photoUrls[0])
+        ? `<div class="us-prop-img" style="background:url('${pub.photoUrls[0]}') center/cover"></div>`
+        : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>';
       return '<div class="us-prop-card">'
-        + '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>'
+        + thumb
         + '<div class="us-prop-info">'
-        + '<div class="us-prop-addr">'+(pub.address||pub.title||'Publicación '+(i+1))+'</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'+_pubStatusBadge(pub.status)+'</div>'
+        + '<div class="us-prop-addr">'+(pub.address||pub.title||'Publicación')+'</div>'
         + '<div class="us-prop-dist">📍 '+(pub.district||'Sin distrito')+' · '+(pub.type||'Inmueble')+'</div>'
-        + '<div class="us-prop-price">'+(pub.currency||'USD')+' '+(pub.price||'—')+'</div>'
+        + '<div class="us-prop-price">'+(pub.currency||'USD')+' '+(pub.price||'—').toLocaleString()+'</div>'
         + '</div>'
-        + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub('+i+')" title="Eliminar">✕</button>'
+        + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+pub.id+'\')" title="Eliminar">✕</button>'
         + '</div>';
     }).join('');
+  } else if(queryError){
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar tus publicaciones.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
   } else {
     html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📋</div><p>No tienes publicaciones aún.<br>Publica tu primer inmueble para verlo aquí.</p></div></div>';
   }
   html += '<div style="text-align:center;margin-top:20px"><button class="us-keys-buy" onclick="closeUserSection();openPublish()">+ Publicar inmueble</button></div>';
   el.innerHTML = html;
 }
-function removeMyPub(idx) {
-  var pubs = _getMyPubs();
-  pubs.splice(idx, 1);
-  _saveMyPubs(pubs);
-  renderPublicaciones(document.getElementById('userSectionContent'));
-  toast('Publicación eliminada');
+async function removeMyPub(id) {
+  if(!confirm('¿Eliminar esta publicación?')) return;
+  try {
+    await db.collection('publications').doc(id).delete();
+    // Best-effort delete of photos; ignore errors (already deleted, no permission, etc.)
+    for(let i=0; i<20; i++){
+      try { await storage.ref(`publications/${id}/${i}.jpg`).delete(); }
+      catch(_){ break; }
+    }
+    toast('Publicación eliminada');
+    renderPublicaciones(document.getElementById('userSectionContent'));
+  } catch(e){
+    console.error('[reco] remove pub failed:', e);
+    toast('⚠️ No se pudo eliminar');
+  }
 }
 
 // handle hash on load / popstate for user sections
