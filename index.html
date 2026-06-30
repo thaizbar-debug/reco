@@ -364,6 +364,12 @@ header .spacer{flex:1}
 .detail-ad-title{font-size:.82rem;font-weight:700;color:var(--txt)}
 .detail-ad-sub{font-size:.72rem;color:var(--muted);margin-top:2px}
 .detail-ad-cta{font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap;flex-shrink:0}
+.detail-view-more{display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:var(--r);background:var(--blue);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em;transition:opacity .15s}
+.detail-view-more:hover{opacity:.88}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skel{background:linear-gradient(90deg,var(--light) 25%,var(--border) 50%,var(--light) 75%);background-size:200% 100%;animation:shimmer 1.4s ease infinite;border-radius:6px}
+.skel-header{width:100%;height:200px;border-radius:0}
+.skel-line{height:14px}
 .bank-check{display:flex;align-items:center;gap:8px;cursor:pointer;
   background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
   border-radius:8px;padding:6px 12px;transition:background .15s,border-color .15s}
@@ -2830,6 +2836,46 @@ function getFiltered(){
 
 // ─────────────────────── RENDER CARDS ───────────────────────
 function fmtPrice(p){ return p>=1000000? (p/1000000).toFixed(1)+'M' : p>=1000? Math.round(p/1000)+'K' : p.toString(); }
+function fmtNum(v){ return Number(v).toLocaleString('en-US'); }
+
+const _FEAT_PRIORITY = {
+  'Departamento': ['Ascensor','Balcón','Terraza','Vista a parque','Vista al mar','Área de lavandería','Gimnasio','Piscina','Área común','Estacionamiento','Walk-in Closet','Cuarto de servicio'],
+  'Casa': ['Jardín','Piscina','Cochera','Terraza','Cuarto de servicio','Área de lavandería','Patio','Balcón','Área verde'],
+  'Terreno': ['Esquina','Acceso asfaltado','Título de propiedad','Habilitación urbana','Cerca a parque'],
+  'Oficina': ['Ascensor','Recepción','Aire acondicionado','Baño privado','Sala de reuniones','Estacionamiento'],
+  'Local': ['Baño propio','Mezzanine','Puerta enrollable','Estacionamiento'],
+};
+const _MAX_FEAT_PANEL = 6;
+function _pickTopFeatures(p){
+  const feats = p.features || [];
+  if(feats.length <= _MAX_FEAT_PANEL) return feats;
+  const prio = _FEAT_PRIORITY[p.type] || _FEAT_PRIORITY['Departamento'];
+  const prioSet = new Set(prio.map(f=>f.toLowerCase()));
+  const picked = [];
+  const rest = [];
+  feats.forEach(f => {
+    if(prioSet.has(f.toLowerCase())) picked.push(f);
+    else rest.push(f);
+  });
+  const result = picked.concat(rest).slice(0, _MAX_FEAT_PANEL);
+  return result;
+}
+
+function _stripAddress(desc, address){
+  if(!desc || !address) return desc || '';
+  const addr = address.replace(/,/g,'').trim();
+  const words = addr.split(/\s+/).filter(w => w.length >= 3);
+  if(words.length < 2) return desc;
+  const lines = desc.split(/\n|<br\s*\/?>|\.(?=\s)/);
+  const first = (lines[0]||'').toLowerCase();
+  let matchCount = 0;
+  words.forEach(w => { if(first.includes(w.toLowerCase())) matchCount++; });
+  if(matchCount >= Math.min(3, words.length)){
+    const removed = desc.replace(lines[0], '').replace(/^[\s,.\-·:;<br>/]+/i, '');
+    return removed || desc;
+  }
+  return desc;
+}
 function sqmPrice(p){ return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0; }
 function sqmPriceNet(p){
   if(p.op==='Venta') return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
@@ -2958,8 +3004,8 @@ function renderCards(list){
       ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
       : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji}</div></div>`;
     const arrows = photos.length > 1
-      ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${pid}',-1,${photos.length})">‹</button>
-         <button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${pid}',1,${photos.length})">›</button>`
+      ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${pid}',-1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+         <button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${pid}',1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>`
       : '';
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
@@ -4529,6 +4575,22 @@ function openDetail(id){
   if(!p){ console.log('[reco] property not found:', id); return; }
   S.selectedId=id;
   addRecent(id);
+
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-skeleton">
+      <div class="skel skel-header"></div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+        <div class="skel skel-line" style="width:60%;height:22px"></div>
+        <div class="skel skel-line" style="width:40%;height:16px"></div>
+        <div style="display:flex;gap:10px">${'<div class="skel" style="flex:1;height:52px;border-radius:8px"></div>'.repeat(4)}</div>
+        <div class="skel skel-line" style="width:80%;height:14px"></div>
+        <div class="skel skel-line" style="width:100%;height:60px"></div>
+      </div>
+    </div>`;
+  document.getElementById('detailOverlay').classList.add('open');
+  document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailPanel').scrollTop = 0;
+
   applyFilters();
 
   // Histórico requires a key — show gate if not yet unlocked
@@ -4555,8 +4617,8 @@ function openDetail(id){
       </div>
       <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(_detailPhotos['${dpid}'],_cimgIdx['${dpid}']||0)"></div>
       ${photos.length>1?`
-        <button class="cimg-arr cimg-arr-l" style="z-index:3" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})">‹</button>
-        <button class="cimg-arr cimg-arr-r" style="z-index:3;right:52px" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})">›</button>
+        <button style="position:absolute;top:calc(50% - 20px);left:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button style="position:absolute;top:calc(50% - 20px);right:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
         <div style="position:absolute;top:12px;left:12px;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);color:#fff;font-size:11px;font-weight:500;padding:3px 9px;border-radius:10px;z-index:4;"><span id="dh-curr-${dpid}">1</span>/${photos.length}</div>
         <div class="cimg-dot-row" style="bottom:48px;z-index:3" id="cdots-${dpid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${dpid}',${i},${photos.length})"></div>`).join('')}</div>
       `:''}
@@ -4569,56 +4631,43 @@ function openDetail(id){
       <button class="detail-close" onclick="closeDetail()">✕</button>
       <div class="detail-header-content">
         <div class="detail-title">${p.address}, ${p.district}</div>
-        <div class="detail-sub">${p.type} · ${p.op}${p.floor>0?' · Piso '+p.floor+'/'+p.floors+' pisos':''}</div>
+        <div class="detail-sub">${p.type} · ${p.op}</div>
       </div>
     </div>
     <div class="detail-body">
       <div class="detail-price-row">
         <div>
-          <div class="detail-price">${p.cur} ${(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString()}</div>
-          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':''}</div>
+          <div class="detail-price">${p.cur} ${fmtNum(p.op==='Histórico'?getHistTotal(p):p.price)}</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':p.op==='Histórico'?'Valor total de la transacción':''}</div>
+          ${p.op==='Histórico'&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${p.cur} ${fmtNum(getHistPropPrice(p))}</strong></div>`:''}
         </div>
-        ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${p.cur} ${sqm.toLocaleString()}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
+        ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${p.cur} ${fmtNum(sqm)}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
         ${p.bank?'<span class="badge badge-bank" style="font-size:.78rem">🏦 Prop. de Banco</span>':''}
         ${p.isNew?'<span class="badge badge-new" style="font-size:.78rem">✨ Nuevo</span>':''}
       </div>
 
       <div class="detail-specs-grid">
         <div class="spec-box"><div class="sv">${p.area} m²</div><div class="sk">Área</div></div>
-        ${p.beds>0?`<div class="spec-box"><div class="sv">${p.beds}</div><div class="sk">Dormitorios</div></div>`:''}
-        ${p.baths>0?`<div class="spec-box"><div class="sv">${p.baths}</div><div class="sk">Baños</div></div>`:''}
-        ${parkCount(p)>0?`<div class="spec-box"><div class="sv">${parkCount(p)}</div><div class="sk">Estac.</div></div>`:''}
-        ${p.age===0?`<div class="spec-box"><div class="sv" style="color:var(--green)">★</div><div class="sk">Estrenar</div></div>`:`<div class="spec-box"><div class="sv">${p.age}</div><div class="sk">Años</div></div>`}
-        ${p.floors>0?`<div class="spec-box"><div class="sv">${p.floor}/${p.floors}</div><div class="sk">Piso</div></div>`:''}
+        <div class="spec-box"><div class="sv">${p.beds>0?p.beds:'—'}</div><div class="sk">Dormitorios</div></div>
+        <div class="spec-box"><div class="sv">${p.baths>0?p.baths:'—'}</div><div class="sk">Baños</div></div>
+        <div class="spec-box"><div class="sv">${parkCount(p)>0?parkCount(p):'—'}</div><div class="sk">Estacionamientos</div></div>
+        <div class="spec-box"><div class="sv">${(p.sun?.depositos||0)>0?p.sun.depositos:'—'}</div><div class="sk">Depósitos</div></div>
+        <div class="spec-box"><div class="sv">${p.age}</div><div class="sk">Años</div></div>
       </div>
 
       <div class="section-title">Características</div>
       <div class="features-wrap" style="margin-bottom:14px">
-        ${p.features.map(f=>`<span class="feat-tag">${f}</span>`).join('')}
+        ${_pickTopFeatures(p).map(f=>`<span class="feat-tag">${f}</span>`).join('')}
       </div>
-
-      <div class="section-title">Descripción</div>
-      <div class="detail-desc">${p.desc}</div>
 
       ${buildValChart(p)}
       ${buildTasChart(p.district, false)}
 
       ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, assets.partidas):''}
 
-      <div class="detail-contact">
-        <div class="section-title">Contacto del propietario</div>
-        <div class="contact-row">
-          <div class="contact-info">
-            <div class="label">Propietario</div>
-            <div class="value">${p.owner}</div>
-            <div class="phone">📞 ${p.phone}</div>
-          </div>
-          <button class="btn-contact" onclick="toast('Llamando a ${p.owner}…')">📞 Contactar</button>
-        </div>
-      </div>
+      <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${p.id}')">Ver Más Detalles</button>
 
-      ${(p.op==='Histórico'||p.op==='Venta')?`<button style="width:100%;background:var(--blue);border:none;padding:12px;border-radius:var(--r);font-size:.88rem;font-weight:700;color:#fff;cursor:pointer;margin-top:4px" onclick="openFullReport('${p.id}')">📋 Ver informe completo</button>`:''}
-      <div style="display:flex;gap:10px;margin-top:8px">
+      <div style="display:flex;gap:10px;margin-top:10px">
         <button id="favBtn-${p.id}" style="flex:1;background:${isFavorite(p.id)?'#fef2f2':'var(--bg)'};border:1.5px solid ${isFavorite(p.id)?'#fca5a5':'var(--border)'};padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toggleFavorite('${p.id}');var b=this;b.style.background=isFavorite('${p.id}')?'#fef2f2':'var(--bg)';b.style.borderColor=isFavorite('${p.id}')?'#fca5a5':'var(--border)';b.textContent=isFavorite('${p.id}')?'❤️ Guardado':'🤍 Guardar'">${isFavorite(p.id)?'❤️ Guardado':'🤍 Guardar'}</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
       </div>
@@ -4646,6 +4695,7 @@ function openDetail(id){
 
   document.getElementById('detailOverlay').classList.add('open');
   document.getElementById('detailPanel').classList.add('open');
+  document.getElementById('detailPanel').scrollTop = 0;
 
   // scroll card into view
   const card=document.getElementById('card-'+id);
@@ -4759,7 +4809,7 @@ function openFullReport(id){
   const partidas = p.sun ? (assets.partidas.length ? assets.partidas : []) : [];
 
   const cur = p.cur;
-  const fmtN = v => Number(v).toLocaleString();
+  const fmtN = v => fmtNum(v);
   const sqm  = sqmPriceNet(p);
   const isHist = p.op === 'Histórico';
   const isAlq  = p.op === 'Alquiler';
@@ -4966,8 +5016,9 @@ function openFullReport(id){
         <!-- PRECIO + SPECS -->
         <div class="fr-price-block">
           <div>
-            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Precio de venta':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${cur} ${fmtN(isHist?getHistTotal(p):p.price)}</div>
+            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Valor total de la transacción':'Precio solicitado'}</div>
+            <div class="fr-price-ask">${cur} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
+            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${cur} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
             <div class="fr-price-meta">
               ${sqm>0?`<span class="fr-price-pill">${cur} ${fmtN(sqm)} / m²</span>`:''}
               ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
@@ -4977,7 +5028,7 @@ function openFullReport(id){
         </div>
 
         <div class="fr-specs-grid">
-          <div class="fr-spec-cell"><div class="fr-spec-val">${p.area}</div><div class="fr-spec-lbl">m² ${p.area>0&&p.area===p.area?'techados':''}</div></div>
+          <div class="fr-spec-cell"><div class="fr-spec-val">${p.area}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
           ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.beds}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
           ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.baths}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
           ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${parkCount(p)}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
@@ -5045,7 +5096,7 @@ function openFullReport(id){
   // Inicializar simulador si aplica
   if(!isHist && !isAlq){
     function calcSim(){
-      const price = +document.getElementById('frSimPrice').value||0;
+      const price = +(document.getElementById('frSimPrice').value.replace(/[^0-9]/g,''))||0;
       const down  = +document.getElementById('frSimDown').value||0;
       const years = +document.getElementById('frSimYears').value||1;
       const rate  = (+document.getElementById('frSimRate').value||0)/100/12;
@@ -5056,7 +5107,15 @@ function openFullReport(id){
       document.getElementById('frResLoan').textContent    = f(loan);
       document.getElementById('frResMonthly').textContent = f(monthly);
     }
-    document.querySelectorAll('.fr-sim-input').forEach(el=>el.addEventListener('input',calcSim));
+    const priceInput = document.getElementById('frSimPrice');
+    function fmtSimPrice(){
+      const raw = priceInput.value.replace(/[^0-9]/g,'');
+      priceInput.value = raw ? Number(raw).toLocaleString() : '';
+      calcSim();
+    }
+    priceInput.addEventListener('input', fmtSimPrice);
+    priceInput.value = Number(p.price).toLocaleString();
+    document.querySelectorAll('.fr-sim-input:not(#frSimPrice)').forEach(el=>el.addEventListener('input',calcSim));
     calcSim();
   }
 }
@@ -5108,6 +5167,27 @@ document.addEventListener('touchend', e => {
 // ─────────────────────── MINI-CARRUSEL CARDS ─────────────────
 const _cimgIdx = {};
 const _detailPhotos = {};
+
+// Touch/swipe en carrusel del panel lateral
+let _cimgTouchX = null, _cimgTouchPid = null;
+document.addEventListener('touchstart', e => {
+  const header = e.target.closest('.detail-header');
+  if(!header) return;
+  const track = header.querySelector('[id^="cimgt-"]');
+  if(!track) return;
+  _cimgTouchPid = track.id.replace('cimgt-','');
+  _cimgTouchX = e.touches[0].clientX;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if(_cimgTouchX === null || !_cimgTouchPid) return;
+  const dx = e.changedTouches[0].clientX - _cimgTouchX;
+  if(Math.abs(dx) > 40){
+    const pid = _cimgTouchPid;
+    const total = (_detailPhotos[pid]||[]).length;
+    if(total > 1) cimgMove(pid, dx < 0 ? 1 : -1, total);
+  }
+  _cimgTouchX = null; _cimgTouchPid = null;
+}, {passive:true});
 function cimgMove(pid, dir, total){
   _cimgIdx[pid] = ((_cimgIdx[pid]||0) + dir + total) % total;
   _cimgApply(pid, total);
