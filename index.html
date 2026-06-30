@@ -491,11 +491,12 @@ header .spacer{flex:1}
 .res-count strong{color:var(--txt);font-size:.95rem}
 .sort-sel{
   background:var(--light);border:1px solid var(--border);
-  padding:5px 10px;border-radius:7px;font-size:.78rem;outline:none;color:var(--txt);
+  padding:5px 8px;border-radius:7px;font-size:.74rem;outline:none;color:var(--txt);
+  max-width:130px;min-width:0;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;flex-shrink:1;
 }
 .res-list{overflow-y:auto;flex:1;padding:8px}
 /* View mode toggle */
-.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto}
+.view-toggle{display:flex;background:var(--light);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-left:auto;flex-shrink:0}
 .view-toggle button{background:none;border:none;padding:5px 8px;cursor:pointer;color:var(--muted);font-size:.82rem;line-height:1;transition:background .12s,color .12s}
 .view-toggle button.active{background:var(--surface);color:var(--blue);box-shadow:0 1px 3px rgba(0,0,0,.1)}
 .view-toggle button:hover:not(.active){color:var(--txt)}
@@ -518,13 +519,13 @@ header .spacer{flex:1}
 .res-list.view-list .card-body{flex:1;padding:9px 14px;display:flex;flex-direction:column;min-width:0}
 .res-list.view-list .card-addr{font-size:.9rem;margin-bottom:1px;-webkit-line-clamp:1;flex-shrink:0}
 .res-list.view-list .card-dist{font-size:.75rem;margin-bottom:5px;flex-shrink:0}
-.res-list.view-list .card-specs{margin-bottom:4px;font-size:.77rem;gap:12px;flex-shrink:0}
+.res-list.view-list .card-specs{margin-bottom:4px;font-size:.77rem;gap:8px;flex-shrink:0}
 .res-list.view-list .card-feats{display:none;max-height:24px;overflow:hidden;margin:2px 0 0;flex-shrink:0}
 .res-list.view-list .card-bottom{flex-shrink:0}
 .res-list.view-list .card-bottom{gap:8px;margin-top:auto;padding-top:5px}
 .res-list.view-list .card-price{font-size:1.02rem}
 .res-list.view-list .card-detail-btn{font-size:.75rem;padding:5px 12px}
-.res-list.view-list .card-badges{position:absolute;bottom:6px;left:6px;top:auto;gap:4px}
+.res-list.view-list .card-badges{position:absolute;bottom:14px;left:6px;top:auto;gap:4px}
 .res-list.view-list .badge{font-size:.6rem;padding:2px 6px}
 .res-list.view-list .card-sqm{font-size:.7rem}
 /* Lista en modo expandido: imagen un poco más ancha y se muestran chips */
@@ -537,9 +538,15 @@ header .spacer{flex:1}
 .res-list.view-2col .p-card{margin-bottom:0;width:calc(50% - 5px);flex-shrink:0}
 .res-list.view-2col .card-img{height:185px;width:auto;display:flex;align-items:center;justify-content:center;position:relative;min-height:185px}
 .res-list.view-2col .card-body{display:block;padding:12px 14px;flex:unset}
-.res-list.view-2col .card-feats{display:flex;max-height:26px;overflow:hidden}
+.res-list.view-2col .card-feats{display:none}
+.res-list.view-2col .card-sqm{display:none}
+.res-list.view-2col .card-specs .spec:nth-child(4){display:none}
+.res-list.view-2col .card-price-row{gap:6px}
+.res-list.view-2col .card-bottom{gap:6px}
+.res-list.view-2col .card-detail-btn{padding:5px 9px;font-size:.7rem;flex-shrink:0}
 .res-list.view-2col>.area-summary-bar,.res-list.view-3col>.area-summary-bar{width:100%}
 .res-list.view-2col>div[style],.res-list.view-3col>div[style]{width:100%}
+.res-list.view-2col>.empty,.res-list.view-3col>.empty{width:100%}
 /* ── View: 3 columnas ── */
 .res-list.view-3col{display:flex!important;flex-wrap:wrap;gap:10px}
 .res-list.view-3col .p-card{margin-bottom:0;width:calc(33.333% - 6.667px);flex-shrink:0}
@@ -548,6 +555,9 @@ header .spacer{flex:1}
 .res-list.view-3col .card-addr{font-size:.84rem}
 .res-list.view-3col .card-price{font-size:.95rem}
 .res-list.view-3col .card-feats{display:none}
+.res-list.view-3col .card-specs .spec:nth-child(n+2){display:none}
+.res-list.view-3col .card-sqm{display:none}
+.res-list.view-3col .card-price-row{gap:6px}
 
 /* ══════════════ PROPERTY CARD ══════════════ */
 .p-card{
@@ -600,25 +610,30 @@ header .spacer{flex:1}
 .lb-arr-l{left:16px;}.lb-arr-r{right:16px;}
 .lb-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:#fff;font-size:13px;font-weight:600;background:rgba(0,0,0,.5);padding:4px 14px;border-radius:99px;white-space:nowrap;}
 .lb-photo-hint{position:absolute;inset:0;cursor:zoom-in;}
-.card-badges{position:absolute;bottom:8px;left:8px;display:flex;gap:5px;z-index:2;}
+.card-badges{position:absolute;bottom:16px;left:8px;display:flex;gap:5px;z-index:4;}
 .badge{
   padding:2px 9px;border-radius:99px;font-size:.72rem;font-weight:700;
   backdrop-filter:blur(4px);
 }
 .badge-op{background:rgba(8,145,178,.88);color:#fff}
+.badge-op-venta{background:rgba(8,145,178,.88);color:#fff}
+.badge-op-alquiler{background:rgba(6,182,212,.88);color:#fff}
+.badge-op-historico{background:rgba(245,158,11,.9);color:#fff}
 .badge-bank{background:rgba(245,158,11,.9);color:#fff}
 .badge-new{background:rgba(16,185,129,.9);color:#fff}
 .badge-type{background:rgba(255,255,255,.85);color:var(--blue)}
+.card-price-locked{color:var(--muted);letter-spacing:.5px}
 
 .card-body{padding:11px 13px}
 .card-addr{font-weight:700;font-size:.88rem;margin-bottom:2px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.card-dist{font-size:.78rem;color:var(--muted);margin-bottom:8px;display:flex;align-items:center;gap:4px}
-.card-specs{display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap}
-.spec{display:flex;align-items:center;gap:4px;font-size:.78rem;color:var(--muted)}
+.card-dist{font-size:.78rem;color:var(--muted);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+.card-specs{display:flex;gap:8px;margin-bottom:8px;flex-wrap:nowrap;overflow:hidden}
+.spec{display:flex;align-items:center;gap:3px;font-size:.78rem;color:var(--muted);white-space:nowrap;flex-shrink:0}
 .spec span:first-child{font-size:.95rem}
 .card-bottom{display:flex;align-items:center;justify-content:space-between}
-.card-price{font-size:1.05rem;font-weight:800;color:var(--blue)}
-.card-sqm{display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:3px 10px;font-size:.74rem;font-weight:700;color:#1d4ed8}
+.card-price-row{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.card-price{font-size:1.05rem;font-weight:800;color:var(--blue);white-space:nowrap}
+.card-sqm{display:inline-flex;align-items:center;gap:5px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:3px 10px;font-size:.74rem;font-weight:700;color:#1d4ed8;white-space:nowrap}
 .card-sqm-lbl{font-weight:400;color:#3b82f6;font-size:.68rem;white-space:nowrap}
 .card-detail-btn{
   background:var(--light);border:1.5px solid var(--border);
@@ -2996,10 +3011,10 @@ function renderCards(list){
   const spatialActive=(S.radiusCenter)||(S.polyFinished&&S.polyPoints.length>=3);
   const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
 
-  el.innerHTML=tablePrefix+list.map(p=>{
+  el.innerHTML=tablePrefix+list.map((p,_idx)=>{
     const cardAssets=driveAssets(p);
     const photos=cardAssets.photos;
-    const pid=p.id.replace(/[^a-zA-Z0-9]/g,'_');
+    const pid=_idx+'_'+p.id.replace(/[^a-zA-Z0-9]/g,'_');
     const slides = photos.length
       ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
       : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji}</div></div>`;
@@ -3010,7 +3025,19 @@ function renderCards(list){
     const dots = photos.length > 1
       ? `<div class="cimg-dot-row" id="cdots-${pid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${pid}',${i},${photos.length})"></div>`).join('')}</div>`
       : '';
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-op">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${parkCount(p)>0?`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`:''}${p.age===0?'<span class="spec" style="color:#10b981;font-weight:700">Estrenar</span>':''}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom"><div><div class="card-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm"><span class="card-sqm-lbl">Valor/m²</span>${p.cur} ${s.toLocaleString()}</div>`:''})()}</div>${p.op==='Histórico'?S.unlockedIds.has(p.id)?`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`:`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn" onclick="event.stopPropagation();openDetail('${p.id}')">Ver detalle</button>`}</div></div></div>`;
+    const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
+    const priceHtml=histLocked
+      ?`<div class="card-price-row"><div class="card-price card-price-locked">${p.cur} 🔒</div></div>`
+      :`<div class="card-price-row"><div class="card-price">${p.cur}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm">${p.cur}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
+    const optSpecs=[];
+    if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
+    if(p.baths>0) optSpecs.push(`<span class="spec spec-baths"><span>🚿</span>${p.baths}</span>`);
+    if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`);
+    const specsHtml=`<span class="spec"><span>📐</span>${p.area} m²</span>`+optSpecs.slice(0,3).join('');
+    const bottomBtn=p.op==='Histórico'
+      ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`)
+      :'';
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
