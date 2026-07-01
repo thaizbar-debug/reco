@@ -5713,41 +5713,151 @@ function _pubBulkFile(file){
   } else { toast('⚠️ Formato no soportado. Usa CSV, XLSX o XLS.'); }
 }
 function _pubParseCSV(text){
-  const lines=text.trim().split('\n');if(lines.length<2)return[];
-  const headers=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
-  return lines.slice(1).filter(l=>l.trim()).map(line=>{
-    const vals=line.split(',').map(v=>v.trim().replace(/^"|"$/g,''));
-    const obj={};headers.forEach((h,i)=>obj[h]=vals[i]||'');return obj;
+  // Small RFC-4180-ish parser: supports "quoted fields with, commas" and "" escapes.
+  const rows=[]; let row=[], field='', inQ=false;
+  const src=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for(let i=0;i<src.length;i++){
+    const c=src[i];
+    if(inQ){
+      if(c==='"'){ if(src[i+1]==='"'){ field+='"'; i++; } else { inQ=false; } }
+      else field+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  if(rows.length<2)return[];
+  const headers=rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.some(v=>v && v.trim())).map(r=>{
+    const obj={}; headers.forEach((h,i)=>obj[h]=(r[i]||'').trim()); return obj;
   });
 }
+const _PUB_BULK_MAX = 200;
+const _PUB_BULK_COST_PER = 3;
+const _PUB_BULK_TYPES = ['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
+const _PUB_BULK_OPS = ['Venta','Alquiler'];
+const _PUB_BULK_CURRENCIES = ['USD','PEN'];
+let _pubBulkRows = [];
+
+function _pubBulkValidateRow(r){
+  const errs=[];
+  const need=(k,label)=>{ if(!r[k]||!String(r[k]).trim()) errs.push(label+' vacío'); };
+  need('direccion','dirección'); need('distrito','distrito');
+  need('titulo','título'); need('descripcion','descripción');
+  const price=Number(r.precio); if(!isFinite(price)||price<=0) errs.push('precio inválido');
+  const area=Number(r.area_m2); if(!isFinite(area)||area<=0) errs.push('área inválida');
+  if(r.tipo && !_PUB_BULK_TYPES.includes(r.tipo)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
+  if(r.operacion && !_PUB_BULK_OPS.includes(r.operacion)) errs.push('operacion debe ser Venta o Alquiler');
+  if(r.moneda && !_PUB_BULK_CURRENCIES.includes(r.moneda)) errs.push('moneda debe ser USD o PEN');
+  return { valid: errs.length===0, errors: errs };
+}
+
+function _pubBulkRowToPubData(r){
+  return {
+    userId: auth.currentUser.uid,
+    userEmail: auth.currentUser.email || null,
+    userName: auth.currentUser.displayName || null,
+    status: 'pending',
+    source: 'bulk',
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    listedAt: new Date().toISOString(),
+    address: String(r.direccion).trim(),
+    district: String(r.distrito).trim(),
+    lat: null, lng: null,
+    type: r.tipo || 'Departamento',
+    op: r.operacion || 'Venta',
+    currency: r.moneda || 'USD',
+    price: Number(r.precio)||0,
+    areaTerr: 0,
+    area: Number(r.area_m2)||0,
+    beds: Number(r.dormitorios)||0,
+    baths: Number(r.banos)||0,
+    parking: Number(r.estacionamientos)||0,
+    floor: Number(r.piso)||0,
+    floors: Number(r.pisos_edificio)||0,
+    age: Number(r.antiguedad_anos)||0,
+    estado: 'Construido',
+    ascensor: false, amoblado: false, petFriendly: false,
+    features: [],
+    title: String(r.titulo).trim(),
+    desc: String(r.descripcion).trim(),
+    photoUrls: []
+  };
+}
+
 function _pubShowBulkPreview(rows){
   const prev=document.getElementById('pubBulkPreview');
-  if(!prev||!rows.length){if(prev)prev.innerHTML='<div style="padding:14px;color:var(--muted);font-size:13px">No se encontraron filas válidas.</div>';return;}
-  const keys=Object.keys(rows[0]);const cost=rows.length*3;
+  if(!prev)return;
+  if(!rows.length){ prev.innerHTML='<div style="padding:14px;color:var(--muted);font-size:13px">No se encontraron filas válidas.</div>'; _pubBulkRows=[]; return; }
+  const capped = rows.length > _PUB_BULK_MAX;
+  const workRows = capped ? rows.slice(0, _PUB_BULK_MAX) : rows;
+  const annotated = workRows.map(r => ({ row:r, ...(_pubBulkValidateRow(r)) }));
+  _pubBulkRows = annotated;
+  const validCount = annotated.filter(a=>a.valid).length;
+  const invalidCount = annotated.length - validCount;
+  const cost = validCount * _PUB_BULK_COST_PER;
+  const shortKeys = cost > S.keysLeft;
+  const keys=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','titulo'];
   prev.innerHTML=`
     <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:13px;font-weight:600">${rows.length} inmueble${rows.length!==1?'s':''} detectado${rows.length!==1?'s':''}</div>
-      <div style="font-size:12px;color:var(--muted)">Costo estimado: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}</div>
+      <div style="font-size:13px;font-weight:600">${annotated.length} fila${annotated.length!==1?'s':''} · <span style="color:var(--green)">${validCount} válida${validCount!==1?'s':''}</span>${invalidCount?` · <span style="color:var(--red)">${invalidCount} con errores</span>`:''}</div>
+      <div style="font-size:12px;color:var(--muted)">Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}</div>
     </div>
+    ${capped?`<div style="margin-top:8px;padding:8px 12px;background:#fff4e5;border:1px solid #f5b342;border-radius:6px;font-size:12px;color:#8a5a00">⚠️ Archivo tiene ${rows.length} filas. Solo se procesarán las primeras ${_PUB_BULK_MAX}.</div>`:''}
     <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
       <table class="pub-preview-table">
-        <thead><tr>${keys.map(k=>`<th>${k}</th>`).join('')}</tr></thead>
-        <tbody>${rows.slice(0,8).map(r=>`<tr>${keys.map(k=>`<td title="${r[k]}">${r[k]||'—'}</td>`).join('')}</tr>`).join('')}</tbody>
+        <thead><tr><th style="width:32px">#</th>${keys.map(k=>`<th>${k}</th>`).join('')}<th>estado</th></tr></thead>
+        <tbody>${annotated.slice(0,10).map((a,i)=>`<tr style="background:${a.valid?'transparent':'#ffe7e7'}"><td>${i+1}</td>${keys.map(k=>`<td title="${(a.row[k]||'').replace(/"/g,'&quot;')}">${a.row[k]||'—'}</td>`).join('')}<td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ OK</span>':`<span style="color:var(--red)" title="${a.errors.join('; ')}">✗ ${a.errors[0]}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}</td></tr>`).join('')}</tbody>
       </table>
     </div>
-    ${rows.length>8?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Mostrando 8 de ${rows.length} filas.</div>`:''}
+    ${annotated.length>10?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Mostrando 10 de ${annotated.length} filas.</div>`:''}
+    <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
     <div class="pub-actions" style="margin-top:20px">
-      <div style="font-size:12px;color:var(--muted)">Cada inmueble cuesta 3 llaves</div>
-      <button class="pub-btn primary" onclick="_pubBulkSubmit(${rows.length},${cost})">Publicar ${rows.length} inmueble${rows.length!==1?'s':''} · 🔑 ${cost} llaves</button>
+      <div style="font-size:12px;color:var(--muted)">Cada publicación cuesta ${_PUB_BULK_COST_PER} llaves. Las inválidas se saltan.</div>
+      <button class="pub-btn primary" id="pubBulkSubmitBtn" ${(!validCount||shortKeys)?'disabled':''} onclick="_pubBulkSubmit()">
+        ${shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:validCount?`Publicar ${validCount} · 🔑 ${cost} llaves`:'Sin filas válidas para publicar'}
+      </button>
     </div>`;
 }
-function _pubBulkSubmit(n,cost){
+
+async function _pubBulkSubmit(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar inmuebles');openAuthModal('login');return;}
-  if(S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft}). Compra más llaves.`);return;}
-  S.keysLeft-=cost;
-  document.getElementById('keyCount').textContent=S.keysLeft;var _hkc=document.getElementById('homeKeyCount');if(_hkc)_hkc.textContent=S.keysLeft;
-  toast(`🚀 ¡${n} inmueble${n!==1?'s':''} enviado${n!==1?'s':''}! Los revisaremos en 24h.`);
-  setTimeout(()=>closePublish(),1800);
+  const valid = _pubBulkRows.filter(a=>a.valid);
+  if(!valid.length){toast('⚠️ No hay filas válidas para publicar');return;}
+  const cost = valid.length * _PUB_BULK_COST_PER;
+  if(S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft})`);return;}
+  const btn=document.getElementById('pubBulkSubmitBtn'); if(btn) btn.disabled=true;
+  const prog=document.getElementById('pubBulkProgress'); if(prog){ prog.style.display='block'; }
+  const closeBtn=document.querySelector('.pub-modal-close'); if(closeBtn){ closeBtn.dataset._prevOnclick=closeBtn.getAttribute('onclick'); closeBtn.setAttribute('onclick','toast("Espera a que termine la carga…")'); }
+  let ok=0, failed=[];
+  for(let i=0;i<valid.length;i++){
+    const r = valid[i].row;
+    if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
+    try {
+      await db.collection('publications').add(_pubBulkRowToPubData(r));
+      ok++;
+      S.keysLeft -= _PUB_BULK_COST_PER;
+      updateKeyCount();
+    } catch(e){
+      console.error('[reco] bulk publish row failed:', i, e);
+      failed.push({ idx: i+1, address: r.direccion, error: e.message||'error' });
+    }
+  }
+  if(ok>0) addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);
+  if(prog){
+    if(!failed.length){
+      prog.innerHTML=`<span style="color:var(--green)">✅ ${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}. Las revisaremos en 24h.</span>`;
+    } else {
+      prog.innerHTML=`<div><span style="color:${ok?'var(--green)':'var(--red)'}">${ok} exitosas</span> · <span style="color:var(--red)">${failed.length} fallidas</span></div>
+        <details style="margin-top:6px;font-size:11px"><summary style="cursor:pointer">Ver errores</summary><ul style="margin:6px 0 0 18px;padding:0">${failed.slice(0,20).map(f=>`<li>Fila ${f.idx} (${(f.address||'').slice(0,30)}): ${f.error}</li>`).join('')}</ul></details>`;
+    }
+  }
+  if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
+  toast(failed.length ? `⚠️ ${ok} publicadas · ${failed.length} fallaron` : `🚀 ¡${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}!`);
+  if(!failed.length) setTimeout(()=>closePublish(),2200);
 }
 
 
