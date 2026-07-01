@@ -71,6 +71,20 @@ service cloud.firestore {
                     || isAdmin();
     }
 
+    // /mail/{docId}
+    //
+    // Outbox for the "Trigger Email from Firestore" Firebase extension.
+    // The extension reads docs from this collection and dispatches the
+    // emails over SMTP (Resend in our setup). Only admins may create
+    // mail; no client ever needs to read mail back, and the extension
+    // itself writes the delivery state via the admin SDK so the rules
+    // do not need to grant updates from the client.
+    match /mail/{docId} {
+      allow read: if false;
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

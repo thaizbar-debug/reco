@@ -6683,15 +6683,60 @@ async function renderAdminPanel(el){
   el.innerHTML = html;
 }
 
+// Drop a document in /mail for the "Trigger Email from Firestore"
+// extension to pick up and dispatch via SMTP. We don't await this —
+// email delivery is fire-and-forget and shouldn't block the moderation
+// UI. If the write fails we just log; the publication status update is
+// the source of truth.
+function _queueModerationEmail(pub, kind, reason){
+  if(!pub || !pub.userEmail){ console.warn('[reco] no userEmail on pub; skipping email'); return; }
+  const isApproved = kind === 'approved';
+  const subject = isApproved
+    ? '🚀 Tu publicación en Reco fue aprobada'
+    : 'Tu publicación en Reco no pudo ser aprobada';
+  const greeting = pub.userName ? `Hola ${pub.userName.split(' ')[0]},` : 'Hola,';
+  const html = isApproved
+    ? `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+         <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
+         <p>${greeting}</p>
+         <p>Acabamos de aprobar tu publicación de <strong>${pub.address || '—'}</strong> en <strong>${pub.district || '—'}</strong>.
+         Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
+         <p style="margin-top:24px">
+           <a href="https://thaizbar-debug.github.io/reco/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
+         </p>
+         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+       </div>`
+    : `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+         <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
+         <p>${greeting}</p>
+         <p>Revisamos tu publicación de <strong>${pub.address || '—'}</strong> en <strong>${pub.district || '—'}</strong>
+         y, por el momento, no podemos publicarla en Reco.</p>
+         ${reason ? `<p><strong>Razón:</strong> ${reason}</p>` : ''}
+         <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones" → "+ Publicar inmueble".</p>
+         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+       </div>`;
+  const text = isApproved
+    ? `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} fue aprobada y ya está visible en Reco.\n\n— Equipo Reco`
+    : `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} no pudo ser aprobada.${reason ? '\nRazón: ' + reason : ''}\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco`;
+  db.collection('mail').add({
+    to: pub.userEmail,
+    message: { subject, html, text }
+  }).catch(e => console.warn('[reco] mail queue failed:', e.message));
+}
+
 async function _adminApprove(id){
   if(!_isAdmin()) return;
   try {
-    await db.collection('publications').doc(id).update({
+    const ref = db.collection('publications').doc(id);
+    const snap = await ref.get();
+    const pub = snap.exists ? {id: snap.id, ...snap.data()} : null;
+    await ref.update({
       status: 'approved',
       moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       moderatedBy: auth.currentUser.uid,
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
+    if(pub) _queueModerationEmail(pub, 'approved');
     toast('✓ Publicación aprobada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] approve failed:', e); toast('⚠️ Error al aprobar: '+e.message); }
@@ -6701,12 +6746,16 @@ async function _adminReject(id){
   const reason = prompt('Razón del rechazo (visible para el usuario):', '');
   if(reason === null) return; // user cancelled
   try {
-    await db.collection('publications').doc(id).update({
+    const ref = db.collection('publications').doc(id);
+    const snap = await ref.get();
+    const pub = snap.exists ? {id: snap.id, ...snap.data()} : null;
+    await ref.update({
       status: 'rejected',
       rejectionReason: reason || '',
       moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       moderatedBy: auth.currentUser.uid
     });
+    if(pub) _queueModerationEmail(pub, 'rejected', reason);
     toast('✕ Publicación rechazada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] reject failed:', e); toast('⚠️ Error al rechazar: '+e.message); }
