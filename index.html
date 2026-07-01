@@ -2643,7 +2643,50 @@ function driveImg(fileId){
 function drivePdf(fileId){ return `https://drive.google.com/file/d/${fileId}/view`; }
 
 const _driveAssetsCache = {};
+// Map a Firestore publication doc into the same shape the rest of the app
+// expects for a property (matching properties.json entries). Renders,
+// filters, sort, detail panel and map pins all read these fields, so any
+// new field used downstream must be reflected here too.
+function _pubDocToProperty(id, p){
+  return {
+    id: id,
+    address: p.address || p.title || '—',
+    district: p.district || '—',
+    type: p.type || 'Departamento',
+    op: p.op || 'Venta',
+    price: Number(p.price) || 0,
+    cur: p.currency === 'PEN' ? 'S/' : '$',
+    area: Number(p.area) || 0,
+    areaTerr: Number(p.areaTerr) || 0,
+    beds: Number(p.beds) || 0,
+    baths: Number(p.baths) || 0,
+    park: Number(p.parking) || 0,
+    floor: Number(p.floor) || 0,
+    floors: Number(p.floors) || 0,
+    age: Number(p.age) || 0,
+    lat: p.lat || null,
+    lng: p.lng || null,
+    features: Array.isArray(p.features) ? p.features : [],
+    desc: p.desc || '',
+    bank: false,
+    isNew: p.age === 0,
+    owner: p.userName || p.userEmail || 'Usuario',
+    phone: '—',
+    department: 'Lima',
+    province: 'Lima',
+    gradient: 'linear-gradient(135deg,#667eea,#764ba2)',
+    emoji: '🏙️',
+    photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+    listedAt: p.listedAt || null
+  };
+}
+
 function driveAssets(p){
+  // Community publications carry their photo URLs straight from Firebase
+  // Storage. Skip the Drive lookup entirely for them.
+  if(p && typeof p === 'object' && Array.isArray(p.photoUrls) && p.photoUrls.length){
+    return { photos: p.photoUrls.slice(), partidas: [] };
+  }
   const id = (typeof p === 'object' && p !== null) ? p.id : p;
   const op = (typeof p === 'object' && p !== null) ? p.op : null;
   const cacheKey = id + '|' + (op || '');
@@ -2713,6 +2756,16 @@ async function loadData(){
     DRIVE_FILES = data.drive || {};
     Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
+    // Merge approved community publications into the same list. They render
+    // and filter identically to static properties — the only difference is
+    // the photos come from Firebase Storage instead of Drive.
+    try {
+      const pubsSnap = await db.collection('publications').where('status','==','approved').get();
+      const approved = pubsSnap.docs.map(d => _pubDocToProperty(d.id, d.data()));
+      if(approved.length) properties = properties.concat(approved);
+    } catch(e){
+      console.warn('[reco] could not load community publications:', e.message);
+    }
     GEO = {};
     properties.forEach(p=>{
       if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
