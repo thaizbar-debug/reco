@@ -71,6 +71,27 @@ service cloud.firestore {
                     || isAdmin();
     }
 
+    // /contactRequests/{reqId}
+    //
+    // Requests generated when a user clicks "Contactar arrendador",
+    // "Contactar vendedor" or "Solicitar asesoría" on a property card.
+    // The request captures who is asking, about which property, and any
+    // message they left. Reco team (admins) reads these; the owner of a
+    // user-published listing can also read requests targeted at them.
+    match /contactRequests/{reqId} {
+      allow read: if request.auth != null
+                  && (resource.data.fromUserId == request.auth.uid
+                      || resource.data.publicationOwnerId == request.auth.uid
+                      || isAdmin());
+      allow create: if request.auth != null
+                    && request.resource.data.fromUserId == request.auth.uid
+                    && request.resource.data.status == 'new'
+                    && request.resource.data.propertyId is string
+                    && request.resource.data.kind in ['arrendador','vendedor','asesor_reco'];
+      // Only admins can update (e.g. mark as handled) or delete.
+      allow update, delete: if isAdmin();
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;
