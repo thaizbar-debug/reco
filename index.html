@@ -5091,13 +5091,13 @@ function openFullReport(id){
       <div class="fr-sidebar">
         <div class="fr-sidebar-card fr-sidebar-cta">
           ${isHist
-            ? `<button class="fr-cta-main" onclick="toast('Contactando a Reco…')">📋 Solicitar asesoría</button>
+            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','asesor_reco')">📋 Solicitar asesoría</button>
                <button class="fr-cta-sec" onclick="closeFullReport()">← Volver a resultados</button>`
             : isAlq
-            ? `<button class="fr-cta-main" onclick="toast('Contactando al propietario…')">📞 Contactar arrendador</button>
+            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','arrendador')">📞 Contactar arrendador</button>
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
-            : `<button class="fr-cta-main" onclick="toast('Iniciando negociación…')">🤝 Quiero negociar</button>
-               <button class="fr-cta-sec" onclick="toast('Contactando al vendedor…')">📞 Contactar vendedor</button>`
+            : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor')">🤝 Quiero negociar</button>
+               <button class="fr-cta-sec" onclick="openContactModal('${p.id}','vendedor')">📞 Contactar vendedor</button>`
           }
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
@@ -6465,6 +6465,36 @@ function _applyLandingHash(){
   </div>
 </div>
 
+<!-- CONTACT OWNER MODAL -->
+<div class="auth-overlay" id="contactOverlay" onclick="if(event.target===this)closeContactModal()">
+  <div class="auth-box" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
+    <button class="auth-close" onclick="closeContactModal()">✕</button>
+    <div class="auth-head">
+      <h3 id="contactTitle" style="margin:22px 24px 0;font-size:1.05rem">📞 <span id="contactTitleText">Contactar propietario</span></h3>
+      <p class="auth-panel-sub" style="margin:8px 24px 0;color:var(--muted);font-size:.85rem" id="contactSubtitle">El equipo Reco reenvía tu mensaje y te responde en ~2h.</p>
+    </div>
+    <div class="auth-body">
+      <div class="auth-error" id="contactError"></div>
+      <div class="auth-success" id="contactSuccess"></div>
+      <div id="contactForm">
+        <div style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:14px;font-size:.82rem;color:var(--muted)">
+          <div><strong style="color:var(--txt)">Inmueble:</strong> <span id="contactPropAddress">—</span></div>
+          <div style="margin-top:2px"><strong style="color:var(--txt)">Código:</strong> <span id="contactPropId">—</span></div>
+        </div>
+        <label class="auth-label">Nombre</label>
+        <input class="auth-input" type="text" id="contactName" placeholder="Tu nombre" autocomplete="name"/>
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="contactEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
+        <label class="auth-label">Teléfono <span style="text-transform:none;font-weight:500;color:var(--muted)">(opcional)</span></label>
+        <input class="auth-input" type="tel" id="contactPhone" placeholder="+51 999 999 999" autocomplete="tel"/>
+        <label class="auth-label">Mensaje</label>
+        <textarea class="auth-input" id="contactMessage" rows="4" placeholder="Cuéntanos qué necesitas: visita, información adicional, condiciones…" style="resize:vertical;min-height:90px"></textarea>
+        <button class="auth-submit" id="contactSubmitBtn" onclick="submitContactRequest()">Enviar solicitud</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey:            "AIzaSyCri1KjwpUKfYMhjYf0nPU9KD1LipVbh3M",
@@ -7117,6 +7147,112 @@ function friendlyError(code) {
 function _getInitials(name) {
   if (!name) return '?';
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+}
+
+// ─────────────────────── CONTACT OWNER MODAL ───────────────────────
+const _CONTACT_LABEL = {
+  arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario. Suele responder en ~2h.' },
+  vendedor:    { title: 'Contactar vendedor',   sub: 'Enviamos tu mensaje al propietario. Suele responder en ~2h.' },
+  asesor_reco: { title: 'Solicitar asesoría',   sub: 'Un asesor de Reco revisa tu consulta y te contacta.' }
+};
+let _contactCtx = null; // {propertyId, kind, publicationOwnerId}
+
+function openContactModal(propertyId, kind) {
+  if (!auth.currentUser) {
+    toast('⚠️ Debes iniciar sesión para contactar al propietario');
+    openAuthModal('login');
+    return;
+  }
+  const p = (typeof properties !== 'undefined') ? properties.find(x => x.id === propertyId) : null;
+  const label = _CONTACT_LABEL[kind] || _CONTACT_LABEL.arrendador;
+  _contactCtx = {
+    propertyId,
+    kind,
+    publicationOwnerId: (p && p.userId) ? p.userId : null,
+    propertyAddress:    p ? (p.address || '') : '',
+    propertyDistrict:   p ? (p.district || '') : '',
+    propertyOp:         p ? (p.op || '') : '',
+    propertyPrice:      p ? (p.price || null) : null,
+    propertyCurrency:   p ? (p.cur || null) : null
+  };
+  document.getElementById('contactTitleText').textContent = label.title;
+  document.getElementById('contactSubtitle').textContent  = label.sub;
+  document.getElementById('contactPropAddress').textContent = _contactCtx.propertyAddress || '—';
+  document.getElementById('contactPropId').textContent      = propertyId;
+  const u = auth.currentUser;
+  document.getElementById('contactName').value    = u.displayName || '';
+  document.getElementById('contactEmail').value   = u.email || '';
+  document.getElementById('contactPhone').value   = '';
+  document.getElementById('contactMessage').value = '';
+  document.getElementById('contactForm').style.display = 'block';
+  _clearContactMessages();
+  document.getElementById('contactOverlay').classList.add('open');
+}
+function closeContactModal() {
+  document.getElementById('contactOverlay').classList.remove('open');
+  _clearContactMessages();
+  _contactCtx = null;
+}
+function _clearContactMessages() {
+  const err = document.getElementById('contactError');
+  const ok  = document.getElementById('contactSuccess');
+  if (err) err.style.display = 'none';
+  if (ok)  ok.style.display  = 'none';
+}
+function _showContactError(msg) {
+  const el = document.getElementById('contactError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('contactSuccess').style.display = 'none';
+}
+function _showContactSuccess(msg) {
+  const el = document.getElementById('contactSuccess');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('contactError').style.display = 'none';
+}
+async function submitContactRequest() {
+  if (!auth.currentUser) { openAuthModal('login'); return; }
+  if (!_contactCtx) return;
+  const name    = document.getElementById('contactName').value.trim();
+  const email   = document.getElementById('contactEmail').value.trim();
+  const phone   = document.getElementById('contactPhone').value.trim();
+  const message = document.getElementById('contactMessage').value.trim();
+  if (!name)               { _showContactError('Ingresa tu nombre.'); return; }
+  if (!email || !/.+@.+\..+/.test(email)) { _showContactError('Ingresa un email válido.'); return; }
+  if (message.length < 10) { _showContactError('El mensaje debe tener al menos 10 caracteres.'); return; }
+  const btn = document.getElementById('contactSubmitBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Enviando…';
+  try {
+    await db.collection('contactRequests').add({
+      propertyId:          _contactCtx.propertyId,
+      propertyAddress:     _contactCtx.propertyAddress || null,
+      propertyDistrict:    _contactCtx.propertyDistrict || null,
+      propertyOp:          _contactCtx.propertyOp || null,
+      propertyPrice:       _contactCtx.propertyPrice,
+      propertyCurrency:    _contactCtx.propertyCurrency,
+      publicationOwnerId:  _contactCtx.publicationOwnerId,
+      kind:                _contactCtx.kind,
+      fromUserId:          auth.currentUser.uid,
+      fromName:            name,
+      fromEmail:           email,
+      fromPhone:           phone || null,
+      message,
+      status:              'new',
+      createdAt:           firebase.firestore.FieldValue.serverTimestamp()
+    });
+    document.getElementById('contactForm').style.display = 'none';
+    _showContactSuccess('✅ ¡Solicitud enviada! Te responderemos pronto al email registrado.');
+    toast('✅ Solicitud enviada');
+    setTimeout(closeContactModal, 1800);
+  } catch (e) {
+    console.error('[reco] contactRequest failed:', e);
+    _showContactError('No se pudo enviar la solicitud: ' + (e.message || 'error desconocido'));
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 auth.onAuthStateChanged(function(user) {
   const homeIngresarBtn = document.getElementById('homeIngresarBtn');
