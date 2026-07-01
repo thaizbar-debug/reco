@@ -1027,7 +1027,7 @@ header .spacer{flex:1}
 /* ══════════════ KEYS MODAL ══════════════ */
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,.4);
-  z-index:400;display:flex;align-items:center;justify-content:center;
+  z-index:500;display:flex;align-items:center;justify-content:center;
   opacity:0;pointer-events:none;transition:opacity .2s;
   backdrop-filter:blur(4px);
 }
@@ -4804,7 +4804,13 @@ function pinClick(id){
 
 // ─────────────────────── MODAL ───────────────────────
 function openModal(){ if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para comprar llaves');openAuthModal('login');return;} document.getElementById('modal').classList.add('open'); }
-function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function closeModal(){
+  document.getElementById('modal').classList.remove('open');
+  // If user closed the buy-keys modal without paying, drop any pending
+  // resume flags so a stale flag doesn't fire on the next successful pay.
+  S.pendingPublish = false;
+  S.pendingUnlockId = null;
+}
 
 function selectPlan(el,name,price,qty){
   document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel'));
@@ -4822,9 +4828,14 @@ function simulatePay(){
   closeModal();
   const pending=S.pendingUnlockId;
   S.pendingUnlockId=null;
+  const pendingPub = S.pendingPublish;
+  S.pendingPublish = false;
   if(pending!==null){
     toast(`✅ ¡Pago exitoso! ${qty} llave${qty>1?'s':''} agregadas. Abriendo informe…`);
     setTimeout(()=>unlockAndOpen(pending),500);
+  } else if(pendingPub){
+    toast(`✅ ¡Pago exitoso! Reanudando tu publicación…`);
+    setTimeout(()=>_ppub(),500);
   } else {
     toast(`✅ ¡Pago exitoso! Agregaste ${qty} llave${qty>1?'s':''} (${name}). Total: ${S.keysLeft} llaves`);
   }
@@ -5621,9 +5632,17 @@ async function _uploadPublicationPhotos(pubId, photos){
 
 async function _ppub(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
-  if(S.keysLeft<3){toast('⚠️ Necesitas al menos 3 llaves para publicar');return;}
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
+  if(S.keysLeft<3){
+    // Open the buy-keys modal without closing the publish modal so the
+    // form data is preserved. simulatePay() reads pendingPublish and
+    // resumes _ppub() automatically after a successful purchase.
+    S.pendingPublish = true;
+    toast(`Necesitas ${3 - S.keysLeft} llave${3 - S.keysLeft !== 1 ? 's' : ''} más. Compra llaves para continuar.`);
+    openModal();
+    return;
+  }
   const btn = (typeof event !== 'undefined' && event && event.target) ? event.target : null;
   if(btn) btn.disabled = true;
   toast('📤 Subiendo publicación…');
