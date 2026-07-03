@@ -103,10 +103,7 @@ header .spacer{flex:1}
 .pub-field input:focus,.pub-field select:focus,.pub-field textarea:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
 .pub-field.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .pub-check{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:4px}
-.pub-mock-map{height:280px;border-radius:10px;background:linear-gradient(135deg,#e8eef3,#d8e3ec);border:1px solid var(--border);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-top:14px}
-.pub-mock-map .pin{font-size:48px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.25))}
-.pub-mock-map .ctrl{position:absolute;bottom:12px;right:12px;background:#fff;border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:2px;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-.pub-mock-map .ctrl button{width:26px;height:26px;border:none;background:none;font-weight:700;cursor:pointer;color:var(--txt);border-radius:4px}
+.pub-geo-empty{padding:12px;font-size:12px;color:var(--muted);line-height:1.4;text-align:center}
 .pub-photos{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 .pub-photo-slot{aspect-ratio:1;border:2px dashed var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;cursor:pointer;background:#fff;transition:all .15s;text-align:center;padding:8px}
 .pub-photo-slot:hover{border-color:#2563eb;color:#2563eb;background:#eff6ff}
@@ -5595,6 +5592,23 @@ function _pdOp(op){
   _pd.op=op;
   document.querySelectorAll('.pub-op-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(op==='Venta'?'Venta':'Alquiler')));
 }
+async function _pubRevGeoHere(lat,lng){
+  if(!HERE_API_KEY) return null;
+  const url=`https://revgeocode.search.hereapi.com/v1/revgeocode?at=${lat},${lng}&lang=es&limit=1&apiKey=${HERE_API_KEY}`;
+  const res=await fetch(url);
+  if(!res.ok) return null;
+  const data=await res.json();
+  const it=(data.items||[])[0]; if(!it) return null;
+  const a=it.address||{};
+  return { district: a.district || a.subdistrict || a.city || a.county || '', label: it.title || a.label || '' };
+}
+function _pubApplyReverse(fallbackDistrict){
+  return async (lat,lng)=>{
+    const r=await _pubRevGeoHere(lat,lng).catch(()=>null);
+    _pd.district=(r&&r.district)||fallbackDistrict||_pd.district||'';
+    const el=document.getElementById('pubDistrict');if(el)el.value=_pd.district;
+  };
+}
 function _pubMapInit(){
   const container=document.getElementById('pubMapEl');
   if(!container||pubMap)return;
@@ -5602,16 +5616,15 @@ function _pubMapInit(){
   pubMap=L.map('pubMapEl',{zoomControl:true}).setView(center,14);
   _createTileLayer().addTo(pubMap);
   pubMarker=L.marker(center,{draggable:true}).addTo(pubMap);
+  const applyReverse=_pubApplyReverse('');
   pubMarker.on('dragend',()=>{
     const ll=pubMarker.getLatLng();_pd.lat=ll.lat;_pd.lng=ll.lng;
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${ll.lat}&lon=${ll.lng}&format=json&accept-language=es`)
-      .then(r=>r.json()).then(d=>{
-        const a=d.address||{};
-        _pd.district=a.suburb||a.city_district||a.town||a.city||_pd.district;
-        const el=document.getElementById('pubDistrict');if(el)el.value=_pd.district;
-      }).catch(()=>{});
+    applyReverse(ll.lat,ll.lng);
   });
-  pubMap.on('click',e=>{pubMarker.setLatLng(e.latlng);_pd.lat=e.latlng.lat;_pd.lng=e.latlng.lng;});
+  pubMap.on('click',e=>{
+    pubMarker.setLatLng(e.latlng);_pd.lat=e.latlng.lat;_pd.lng=e.latlng.lng;
+    applyReverse(e.latlng.lat,e.latlng.lng);
+  });
   if(_pd.lat&&_pd.lng)pubMap.setView([_pd.lat,_pd.lng],16);
 }
 function _pubGeoInput(val){
@@ -5619,30 +5632,33 @@ function _pubGeoInput(val){
   clearTimeout(_pubGeoTimer);
   const drop=document.getElementById('pubGeoDrop');if(!drop)return;
   if(val.length<3){drop.innerHTML='';return;}
-  _pubGeoTimer=setTimeout(()=>{
-    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=6&countrycodes=pe&accept-language=es`)
-      .then(r=>r.json()).then(results=>{
-        const d=document.getElementById('pubGeoDrop');if(!d)return;
-        d.innerHTML=results.map(r=>{
-          const label=(r.display_name||'').split(',').slice(0,3).join(',');
-          return `<div class="pub-geo-item" onmousedown="_pubGeoPick(${r.lat},${r.lon},'${(r.display_name||'').replace(/'/g,"\\'")}')">📍 ${label}</div>`;
-        }).join('');
-      }).catch(()=>{});
+  drop.innerHTML='<div class="pub-geo-empty">Buscando…</div>';
+  _pubGeoTimer=setTimeout(async ()=>{
+    const d=document.getElementById('pubGeoDrop');if(!d)return;
+    try {
+      const items = await _fetchHere(val);
+      if(!items.length){
+        d.innerHTML='<div class="pub-geo-empty">No encontramos esa dirección. Prueba con calle + número + distrito, o arrastra el marcador en el mapa.</div>';
+        return;
+      }
+      d.innerHTML=items.map(it=>{
+        const payload=encodeURIComponent(JSON.stringify({lat:it.lat,lng:it.lng,label:it.label,sub:it.sub}));
+        return `<div class="pub-geo-item" onmousedown="_pubGeoPick('${payload}')">📍 <strong>${it.label}</strong>${it.sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${it.sub}</div>`:''}</div>`;
+      }).join('');
+    } catch(e){
+      console.warn('[reco] publish autosuggest failed:', e);
+      d.innerHTML='<div class="pub-geo-empty">No pudimos consultar la ubicación. Reintenta o arrastra el marcador en el mapa.</div>';
+    }
   },380);
 }
-function _pubGeoPick(lat,lng,fullLabel){
-  _pd.lat=Number(lat);_pd.lng=Number(lng);
-  const parts=fullLabel.split(',').map(s=>s.trim());
-  _pd.address=parts.slice(0,2).join(', ');
+function _pubGeoPick(payload){
+  let p; try { p = JSON.parse(decodeURIComponent(payload)); } catch(e){ return; }
+  _pd.lat=Number(p.lat); _pd.lng=Number(p.lng);
+  _pd.address=p.label||_pd.address;
   const ai=document.getElementById('pubAddrInput');if(ai)ai.value=_pd.address;
   const drop=document.getElementById('pubGeoDrop');if(drop)drop.innerHTML='';
-  fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=es`)
-    .then(r=>r.json()).then(d=>{
-      const a=d.address||{};
-      _pd.district=a.suburb||a.city_district||a.town||a.city||parts[parts.length-2]||'';
-      const el=document.getElementById('pubDistrict');if(el)el.value=_pd.district;
-    }).catch(()=>{});
-  if(pubMap){pubMap.setView([lat,lng],16,{animate:true,duration:.5});pubMarker.setLatLng([lat,lng]);}
+  _pubApplyReverse(p.sub||'')(_pd.lat,_pd.lng);
+  if(pubMap){pubMap.setView([_pd.lat,_pd.lng],16,{animate:true,duration:.5});pubMarker.setLatLng([_pd.lat,_pd.lng]);}
 }
 function _pAdj(field,delta){
   _pd[field]=Math.max(0,(Number(_pd[field])||0)+delta);
