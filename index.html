@@ -1469,7 +1469,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .us-tab.active{background:var(--blue);color:#fff}
 
 /* ══ AUTH MODAL ══ */
-.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10001;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .auth-overlay.open{display:flex}
 .auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
 .auth-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
@@ -2128,6 +2128,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
         <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
         <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
+        <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
         <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
         <hr/>
         <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
@@ -2677,7 +2678,13 @@ function _pubDocToProperty(id, p){
     gradient: 'linear-gradient(135deg,#667eea,#764ba2)',
     emoji: '🏙️',
     photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
-    listedAt: p.listedAt || null
+    listedAt: p.listedAt || null,
+    // Community-publication ownership fields. Static properties keep these
+    // undefined; only the "contactar vendedor/arrendador" flow depends on
+    // them to know where to route the contact email.
+    userId: p.userId || null,
+    userEmail: p.userEmail || null,
+    userName: p.userName || null
   };
 }
 
@@ -5160,8 +5167,7 @@ function openFullReport(id){
             : isAlq
             ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','arrendador')">📞 Contactar arrendador</button>
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
-            : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor')">🤝 Quiero negociar</button>
-               <button class="fr-cta-sec" onclick="openContactModal('${p.id}','vendedor')">📞 Contactar vendedor</button>`
+            : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor')">📞 Contactar vendedor</button>`
           }
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
@@ -6543,7 +6549,7 @@ function _applyLandingHash(){
     <button class="auth-close" onclick="closeContactModal()">✕</button>
     <div class="auth-head">
       <h3 id="contactTitle" style="margin:22px 24px 0;font-size:1.05rem">📞 <span id="contactTitleText">Contactar propietario</span></h3>
-      <p class="auth-panel-sub" style="margin:8px 24px 0;color:var(--muted);font-size:.85rem" id="contactSubtitle">El equipo Reco reenvía tu mensaje y te responde en ~2h.</p>
+      <p class="auth-panel-sub" style="margin:8px 24px 0;color:var(--muted);font-size:.85rem" id="contactSubtitle">Enviamos tu mensaje al propietario.</p>
     </div>
     <div class="auth-body">
       <div class="auth-error" id="contactError"></div>
@@ -6633,7 +6639,7 @@ async function _pullUserDataFromFirestore(){
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
       const h = window.location.hash.replace('#','');
-      if(['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
+      if(['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
         renderUserSection(h);
       }
     }
@@ -6703,6 +6709,7 @@ function renderUserSection(section) {
   else if (section === 'favoritos') renderFavoritos(el);
   else if (section === 'llaves') renderLlaves(el);
   else if (section === 'publicaciones') renderPublicaciones(el);
+  else if (section === 'solicitudes') renderSolicitudes(el);
   else if (section === 'admin') renderAdminPanel(el);
   else { closeUserSection(); return; }
 }
@@ -6712,6 +6719,94 @@ const _ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
 function _isAdmin(){
   const u = auth.currentUser;
   return !!(u && u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
+}
+
+// ── SOLICITUDES DE CONTACTO (vendedor / arrendador) ──
+// Contact requests routed to the current user as publication owner.
+function _crStatusBadge(status){
+  if(status==='handled') return '<span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✓ Atendido</span>';
+  return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">📨 Nuevo</span>';
+}
+function _crKindLabel(kind){
+  return kind==='arrendador' ? 'Interés en alquilar'
+       : kind==='vendedor'   ? 'Interés en comprar'
+       : kind==='asesor_reco'? 'Solicitud de asesoría'
+       : 'Contacto';
+}
+function _crFormatDate(ts){
+  if(!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString('es-PE', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+async function renderSolicitudes(el){
+  el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">📨 Solicitudes de contacto</div>'
+    + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
+  if(!auth.currentUser){
+    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+      + '<div class="us-title">📨 Solicitudes de contacto</div>'
+      + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>Inicia sesión para ver las solicitudes de tus publicaciones.</p></div></div>';
+    return;
+  }
+  let reqs = [];
+  let queryError = null;
+  try {
+    const snap = await db.collection('contactRequests')
+      .where('publicationOwnerId','==',auth.currentUser.uid).get();
+    reqs = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b)=>{
+        const ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+        const tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+        return tb - ta;
+      });
+  } catch(e){
+    queryError = e;
+    console.error('[reco] read contactRequests failed:', e);
+  }
+
+  let html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">📨 Solicitudes de contacto</div>'
+    + '<p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Personas interesadas en las propiedades que tú has publicado. Responde directamente a su email.</p>';
+
+  if(queryError){
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar las solicitudes.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
+  } else if(!reqs.length){
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📨</div><p>Aún no has recibido solicitudes.<br>Cuando alguien contacte por una publicación tuya, aparecerá aquí.</p></div></div>';
+  } else {
+    html += reqs.map(r => {
+      const propLine = [r.propertyAddress, r.propertyDistrict].filter(Boolean).join(' · ') || r.propertyId;
+      const handledBtn = r.status === 'handled'
+        ? ''
+        : `<button onclick="_crMarkHandled('${r.id}')" style="background:#0891b2;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;margin-top:8px">✓ Marcar como atendido</button>`;
+      return `<div class="us-card" style="padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          ${_crStatusBadge(r.status)}
+          <span style="background:var(--light);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:600;color:var(--muted)">${_crKindLabel(r.kind)}</span>
+        </div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${propLine}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">${_crFormatDate(r.createdAt)}</div>
+        <div style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:10px">
+          <div style="font-size:.85rem"><strong>${r.fromName || '—'}</strong></div>
+          <div style="font-size:.82rem;color:var(--muted);margin-top:2px">📧 <a href="mailto:${r.fromEmail}">${r.fromEmail}</a></div>
+          ${r.fromPhone ? `<div style="font-size:.82rem;color:var(--muted);margin-top:2px">📞 ${r.fromPhone}</div>` : ''}
+        </div>
+        <div style="font-size:.85rem;white-space:pre-wrap;color:var(--txt)">${r.message || ''}</div>
+        ${handledBtn}
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML = html;
+}
+async function _crMarkHandled(id){
+  try {
+    await db.collection('contactRequests').doc(id).update({ status: 'handled' });
+    toast('Marcada como atendida');
+    renderSolicitudes(document.getElementById('userSectionContent'));
+  } catch(e){
+    console.error('[reco] mark handled failed:', e);
+    toast('⚠️ Error: ' + e.message);
+  }
 }
 
 let _adminTab = 'pending';
@@ -7156,7 +7251,7 @@ async function removeMyPub(id) {
 // handle hash on load / popstate for user sections
 function _checkUserHash() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0) {
     if (!auth.currentUser) return;
     document.body.classList.remove('show-home');
     document.body.classList.add('show-user');
@@ -7165,7 +7260,7 @@ function _checkUserHash() {
 }
 window.addEventListener('popstate', function() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0) {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
@@ -7272,8 +7367,8 @@ function _getInitials(name) {
 
 // ─────────────────────── CONTACT OWNER MODAL ───────────────────────
 const _CONTACT_LABEL = {
-  arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario. Suele responder en ~2h.' },
-  vendedor:    { title: 'Contactar vendedor',   sub: 'Enviamos tu mensaje al propietario. Suele responder en ~2h.' },
+  arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario.' },
+  vendedor:    { title: 'Contactar vendedor',   sub: 'Enviamos tu mensaje al propietario.' },
   asesor_reco: { title: 'Solicitar asesoría',   sub: 'Un asesor de Reco revisa tu consulta y te contacta.' }
 };
 let _contactCtx = null; // {propertyId, kind, publicationOwnerId}
@@ -7289,7 +7384,9 @@ function openContactModal(propertyId, kind) {
   _contactCtx = {
     propertyId,
     kind,
-    publicationOwnerId: (p && p.userId) ? p.userId : null,
+    publicationOwnerId:    (p && p.userId)    ? p.userId    : null,
+    publicationOwnerEmail: (p && p.userEmail) ? p.userEmail : null,
+    publicationOwnerName:  (p && p.userName)  ? p.userName  : null,
     propertyAddress:    p ? (p.address || '') : '',
     propertyDistrict:   p ? (p.district || '') : '',
     propertyOp:         p ? (p.op || '') : '',
@@ -7332,6 +7429,43 @@ function _showContactSuccess(msg) {
   el.style.display = 'block';
   document.getElementById('contactError').style.display = 'none';
 }
+// Queue an email to the publication owner via /mail. Fire-and-forget:
+// if the mail write fails we log and let the UI carry on — the
+// contactRequest itself already succeeded.
+function _queueContactEmailToOwner(o){
+  if (!o || !o.ownerEmail) return;
+  const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || '—';
+  const kindLabel = o.kind === 'arrendador' ? 'alquilar' : 'comprar';
+  const greeting = o.ownerName ? `Hola ${o.ownerName.split(' ')[0]},` : 'Hola,';
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+    <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
+    <p>${greeting}</p>
+    <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${propLine}</strong>.</p>
+    <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
+      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${o.fromName || '—'}</p>
+      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${o.fromEmail}">${o.fromEmail}</a></p>
+      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${o.fromPhone}</p>` : ''}
+      <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
+      <p style="margin:4px 0 0;white-space:pre-wrap">${o.message}</p>
+    </div>
+    <p>Responde directamente al email del interesado para coordinar.</p>
+    <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+  </div>`;
+  const text = `${greeting}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\n`
+    + `Nombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
+    + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
+    + `\nMensaje:\n${o.message}\n\n— Equipo Reco`;
+  db.collection('mail').add({
+    to: o.ownerEmail,
+    replyTo: o.fromEmail || null,
+    fromUserId: auth.currentUser.uid,
+    message: {
+      subject: `📩 Nuevo interesado en tu inmueble (${propLine})`,
+      html, text
+    }
+  }).catch(e => console.warn('[reco] contact-owner mail queue failed:', e.message));
+}
+
 async function submitContactRequest() {
   if (!auth.currentUser) { openAuthModal('login'); return; }
   if (!_contactCtx) return;
@@ -7364,6 +7498,22 @@ async function submitContactRequest() {
       status:              'new',
       createdAt:           firebase.firestore.FieldValue.serverTimestamp()
     });
+    // If it's a user-published property, also email the owner via the
+    // Trigger Email extension. For the 2,663 static properties there is
+    // no ownerEmail — Reco team picks these up from the admin console.
+    if (_contactCtx.publicationOwnerEmail) {
+      _queueContactEmailToOwner({
+        ownerEmail:  _contactCtx.publicationOwnerEmail,
+        ownerName:   _contactCtx.publicationOwnerName,
+        propertyAddress:  _contactCtx.propertyAddress,
+        propertyDistrict: _contactCtx.propertyDistrict,
+        kind:        _contactCtx.kind,
+        fromName:    name,
+        fromEmail:   email,
+        fromPhone:   phone,
+        message
+      });
+    }
     document.getElementById('contactForm').style.display = 'none';
     _showContactSuccess('✅ ¡Solicitud enviada! Te responderemos pronto al email registrado.');
     toast('✅ Solicitud enviada');
@@ -7395,6 +7545,7 @@ auth.onAuthStateChanged(function(user) {
               <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
               <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
               <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
+              <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
               ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
               <hr/>
               <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
