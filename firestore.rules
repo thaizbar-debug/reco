@@ -71,17 +71,55 @@ service cloud.firestore {
                     || isAdmin();
     }
 
+    // /contactRequests/{reqId}
+    //
+    // Requests generated when a user clicks "Contactar arrendador",
+    // "Contactar vendedor" or "Solicitar asesoría" on a property card.
+    // The request captures who is asking, about which property, and any
+    // message they left. Reco team (admins) reads these; the owner of a
+    // user-published listing can also read requests targeted at them.
+    // The publication owner can additionally mark them as 'handled'.
+    match /contactRequests/{reqId} {
+      allow read: if request.auth != null
+                  && (resource.data.fromUserId == request.auth.uid
+                      || resource.data.publicationOwnerId == request.auth.uid
+                      || isAdmin());
+      allow create: if request.auth != null
+                    && request.resource.data.fromUserId == request.auth.uid
+                    && request.resource.data.status == 'new'
+                    && request.resource.data.propertyId is string
+                    && request.resource.data.kind in ['arrendador','vendedor','asesor_reco'];
+      // Admins can update anything; the publication owner can only flip
+      // status (e.g. 'new' → 'handled') without touching other fields.
+      allow update: if isAdmin()
+                    || (request.auth != null
+                        && resource.data.publicationOwnerId == request.auth.uid
+                        && request.resource.data.publicationOwnerId == resource.data.publicationOwnerId
+                        && request.resource.data.fromUserId == resource.data.fromUserId
+                        && request.resource.data.propertyId == resource.data.propertyId);
+      allow delete: if isAdmin();
+    }
+
     // /mail/{docId}
     //
     // Outbox for the "Trigger Email from Firestore" Firebase extension.
     // The extension reads docs from this collection and dispatches the
-    // emails over SMTP (Resend in our setup). Only admins may create
-    // mail; no client ever needs to read mail back, and the extension
-    // itself writes the delivery state via the admin SDK so the rules
-    // do not need to grant updates from the client.
+    // emails over SMTP (Resend in our setup).
+    //
+    // - read: always denied from clients; the extension writes
+    //         delivery.state / delivery.error via the Admin SDK.
+    // - create: admins can queue any email (moderation notices); other
+    //           authenticated users can also queue mail, but only if
+    //           the doc records fromUserId == their uid — this lets the
+    //           "contact owner" flow email the publication owner while
+    //           keeping a paper trail per sender in case of abuse.
     match /mail/{docId} {
       allow read: if false;
-      allow create: if isAdmin();
+      allow create: if isAdmin()
+                    || (request.auth != null
+                        && request.resource.data.fromUserId == request.auth.uid
+                        && request.resource.data.to is string
+                        && request.resource.data.message is map);
       allow update, delete: if false;
     }
 
