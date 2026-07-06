@@ -6572,6 +6572,32 @@ function _applyLandingHash(){
   </div>
 </div>
 
+<!-- REAUTH MODAL: confirms identity for sensitive operations (password/email change) -->
+<div class="auth-overlay" id="reauthOverlay" onclick="if(event.target===this)closeReauthModal()">
+  <div class="auth-box" role="dialog" aria-modal="true" aria-labelledby="reauthTitle">
+    <button class="auth-close" onclick="closeReauthModal()">✕</button>
+    <div class="auth-head">
+      <h3 id="reauthTitle" style="margin:22px 24px 0;font-size:1.05rem">🔒 Confirma tu identidad</h3>
+      <p class="auth-panel-sub" style="margin:8px 24px 0;color:var(--muted);font-size:.85rem" id="reauthSubtitle">Por seguridad, confirma tu contraseña actual para cambiarla.</p>
+    </div>
+    <div class="auth-body">
+      <div class="auth-error" id="reauthError"></div>
+      <div id="reauthPasswordPanel">
+        <label class="auth-label">Contraseña actual</label>
+        <input class="auth-input" type="password" id="reauthPassword" placeholder="Tu contraseña actual" autocomplete="current-password" onkeydown="if(event.key==='Enter')submitReauth()"/>
+        <button class="auth-submit" id="reauthBtn" onclick="submitReauth()">Confirmar</button>
+      </div>
+      <div id="reauthGooglePanel" style="display:none;text-align:center">
+        <p style="margin:14px 0;color:var(--muted);font-size:.9rem">Vuelve a autenticarte con tu cuenta de Google para continuar.</p>
+        <button class="auth-google-btn" onclick="submitReauthGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" fill="#4285F4"/><path d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" fill="#34A853"/><path d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" fill="#FBBC05"/><path d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" fill="#EA4335"/></svg>
+          Continuar con Google
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- CONTACT OWNER MODAL -->
 <div class="auth-overlay" id="contactOverlay" onclick="if(event.target===this)closeContactModal()">
   <div class="auth-box" role="dialog" aria-modal="true" aria-labelledby="contactTitle">
@@ -7095,10 +7121,20 @@ function usSavePass() {
   var val = document.getElementById('usProfilePass').value;
   var msg = document.getElementById('usProfileMsg');
   if (val.length < 8) { msg.innerHTML = '<span style="color:#dc2626">La contraseña debe tener al menos 8 caracteres</span>'; return; }
-  auth.currentUser.updatePassword(val).then(function() {
-    msg.innerHTML = '<span style="color:#059669">✓ Contraseña actualizada</span>';
+  _updatePasswordWithReauth(val);
+}
+function _updatePasswordWithReauth(newPass) {
+  var msg = document.getElementById('usProfileMsg');
+  auth.currentUser.updatePassword(newPass).then(function() {
+    if (msg) msg.innerHTML = '<span style="color:#059669">✓ Contraseña actualizada</span>';
     renderPerfil(document.getElementById('userSectionContent'));
-  }).catch(function(e) { msg.innerHTML = '<span style="color:#dc2626">'+e.message+'</span>'; });
+  }).catch(function(e) {
+    if (e && e.code === 'auth/requires-recent-login') {
+      _openReauthModal({ type: 'updatePassword', payload: newPass });
+      return;
+    }
+    if (msg) msg.innerHTML = '<span style="color:#dc2626">'+(friendlyError(e.code)||e.message)+'</span>';
+  });
 }
 
 // ── FAVORITOS ──
@@ -7419,9 +7455,73 @@ function friendlyError(code) {
     'auth/too-many-requests':     'Demasiados intentos. Intenta más tarde.',
     'auth/popup-closed-by-user':  'Cerraste la ventana de Google.',
     'auth/network-request-failed':'Error de conexión. Verifica tu internet.',
+    'auth/requires-recent-login': 'Por seguridad, confirma tu contraseña actual para continuar.',
   };
   return map[code] || 'Ocurrió un error. Intenta de nuevo.';
 }
+
+// ─────────── REAUTH FOR SENSITIVE OPS ───────────
+// Firebase requires a recent login for updatePassword/updateEmail/delete.
+// When we get `auth/requires-recent-login`, we open a modal, reauthenticate
+// silently against the SAME provider the user signed up with (password or
+// Google), and retry the original operation.
+let _reauthPending = null; // { type: 'updatePassword', payload: newPass }
+
+function _openReauthModal(pending) {
+  _reauthPending = pending;
+  const u = auth.currentUser;
+  const providerId = (u && u.providerData && u.providerData[0]) ? u.providerData[0].providerId : 'password';
+  const errEl = document.getElementById('reauthError');
+  const passEl = document.getElementById('reauthPassword');
+  if (errEl) errEl.style.display = 'none';
+  if (passEl) passEl.value = '';
+  const isGoogle = providerId === 'google.com';
+  document.getElementById('reauthPasswordPanel').style.display = isGoogle ? 'none' : 'block';
+  document.getElementById('reauthGooglePanel').style.display   = isGoogle ? 'block' : 'none';
+  document.getElementById('reauthOverlay').classList.add('open');
+  if (!isGoogle) setTimeout(function() { const el = document.getElementById('reauthPassword'); if (el) el.focus(); }, 60);
+}
+function closeReauthModal() {
+  document.getElementById('reauthOverlay').classList.remove('open');
+  _reauthPending = null;
+}
+function _showReauthError(msg) {
+  const el = document.getElementById('reauthError');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function submitReauth() {
+  const pass = document.getElementById('reauthPassword').value;
+  if (!pass) return _showReauthError('Ingresa tu contraseña actual.');
+  const u = auth.currentUser;
+  if (!u || !u.email) return _showReauthError('Sesión inválida. Vuelve a iniciar sesión.');
+  setAuthLoading('reauthBtn', true);
+  const cred = firebase.auth.EmailAuthProvider.credential(u.email, pass);
+  u.reauthenticateWithCredential(cred)
+    .then(function() {
+      const pending = _reauthPending;
+      closeReauthModal();
+      _runReauthPending(pending);
+    })
+    .catch(function(e) { _showReauthError(friendlyError(e.code) || e.message); })
+    .finally(function() { setAuthLoading('reauthBtn', false); });
+}
+function submitReauthGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.currentUser.reauthenticateWithPopup(provider)
+    .then(function() {
+      const pending = _reauthPending;
+      closeReauthModal();
+      _runReauthPending(pending);
+    })
+    .catch(function(e) { _showReauthError(friendlyError(e.code) || e.message); });
+}
+function _runReauthPending(pending) {
+  if (!pending) return;
+  if (pending.type === 'updatePassword') _updatePasswordWithReauth(pending.payload);
+}
+
 function _getInitials(name) {
   if (!name) return '?';
   return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
