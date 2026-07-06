@@ -18,16 +18,24 @@ service cloud.firestore {
     // document. The document holds favorites, keyHistory, keysLeft and
     // basic profile metadata (email, displayName, createdAt).
     //
-    // Note: the create rule also restricts which fields can be set so a
-    // user can't grant themselves keys by writing a giant keysLeft value
-    // on signup. keysLeft must start at 0; only server-side functions or
-    // admin should grant keys. (Phase 2/3 will enforce this server-side.)
+    // keysLeft and keyHistory are the ledger for the paid-key economy.
+    // They MUST NOT be writable from the client — a browser can open
+    // DevTools and run `db.collection('users').doc(uid).update({keysLeft:
+    // 9999})`, bypassing any UI purchase flow. Both fields are managed
+    // server-side: a Cloud Function receives the payment webhook to add
+    // keys, and another callable Cloud Function decrements keys on
+    // unlock/publish. Those functions use the admin SDK and bypass these
+    // rules, so users can still spend/earn keys — just not by writing
+    // directly from the browser.
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow create: if request.auth != null
                     && request.auth.uid == uid
-                    && (!('keysLeft' in request.resource.data) || request.resource.data.keysLeft == 0);
-      allow update: if request.auth != null && request.auth.uid == uid;
+                    && (!('keysLeft' in request.resource.data) || request.resource.data.keysLeft == 0)
+                    && (!('keyHistory' in request.resource.data) || request.resource.data.keyHistory.size() == 0);
+      allow update: if request.auth != null
+                    && request.auth.uid == uid
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keysLeft', 'keyHistory']);
       allow delete: if false; // never allow self-delete from client
     }
 
