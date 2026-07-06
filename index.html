@@ -7375,17 +7375,38 @@ function sendPasswordReset() {
   const email = document.getElementById('forgotEmail').value.trim();
   if (!email) return showAuthError('Ingresa tu email.');
   setAuthLoading('forgotBtn', true);
+  // Silently swallow auth/user-not-found so a third party can't use the
+  // "forgot password" form to enumerate registered emails. The success
+  // message is phrased neutrally ("if the email is registered…") so the
+  // response looks identical whether the account exists or not. Other
+  // failures (invalid-email, too-many-requests, network) still surface.
   auth.sendPasswordResetEmail(email)
-    .then(() => showAuthSuccess('¡Enviado! Revisa tu bandeja de entrada.'))
+    .catch(e => { if (e.code !== 'auth/user-not-found') throw e; })
+    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.'))
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('forgotBtn', false));
 }
 function friendlyError(code) {
+  // Login / signup errors are collapsed into a single generic message so
+  // an attacker can't run a list of emails through the form to enumerate
+  // which ones are real Reco accounts. Firebase already throttles
+  // bruteforce attempts server-side via auth/too-many-requests, so the
+  // only value in a distinct "user-not-found" vs "wrong-password" reply
+  // is enumeration — which is exactly what we want to block.
+  //
+  //   user-not-found     → email doesn't exist (leaks non-membership)
+  //   wrong-password     → email exists (leaks membership)
+  //   invalid-credential → indistinguishable (what modern Firebase
+  //                        returns by default; the enumeration-safe
+  //                        response)
+  //   email-already-in-use → signup path variant of the same leak; a
+  //                          third party can iterate the signup form
+  //                          to enumerate registered emails.
   const map = {
-    'auth/user-not-found':        'No existe una cuenta con ese email.',
-    'auth/wrong-password':        'Contraseña incorrecta.',
+    'auth/user-not-found':        'Email o contraseña incorrectos.',
+    'auth/wrong-password':        'Email o contraseña incorrectos.',
     'auth/invalid-credential':    'Email o contraseña incorrectos.',
-    'auth/email-already-in-use':  'Ya existe una cuenta con ese email.',
+    'auth/email-already-in-use':  'No se pudo crear la cuenta. Si ya tienes una, inicia sesión.',
     'auth/invalid-email':         'El email no es válido.',
     'auth/weak-password':         'La contraseña es muy débil (mínimo 6 caracteres).',
     'auth/too-many-requests':     'Demasiados intentos. Intenta más tarde.',
