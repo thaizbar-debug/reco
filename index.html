@@ -2587,6 +2587,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <p>Cada llave desbloquea el detalle completo de un inmueble: datos del propietario, precio exacto, historial y contacto directo.</p>
     </div>
     <div class="modal-body">
+      <div class="key-info-box" style="background:#fff4e5;border:1px solid #f5b342;color:#8a5a00">
+        🚧 <span><strong>Compra de llaves en construcción.</strong> Estamos conectando la pasarela de pagos. Muy pronto vas a poder comprar tus llaves acá.</span>
+      </div>
       <div class="key-info-box">
         ℹ️ <span>Una llave se consume al abrir el detalle completo de una propiedad. Explorar resultados en lista y mapa siempre es <strong>gratuito</strong>.</span>
       </div>
@@ -2620,7 +2623,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-uv">S/ 7 / llave · Ahorra 30%</div>
         </div>
       </div>
-      <button class="btn-pay" id="payBtn" onclick="simulatePay()">Pagar S/ 45 con Izipay</button>
+      <button class="btn-pay" id="payBtn" onclick="simulatePay()" disabled style="opacity:.55;cursor:not-allowed">Compra deshabilitada · Próximamente</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
     </div>
   </div>
@@ -4873,29 +4876,17 @@ function selectPlan(el,name,price,qty){
   document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel'));
   el.classList.add('sel');
   S.selectedPlan={name,price,qty};
-  document.getElementById('payBtn').textContent=`Pagar S/ ${price} con Izipay`;
+  // Pay button stays disabled until the real gateway is wired up.
+  // Don't overwrite its text so the "Próximamente" copy remains visible.
 }
 
 function simulatePay(){
-  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para realizar un pago');openAuthModal('login');return;}
-  const {name,qty}=S.selectedPlan;
-  S.keysLeft+=qty;
-  document.getElementById('keyCount').textContent=S.keysLeft;var _hkc=document.getElementById('homeKeyCount');if(_hkc)_hkc.textContent=S.keysLeft;
-  addKeyHistoryEntry('buy', qty, null, 'Plan '+name);
-  closeModal();
-  const pending=S.pendingUnlockId;
-  S.pendingUnlockId=null;
-  const pendingPub = S.pendingPublish;
-  S.pendingPublish = false;
-  if(pending!==null){
-    toast(`✅ ¡Pago exitoso! ${qty} llave${qty>1?'s':''} agregadas. Abriendo informe…`);
-    setTimeout(()=>unlockAndOpen(pending),500);
-  } else if(pendingPub){
-    toast(`✅ ¡Pago exitoso! Reanudando tu publicación…`);
-    setTimeout(()=>_ppub(),500);
-  } else {
-    toast(`✅ ¡Pago exitoso! Agregaste ${qty} llave${qty>1?'s':''} (${name}). Total: ${S.keysLeft} llaves`);
-  }
+  // Payment gateway (Izipay) not yet integrated. Until the gateway and
+  // the Cloud Function that grants keys server-side are live, this
+  // button must not add keys — doing so client-side would either be
+  // rejected by the hardened /users update rule or, worse, mislead the
+  // user into thinking they paid.
+  toast('🚧 La compra de llaves aún no está disponible. Estamos conectando la pasarela de pagos.');
 }
 
 // ─────────────────────── FULL REPORT ───────────────────────
@@ -6625,7 +6616,19 @@ function _userDocRef(){
 function _syncToFirestore(patch){
   const ref = _userDocRef();
   if(!ref) return;
-  ref.set(patch, {merge:true}).catch(e => console.warn('[reco] Firestore write failed:', e.message));
+  // keysLeft and keyHistory are read-only from the client — Firestore
+  // rules reject client writes to those fields. They will be updated by
+  // a Cloud Function that verifies the payment webhook (add) or the
+  // unlock/publish request (subtract). Strip them here so we don't spam
+  // permission-denied errors while the sync layer is still called from
+  // legacy code paths.
+  const safe = {};
+  for(const k of Object.keys(patch)){
+    if(k === 'keysLeft' || k === 'keyHistory') continue;
+    safe[k] = patch[k];
+  }
+  if(!Object.keys(safe).length) return;
+  ref.set(safe, {merge:true}).catch(e => console.warn('[reco] Firestore write failed:', e.message));
 }
 async function _pullUserDataFromFirestore(){
   const ref = _userDocRef();
