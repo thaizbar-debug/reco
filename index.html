@@ -7535,7 +7535,7 @@ const _CONTACT_LABEL = {
 };
 let _contactCtx = null; // {propertyId, kind, publicationOwnerId}
 
-function openContactModal(propertyId, kind) {
+async function openContactModal(propertyId, kind) {
   if (!auth.currentUser) {
     toast('⚠️ Debes iniciar sesión para contactar al propietario');
     openAuthModal('login');
@@ -7559,14 +7559,38 @@ function openContactModal(propertyId, kind) {
   document.getElementById('contactSubtitle').textContent  = label.sub;
   document.getElementById('contactPropAddress').textContent = _contactCtx.propertyAddress || '—';
   document.getElementById('contactPropId').textContent      = propertyId;
+  _clearContactMessages();
+  document.getElementById('contactOverlay').classList.add('open');
+  // Check whether this user already contacted this owner for this
+  // property/modality. Rules enforce the "one per property" limit; this
+  // check exists purely so users see a clear state before filling the
+  // form instead of hitting permission-denied on submit.
+  const reqId = auth.currentUser.uid + '_' + propertyId + '_' + kind;
+  try {
+    const existing = await db.collection('contactRequests').doc(reqId).get();
+    if (existing.exists) {
+      document.getElementById('contactForm').style.display = 'none';
+      const when = _formatContactDate(existing.data().createdAt);
+      _showContactSuccess('Ya contactaste al propietario de este inmueble' + (when ? ' el ' + when : '') + '. El propietario recibió tu email y puede responderte directamente.');
+      return;
+    }
+  } catch (e) {
+    console.warn('[reco] prior-contact check failed:', e);
+    // Fall through: show the form. Rules will still enforce the limit
+    // on submit, so the only downside is a less friendly error path.
+  }
   const u = auth.currentUser;
   document.getElementById('contactName').value    = u.displayName || '';
   document.getElementById('contactEmail').value   = u.email || '';
   document.getElementById('contactPhone').value   = '';
   document.getElementById('contactMessage').value = '';
   document.getElementById('contactForm').style.display = 'block';
-  _clearContactMessages();
-  document.getElementById('contactOverlay').classList.add('open');
+}
+function _formatContactDate(ts) {
+  if (!ts || typeof ts.toDate !== 'function') return '';
+  try {
+    return ts.toDate().toLocaleDateString('es-PE', { year:'numeric', month:'long', day:'numeric' });
+  } catch (e) { return ''; }
 }
 function closeContactModal() {
   document.getElementById('contactOverlay').classList.remove('open');
@@ -7643,7 +7667,10 @@ async function submitContactRequest() {
   const originalLabel = btn.textContent;
   btn.textContent = 'Enviando…';
   try {
-    await db.collection('contactRequests').add({
+    // Deterministic doc ID enforces "one contact per (sender, property,
+    // modality)" at the Firestore rules layer. See firestore.rules.
+    const reqId = auth.currentUser.uid + '_' + _contactCtx.propertyId + '_' + _contactCtx.kind;
+    await db.collection('contactRequests').doc(reqId).set({
       propertyId:          _contactCtx.propertyId,
       propertyAddress:     _contactCtx.propertyAddress || null,
       propertyDistrict:    _contactCtx.propertyDistrict || null,
@@ -7682,7 +7709,11 @@ async function submitContactRequest() {
     setTimeout(closeContactModal, 1800);
   } catch (e) {
     console.error('[reco] contactRequest failed:', e);
-    _showContactError('No se pudo enviar la solicitud: ' + (e.message || 'error desconocido'));
+    if (e && e.code === 'permission-denied') {
+      _showContactError('Ya contactaste al propietario de este inmueble. Solo se permite un contacto por propiedad.');
+    } else {
+      _showContactError('No se pudo enviar la solicitud: ' + (e.message || 'error desconocido'));
+    }
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
