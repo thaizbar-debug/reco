@@ -2904,6 +2904,21 @@ function getFiltered(){
 }
 
 // ─────────────────────── RENDER CARDS ───────────────────────
+// HTML-escape any string before dropping it into a template literal that
+// becomes innerHTML. User-controlled fields (publication address/desc/
+// title, contact-request message, user display names/emails, etc.) all
+// flow through server-side collections we don't fully control, so every
+// interpolation into innerHTML must go through esc() to block stored XSS.
+// If we forget once, a malicious publisher can drop
+// `<img src=x onerror="...">` in their description and hijack the
+// admin's session as soon as they open the moderation panel.
+function esc(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c==='"'?'&quot;':'&#39;';
+  });
+}
+
 function fmtPrice(p){ return p>=1000000? (p/1000000).toFixed(1)+'M' : p>=1000? Math.round(p/1000)+'K' : p.toString(); }
 function fmtNum(v){ return Number(v).toLocaleString('en-US'); }
 
@@ -2992,11 +3007,11 @@ function _buildHistTableHtml(list){
   const rows=list.map(p=>{
     const sqm=histSqmNet(p);
     const area=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;
-    return `<tr onclick="closeAreaModal();openDetail('${p.id}')">
-      <td><div class="sum-addr">${_shortAddr(p.address)}</div><div class="sum-dist">📍 ${p.district}</div></td>
-      <td style="white-space:nowrap">${p.type}</td>
-      <td style="white-space:nowrap">${area>0?area+' m²':'—'}</td>
-      <td>${sqm>0?`<span class="sum-price">${p.cur} ${sqm.toLocaleString()}/m²</span>`:'<span class="sum-muted">—</span>'}</td>
+    return `<tr onclick="closeAreaModal();openDetail('${esc(p.id)}')">
+      <td><div class="sum-addr">${esc(_shortAddr(p.address))}</div><div class="sum-dist">📍 ${esc(p.district)}</div></td>
+      <td style="white-space:nowrap">${esc(p.type)}</td>
+      <td style="white-space:nowrap">${area>0?esc(area)+' m²':'—'}</td>
+      <td>${sqm>0?`<span class="sum-price">${esc(p.cur)} ${sqm.toLocaleString()}/m²</span>`:'<span class="sum-muted">—</span>'}</td>
     </tr>`;
   }).join('');
   const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
@@ -3070,8 +3085,8 @@ function renderCards(list){
     const photos=cardAssets.photos;
     const pid=_idx+'_'+p.id.replace(/[^a-zA-Z0-9]/g,'_');
     const slides = photos.length
-      ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
-      : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji}</div></div>`;
+      ? photos.map(u=>`<div class="cimg-slide"><img src="${esc(u)}" loading="lazy"></div>`).join('')
+      : `<div class="cimg-slide"><div class="cimg-slide-emoji">${esc(p.emoji)}</div></div>`;
     const arrows = photos.length > 1
       ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${pid}',-1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
          <button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${pid}',1,${photos.length})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>`
@@ -3081,17 +3096,17 @@ function renderCards(list){
       : '';
     const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
     const priceHtml=histLocked
-      ?`<div class="card-price-row"><div class="card-price card-price-locked">${p.cur} 🔒</div></div>`
-      :`<div class="card-price-row"><div class="card-price">${p.cur}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm">${p.cur}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
+      ?`<div class="card-price-row"><div class="card-price card-price-locked">${esc(p.cur)} 🔒</div></div>`
+      :`<div class="card-price-row"><div class="card-price">${esc(p.cur)}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm">${esc(p.cur)}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
     const optSpecs=[];
-    if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${p.beds}</span>`);
-    if(p.baths>0) optSpecs.push(`<span class="spec spec-baths"><span>🚿</span>${p.baths}</span>`);
-    if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${parkCount(p)}</span>`);
-    const specsHtml=`<span class="spec"><span>📐</span>${p.area} m²</span>`+optSpecs.slice(0,3).join('');
+    if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${esc(p.beds)}</span>`);
+    if(p.baths>0) optSpecs.push(`<span class="spec spec-baths"><span>🚿</span>${esc(p.baths)}</span>`);
+    if(parkCount(p)>0) optSpecs.push(`<span class="spec"><span>🚗</span>${esc(parkCount(p))}</span>`);
+    const specsHtml=`<span class="spec"><span>📐</span>${esc(p.area)} m²</span>`+optSpecs.slice(0,3).join('');
     const bottomBtn=p.op==='Histórico'
-      ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${p.id}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${p.id}')">✓ Ver informe</button>`)
+      ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">✓ Ver informe</button>`)
       :'';
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${p.id}" onclick="openDetail('${p.id}')"><div class="card-img"><div class="cimg-track" id="cimgt-${pid}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${p.address}</div><div class="card-dist">📍 ${p.district}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${f}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${esc(p.id)}" onclick="openDetail('${esc(p.id)}')"><div class="card-img"><div class="cimg-track" id="cimgt-${esc(pid)}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${esc(p.address)}</div><div class="card-dist">📍 ${esc(p.district)}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${esc(f)}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
@@ -3799,23 +3814,23 @@ function _pinHoverHtml(p){
   const photos=assets.photos||[];
   const hid='hpin_'+String(p.id).replace(/[^a-zA-Z0-9]/g,'_');
   const slides=photos.length
-    ? photos.map(u=>`<div class="cimg-slide"><img src="${u}" loading="lazy"></div>`).join('')
-    : `<div class="cimg-slide"><div class="cimg-slide-emoji">${p.emoji||'🏠'}</div></div>`;
+    ? photos.map(u=>`<div class="cimg-slide"><img src="${esc(u)}" loading="lazy"></div>`).join('')
+    : `<div class="cimg-slide"><div class="cimg-slide-emoji">${esc(p.emoji||'🏠')}</div></div>`;
   const arrows=photos.length>1
-    ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${hid}',-1,${photos.length})">‹</button><button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${hid}',1,${photos.length})">›</button>`
+    ? `<button class="cimg-arr cimg-arr-l" onclick="event.stopPropagation();cimgMove('${esc(hid)}',-1,${photos.length})">‹</button><button class="cimg-arr cimg-arr-r" onclick="event.stopPropagation();cimgMove('${esc(hid)}',1,${photos.length})">›</button>`
     : '';
   const dots=photos.length>1
-    ? `<div class="cimg-dot-row"  id="cdots-${hid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${hid}',${i},${photos.length})"></div>`).join('')}</div>`
+    ? `<div class="cimg-dot-row"  id="cdots-${esc(hid)}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${esc(hid)}',${i},${photos.length})"></div>`).join('')}</div>`
     : '';
-  const badges=`<div class="hc-badges"><span class="badge badge-op">${p.op}</span><span class="badge badge-type">${p.type}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div>`;
+  const badges=`<div class="hc-badges"><span class="badge badge-op">${esc(p.op)}</span><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div>`;
   const pk=parkCount(p);
-  const specs=`<div class="hc-specs"><span class="spec"><span>📐</span>${p.area} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${p.beds}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${p.baths}</span>`:''}${pk>0?`<span class="spec"><span>🚗</span>${pk}</span>`:''}</div>`;
-  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${hid}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${p.address||''}</div><div class="hc-dist">📍 ${p.district||''}${p.floor>0?' · Piso '+p.floor+'/'+p.floors:''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${p.cur} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div></div></div>`;
+  const specs=`<div class="hc-specs"><span class="spec"><span>📐</span>${esc(p.area)} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${esc(p.beds)}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${esc(p.baths)}</span>`:''}${pk>0?`<span class="spec"><span>🚗</span>${esc(pk)}</span>`:''}</div>`;
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div></div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
   const price=fmtPinPrice(p);
-  return `<div class="lf-pin${isActive?' active':''}" id="pin-${p.id}"><div class="lf-pill">${p.cur}${price}</div>${_pinHoverHtml(p)}</div>`;
+  return `<div class="lf-pin${isActive?' active':''}" id="pin-${esc(p.id)}"><div class="lf-pill">${esc(p.cur)}${price}</div>${_pinHoverHtml(p)}</div>`;
 }
 
 function renderPins(list){
@@ -4694,9 +4709,9 @@ function openDetail(id){
   const headerInner = photos.length
     ? `
       <div class="cimg-track" id="cimgt-${dpid}" style="position:absolute;inset:0;display:flex;transition:transform .3s cubic-bezier(.4,0,.2,1);">
-        ${photos.map(u=>`<div style="flex:0 0 100%;height:100%;overflow:hidden;"><img src="${u}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join('')}
+        ${photos.map(u=>`<div style="flex:0 0 100%;height:100%;overflow:hidden;"><img src="${esc(u)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;"></div>`).join('')}
       </div>
-      <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(_detailPhotos['${dpid}'],_cimgIdx['${dpid}']||0)"></div>
+      <div style="position:absolute;inset:0;cursor:zoom-in;z-index:2;" onclick="openLightbox(_detailPhotos['${esc(dpid)}'],_cimgIdx['${esc(dpid)}']||0)"></div>
       ${photos.length>1?`
         <button style="position:absolute;top:calc(50% - 20px);left:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',-1,${photos.length})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <button style="position:absolute;top:calc(50% - 20px);right:10px;transform:translateY(-50%);z-index:5;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.3);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" onclick="event.stopPropagation();cimgMove('${dpid}',1,${photos.length})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
@@ -4704,41 +4719,41 @@ function openDetail(id){
         <div class="cimg-dot-row" style="bottom:48px;z-index:3" id="cdots-${dpid}">${photos.map((_,i)=>`<div class="cimg-dot${i===0?' on':''}" onclick="event.stopPropagation();cimgGoto('${dpid}',${i},${photos.length})"></div>`).join('')}</div>
       `:''}
     `
-    : `<div style="position:absolute;inset:0;background:${p.gradient};display:flex;align-items:center;justify-content:center;font-size:3rem;">${p.emoji}</div>`;
+    : `<div style="position:absolute;inset:0;background:${p.gradient};display:flex;align-items:center;justify-content:center;font-size:3rem;">${esc(p.emoji)}</div>`;
 
   document.getElementById('detailContent').innerHTML=`
     <div class="detail-header">
       ${headerInner}
       <button class="detail-close" onclick="closeDetail()">✕</button>
       <div class="detail-header-content">
-        <div class="detail-title">${p.address}, ${p.district}</div>
-        <div class="detail-sub">${p.type} · ${p.op}</div>
+        <div class="detail-title">${esc(p.address)}, ${esc(p.district)}</div>
+        <div class="detail-sub">${esc(p.type)} · ${esc(p.op)}</div>
       </div>
     </div>
     <div class="detail-body">
       <div class="detail-price-row">
         <div>
-          <div class="detail-price">${p.cur} ${fmtNum(p.op==='Histórico'?getHistTotal(p):p.price)}</div>
+          <div class="detail-price">${esc(p.cur)} ${fmtNum(p.op==='Histórico'?getHistTotal(p):p.price)}</div>
           <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':p.op==='Histórico'?'Valor total de la transacción':''}</div>
-          ${p.op==='Histórico'&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${p.cur} ${fmtNum(getHistPropPrice(p))}</strong></div>`:''}
+          ${p.op==='Histórico'&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${esc(p.cur)} ${fmtNum(getHistPropPrice(p))}</strong></div>`:''}
         </div>
-        ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${p.cur} ${fmtNum(sqm)}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
+        ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${esc(p.cur)} ${fmtNum(sqm)}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
         ${p.bank?'<span class="badge badge-bank" style="font-size:.78rem">🏦 Prop. de Banco</span>':''}
         ${p.isNew?'<span class="badge badge-new" style="font-size:.78rem">✨ Nuevo</span>':''}
       </div>
 
       <div class="detail-specs-grid">
-        <div class="spec-box"><div class="sv">${p.area} m²</div><div class="sk">Área</div></div>
-        <div class="spec-box"><div class="sv">${p.beds>0?p.beds:'—'}</div><div class="sk">Dormitorios</div></div>
-        <div class="spec-box"><div class="sv">${p.baths>0?p.baths:'—'}</div><div class="sk">Baños</div></div>
-        <div class="spec-box"><div class="sv">${parkCount(p)>0?parkCount(p):'—'}</div><div class="sk">Estacionamientos</div></div>
-        <div class="spec-box"><div class="sv">${(p.sun?.depositos||0)>0?p.sun.depositos:'—'}</div><div class="sk">Depósitos</div></div>
-        <div class="spec-box"><div class="sv">${p.age}</div><div class="sk">Años</div></div>
+        <div class="spec-box"><div class="sv">${esc(p.area)} m²</div><div class="sk">Área</div></div>
+        <div class="spec-box"><div class="sv">${p.beds>0?esc(p.beds):'—'}</div><div class="sk">Dormitorios</div></div>
+        <div class="spec-box"><div class="sv">${p.baths>0?esc(p.baths):'—'}</div><div class="sk">Baños</div></div>
+        <div class="spec-box"><div class="sv">${parkCount(p)>0?esc(parkCount(p)):'—'}</div><div class="sk">Estacionamientos</div></div>
+        <div class="spec-box"><div class="sv">${(p.sun?.depositos||0)>0?esc(p.sun.depositos):'—'}</div><div class="sk">Depósitos</div></div>
+        <div class="spec-box"><div class="sv">${esc(p.age)}</div><div class="sk">Años</div></div>
       </div>
 
       <div class="section-title">Características</div>
       <div class="features-wrap" style="margin-bottom:14px">
-        ${_pickTopFeatures(p).map(f=>`<span class="feat-tag">${f}</span>`).join('')}
+        ${_pickTopFeatures(p).map(f=>`<span class="feat-tag">${esc(f)}</span>`).join('')}
       </div>
 
       ${buildValChart(p)}
@@ -4746,16 +4761,16 @@ function openDetail(id){
 
       ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, assets.partidas):''}
 
-      <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${p.id}')">Ver Más Detalles</button>
+      <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${esc(p.id)}')">Ver Más Detalles</button>
 
       <div style="display:flex;gap:10px;margin-top:10px">
-        <button id="favBtn-${p.id}" style="flex:1;background:${isFavorite(p.id)?'#fef2f2':'var(--bg)'};border:1.5px solid ${isFavorite(p.id)?'#fca5a5':'var(--border)'};padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toggleFavorite('${p.id}');var b=this;b.style.background=isFavorite('${p.id}')?'#fef2f2':'var(--bg)';b.style.borderColor=isFavorite('${p.id}')?'#fca5a5':'var(--border)';b.textContent=isFavorite('${p.id}')?'❤️ Guardado':'🤍 Guardar'">${isFavorite(p.id)?'❤️ Guardado':'🤍 Guardar'}</button>
+        <button id="favBtn-${esc(p.id)}" style="flex:1;background:${isFavorite(p.id)?'#fef2f2':'var(--bg)'};border:1.5px solid ${isFavorite(p.id)?'#fca5a5':'var(--border)'};padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toggleFavorite('${esc(p.id)}');var b=this;b.style.background=isFavorite('${esc(p.id)}')?'#fef2f2':'var(--bg)';b.style.borderColor=isFavorite('${esc(p.id)}')?'#fca5a5':'var(--border)';b.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'🤍 Guardar'">${isFavorite(p.id)?'❤️ Guardado':'🤍 Guardar'}</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
       </div>
 
       <div class="det-loc-row">
-        <button class="det-loc-btn" onclick="detailStreetView('${p.id}')">👁️ Street View</button>
-        <button class="det-loc-btn" onclick="detailNearby('${p.id}')">📍 Cerca de</button>
+        <button class="det-loc-btn" onclick="detailStreetView('${esc(p.id)}')">👁️ Street View</button>
+        <button class="det-loc-btn" onclick="detailNearby('${esc(p.id)}')">📍 Cerca de</button>
       </div>
 
       <div class="detail-ad-wrap">
@@ -4796,8 +4811,8 @@ function showGatePanel(p){
     <div class="detail-header" style="background:${p.gradient}">
       <button class="detail-close" onclick="closeDetail()">✕</button>
       <div class="detail-header-content">
-        <div class="detail-title">${p.address}, ${p.district}</div>
-        <div class="detail-sub">${p.type} · Histórico</div>
+        <div class="detail-title">${esc(p.address)}, ${esc(p.district)}</div>
+        <div class="detail-sub">${esc(p.type)} · Histórico</div>
       </div>
     </div>
     <div class="detail-gate">
@@ -4965,12 +4980,12 @@ function openFullReport(id){
   // ── Contexto de mercado (solo Venta/Alquiler) ────────────────
   const ctxHTML = !isHist ? `
     <div class="fr-sec">
-      <h2 class="fr-sec-title">Contexto del mercado <small>· ${p.district}</small></h2>
+      <h2 class="fr-sec-title">Contexto del mercado <small>· ${esc(p.district)}</small></h2>
       <div class="fr-ctx-grid">
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Liquidez de la zona</div>
           <div class="fr-ctx-val">38 días</div>
-          <div class="fr-ctx-sub">Promedio para ${isAlq?'arrendar':'vender'} en ${p.district}.</div>
+          <div class="fr-ctx-sub">Promedio para ${isAlq?'arrendar':'vender'} en ${esc(p.district)}.</div>
           <span class="fr-badge green">▲ Alta</span>
         </div>
         <div class="fr-ctx-card">
@@ -5011,14 +5026,14 @@ function openFullReport(id){
       <div class="fr-sun-grid">
         <div class="fr-sun-col">
           <div class="fr-sun-col-title">Características del inmueble</div>
-          <div class="fr-sun-row"><span>🏠 Tipo</span><strong>${p.type}</strong></div>
-          <div class="fr-sun-row"><span>📍 Distrito</span><strong>${p.district}</strong></div>
-          ${p.age>0?`<div class="fr-sun-row"><span>📅 Antigüedad</span><strong>${p.age} años</strong></div>`:''}
-          ${parkCount(p)>0?`<div class="fr-sun-row"><span>🚗 Estacionamientos</span><strong>${parkCount(p)}</strong></div>`:''}
-          ${s.depositos>0?`<div class="fr-sun-row"><span>📦 Depósitos</span><strong>${s.depositos}</strong></div>`:''}
-          ${s.areaTerr>0?`<div class="fr-sun-row"><span>📐 Área terreno</span><strong>${s.areaTerr} m²</strong></div>`:''}
-          ${s.areaTech>0?`<div class="fr-sun-row"><span>🏗️ Área techada</span><strong>${s.areaTech} m²</strong></div>`:''}
-          ${s.areaLibre>0?`<div class="fr-sun-row"><span>🌿 Área libre</span><strong>${s.areaLibre} m²</strong></div>`:''}
+          <div class="fr-sun-row"><span>🏠 Tipo</span><strong>${esc(p.type)}</strong></div>
+          <div class="fr-sun-row"><span>📍 Distrito</span><strong>${esc(p.district)}</strong></div>
+          ${p.age>0?`<div class="fr-sun-row"><span>📅 Antigüedad</span><strong>${esc(p.age)} años</strong></div>`:''}
+          ${parkCount(p)>0?`<div class="fr-sun-row"><span>🚗 Estacionamientos</span><strong>${esc(parkCount(p))}</strong></div>`:''}
+          ${s.depositos>0?`<div class="fr-sun-row"><span>📦 Depósitos</span><strong>${esc(s.depositos)}</strong></div>`:''}
+          ${s.areaTerr>0?`<div class="fr-sun-row"><span>📐 Área terreno</span><strong>${esc(s.areaTerr)} m²</strong></div>`:''}
+          ${s.areaTech>0?`<div class="fr-sun-row"><span>🏗️ Área techada</span><strong>${esc(s.areaTech)} m²</strong></div>`:''}
+          ${s.areaLibre>0?`<div class="fr-sun-row"><span>🌿 Área libre</span><strong>${esc(s.areaLibre)} m²</strong></div>`:''}
           ${s.areaOcup>0?`<div class="fr-sun-row"><span>📏 Área ocupada</span><strong>${s.areaOcup} m²</strong></div>`:''}
           <div class="fr-sun-row"><span>🔖 Partida registral</span><strong style="font-size:.78rem">${frRrppCode}</strong></div>
         </div>
@@ -5069,11 +5084,11 @@ function openFullReport(id){
       <div class="fr-verdict-icon">▲</div>
       <div class="fr-verdict-body">
         <h3>Precio referencial de mercado</h3>
-        <p>Basado en transacciones comparables en ${p.district}. Este análisis es orientativo.</p>
+        <p>Basado en transacciones comparables en ${esc(p.district)}. Este análisis es orientativo.</p>
         <div class="fr-verdict-chips">
-          ${sqm>0?`<span class="fr-vchip">Precio/m²: <strong>${cur} ${fmtN(sqm)}</strong></span>`:''}
-          <span class="fr-vchip">Área: <strong>${p.area} m²</strong></span>
-          ${parkCount(p)>0?`<span class="fr-vchip">Estac.: <strong>${parkCount(p)}</strong></span>`:''}
+          ${sqm>0?`<span class="fr-vchip">Precio/m²: <strong>${esc(cur)} ${fmtN(sqm)}</strong></span>`:''}
+          <span class="fr-vchip">Área: <strong>${esc(p.area)} m²</strong></span>
+          ${parkCount(p)>0?`<span class="fr-vchip">Estac.: <strong>${esc(parkCount(p))}</strong></span>`:''}
         </div>
       </div>
     </div>` : '';
@@ -5090,10 +5105,10 @@ function openFullReport(id){
       <div style="display:flex;align-items:center;gap:16px">
         <button class="fr-nav-back" onclick="closeFullReport()">← Volver</button>
         <div class="fr-nav-logo">Reco <span>PE</span></div>
-        <div class="fr-breadcrumb">${p.district} › ${p.address.length>40?p.address.slice(0,40)+'…':p.address}</div>
+        <div class="fr-breadcrumb">${esc(p.district)} › ${esc(p.address.length>40?p.address.slice(0,40)+'…':p.address)}</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="fr-btn-ghost" onclick="toggleFavorite('${p.id}');this.textContent=isFavorite('${p.id}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
+        <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
         ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
       </div>
     </nav>
@@ -5106,8 +5121,8 @@ function openFullReport(id){
       <div class="fr-main">
 
         <!-- TÍTULO -->
-        <h1 class="fr-title">${p.address}</h1>
-        <div class="fr-loc">📍 ${p.district}${p.province&&p.province!==p.district?' · '+p.province:''} · ${p.department}</div>
+        <h1 class="fr-title">${esc(p.address)}</h1>
+        <div class="fr-loc">📍 ${esc(p.district)}${p.province&&p.province!==p.district?' · '+esc(p.province):''} · ${esc(p.department)}</div>
 
         <!-- VERDICT -->
         ${verdictHTML}
@@ -5116,10 +5131,10 @@ function openFullReport(id){
         <div class="fr-price-block">
           <div>
             <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Valor total de la transacción':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${cur} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
-            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${cur} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
+            <div class="fr-price-ask">${esc(cur)} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
+            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${esc(cur)} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
             <div class="fr-price-meta">
-              ${sqm>0?`<span class="fr-price-pill">${cur} ${fmtN(sqm)} / m²</span>`:''}
+              ${sqm>0?`<span class="fr-price-pill">${esc(cur)} ${fmtN(sqm)} / m²</span>`:''}
               ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
               ${p.bank?'<span class="fr-badge-bank">🏦 Banco</span>':''}
             </div>
@@ -5127,23 +5142,23 @@ function openFullReport(id){
         </div>
 
         <div class="fr-specs-grid">
-          <div class="fr-spec-cell"><div class="fr-spec-val">${p.area}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
-          ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.beds}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
-          ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.baths}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
-          ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${parkCount(p)}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
-          ${p.floors>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${p.floor}/${p.floors}</div><div class="fr-spec-lbl">Piso</div></div>`:''}
-          ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${p.age}</div><div class="fr-spec-lbl">Años</div></div>`}
+          <div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.area)}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
+          ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.beds)}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
+          ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.baths)}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
+          ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(parkCount(p))}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
+          ${p.floors>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}/${esc(p.floors)}</div><div class="fr-spec-lbl">Piso</div></div>`:''}
+          ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.age)}</div><div class="fr-spec-lbl">Años</div></div>`}
         </div>
 
         ${p.features&&p.features.length?`
         <div class="fr-tags">
-          ${p.features.map(f=>`<span class="fr-tag">${f}</span>`).join('')}
+          ${p.features.map(f=>`<span class="fr-tag">${esc(f)}</span>`).join('')}
         </div>`:''}
 
         ${p.desc?`
         <div class="fr-sec">
           <h2 class="fr-sec-title">Descripción</h2>
-          <p class="fr-desc">${p.desc}</p>
+          <p class="fr-desc">${esc(p.desc)}</p>
         </div>`:''}
 
         ${photoGalleryHTML}
@@ -6786,7 +6801,7 @@ async function renderSolicitudes(el){
     + '<p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Personas interesadas en las propiedades que tú has publicado. Responde directamente a su email.</p>';
 
   if(queryError){
-    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar las solicitudes.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar las solicitudes.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+esc(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
   } else if(!reqs.length){
     html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📨</div><p>Aún no has recibido solicitudes.<br>Cuando alguien contacte por una publicación tuya, aparecerá aquí.</p></div></div>';
   } else {
@@ -6794,20 +6809,20 @@ async function renderSolicitudes(el){
       const propLine = [r.propertyAddress, r.propertyDistrict].filter(Boolean).join(' · ') || r.propertyId;
       const handledBtn = r.status === 'handled'
         ? ''
-        : `<button onclick="_crMarkHandled('${r.id}')" style="background:#0891b2;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;margin-top:8px">✓ Marcar como atendido</button>`;
+        : `<button onclick="_crMarkHandled('${esc(r.id)}')" style="background:#0891b2;color:#fff;border:none;padding:8px 14px;border-radius:8px;font-size:.78rem;font-weight:700;cursor:pointer;margin-top:8px">✓ Marcar como atendido</button>`;
       return `<div class="us-card" style="padding:16px 18px">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
           ${_crStatusBadge(r.status)}
           <span style="background:var(--light);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:600;color:var(--muted)">${_crKindLabel(r.kind)}</span>
         </div>
-        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${propLine}</div>
-        <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">${_crFormatDate(r.createdAt)}</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px">${esc(propLine)}</div>
+        <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px">${esc(_crFormatDate(r.createdAt))}</div>
         <div style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:10px">
-          <div style="font-size:.85rem"><strong>${r.fromName || '—'}</strong></div>
-          <div style="font-size:.82rem;color:var(--muted);margin-top:2px">📧 <a href="mailto:${r.fromEmail}">${r.fromEmail}</a></div>
-          ${r.fromPhone ? `<div style="font-size:.82rem;color:var(--muted);margin-top:2px">📞 ${r.fromPhone}</div>` : ''}
+          <div style="font-size:.85rem"><strong>${esc(r.fromName || '—')}</strong></div>
+          <div style="font-size:.82rem;color:var(--muted);margin-top:2px">📧 <a href="mailto:${esc(r.fromEmail)}">${esc(r.fromEmail)}</a></div>
+          ${r.fromPhone ? `<div style="font-size:.82rem;color:var(--muted);margin-top:2px">📞 ${esc(r.fromPhone)}</div>` : ''}
         </div>
-        <div style="font-size:.85rem;white-space:pre-wrap;color:var(--txt)">${r.message || ''}</div>
+        <div style="font-size:.85rem;white-space:pre-wrap;color:var(--txt)">${esc(r.message || '')}</div>
         ${handledBtn}
       </div>`;
     }).join('');
@@ -6866,27 +6881,27 @@ async function renderAdminPanel(el){
   } else {
     html += pubs.map(pub => {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
-        ? `<div style="background:url('${pub.photoUrls[0]}') center/cover;height:160px;border-radius:8px 8px 0 0"></div>`
+        ? `<div style="background:url('${esc(pub.photoUrls[0])}') center/cover;height:160px;border-radius:8px 8px 0 0"></div>`
         : '<div style="background:var(--light);display:flex;align-items:center;justify-content:center;font-size:2rem;height:160px;border-radius:8px 8px 0 0">🏠</div>';
       const photosExtra = (pub.photoUrls && pub.photoUrls.length > 1) ? `<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:.7rem;padding:3px 8px;border-radius:99px">+${pub.photoUrls.length-1} fotos</span>` : '';
       const actions = _adminTab==='pending'
-        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminApprove('${pub.id}')" style="flex:1;background:#10b981;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✓ Aprobar</button><button onclick="_adminReject('${pub.id}')" style="flex:1;background:#ef4444;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✕ Rechazar</button></div>`
+        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminApprove('${esc(pub.id)}')" style="flex:1;background:#10b981;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✓ Aprobar</button><button onclick="_adminReject('${esc(pub.id)}')" style="flex:1;background:#ef4444;color:#fff;border:none;padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:700;cursor:pointer">✕ Rechazar</button></div>`
         : _adminTab==='approved'
-        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminUnapprove('${pub.id}')" style="flex:1;background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Volver a pendiente</button></div>`
-        : `<div style="display:flex;gap:8px;margin-top:12px">${pub.rejectionReason?`<div style="flex:1;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:8px 12px;border-radius:var(--r);font-size:.78rem"><strong>Razón:</strong> ${pub.rejectionReason}</div>`:''}<button onclick="_adminUnapprove('${pub.id}')" style="background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Re-evaluar</button></div>`;
+        ? `<div style="display:flex;gap:8px;margin-top:12px"><button onclick="_adminUnapprove('${esc(pub.id)}')" style="flex:1;background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Volver a pendiente</button></div>`
+        : `<div style="display:flex;gap:8px;margin-top:12px">${pub.rejectionReason?`<div style="flex:1;background:#fef2f2;border:1px solid #fca5a5;color:#991b1b;padding:8px 12px;border-radius:var(--r);font-size:.78rem"><strong>Razón:</strong> ${esc(pub.rejectionReason)}</div>`:''}<button onclick="_adminUnapprove('${esc(pub.id)}')" style="background:var(--bg);color:var(--txt);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.85rem;font-weight:600;cursor:pointer">↩ Re-evaluar</button></div>`;
       return `<div class="us-card" style="padding:0;overflow:hidden">
         <div style="position:relative">${thumb}${photosExtra}</div>
         <div style="padding:14px 16px">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${pub.op||'Venta'}</span>
-            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${pub.type||'—'}</span>
+            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${esc(pub.op||'Venta')}</span>
+            <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${esc(pub.type||'—')}</span>
           </div>
-          <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">${pub.address||'—'}</div>
-          <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📍 ${pub.district||'—'} · 📐 ${pub.area||'—'} m²${pub.beds>0?' · 🛏 '+pub.beds:''}${pub.baths>0?' · 🚿 '+pub.baths:''}</div>
+          <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">${esc(pub.address||'—')}</div>
+          <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📍 ${esc(pub.district||'—')} · 📐 ${esc(pub.area||'—')} m²${pub.beds>0?' · 🛏 '+esc(pub.beds):''}${pub.baths>0?' · 🚿 '+esc(pub.baths):''}</div>
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-bottom:8px">${pub.currency==='PEN'?'S/':'$'} ${Number(pub.price||0).toLocaleString()}</div>
-          ${pub.desc?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:.78rem;color:var(--muted)">Ver descripción</summary><div style="font-size:.82rem;margin-top:6px;color:var(--txt);white-space:pre-wrap">${pub.desc}</div></details>`:''}
+          ${pub.desc?`<details style="margin-bottom:8px"><summary style="cursor:pointer;font-size:.78rem;color:var(--muted)">Ver descripción</summary><div style="font-size:.82rem;margin-top:6px;color:var(--txt);white-space:pre-wrap">${esc(pub.desc)}</div></details>`:''}
           <div style="font-size:.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:8px;margin-top:8px">
-            👤 ${pub.userName||pub.userEmail||pub.userId||'—'} ${pub.userEmail&&pub.userName?`· ${pub.userEmail}`:''}
+            👤 ${esc(pub.userName||pub.userEmail||pub.userId||'—')} ${pub.userEmail&&pub.userName?`· ${esc(pub.userEmail)}`:''}
           </div>
           ${actions}
         </div>
@@ -6907,12 +6922,12 @@ function _queueModerationEmail(pub, kind, reason){
   const subject = isApproved
     ? '🚀 Tu publicación en Reco fue aprobada'
     : 'Tu publicación en Reco no pudo ser aprobada';
-  const greeting = pub.userName ? `Hola ${pub.userName.split(' ')[0]},` : 'Hola,';
+  const greeting = pub.userName ? `Hola ${esc(pub.userName.split(' ')[0])},` : 'Hola,';
   const html = isApproved
     ? `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
          <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
          <p>${greeting}</p>
-         <p>Acabamos de aprobar tu publicación de <strong>${pub.address || '—'}</strong> en <strong>${pub.district || '—'}</strong>.
+         <p>Acabamos de aprobar tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>.
          Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
          <p style="margin-top:24px">
            <a href="https://thaizbar-debug.github.io/reco/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
@@ -6922,9 +6937,9 @@ function _queueModerationEmail(pub, kind, reason){
     : `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
          <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
          <p>${greeting}</p>
-         <p>Revisamos tu publicación de <strong>${pub.address || '—'}</strong> en <strong>${pub.district || '—'}</strong>
+         <p>Revisamos tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>
          y, por el momento, no podemos publicarla en Reco.</p>
-         ${reason ? `<p><strong>Razón:</strong> ${reason}</p>` : ''}
+         ${reason ? `<p><strong>Razón:</strong> ${esc(reason)}</p>` : ''}
          <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones" → "+ Publicar inmueble".</p>
          <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
        </div>`;
@@ -7226,21 +7241,21 @@ async function renderPublicaciones(el) {
   if (pubs.length) {
     html += pubs.map(function(pub) {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
-        ? `<div class="us-prop-img" style="background:url('${pub.photoUrls[0]}') center/cover"></div>`
+        ? `<div class="us-prop-img" style="background:url('${esc(pub.photoUrls[0])}') center/cover"></div>`
         : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>';
       return '<div class="us-prop-card">'
         + thumb
         + '<div class="us-prop-info">'
         + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'+_pubStatusBadge(pub.status)+'</div>'
-        + '<div class="us-prop-addr">'+(pub.address||pub.title||'Publicación')+'</div>'
-        + '<div class="us-prop-dist">📍 '+(pub.district||'Sin distrito')+' · '+(pub.type||'Inmueble')+'</div>'
-        + '<div class="us-prop-price">'+(pub.currency||'USD')+' '+(pub.price||'—').toLocaleString()+'</div>'
+        + '<div class="us-prop-addr">'+esc(pub.address||pub.title||'Publicación')+'</div>'
+        + '<div class="us-prop-dist">📍 '+esc(pub.district||'Sin distrito')+' · '+esc(pub.type||'Inmueble')+'</div>'
+        + '<div class="us-prop-price">'+esc(pub.currency||'USD')+' '+esc(typeof pub.price==='number' ? pub.price.toLocaleString() : (pub.price||'—'))+'</div>'
         + '</div>'
-        + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+pub.id+'\')" title="Eliminar">✕</button>'
+        + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+esc(pub.id)+'\')" title="Eliminar">✕</button>'
         + '</div>';
     }).join('');
   } else if(queryError){
-    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar tus publicaciones.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
+    html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">⚠️</div><p style="color:var(--red);font-weight:600">No se pudieron cargar tus publicaciones.</p><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Error: '+esc(queryError.message||queryError.code||'desconocido')+'</p></div></div>';
   } else {
     html += '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">📋</div><p>No tienes publicaciones aún.<br>Publica tu primer inmueble para verlo aquí.</p></div></div>';
   }
@@ -7452,22 +7467,22 @@ function _queueContactEmailToOwner(o){
   if (!o || !o.ownerEmail) return;
   const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || '—';
   const kindLabel = o.kind === 'arrendador' ? 'alquilar' : 'comprar';
-  const greeting = o.ownerName ? `Hola ${o.ownerName.split(' ')[0]},` : 'Hola,';
+  const greeting = o.ownerName ? `Hola ${esc(o.ownerName.split(' ')[0])},` : 'Hola,';
   const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
     <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
     <p>${greeting}</p>
-    <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${propLine}</strong>.</p>
+    <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${esc(propLine)}</strong>.</p>
     <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
-      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${o.fromName || '—'}</p>
-      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${o.fromEmail}">${o.fromEmail}</a></p>
-      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${o.fromPhone}</p>` : ''}
+      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${esc(o.fromName || '—')}</p>
+      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${esc(o.fromEmail)}">${esc(o.fromEmail)}</a></p>
+      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${esc(o.fromPhone)}</p>` : ''}
       <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
-      <p style="margin:4px 0 0;white-space:pre-wrap">${o.message}</p>
+      <p style="margin:4px 0 0;white-space:pre-wrap">${esc(o.message)}</p>
     </div>
     <p>Responde directamente al email del interesado para coordinar.</p>
     <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
   </div>`;
-  const text = `${greeting}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\n`
+  const text = `${o.ownerName ? 'Hola '+o.ownerName.split(' ')[0]+',' : 'Hola,'}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\n`
     + `Nombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
     + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
     + `\nMensaje:\n${o.message}\n\n— Equipo Reco`;
