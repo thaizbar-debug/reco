@@ -92,11 +92,18 @@ service cloud.firestore {
                   && (resource.data.fromUserId == request.auth.uid
                       || resource.data.publicationOwnerId == request.auth.uid
                       || isAdmin());
+      // The doc ID must be `${fromUserId}_${propertyId}_${kind}`. Since
+      // `allow create` only fires when the doc does not already exist,
+      // this forces one contactRequest per (sender, property, modality).
+      // A second attempt reads as an update, which the sender is not
+      // permitted to perform (see `allow update` below), so it fails
+      // with permission-denied.
       allow create: if request.auth != null
                     && request.resource.data.fromUserId == request.auth.uid
                     && request.resource.data.status == 'new'
                     && request.resource.data.propertyId is string
-                    && request.resource.data.kind in ['arrendador','vendedor','asesor_reco'];
+                    && request.resource.data.kind in ['arrendador','vendedor','asesor_reco']
+                    && reqId == request.auth.uid + '_' + request.resource.data.propertyId + '_' + request.resource.data.kind;
       // Admins can update anything; the publication owner can only flip
       // status (e.g. 'new' → 'handled') without touching other fields.
       allow update: if isAdmin()
