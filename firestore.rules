@@ -105,13 +105,17 @@ service cloud.firestore {
                     && request.resource.data.kind in ['arrendador','vendedor','asesor_reco']
                     && reqId == request.auth.uid + '_' + request.resource.data.propertyId + '_' + request.resource.data.kind;
       // Admins can update anything; the publication owner can only flip
-      // status (e.g. 'new' → 'handled') without touching other fields.
+      // `status` (e.g. 'new' → 'handled'). The prior version of this rule
+      // let the owner rewrite fromName, fromEmail, message and other
+      // requester-owned fields as long as three immutable IDs stayed the
+      // same, which meant a malicious owner could tamper with the record
+      // Reco reads for moderation. Restricting affectedKeys to ['status']
+      // makes every other field owner-immutable and drops the redundant
+      // per-field comparisons.
       allow update: if isAdmin()
                     || (request.auth != null
                         && resource.data.publicationOwnerId == request.auth.uid
-                        && request.resource.data.publicationOwnerId == resource.data.publicationOwnerId
-                        && request.resource.data.fromUserId == resource.data.fromUserId
-                        && request.resource.data.propertyId == resource.data.propertyId);
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
       allow delete: if isAdmin();
     }
 
