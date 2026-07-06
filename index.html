@@ -1798,7 +1798,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="anun-cta">
       <div class="anun-cta-text"><strong>¿Te interesa?</strong> Escríbenos y armamos una propuesta a tu medida. Sin tarifas fijas — cada campaña se cotiza según el formato, duración y zona.</div>
       <div class="anun-btns">
-        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank">💬 WhatsApp</a>
+        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>
         <a class="btn-mail" href="mailto:anuncios@reco.pe?subject=Cotización%20publicidad%20Reco">✉️ anuncios@reco.pe</a>
       </div>
     </div>
@@ -4640,8 +4640,8 @@ function buildSunarpPanel(p, partidas){
   const rrppCode=s.rrpp||p.id;
   const rrppSearchUrl=`https://www.google.com/search?q=${encodeURIComponent(rrppCode+' SUNARP partida registral')}`;
   const partidasHTML=partidas.length
-    ? partidas.map(({url,label})=>`<a href="${url}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> ${label} (PDF)</a>`).join('')
-    : `<a href="${rrppSearchUrl}" target="_blank" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);text-decoration:none"><span>🔍</span> Partida ${rrppCode}</a>`;
+    ? partidas.map(({url,label})=>`<a href="${url}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> ${label} (PDF)</a>`).join('')
+    : `<a href="${rrppSearchUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);text-decoration:none"><span>🔍</span> Partida ${rrppCode}</a>`;
 
   // Filtrar estacionamientos/depósitos con valor > 0
   const estacItems=s.estacVals.map((v,i)=>v>0?sunField('🚗',`Estacionamiento ${i+1}`,fmt(v)):'').join('');
@@ -4785,7 +4785,7 @@ function openDetail(id){
 
       <div class="detail-ad-wrap">
         <div class="detail-ad-badge">Publicidad</div>
-        <a href="https://www.apoyoconsultoria.com/" target="_blank" class="detail-ad-card">
+        <a href="https://www.apoyoconsultoria.com/" target="_blank" rel="noopener noreferrer" class="detail-ad-card">
           <img src="https://www.apoyoconsultoria.com/wp-content/uploads/2026/01/apoyo-edificio-1-scaled.png" alt="Apoyo Consultoría" class="detail-ad-img" onerror="this.style.display='none'"/>
           <div class="detail-ad-body">
             <img src="https://www.apoyoconsultoria.com/wp-content/uploads/2021/01/logo-apoyo.png" alt="Apoyo" class="detail-ad-logo" onerror="this.style.display='none'"/>
@@ -5012,10 +5012,10 @@ function openFullReport(id){
     const frRrppSearch = `https://www.google.com/search?q=${encodeURIComponent(frRrppCode+' SUNARP partida registral')}`;
     const pdfBtns = partidas.length
       ? partidas.map(({url,label})=>`
-          <a href="${url}" target="_blank" class="fr-pdf-btn">
+          <a href="${url}" target="_blank" rel="noopener noreferrer" class="fr-pdf-btn">
             <span>📄</span> ${label} (PDF)
           </a>`).join('')
-      : `<a href="${frRrppSearch}" target="_blank" class="fr-pdf-btn">
+      : `<a href="${frRrppSearch}" target="_blank" rel="noopener noreferrer" class="fr-pdf-btn">
            <span>🔍</span> Partida ${frRrppCode}
          </a>`;
     return `
