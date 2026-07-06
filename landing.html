@@ -655,13 +655,28 @@ function goTab(tab){
   setTimeout(()=>document.getElementById('heroQ').focus(),400);
 }
 
+// HTML-escape any string before dropping it into a template literal that
+// becomes innerHTML. Suggestions come from the geo API (HERE / Photon)
+// and from the user's own search input, so anything that reaches
+// innerHTML must go through esc().
+function esc(s){
+  if(s == null) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c==='"'?'&quot;':'&#39;';
+  });
+}
+
 function boldMatch(text,q){
-  const i=text.toLowerCase().indexOf(q.toLowerCase());
-  if(i<0)return text;
-  return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
+  const t = String(text || '');
+  const qs = String(q || '');
+  const i = t.toLowerCase().indexOf(qs.toLowerCase());
+  if(i<0) return esc(t);
+  // Escape each piece separately so injected HTML in text/q can't break out.
+  return esc(t.slice(0,i)) + '<b>' + esc(t.slice(i,i+qs.length)) + '</b>' + esc(t.slice(i+qs.length));
 }
 function _sgItemHtmlLanding(s,val){
-  return `<div class="sg-item" onmousedown="pickLanding('${s.label.replace(/'/g,"\\'")}')"><span class="sg-ico">${s.icon}</span><span class="sg-txt"><span class="sg-main">${boldMatch(s.label,val)}</span><span class="sg-sub">${s.sub}</span></span></div>`;
+  const safeLabel = String(s.label || '').replace(/'/g,"\\'").replace(/\\/g,'\\\\');
+  return `<div class="sg-item" onmousedown="pickLanding('${safeLabel}')"><span class="sg-ico">${esc(s.icon)}</span><span class="sg-txt"><span class="sg-main">${boldMatch(s.label,val)}</span><span class="sg-sub">${esc(s.sub)}</span></span></div>`;
 }
 function onSearchLanding(v){
   _lastGeoL=null;
@@ -694,7 +709,10 @@ async function _fetchGeoLanding(q){
     const drop=document.getElementById('sgDropLanding');
     if(!drop) return;
     const secHtml=`<div class="sg-section">Ubicaciones en el mapa</div>`
-      +items.map(r=>`<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`).join('');
+      +items.map(r=>{
+        const safeLabel = String(r.label || '').replace(/'/g,"\\'").replace(/\\/g,'\\\\');
+        return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${safeLabel}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${esc(r.label)}</span><span class="sg-sub">${esc(r.sub)}</span></span></div>`;
+      }).join('');
     const geoEl=document.getElementById('sgGeoL');
     if(geoEl) geoEl.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
     drop.style.display='block';
@@ -772,7 +790,7 @@ document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun()
     <div class="anun-cta">
       <div class="anun-cta-text"><strong>¿Te interesa?</strong> Escríbenos y armamos una propuesta a tu medida. Sin tarifas fijas — cada campaña se cotiza según el formato, duración y zona.</div>
       <div class="anun-btns">
-        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank">💬 WhatsApp</a>
+        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>
         <a class="btn-mail" href="mailto:anuncios@reco.pe?subject=Cotización%20publicidad%20Reco">✉️ anuncios@reco.pe</a>
       </div>
     </div>
