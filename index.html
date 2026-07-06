@@ -7584,6 +7584,9 @@ async function openContactModal(propertyId, kind) {
   document.getElementById('contactEmail').value   = u.email || '';
   document.getElementById('contactPhone').value   = '';
   document.getElementById('contactMessage').value = '';
+  const submitBtn = document.getElementById('contactSubmitBtn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enviar solicitud';
   document.getElementById('contactForm').style.display = 'block';
 }
 function _formatContactDate(ts) {
