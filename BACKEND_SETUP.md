@@ -70,3 +70,69 @@ Approval / rejection emails are sent by the official Firebase extension
 Resend free tier: 3,000 emails/month. Reco at MVP scale is nowhere near
 that. Firebase Functions execution time for the extension is also well
 within the free tier.
+
+## 5. Cloud Functions (Phase 6)
+
+Server-side gate for premium data reads and key spending. The client
+alone cannot be trusted: any user can open DevTools and set
+`S.unlockedIds` to every property, so gating has to happen server-side.
+
+### 5.1 Prerequisites
+
+- **Firebase Blaze plan** — required for Cloud Functions. Free tier is
+  generous (2M invocations / month, 400k GB-s / month), so at MVP scale
+  the invoice should stay at $0. Set a low budget alert (e.g. $5) in
+  Google Cloud Billing to be safe.
+- **Node.js 22** locally (`node --version`).
+- **Firebase CLI:** `npm install -g firebase-tools`.
+- `firebase login` from the repo root.
+
+### 5.2 First-time deploy
+
+```
+cd functions
+npm install
+cd ..
+firebase deploy --only functions
+```
+
+The first deploy takes 2–4 minutes because Google Cloud provisions the
+runtime and the callable endpoint. Later deploys are ~30–60 seconds.
+
+Region for all functions is **southamerica-east1** (same as Firestore)
+so writes stay local — cheaper and lower latency than us-central1.
+
+### 5.3 Local emulator (for testing without a real deploy)
+
+```
+cd functions
+npm run serve
+```
+
+This starts Firestore, Auth and Functions emulators on localhost.
+Point the client at them by adding, before Firebase is used:
+
+```
+firebase.functions().useEmulator('localhost', 5001);
+firebase.firestore().useEmulator('localhost', 8080);
+firebase.auth().useEmulator('http://localhost:9099');
+```
+
+Only for local dev. Never commit those lines.
+
+### 5.4 The functions we ship
+
+- `unlockProperty` — takes `{ propertyId }`, checks the caller has ≥ 1
+  key, decrements atomically, appends to `keyHistory`, and returns the
+  premium fields for that property. Follow-up PRs will add
+  `publishProperty` and the data migration from `properties.json` to
+  `/propertiesPremium`.
+
+### 5.5 What is NOT yet in place
+
+- The `/propertiesPremium` collection is empty until the data-migration
+  PR runs. Calling `unlockProperty` today returns `not-found` for every
+  property. That is expected; the callable exists so the frontend can
+  wire onto it now and the migration PR is a data + wiring flip only.
+- Client code still writes `/publications` directly. That path will be
+  closed in the `publishProperty` PR after the migration lands.
