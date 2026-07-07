@@ -37,13 +37,21 @@ service cloud.firestore {
     // directly from the browser.
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
+      // Create and update use an explicit field whitelist rather than
+      // blocklisting keysLeft/keyHistory. Rationale: the old blocklist
+      // let the client set arbitrary fields the code may read later
+      // (e.g. `isAdmin`, `role`, `premium`), so any future author could
+      // wire a privilege check to a user-controlled field without
+      // noticing. It also allowed unbounded doc bloat. Any new
+      // legitimate field added to the schema must also be added here.
       allow create: if request.auth != null
                     && request.auth.uid == uid
+                    && request.resource.data.keys().hasOnly(['email', 'displayName', 'createdAt', 'favorites', 'keysLeft', 'keyHistory'])
                     && (!('keysLeft' in request.resource.data) || request.resource.data.keysLeft == 0)
                     && (!('keyHistory' in request.resource.data) || request.resource.data.keyHistory.size() == 0);
       allow update: if request.auth != null
                     && request.auth.uid == uid
-                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['keysLeft', 'keyHistory']);
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favorites', 'email', 'displayName']);
       allow delete: if false; // never allow self-delete from client
     }
 
