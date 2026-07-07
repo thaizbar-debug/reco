@@ -5,11 +5,19 @@ service cloud.firestore {
     // Hardcoded admin allowlist. Edit this list to grant or revoke
     // moderation rights. Phase 3 keeps the auth model simple; later
     // phases may move this to custom claims or an /admins collection.
+    //
+    // The email from the auth token is lower-cased before the lookup so
+    // an admin who happened to register with mixed case (e.g. "Webmaster
+    // @recosac.com") still matches the allowlist. The client-side
+    // _isAdmin() helper already lower-cases; this keeps the two checks
+    // in sync so the UI and the rule agree on who is admin.
     function isAdmin() {
-      return request.auth != null && request.auth.token.email in [
-        'webmaster@recosac.com',
-        'sebastiand@recosac.com'
-      ];
+      return request.auth != null
+             && request.auth.token.email != null
+             && request.auth.token.email.lower() in [
+               'webmaster@recosac.com',
+               'sebastiand@recosac.com'
+             ];
     }
 
     // /users/{uid}
