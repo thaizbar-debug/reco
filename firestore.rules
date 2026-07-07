@@ -80,15 +80,26 @@ service cloud.firestore {
       allow create: if request.auth != null
                     && request.resource.data.userId == request.auth.uid
                     && request.resource.data.status == 'pending';
-      // Update: owner can edit while pending (without flipping status/
-      // userId/createdAt). Admin can change any field — typically just
-      // status and an optional rejectionReason / moderatedAt.
+      // Update: owner can edit while pending (without flipping status,
+      // userId, createdAt, or the moderation-audit fields moderatedBy,
+      // moderatedAt and rejectionReason). Admin can change any field —
+      // typically just status and an optional rejectionReason /
+      // moderatedAt.
+      //
+      // Rationale for blocking the moderation-audit fields: after an
+      // admin approve → unapprove cycle, the doc goes back to 'pending'
+      // and the owner can edit again. Without this guard, the owner
+      // could overwrite `moderatedBy` with their own uid, blank out the
+      // `rejectionReason`, or shift `moderatedAt` — corrupting the
+      // audit trail that the admin panel and any downstream reporting
+      // rely on.
       allow update: if (request.auth != null
                        && resource.data.userId == request.auth.uid
                        && resource.data.status == 'pending'
                        && request.resource.data.userId == resource.data.userId
                        && request.resource.data.status == resource.data.status
-                       && request.resource.data.createdAt == resource.data.createdAt)
+                       && request.resource.data.createdAt == resource.data.createdAt
+                       && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['moderatedBy', 'moderatedAt', 'rejectionReason']))
                     || isAdmin();
       // Delete: owner or admin (admin can remove spam outright).
       allow delete: if (request.auth != null && resource.data.userId == request.auth.uid)
