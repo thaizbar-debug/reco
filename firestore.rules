@@ -142,6 +142,22 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // /propertiesPremium/{propertyId}
+    //
+    // Server-only collection. Holds the fields that used to sit in the
+    // public properties.json and turned every "unlock" into theater:
+    // owner name/email/phone, exact price, historical prices, partida PDFs.
+    // Direct access from the client is denied. The `unlockProperty`
+    // callable Cloud Function reads this collection with the admin SDK
+    // after verifying the caller has spent a key.
+    //
+    // A subsequent migration PR will populate this collection from the
+    // static JSON and strip the same fields from properties.json so the
+    // public feed no longer leaks them.
+    match /propertiesPremium/{propertyId} {
+      allow read, write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;
