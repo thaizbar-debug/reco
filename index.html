@@ -3626,7 +3626,11 @@ async function loadPoi(cat){
       const icon=L.divIcon({className:'',html:`<div class="poi-mk" style="background:${c.c}">${c.e}</div>`,iconSize:[26,26],iconAnchor:[13,13]});
       const m=L.marker([la,ln],{icon}).addTo(leafletMap);
       const addr=item.address&&item.address.label?' · '+item.address.label:'';
-      m.bindTooltip(`<b>${name}</b><br>${c.e} a ${dTxt}${addr}`,{direction:'top',offset:[0,-12]});
+      // esc() the third-party HERE Places fields (title, address label)
+      // before rendering them as HTML. HERE draws from OSM and partner
+      // feeds that accept external edits, so a poisoned place name could
+      // otherwise land in the DOM as executable markup.
+      m.bindTooltip(`<b>${esc(name)}</b><br>${c.e} a ${esc(dTxt)}${esc(addr)}`,{direction:'top',offset:[0,-12]});
       arr.push(m);
     });
     poiMarkers[cat]=arr;
@@ -5447,13 +5451,13 @@ function _rps(){
         <div class="pub-geo-wrap">
           <div class="pub-field">
             <label>Buscar dirección <span style="color:var(--red)">*</span></label>
-            <input id="pubAddrInput" value="${_pd.address}" oninput="_pubGeoInput(this.value)" placeholder="Ej: Av. Larco 1150, Miraflores" autocomplete="off">
+            <input id="pubAddrInput" value="${esc(_pd.address)}" oninput="_pubGeoInput(this.value)" placeholder="Ej: Av. Larco 1150, Miraflores" autocomplete="off">
             <div class="pub-geo-drop" id="pubGeoDrop"></div>
           </div>
         </div>
         <div class="pub-field">
           <label>Distrito <span style="color:var(--red)">*</span></label>
-          <input id="pubDistrict" value="${_pd.district}" oninput="_pd.district=this.value" placeholder="Ej: Miraflores">
+          <input id="pubDistrict" value="${esc(_pd.district)}" oninput="_pd.district=this.value" placeholder="Ej: Miraflores">
         </div>
         <label class="pub-check" style="margin-bottom:12px"><input type="checkbox" ${_pd.hideExact?'checked':''} onchange="_pd.hideExact=this.checked"> No mostrar la dirección exacta</label>
         <div id="pubMapEl" style="height:260px;border-radius:10px;overflow:hidden;border:1px solid var(--border);margin-top:4px"></div>
@@ -5564,8 +5568,8 @@ function _rps(){
         </div>
         <div id="pubPhotoCount" style="font-size:11px;color:var(--muted);margin-top:6px">${_pd.photos.length>0?`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'}`:''}</div>
         <h3 style="margin-top:22px">📝 Descripción</h3>
-        <div class="pub-field"><label>Título del anuncio <span style="color:var(--red)">*</span></label><input value="${_pd.title}" oninput="_pd.title=this.value" placeholder="Ej: Departamento moderno con vista al parque en Miraflores"></div>
-        <div class="pub-field"><label>Descripción <span style="color:var(--red)">*</span></label><textarea rows="5" placeholder="Describe lo que hace especial tu propiedad…" oninput="_pd.desc=this.value">${_pd.desc}</textarea></div>
+        <div class="pub-field"><label>Título del anuncio <span style="color:var(--red)">*</span></label><input value="${esc(_pd.title)}" oninput="_pd.title=this.value" placeholder="Ej: Departamento moderno con vista al parque en Miraflores"></div>
+        <div class="pub-field"><label>Descripción <span style="color:var(--red)">*</span></label><textarea rows="5" placeholder="Describe lo que hace especial tu propiedad…" oninput="_pd.desc=this.value">${esc(_pd.desc)}</textarea></div>
       </div>
       <div class="pub-card">
         <h3>📊 Valorización Reco IA</h3>
@@ -5959,7 +5963,7 @@ async function _pubBulkSubmit(){
       prog.innerHTML=`<span style="color:var(--green)">✅ ${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}. Las revisaremos en 24h.</span>`;
     } else {
       prog.innerHTML=`<div><span style="color:${ok?'var(--green)':'var(--red)'}">${ok} exitosas</span> · <span style="color:var(--red)">${failed.length} fallidas</span></div>
-        <details style="margin-top:6px;font-size:11px"><summary style="cursor:pointer">Ver errores</summary><ul style="margin:6px 0 0 18px;padding:0">${failed.slice(0,20).map(f=>`<li>Fila ${f.idx} (${(f.address||'').slice(0,30)}): ${f.error}</li>`).join('')}</ul></details>`;
+        <details style="margin-top:6px;font-size:11px"><summary style="cursor:pointer">Ver errores</summary><ul style="margin:6px 0 0 18px;padding:0">${failed.slice(0,20).map(f=>`<li>Fila ${esc(f.idx)} (${esc((f.address||'').slice(0,30))}): ${esc(f.error)}</li>`).join('')}</ul></details>`;
     }
   }
   if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
