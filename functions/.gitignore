@@ -4,3 +4,10 @@ firebase-debug.*.log
 *.local
 .env
 .env.*
+
+# Service account keys. Leaking any of these gives an attacker admin
+# access to Firestore, Storage and everything else in the project.
+service-account-key.json
+scripts/service-account-key.json
+*-firebase-adminsdk-*.json
+*service-account*.json
