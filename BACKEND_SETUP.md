@@ -130,9 +130,79 @@ Only for local dev. Never commit those lines.
 
 ### 5.5 What is NOT yet in place
 
-- The `/propertiesPremium` collection is empty until the data-migration
-  PR runs. Calling `unlockProperty` today returns `not-found` for every
-  property. That is expected; the callable exists so the frontend can
-  wire onto it now and the migration PR is a data + wiring flip only.
 - Client code still writes `/publications` directly. That path will be
   closed in the `publishProperty` PR after the migration lands.
+- The public `data/properties.json` still ships the premium fields
+  (owner, phone, sun, val, pdf_*). Stripping them from the JSON and
+  pointing the frontend at `unlockProperty` happens together in the
+  follow-up PR so unlocked histórico details do not go blank between
+  the two.
+
+## 6. Premium data migration (one-time)
+
+`functions/scripts/migrate-premium-to-firestore.js` extracts the
+premium fields from `data/properties.json` and writes them to the
+`/propertiesPremium/{id}` collection so `unlockProperty` has something
+to return. Idempotent — re-running overwrites, does not duplicate.
+
+### 6.1 Generate a service account key (one time)
+
+1. Open https://console.firebase.google.com/project/reco-5a5dd/settings/serviceaccounts/adminsdk
+2. **Node.js** is selected by default. Click **Generate new private key**.
+3. Confirm on the prompt. A JSON file downloads. Rename it to
+   `service-account-key.json` and move it into `functions/scripts/`.
+4. Verify the path is `functions/scripts/service-account-key.json`.
+   `.gitignore` covers it explicitly, plus broad patterns for any
+   filename containing `service-account` or `firebase-adminsdk`.
+
+**Do not commit this file.** Anyone with the JSON has admin write
+access to your Firestore, Storage and every other Firebase resource.
+If it ever leaks, revoke it immediately from the same page you
+generated it on.
+
+### 6.2 Run the migration
+
+```
+cd functions
+node scripts/migrate-premium-to-firestore.js
+```
+
+Expected output (last few lines):
+
+```
+  ...committed 2663 / 2663
+
+✓ Wrote 2663 docs to /propertiesPremium.
+  with owner: <n>
+  with phone: <n>
+  with sun (histórico data): <n>
+  with val (historical values): <n>
+  with pdfs (partidas): <n>
+```
+
+Runtime is about 15–30 s over ~7 batches of 400 writes each.
+Firestore write cost for the whole run is negligible (~US$0.005).
+
+### 6.3 Verify
+
+Call `unlockProperty` from the browser with an authenticated session
+using a real property id — e.g. `885-RP4625-25`:
+
+```
+firebase.app().functions('southamerica-east1').httpsCallable('unlockProperty')({propertyId:'885-RP4625-25'}).then(r=>console.log('got premium:', Object.keys(r.data.premium || {})))
+```
+
+Expected: an object listing keys like `owner`, `phone`, `sun`. That
+confirms the collection is populated and the callable is working end
+to end.
+
+Note: this call **actually spends a key** on the calling account.
+Refund yourself from the Firestore data console afterwards if needed.
+
+### 6.4 Delete the service account key when done
+
+Once migration is complete you do not need the key on your laptop
+until the next migration. Delete
+`functions/scripts/service-account-key.json` to shrink the blast
+radius if the laptop is ever compromised. Regenerating a fresh key
+next time takes 30 seconds.
