@@ -61,14 +61,19 @@ service cloud.firestore {
     // - read: the owner can read their own publications regardless of
     //         status; anyone (auth or not) can read approved listings,
     //         because Phase 4 will surface them in the public search.
-    // - create: any authenticated user can create, but the new doc must
-    //           have userId == request.auth.uid and status == 'pending'.
-    //           This prevents users from forging ownership or skipping
-    //           moderation.
+    // - create: DENIED from the client. Creating a publication costs 3
+    //           keys, and rules cannot atomically read /users/{uid}
+    //           and decrement keysLeft in the same operation. So the
+    //           only way to create is through the publishProperty
+    //           Cloud Function, which does the check-and-decrement
+    //           inside a Firestore transaction using the admin SDK.
+    //           The admin SDK bypasses these rules, so publishProperty
+    //           still works; DevTools attempts to `add()` directly do
+    //           not, closing the "publish infinite for free" hole.
     // - update: the owner may update their own listing only while it
     //           is still pending, and may not change status, userId or
-    //           createdAt. Admin moderation will be done server-side or
-    //           with a separate admin claim in Phase 3.
+    //           createdAt. Admin moderation still goes through this
+    //           same rule (via the isAdmin() branch).
     // - delete: only the owner may delete their listing.
     match /publications/{pubId} {
       // Read: approved listings are public; the owner sees their own
@@ -77,9 +82,9 @@ service cloud.firestore {
       allow read: if resource.data.status == 'approved'
                   || (request.auth != null && resource.data.userId == request.auth.uid)
                   || isAdmin();
-      allow create: if request.auth != null
-                    && request.resource.data.userId == request.auth.uid
-                    && request.resource.data.status == 'pending';
+      // Deny direct client creates. See publishProperty in
+      // functions/index.js — that's the sole creation path now.
+      allow create: if false;
       // Update: owner can edit while pending (without flipping status,
       // userId, createdAt, or the moderation-audit fields moderatedBy,
       // moderatedAt and rejectionReason). Admin can change any field —

@@ -15,14 +15,21 @@
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 const db = getFirestore();
 
 const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
+const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
+
+const PUB_TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
+const PUB_OPS = ['Venta', 'Alquiler'];
+const PUB_CURRENCIES = ['USD', 'PEN'];
+const PUB_ESTADOS = ['En proyecto', 'En construcción', 'Construido'];
+const PUB_SOURCES = ['single', 'bulk'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // unlockProperty — spend 1 key, receive premium fields for one property.
@@ -103,6 +110,152 @@ exports.unlockProperty = onCall(
         premium,
         keysLeft: currentKeys - UNLOCK_COST,
         alreadyUnlocked: false,
+      };
+    });
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// publishProperty — spend 3 keys, create one /publications doc with
+// status: 'pending' so it enters the moderation queue.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('publishProperty');
+//   const { data } = await fn({
+//     address, district, lat, lng,
+//     type, op, currency, price, area,
+//     areaTerr, beds, baths, parking, floor, floors, age,
+//     estado, ascensor, amoblado, petFriendly,
+//     features, title, desc,
+//     source, // 'single' | 'bulk'
+//   });
+//   // data = { publicationId, keysLeft }
+//
+// Errors (HttpsError):
+//   unauthenticated       — no auth context
+//   invalid-argument      — missing / malformed field
+//   failed-precondition   — caller has fewer than 3 keys
+//
+// Photos are NOT part of this callable. The client uploads them to
+// Storage under publications/{publicationId}/* AFTER receiving the doc
+// id, then does a client-side owner update to set photoUrls on the same
+// doc — Firestore rules still allow that update path for the owner
+// while the publication is pending.
+//
+// The check-and-decrement runs inside a Firestore transaction so a
+// caller with 3 keys firing off ten publishProperty calls in parallel
+// gets exactly ONE success and nine failed-precondition errors — not
+// ten publications for the price of three.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.publishProperty = onCall(
+  { region: REGION, maxInstances: 20 },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesión para publicar un inmueble.');
+    }
+    const uid = request.auth.uid;
+    const raw = request.data;
+    if (!raw || typeof raw !== 'object') {
+      throw new HttpsError('invalid-argument', 'Cuerpo de la publicación requerido.');
+    }
+
+    // Validate + coerce
+    const strOrThrow = (v, name, max = 500) => {
+      if (v == null) throw new HttpsError('invalid-argument', `Falta ${name}.`);
+      const s = String(v).trim();
+      if (!s) throw new HttpsError('invalid-argument', `Falta ${name}.`);
+      if (s.length > max) throw new HttpsError('invalid-argument', `${name} muy largo (máx ${max}).`);
+      return s;
+    };
+    const address  = strOrThrow(raw.address, 'address');
+    const district = strOrThrow(raw.district, 'district');
+    const title    = strOrThrow(raw.title, 'title', 200);
+    const desc     = strOrThrow(raw.desc, 'desc', 5000);
+
+    if (!PUB_TYPES.includes(raw.type)) throw new HttpsError('invalid-argument', 'type inválido.');
+    if (!PUB_OPS.includes(raw.op)) throw new HttpsError('invalid-argument', 'op inválido.');
+    if (!PUB_CURRENCIES.includes(raw.currency)) throw new HttpsError('invalid-argument', 'currency inválido.');
+
+    const price = Number(raw.price);
+    if (!isFinite(price) || price <= 0) throw new HttpsError('invalid-argument', 'price inválido.');
+    const area = Number(raw.area);
+    if (!isFinite(area) || area <= 0) throw new HttpsError('invalid-argument', 'area inválida.');
+
+    const estado = PUB_ESTADOS.includes(raw.estado) ? raw.estado : 'Construido';
+    const source = PUB_SOURCES.includes(raw.source) ? raw.source : 'single';
+    const features = Array.isArray(raw.features)
+      ? raw.features.filter(f => typeof f === 'string' && f.length < 100).slice(0, 30)
+      : [];
+
+    const lat = (typeof raw.lat === 'number' && isFinite(raw.lat)) ? raw.lat : null;
+    const lng = (typeof raw.lng === 'number' && isFinite(raw.lng)) ? raw.lng : null;
+
+    const numOrZero = (v) => { const n = Number(v); return isFinite(n) && n >= 0 ? n : 0; };
+
+    const userRef = db.collection('users').doc(uid);
+    const pubRef = db.collection('publications').doc(); // pre-generate id
+
+    return db.runTransaction(async (tx) => {
+      const userSnap = await tx.get(userRef);
+      const userData = userSnap.exists ? userSnap.data() : {};
+      const currentKeys = Number(userData.keysLeft) || 0;
+      if (currentKeys < PUBLISH_COST) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Sin llaves suficientes. Necesitas ${PUBLISH_COST} llaves para publicar (tenés ${currentKeys}).`
+        );
+      }
+
+      const pubData = {
+        userId: uid,
+        userEmail: (request.auth.token && request.auth.token.email) || null,
+        userName: (userData && userData.displayName) || null,
+        status: 'pending',
+        source,
+        createdAt: FieldValue.serverTimestamp(),
+        listedAt: new Date().toISOString(),
+        address, district,
+        lat, lng,
+        type: raw.type,
+        op: raw.op,
+        currency: raw.currency,
+        price,
+        areaTerr: numOrZero(raw.areaTerr),
+        area,
+        beds: numOrZero(raw.beds),
+        baths: numOrZero(raw.baths),
+        parking: numOrZero(raw.parking),
+        floor: numOrZero(raw.floor),
+        floors: numOrZero(raw.floors),
+        age: numOrZero(raw.age),
+        estado,
+        ascensor: Boolean(raw.ascensor),
+        amoblado: Boolean(raw.amoblado),
+        petFriendly: Boolean(raw.petFriendly),
+        features,
+        title, desc,
+        photoUrls: [],
+      };
+
+      tx.set(pubRef, pubData);
+
+      const historyEntry = {
+        type: 'use',
+        qty: PUBLISH_COST,
+        propId: null,
+        propLabel: 'Publicación: ' + title,
+        date: new Date().toISOString(),
+      };
+      const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
+
+      tx.set(userRef, {
+        keysLeft: currentKeys - PUBLISH_COST,
+        keyHistory: nextHistory,
+      }, { merge: true });
+
+      return {
+        publicationId: pubRef.id,
+        keysLeft: currentKeys - PUBLISH_COST,
       };
     });
   }
