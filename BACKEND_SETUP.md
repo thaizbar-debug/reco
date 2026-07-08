@@ -124,19 +124,25 @@ Only for local dev. Never commit those lines.
 
 - `unlockProperty` — takes `{ propertyId }`, checks the caller has ≥ 1
   key, decrements atomically, appends to `keyHistory`, and returns the
-  premium fields for that property. Follow-up PRs will add
-  `publishProperty` and the data migration from `properties.json` to
-  `/propertiesPremium`.
+  premium fields for that property.
+- `publishProperty` — takes the property fields (address, district,
+  title, desc, price, area, …), checks the caller has ≥ 3 keys,
+  decrements atomically, and creates a `/publications/{id}` doc with
+  `status: 'pending'`. Returns `{ publicationId, keysLeft }`. Firestore
+  rules now deny direct client writes to `/publications` — this
+  callable is the sole creation path.
 
 ### 5.5 What is NOT yet in place
 
-- Client code still writes `/publications` directly. That path will be
-  closed in the `publishProperty` PR after the migration lands.
-- The public `data/properties.json` still ships the premium fields
-  (owner, phone, sun, val, pdf_*). Stripping them from the JSON and
-  pointing the frontend at `unlockProperty` happens together in the
-  follow-up PR so unlocked histórico details do not go blank between
-  the two.
+- `data/properties.json` still ships the `sun` object (histórico
+  transaction details). Moving that behind `unlockProperty` requires
+  refactoring the card / hover / area-modal price rendering to be
+  async, which is a separate PR. Owner/phone, historical val series
+  and partida PDFs are already premium (PR #59).
+- Payment gateway is not wired. `simulatePay()` is still a no-op that
+  shows "próximamente" (see PR #41). Buying keys will land with the
+  Izipay integration PR — a new callable `grantKeys` triggered by the
+  Izipay webhook.
 
 ## 6. Premium data migration (one-time)
 

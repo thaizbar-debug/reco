@@ -5854,9 +5854,11 @@ async function _ppub(){
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
   if(S.keysLeft<3){
-    // Open the buy-keys modal without closing the publish modal so the
-    // form data is preserved. simulatePay() reads pendingPublish and
-    // resumes _ppub() automatically after a successful purchase.
+    // Pre-flight check for a nicer UX; the server-side rule is what
+    // actually enforces this. Open the buy-keys modal without closing
+    // the publish modal so the form data survives the round trip.
+    // simulatePay() reads pendingPublish and resumes _ppub() after a
+    // successful purchase.
     S.pendingPublish = true;
     toast(`Necesitas ${3 - S.keysLeft} llave${3 - S.keysLeft !== 1 ? 's' : ''} más. Compra llaves para continuar.`);
     openModal();
@@ -5866,34 +5868,58 @@ async function _ppub(){
   if(btn) btn.disabled = true;
   toast('📤 Subiendo publicación…');
   try {
-    const pubData = {
-      userId: auth.currentUser.uid,
-      userEmail: auth.currentUser.email || null,
-      userName: auth.currentUser.displayName || null,
-      status: 'pending',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      listedAt: new Date().toISOString(),
+    const call = _getFunctions().httpsCallable('publishProperty');
+    const res = await call({
+      source: 'single',
       address: _pd.address, district: _pd.district, lat: _pd.lat, lng: _pd.lng,
       type: _pd.type, op: _pd.op, currency: _pd.currency,
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
       floor: _pd.floor, floors: _pd.floors, age: _pd.age,
-      estado: _pd.estado, ascensor: _pd.ascensor, amoblado: _pd.amoblado, petFriendly: _pd.petFriendly,
-      features: _pd.features || [], title: _pd.title, desc: _pd.desc,
-      photoUrls: []
-    };
-    const docRef = await db.collection('publications').add(pubData);
-    const photoUrls = await _uploadPublicationPhotos(docRef.id, _pd.photos || []);
-    if(photoUrls.length) await docRef.update({photoUrls});
-    S.keysLeft -= 3;
-    updateKeyCount();
-    addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
+      estado: _pd.estado,
+      ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
+      features: _pd.features || [],
+      title: _pd.title, desc: _pd.desc,
+    });
+    const publicationId = res && res.data && res.data.publicationId;
+    if(!publicationId) throw new Error('respuesta sin publicationId');
+    // Photos: uploaded to Storage under publications/{publicationId}/
+    // AFTER the doc exists, then the owner writes photoUrls back to
+    // the same doc via a normal Firestore update. Rules still allow
+    // owner updates on pending publications.
+    const photoUrls = await _uploadPublicationPhotos(publicationId, _pd.photos || []);
+    if(photoUrls.length){
+      await db.collection('publications').doc(publicationId).update({ photoUrls });
+    }
+    // Server told us the authoritative keysLeft after the debit; use
+    // it instead of the stale local counter.
+    if(res.data && typeof res.data.keysLeft === 'number'){
+      S.keysLeft = res.data.keysLeft;
+      updateKeyCount();
+    }
+    // Best-effort local history for the "Mis llaves" section — the
+    // authoritative entry was already appended by the callable.
+    if(typeof addKeyHistoryEntry === 'function'){
+      addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
+    }
     toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
     setTimeout(()=>closePublish(),1800);
   } catch(e){
     console.error('[reco] publish failed:', e);
-    toast('⚠️ Error al publicar: '+(e.message||'desconocido'));
+    const code = (e && e.code) || '';
+    if(code === 'functions/unauthenticated' || code === 'unauthenticated'){
+      toast('⚠️ Debes iniciar sesión para publicar');
+      openAuthModal('login');
+    } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
+      S.pendingPublish = true;
+      toast('⚠️ Sin llaves suficientes. Comprá más y reintenta.');
+      openModal();
+    } else if(code === 'functions/invalid-argument' || code === 'invalid-argument'){
+      toast('⚠️ Datos inválidos: '+(e.message||'revisa el formulario'));
+    } else {
+      toast('⚠️ Error al publicar: '+((e && e.message) || 'desconocido'));
+    }
     if(btn) btn.disabled = false;
   }
 }
@@ -5993,15 +6019,12 @@ function _pubBulkValidateRow(r){
   return { valid: errs.length===0, errors: errs };
 }
 
+// Shape sent to the publishProperty callable. userId / userEmail /
+// userName / status / createdAt / listedAt / photoUrls are all filled
+// in server-side; the client should not send them.
 function _pubBulkRowToPubData(r){
   return {
-    userId: auth.currentUser.uid,
-    userEmail: auth.currentUser.email || null,
-    userName: auth.currentUser.displayName || null,
-    status: 'pending',
     source: 'bulk',
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    listedAt: new Date().toISOString(),
     address: String(r.direccion).trim(),
     district: String(r.distrito).trim(),
     lat: null, lng: null,
@@ -6022,7 +6045,6 @@ function _pubBulkRowToPubData(r){
     features: [],
     title: String(r.titulo).trim(),
     desc: String(r.descripcion).trim(),
-    photoUrls: []
   };
 }
 
@@ -6070,26 +6092,43 @@ async function _pubBulkSubmit(){
   const btn=document.getElementById('pubBulkSubmitBtn'); if(btn) btn.disabled=true;
   const prog=document.getElementById('pubBulkProgress'); if(prog){ prog.style.display='block'; }
   const closeBtn=document.querySelector('.pub-modal-close'); if(closeBtn){ closeBtn.dataset._prevOnclick=closeBtn.getAttribute('onclick'); closeBtn.setAttribute('onclick','toast("Espera a que termine la carga…")'); }
-  let ok=0, failed=[];
+  const call = _getFunctions().httpsCallable('publishProperty');
+  let ok=0, failed=[], aborted=false;
   for(let i=0;i<valid.length;i++){
+    if(aborted) break;
     const r = valid[i].row;
     if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
     try {
-      await db.collection('publications').add(_pubBulkRowToPubData(r));
+      const res = await call(_pubBulkRowToPubData(r));
       ok++;
-      S.keysLeft -= _PUB_BULK_COST_PER;
-      updateKeyCount();
+      if(res && res.data && typeof res.data.keysLeft === 'number'){
+        S.keysLeft = res.data.keysLeft;
+        updateKeyCount();
+      }
     } catch(e){
       console.error('[reco] bulk publish row failed:', i, e);
-      failed.push({ idx: i+1, address: r.direccion, error: e.message||'error' });
+      const code = (e && e.code) || '';
+      failed.push({ idx: i+1, address: r.direccion, error: (e && e.message) || 'error' });
+      // Out of keys mid-batch: further rows will fail the same way, so
+      // stop early. The rows we already committed have their charges
+      // reflected in S.keysLeft from the last successful response.
+      if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
+        aborted = true;
+      }
     }
   }
-  if(ok>0) addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);
+  if(ok>0 && typeof addKeyHistoryEntry === 'function'){
+    // Best-effort local history entry — the server appended a per-
+    // publication entry inside each callable call.
+    addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);
+  }
   if(prog){
+    const skipped = aborted ? (valid.length - ok - failed.length + 1) : 0;
     if(!failed.length){
       prog.innerHTML=`<span style="color:var(--green)">✅ ${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}. Las revisaremos en 24h.</span>`;
     } else {
-      prog.innerHTML=`<div><span style="color:${ok?'var(--green)':'var(--red)'}">${ok} exitosas</span> · <span style="color:var(--red)">${failed.length} fallidas</span></div>
+      const abortedNote = aborted ? `<div style="margin-top:4px;font-size:11px;color:var(--muted)">Se detuvo el lote cuando se acabaron las llaves${skipped>0?`; ${skipped} filas quedaron sin procesar`:''}.</div>` : '';
+      prog.innerHTML=`<div><span style="color:${ok?'var(--green)':'var(--red)'}">${ok} exitosas</span> · <span style="color:var(--red)">${failed.length} fallidas</span></div>${abortedNote}
         <details style="margin-top:6px;font-size:11px"><summary style="cursor:pointer">Ver errores</summary><ul style="margin:6px 0 0 18px;padding:0">${failed.slice(0,20).map(f=>`<li>Fila ${esc(f.idx)} (${esc((f.address||'').slice(0,30))}): ${esc(f.error)}</li>`).join('')}</ul></details>`;
     }
   }
