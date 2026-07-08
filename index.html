@@ -12,6 +12,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 // HERE API key. Owned by the thaizbar@gmail.com account on
@@ -2732,7 +2733,10 @@ function driveAssets(p){
 }
 
 
-const DATA_URL = 'https://raw.githubusercontent.com/thaizbar-debug/reco/main/data/properties.json';
+// Same-origin path — GitHub Pages serves this file alongside index.html
+// on every push to main, so it always matches the deployed HTML. Also
+// dodges the raw.githubusercontent.com rate limit (60 req/h per IP).
+const DATA_URL = 'data/properties.json';
 function _updateLandingCounts(){
   const hasPhoto=p=>driveAssets(p).photos.length>0;
   const LUJO='Propiedad de Lujo o Exclusiva';
@@ -2851,6 +2855,74 @@ const S = {
   poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
 };
+
+// ── Premium cache ──────────────────────────────────────────────────
+// Fields like owner/phone/val/pdf_* used to ship in the public JSON.
+// They now live behind the unlockProperty Cloud Function; this map is
+// the client-side cache of what the callable returned for each id.
+// Populated lazily on first render of an unlocked histórico detail —
+// unlockProperty is idempotent, so re-fetching a doc that is already
+// in the user's unlockedIds does not charge another key.
+const _premiumCache = new Map(); // propertyId -> { owner, phone, sun, val, pdfs, ... }
+const _premiumPending = new Set(); // propertyId currently being fetched (dedupe)
+
+function _getFunctions(){
+  return firebase.app().functions('southamerica-east1');
+}
+
+// Fetch premium data for an id. Uses the cache; deduplicates concurrent
+// calls; caches the result on success. Errors bubble up so callers can
+// distinguish auth / no-keys / other and drive the UI accordingly.
+// Convert the `pdfs` object returned by unlockProperty ({pdf_main, pdf_dep_1, ...})
+// into the `partidas` array shape that buildSunarpPanel already consumes:
+// [{ url, label }, ...]. Matches the ordering that driveAssets() used to
+// produce for históricos before the strip removed pdf_* keys from the
+// public drive dict.
+function _premiumPdfsToPartidas(pdfs){
+  if(!pdfs || typeof pdfs !== 'object') return [];
+  const out = [];
+  if(pdfs.pdf_main) out.push({ url: drivePdf(pdfs.pdf_main), label: 'Partida' });
+  Object.keys(pdfs).filter(k=>k.startsWith('pdf_dep_')).sort().forEach(k=>{
+    out.push({ url: drivePdf(pdfs[k]), label: 'Partida depósito' });
+  });
+  Object.keys(pdfs).filter(k=>k.startsWith('pdf_est_')).sort().forEach(k=>{
+    out.push({ url: drivePdf(pdfs[k]), label: 'Partida estacionamiento' });
+  });
+  Object.keys(pdfs).filter(k=>k.startsWith('pdf_serv_')).sort().forEach(k=>{
+    out.push({ url: drivePdf(pdfs[k]), label: 'Partida servicio' });
+  });
+  return out;
+}
+
+async function fetchPremium(propertyId){
+  if(_premiumCache.has(propertyId)) return _premiumCache.get(propertyId);
+  if(_premiumPending.has(propertyId)){
+    // Poll while another caller finishes the fetch.
+    while(_premiumPending.has(propertyId) && !_premiumCache.has(propertyId)){
+      await new Promise(r => setTimeout(r, 80));
+    }
+    return _premiumCache.get(propertyId);
+  }
+  _premiumPending.add(propertyId);
+  try {
+    const call = _getFunctions().httpsCallable('unlockProperty');
+    const res = await call({ propertyId });
+    const data = res && res.data;
+    if(data && data.premium){
+      _premiumCache.set(propertyId, data.premium);
+      // Server tells us the fresh keysLeft after the (possibly no-op)
+      // spend. Keep the local counter in sync so the UI reflects reality
+      // — the header pill would otherwise stay stale.
+      if(typeof data.keysLeft === 'number'){
+        S.keysLeft = data.keysLeft;
+        if(typeof updateKeyCount === 'function') updateKeyCount();
+      }
+    }
+    return _premiumCache.get(propertyId);
+  } finally {
+    _premiumPending.delete(propertyId);
+  }
+}
 
 // ─────────────────────── FILTERS ───────────────────────
 function getFiltered(){
@@ -4538,11 +4610,15 @@ function resetAll(){
 }
 
 // ─────────────────────── DETAIL PANEL ───────────────────────
-function buildValChart(p){
-  if(p.op!=='Histórico'||!p.val||!p.val.length||Math.max(...p.val)<=0) return '';
+function buildValChart(p, valOverride){
+  // val used to live on p; after the strip it comes from premium (via
+  // unlockProperty). Callers that have the premium data pass it in
+  // through valOverride; the fallback to p.val handles legacy callers.
+  const val = Array.isArray(valOverride) ? valOverride : p.val;
+  if(p.op!=='Histórico'||!val||!val.length||Math.max(...val)<=0) return '';
   const years=['2021','2022','2023','2024','2025'];
-  const max=Math.max(...p.val);
-  const bars=p.val.map((v,i)=>{
+  const max=Math.max(...val);
+  const bars=val.map((v,i)=>{
     const h=Math.round((v/max)*52)+8;
     const label=v>=1000?(v/1000).toFixed(0)+'K':v;
     return `<div class="val-bar-wrap">
@@ -4713,6 +4789,19 @@ function openDetail(id){
     return;
   }
 
+  // Histórico already unlocked but premium not yet in the local cache —
+  // typical on a fresh page load when unlockedIds was hydrated from
+  // Firestore but no callable calls have happened yet. Kick off the
+  // fetch and re-render this same detail once it lands. unlockProperty
+  // is idempotent, so this second call does not charge another key.
+  if(p.op==='Histórico' && !_premiumCache.has(id)){
+    fetchPremium(id).then(()=>{
+      if(S.selectedId === id) openDetail(id);
+    }).catch(err => {
+      console.warn('[reco] premium fetch failed:', err && err.code, err && err.message);
+    });
+  }
+
   const sqm=sqmPriceNet(p);
   const assets=driveAssets(p);
   const photos=assets.photos;
@@ -4770,10 +4859,10 @@ function openDetail(id){
         ${_pickTopFeatures(p).map(f=>`<span class="feat-tag">${esc(f)}</span>`).join('')}
       </div>
 
-      ${buildValChart(p)}
+      ${buildValChart(p, (_premiumCache.get(p.id)||{}).val)}
       ${buildTasChart(p.district, false)}
 
-      ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, assets.partidas):''}
+      ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, _premiumPdfsToPartidas((_premiumCache.get(p.id)||{}).pdfs)):''}
 
       <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${esc(p.id)}')">Ver Más Detalles</button>
 
@@ -4869,16 +4958,54 @@ function updateKeyCount(){
   if(typeof _syncToFirestore === 'function') _syncToFirestore({keysLeft: S.keysLeft});
 }
 
-function unlockAndOpen(id){
+// Server-side unlock. Calls the unlockProperty callable, which does
+// the check-and-decrement atomically inside a Firestore transaction
+// and returns the premium fields for the property (owner, phone,
+// sun, val, pdfs).
+//
+// Historical behaviour was pure client trust: adding to a local Set
+// and decrementing a local counter. Anyone could bypass that from
+// DevTools by writing to S.unlockedIds directly. Rules would still
+// have accepted the write because keysLeft was writable, and even
+// after PR #41 made keysLeft read-only, the premium fields shipped
+// in the public JSON so an attacker could just read them anyway.
+async function unlockAndOpen(id){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login');return;}
-  S.unlockedIds.add(id);
-  S.keysLeft--;
-  document.getElementById('keyCount').textContent=S.keysLeft;var _hkc=document.getElementById('homeKeyCount');if(_hkc)_hkc.textContent=S.keysLeft;
-  var p=properties.find(function(x){return x.id===id;});
-  addKeyHistoryEntry('use', 1, id, p ? p.address+', '+p.district : id);
-  toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
-  openDetail(id);
-  applyFilters();
+  const btn = document.querySelector('.gate-btn-primary.unlock');
+  const originalLabel = btn ? btn.textContent : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Desbloqueando…'; }
+  try {
+    const premium = await fetchPremium(id);
+    if(!premium){ toast('⚠️ No pudimos desbloquear este informe. Reintenta más tarde.'); return; }
+    S.unlockedIds.add(id);
+    const p = properties.find(x=>x.id===id);
+    // Best-effort local history entry so the user sees the spend in
+    // "Mis llaves" without a round trip. The authoritative history
+    // lives on the server-side user doc that the callable wrote to.
+    if(typeof addKeyHistoryEntry === 'function'){
+      addKeyHistoryEntry('use', 1, id, p ? (p.address+', '+p.district) : id);
+    }
+    toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
+    openDetail(id);
+    applyFilters();
+  } catch (e) {
+    console.warn('[reco] unlockProperty failed:', e && e.code, e && e.message);
+    const code = (e && e.code) || '';
+    if(code === 'functions/unauthenticated' || code === 'unauthenticated'){
+      toast('⚠️ Debes iniciar sesión para desbloquear informes');
+      openAuthModal('login');
+    } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
+      toast('⚠️ Sin llaves suficientes. Comprá más llaves para desbloquear.');
+      S.pendingUnlockId = id;
+      openModal();
+    } else if(code === 'functions/not-found' || code === 'not-found'){
+      toast('⚠️ No encontramos esta propiedad en nuestros datos premium.');
+    } else {
+      toast('⚠️ Error al desbloquear: ' + ((e && e.message) || 'desconocido'));
+    }
+  } finally {
+    if(btn && originalLabel){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
 }
 
 function pinClick(id){
