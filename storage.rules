@@ -5,21 +5,45 @@ service firebase.storage {
     // /publications/{pubId}/{filename}
     //
     // Photos uploaded for user-submitted property listings.
+    //
     // - read: public. Approved listings are shown in the search to all
     //         visitors; pending ones are only linked from the owner's
     //         "Mis publicaciones" view but URLs are unguessable, so a
     //         public read is acceptable for an MVP.
-    // - write: any authenticated user. We rely on Firestore rules to
-    //         enforce that the matching publication doc has the right
-    //         userId. Tighter binding (e.g. checking the doc from
-    //         Storage rules) requires custom claims or a Cloud Function
-    //         and can be added in Phase 3.
+    //
+    // - write: authenticated + the publication doc has to exist AND be
+    //         owned by the caller. This closes two attack windows:
+    //         (a) an attacker uploading photos to a `pubId` they do not
+    //         own before the legit owner writes to that path, and
+    //         (b) uploads to random guessed pubIds. Cost is one
+    //         Firestore read per photo upload (~US$0.06 / 100k reads,
+    //         negligible for MVP scale).
+    //
+    //         Content type is whitelisted to raster formats — image/*
+    //         used to be the pattern but that also matches
+    //         image/svg+xml, which can carry <script> tags that run in
+    //         the context of a viewer's browser. Approving an SVG in
+    //         the moderation panel would have executed script in
+    //         admin session.
+    //
+    // - delete: owner or admin. Admin cleanup lives in the callable
+    //         side, so a direct client delete requires ownership.
     match /publications/{pubId}/{filename} {
       allow read: if true;
       allow write: if request.auth != null
                    && request.resource.size < 10 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null;
+                   && request.resource.contentType in [
+                        'image/jpeg',
+                        'image/png',
+                        'image/webp'
+                      ]
+                   && firestore.get(
+                        /databases/(default)/documents/publications/$(pubId)
+                      ).data.userId == request.auth.uid;
+      allow delete: if request.auth != null
+                    && firestore.get(
+                         /databases/(default)/documents/publications/$(pubId)
+                       ).data.userId == request.auth.uid;
     }
 
     // Default deny
