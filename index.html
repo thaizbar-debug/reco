@@ -3043,6 +3043,13 @@ function _stripAddress(desc, address){
   return desc;
 }
 function sqmPrice(p){ return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0; }
+// Sync display helpers. After the sun migration, all fields these
+// helpers used to derive from p.sun (priceTotal, priceProp, areaTech,
+// areaOcup, park, dep) are precomputed by scripts/strip-premium.js
+// and baked into the public JSON. The raw sun object only lives in
+// /propertiesPremium and comes through the unlockProperty callable —
+// see buildSunarpPanel + the openFullReport sunHTML for the async
+// render path.
 function sqmPriceNet(p){
   if(p.op==='Venta') return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
   return 0;
@@ -3050,17 +3057,16 @@ function sqmPriceNet(p){
 function histSqmNet(p){
   const price=getHistPropPrice(p);
   if(!(price>0)) return 0;
-  const areaOcup=p.sun?.areaOcup||0;
-  const areaTech=p.sun?.areaTech||0;
+  const areaOcup=Number(p.areaOcup)||0;
+  const areaTech=Number(p.areaTech)||0;
   if(areaOcup>0) return Math.round(price/1.1/areaOcup);
   if(areaTech>0) return Math.round(price/areaTech);
   return 0;
 }
-function histTotal(p){ const extras=(p.sun?.estacVals||[]).concat(p.sun?.depVals||[]).reduce((s,v)=>s+v,0); return p.price+extras; }
-function getHistTotal(p){ return (p.sun?.precioPropiedad>0)?p.price:histTotal(p); }
-function getHistPropPrice(p){ return (p.sun?.precioPropiedad>0)?p.sun.precioPropiedad:p.price; }
-function parkCount(p){ return p.park>0 ? p.park : (p.op==='Histórico'?(p.sun?.estacVals||[]).filter(v=>v>0).length:0); }
-function depCount(p){ return (p.sun?.depositos||0)>0 ? p.sun.depositos : (p.op==='Histórico'?(p.sun?.depVals||[]).filter(v=>v>0).length:0); }
+function getHistTotal(p){ return Number(p.priceTotal)||Number(p.price)||0; }
+function getHistPropPrice(p){ return Number(p.priceProp)||Number(p.price)||0; }
+function parkCount(p){ return Number(p.park)||0; }
+function depCount(p){ return Number(p.dep)||0; }
 
 function openHistModal(){
   document.getElementById('histModalOv').classList.add('open');
@@ -3088,7 +3094,7 @@ let _histTableList=[];
 function _buildHistTableHtml(list){
   const rows=list.map(p=>{
     const sqm=histSqmNet(p);
-    const area=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;
+    const area=(p.areaTech>0)?p.areaTech:p.area;
     return `<tr onclick="closeAreaModal();openDetail('${esc(p.id)}')">
       <td><div class="sum-addr">${esc(_shortAddr(p.address))}</div><div class="sum-dist">📍 ${esc(p.district)}</div></td>
       <td style="white-space:nowrap">${esc(p.type)}</td>
@@ -3096,8 +3102,8 @@ function _buildHistTableHtml(list){
       <td>${sqm>0?`<span class="sum-price">${esc(p.cur)} ${sqm.toLocaleString()}/m²</span>`:'<span class="sum-muted">—</span>'}</td>
     </tr>`;
   }).join('');
-  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
-  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
+  const validRows=list.filter(p=>{const a=(p.areaTech>0)?p.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
+  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.areaTech>0)?p.areaTech:p.area),0)/validRows.length):0;
   const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
   const avgCur=validRows.length?validRows[0].cur:'$';
   const tfoot=validRows.length?`<tfoot><tr style="background:#f0f7ff;font-weight:700;border-top:2px solid var(--blue)">
@@ -3123,8 +3129,8 @@ function closeAreaModal(){
 
 function renderHistTable(list){
   _histTableList=list;
-  const validRows=list.filter(p=>{const a=(p.sun?.areaTech>0)?p.sun.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
-  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.sun?.areaTech>0)?p.sun.areaTech:p.area),0)/validRows.length):0;
+  const validRows=list.filter(p=>{const a=(p.areaTech>0)?p.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
+  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.areaTech>0)?p.areaTech:p.area),0)/validRows.length):0;
   const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
   const avgCur=validRows.length?validRows[0].cur:'$';
 
@@ -4004,12 +4010,14 @@ function _parseFechaVenta(s){
   if(!mes) return null;
   return parseInt(m[2],10)*12+mes;
 }
-// Clave de transacción (Histórico) — preferencia: sun.fechaVenta (mes+año) → transactedAt → sufijo "-NN" del id
+// Clave de transacción (Histórico) — preferencia: p.txKey (precomputed
+// month index) → transactedAt → sufijo "-NN" del id. Before the sun
+// migration the primary source was sun.fechaVenta parsed on the fly;
+// scripts/strip-premium.js now bakes txKey in so we get the same
+// ordering without shipping the raw date.
 function _txKey(p){
   if(!p) return null;
-  const fv=p.sun&&p.sun.fechaVenta;
-  const k=_parseFechaVenta(fv);
-  if(k!=null) return k;
+  if(typeof p.txKey === 'number') return p.txKey;
   if(p.transactedAt){const d=new Date(p.transactedAt);if(!isNaN(d))return d.getFullYear()*12+(d.getMonth()+1);}
   const m=String(p.id||'').match(/-(\d{2})$/);
   if(!m) return null;
@@ -4710,8 +4718,13 @@ function renderZonifCard(p){
 function sunField(ico,label,val){
   return `<div class="sun-field"><div class="sun-field-label">${label}</div><div class="sun-field-val"><span class="ico">${ico}</span>${val}</div></div>`;
 }
-function buildSunarpPanel(p, partidas){
-  const s=p.sun;
+function buildSunarpPanel(p, partidas, sunOverride){
+  // sun used to live on p; after the sun migration it comes from
+  // premium (via unlockProperty). Callers with the premium data pass
+  // it through sunOverride; the fallback to p.sun keeps legacy
+  // callers working during transition. If sun is missing entirely we
+  // render a minimal panel using the public partida code from p.id.
+  const s = sunOverride || p.sun || {};
   partidas = partidas||[];
   const cur=p.cur;
   const fmt=v=>v>0?cur+' '+Number(v).toLocaleString():(cur+' 0');
@@ -4723,9 +4736,14 @@ function buildSunarpPanel(p, partidas){
     ? partidas.map(({url,label})=>`<a href="${url}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);margin-bottom:6px;text-decoration:none"><span>📄</span> ${label} (PDF)</a>`).join('')
     : `<a href="${rrppSearchUrl}" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;background:var(--light);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:.78rem;color:var(--blue);text-decoration:none"><span>🔍</span> Partida ${rrppCode}</a>`;
 
-  // Filtrar estacionamientos/depósitos con valor > 0
-  const estacItems=s.estacVals.map((v,i)=>v>0?sunField('🚗',`Estacionamiento ${i+1}`,fmt(v)):'').join('');
-  const depItems=s.depVals.map((v,i)=>v>0?sunField('📦',`Depósito ${i+1}`,fmt(v)):'').join('');
+  // Filtrar estacionamientos/depósitos con valor > 0. When we lack sun
+  // (e.g. the premium fetch has not resolved yet on first render) we
+  // simply show no per-slot breakdown; the totals row below still
+  // renders from the precomputed public priceTotal / priceProp.
+  const estacVals = Array.isArray(s.estacVals) ? s.estacVals : [];
+  const depVals   = Array.isArray(s.depVals)   ? s.depVals   : [];
+  const estacItems=estacVals.map((v,i)=>v>0?sunField('🚗',`Estacionamiento ${i+1}`,fmt(v)):'').join('');
+  const depItems=depVals.map((v,i)=>v>0?sunField('📦',`Depósito ${i+1}`,fmt(v)):'').join('');
 
   return `
   <div class="section-title" style="margin-top:16px">Datos SUNARP</div>
@@ -4850,7 +4868,7 @@ function openDetail(id){
         <div class="spec-box"><div class="sv">${p.beds>0?esc(p.beds):'—'}</div><div class="sk">Dormitorios</div></div>
         <div class="spec-box"><div class="sv">${p.baths>0?esc(p.baths):'—'}</div><div class="sk">Baños</div></div>
         <div class="spec-box"><div class="sv">${parkCount(p)>0?esc(parkCount(p)):'—'}</div><div class="sk">Estacionamientos</div></div>
-        <div class="spec-box"><div class="sv">${(p.sun?.depositos||0)>0?esc(p.sun.depositos):'—'}</div><div class="sk">Depósitos</div></div>
+        <div class="spec-box"><div class="sv">${depCount(p)>0?esc(depCount(p)):'—'}</div><div class="sk">Depósitos</div></div>
         <div class="spec-box"><div class="sv">${esc(p.age)}</div><div class="sk">Años</div></div>
       </div>
 
@@ -4862,7 +4880,7 @@ function openDetail(id){
       ${buildValChart(p, (_premiumCache.get(p.id)||{}).val)}
       ${buildTasChart(p.district, false)}
 
-      ${p.op==='Histórico'&&p.sun?buildSunarpPanel(p, _premiumPdfsToPartidas((_premiumCache.get(p.id)||{}).pdfs)):''}
+      ${p.op==='Histórico'?buildSunarpPanel(p, _premiumPdfsToPartidas((_premiumCache.get(p.id)||{}).pdfs), (_premiumCache.get(p.id)||{}).sun):''}
 
       <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${esc(p.id)}')">Ver Más Detalles</button>
 
@@ -5049,7 +5067,12 @@ function openFullReport(id){
 
   const assets = driveAssets(p);
   const photos  = assets.photos;
-  const partidas = p.sun ? (assets.partidas.length ? assets.partidas : []) : [];
+  // Partidas moved to premium in PR #59; assets.partidas is now always
+  // empty because scripts/strip-premium.js removed pdf_* from the
+  // public drive map. Read them from the premium cache instead —
+  // openDetail already kicked off the fetch before this view opens.
+  const premium = _premiumCache.get(p.id) || {};
+  const partidas = _premiumPdfsToPartidas(premium.pdfs);
 
   const cur = p.cur;
   const fmtN = v => fmtNum(v);
@@ -5133,12 +5156,19 @@ function openFullReport(id){
     </div>` : '';
 
   // ── Ficha SUNARP (solo Histórico) ────────────────────────────
-  const sunHTML = isHist && p.sun ? (() => {
-    const s = p.sun;
+  const sunHTML = isHist ? (() => {
+    // Sun object comes from the premium cache after unlockProperty.
+    // Missing / not-yet-loaded → render with `s = {}` so we still
+    // show the frame + the derived public totals; the per-slot
+    // parking / deposit breakdown fields simply stay hidden until
+    // the callable response lands.
+    const s = premium.sun || {};
     const fmt = v => v>0 ? `${cur} ${fmtN(v)}` : '—';
     const fmtUsd = v => v>0 ? `$ ${fmtN(v)}` : '—';
-    const estItems = s.estacVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>🚗 Estacionamiento ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
-    const depItems = s.depVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>📦 Depósito ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
+    const estacVals = Array.isArray(s.estacVals) ? s.estacVals : [];
+    const depVals   = Array.isArray(s.depVals)   ? s.depVals   : [];
+    const estItems = estacVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>🚗 Estacionamiento ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
+    const depItems = depVals.map((v,i)=>v>0?`<div class="fr-sun-row"><span>📦 Depósito ${i+1}</span><strong>${fmt(v)}</strong></div>`:'').join('');
     const frRrppCode = s.rrpp || p.id;
     const frRrppSearch = `https://www.google.com/search?q=${encodeURIComponent(frRrppCode+' SUNARP partida registral')}`;
     const pdfBtns = partidas.length
