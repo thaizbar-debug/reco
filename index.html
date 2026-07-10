@@ -1505,6 +1505,20 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 </style>
 </head>
 <body>
+<!-- Email verification banner. Sits at the very top so it can't be
+     scrolled past. Hidden by default; auth.onAuthStateChanged toggles
+     it based on user.emailVerified. -->
+<div id="verifyBanner" style="display:none;background:#fff4e5;border-bottom:1px solid #f5b342;color:#8a5a00;padding:10px 16px;font-size:.86rem;line-height:1.4;position:sticky;top:0;z-index:1200">
+  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:1rem">⚠️</span>
+    <span style="flex:1;min-width:200px">
+      Verificá tu email <strong id="verifyBannerEmail"></strong> para publicar y desbloquear informes.
+      Revisá tu bandeja (y spam) por el link que te enviamos.
+    </span>
+    <button id="verifyResendBtn" onclick="resendVerificationEmail()" style="background:#8a5a00;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Reenviar link</button>
+    <button onclick="refreshVerificationStatus()" style="background:transparent;color:#8a5a00;border:1px solid #f5b342;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Ya lo verifiqué</button>
+  </div>
+</div>
 <script>
 if(location.hash==='#publish'){
   var _pubCover=document.createElement('div');
@@ -4989,6 +5003,7 @@ function updateKeyCount(){
 // in the public JSON so an attacker could just read them anyway.
 async function unlockAndOpen(id){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login');return;}
+  if(!_ensureEmailVerified()) return;
   const btn = document.querySelector('.gate-btn-primary.unlock');
   const originalLabel = btn ? btn.textContent : null;
   if(btn){ btn.disabled = true; btn.textContent = 'Desbloqueando…'; }
@@ -5881,6 +5896,7 @@ async function _uploadPublicationPhotos(pubId, photos){
 
 async function _ppub(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
+  if(!_ensureEmailVerified()) return;
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
   if(S.keysLeft<3){
@@ -6115,6 +6131,7 @@ function _pubShowBulkPreview(rows){
 
 async function _pubBulkSubmit(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar inmuebles');openAuthModal('login');return;}
+  if(!_ensureEmailVerified()) return;
   const valid = _pubBulkRows.filter(a=>a.valid);
   if(!valid.length){toast('⚠️ No hay filas válidas para publicar');return;}
   const cost = valid.length * _PUB_BULK_COST_PER;
@@ -7718,8 +7735,20 @@ function registerWithEmail() {
   if (pass !== pass2) return showAuthError('Las contraseñas no coinciden.');
   if (pass.length < 8) return showAuthError('La contraseña debe tener al menos 8 caracteres.');
   setAuthLoading('registerBtn', true);
+  let createdUser = null;
   auth.createUserWithEmailAndPassword(email, pass)
-    .then(cred => cred.user.updateProfile({ displayName: name }))
+    .then(cred => { createdUser = cred.user; return cred.user.updateProfile({ displayName: name }); })
+    .then(() => {
+      // Fire the verification email best-effort. If Firebase's SMTP
+      // hits a snag we still close the auth modal — the "Verificá tu
+      // email" banner offers a resend button, so a transient send
+      // failure does not leave the user stranded.
+      if (createdUser && typeof createdUser.sendEmailVerification === 'function') {
+        return createdUser.sendEmailVerification().catch(err => {
+          console.warn('[reco] sendEmailVerification failed:', err && err.message);
+        });
+      }
+    })
     .then(() => closeAuthModal())
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('registerBtn', false));
@@ -8031,7 +8060,90 @@ async function submitContactRequest() {
     btn.textContent = originalLabel;
   }
 }
+// Client-side pre-flight before any callable / paid action. Returns
+// true when the caller can proceed. When they cannot, drops a toast
+// and scrolls to the top so the banner (which is already visible via
+// _renderVerifyBanner on auth state change) is on screen. The
+// callables also enforce this server-side so a determined caller
+// cannot skip the pre-flight — this is just for UX.
+function _ensureEmailVerified() {
+  const u = auth.currentUser;
+  if (!u) return false;
+  if (u.emailVerified) return true;
+  toast('⚠️ Verificá tu email antes de continuar. Te enviamos un link a ' + (u.email || 'tu bandeja') + '.');
+  _renderVerifyBanner(u);
+  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch(e) { window.scrollTo(0, 0); }
+  return false;
+}
+
+// Show / hide the top verification banner whenever auth state changes.
+// Google sign-in returns emailVerified: true from the first login, so
+// those users never see the banner.
+function _renderVerifyBanner(user) {
+  const banner = document.getElementById('verifyBanner');
+  if (!banner) return;
+  const show = !!(user && user.email && user.emailVerified === false);
+  banner.style.display = show ? 'block' : 'none';
+  if (show) {
+    const emailEl = document.getElementById('verifyBannerEmail');
+    if (emailEl) emailEl.textContent = user.email ? `(${user.email})` : '';
+  }
+}
+
+// Resend the verification email. Firebase rate-limits this server-side
+// so we don't add a hand-rolled cooldown — the "requests-blocked"
+// error simply surfaces as a toast.
+let _verifyResendPending = false;
+async function resendVerificationEmail() {
+  if (_verifyResendPending) return;
+  const btn = document.getElementById('verifyResendBtn');
+  const user = auth.currentUser;
+  if (!user) { toast('Iniciá sesión primero.'); return; }
+  if (user.emailVerified) { toast('Tu email ya está verificado.'); _renderVerifyBanner(user); return; }
+  _verifyResendPending = true;
+  const originalLabel = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+  try {
+    await user.sendEmailVerification();
+    toast('✉️ Te reenviamos el link. Revisá tu bandeja de entrada y spam.');
+  } catch (e) {
+    console.warn('[reco] resend verification failed:', e && e.code, e && e.message);
+    if (e && e.code === 'auth/too-many-requests') {
+      toast('Demasiados intentos. Esperá unos minutos e intentá de nuevo.');
+    } else {
+      toast('No pudimos enviar el link: ' + ((e && e.message) || 'error desconocido'));
+    }
+  } finally {
+    _verifyResendPending = false;
+    if (btn && originalLabel) { btn.disabled = false; btn.textContent = originalLabel; }
+  }
+}
+
+// After the user clicks the link in the email, they come back and press
+// "Ya lo verifiqué". Firebase does not push the new emailVerified flag
+// automatically — we force a reload of the user record and, if the
+// server now reports verified, refresh the ID token so callables see
+// email_verified: true immediately.
+async function refreshVerificationStatus() {
+  const user = auth.currentUser;
+  if (!user) { toast('Iniciá sesión primero.'); return; }
+  try {
+    await user.reload();
+    if (user.emailVerified) {
+      await user.getIdToken(true);
+      toast('✅ ¡Email verificado! Ya podés publicar y desbloquear.');
+    } else {
+      toast('Todavía no vemos la verificación. Chequeá el link del email.');
+    }
+    _renderVerifyBanner(auth.currentUser);
+  } catch (e) {
+    console.warn('[reco] refresh verification failed:', e);
+    toast('No pudimos chequear el estado. Reintentá en un momento.');
+  }
+}
+
 auth.onAuthStateChanged(function(user) {
+  _renderVerifyBanner(user);
   const homeIngresarBtn = document.getElementById('homeIngresarBtn');
   const homeUserWrap    = document.getElementById('homeUserWrap');
   if (homeIngresarBtn && homeUserWrap) {

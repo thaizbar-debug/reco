@@ -23,6 +23,22 @@ themselves live in your Google Cloud / Firebase / Resend accounts.
 - For Google sign-in to work outside production, run the site from
   `localhost` (e.g. `python3 -m http.server 8080`); `file://` is not an
   authorized origin.
+- **Email verification is enforced by the callables.** After PR #63 the
+  `unlockProperty` and `publishProperty` Cloud Functions reject any
+  caller whose `token.email_verified` is `false` with
+  `failed-precondition`. Google sign-ins pass automatically because
+  Firebase marks Google-provider emails as verified on first login;
+  password sign-ups have to click the link Firebase sends before they
+  can spend keys.
+- The verification email is sent by Firebase Auth directly (SMTP
+  configured in Firebase Console → Authentication → Templates). If you
+  want to customise the sender / template, edit it there rather than in
+  the codebase.
+- If a user reports they never got the email, the app has a "Reenviar
+  link" button on the top-of-page banner (`resendVerificationEmail`),
+  and a "Ya lo verifiqué" button (`refreshVerificationStatus`) that
+  forces a token refresh so the new `email_verified: true` reaches the
+  callables without a full re-login.
 
 ## 4. Email notifications (Phase 5)
 
