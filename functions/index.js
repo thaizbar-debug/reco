@@ -25,6 +25,29 @@ const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
 
+// Any callable that changes state or reads premium data must go through
+// this. Two properties matter:
+//   1. The caller has to be authenticated.
+//   2. Their email has to be verified — otherwise anyone can register
+//      with a throwaway address and start burning keys / creating
+//      publications tied to an inbox they don't actually own. Google
+//      sign-in already returns email_verified: true, so those callers
+//      pass this check on the first login.
+// The failed-precondition code is reused by the client to trigger the
+// "verificá tu email" banner instead of a generic error toast.
+function requireVerifiedAuth(request) {
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+  }
+  const token = request.auth.token || {};
+  if (token.email_verified !== true) {
+    throw new HttpsError(
+      'failed-precondition',
+      'Verificá tu email antes de continuar. Revisá tu bandeja de entrada (y spam) por el link que te enviamos.'
+    );
+  }
+}
+
 const PUB_TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
 const PUB_OPS = ['Venta', 'Alquiler'];
 const PUB_CURRENCIES = ['USD', 'PEN'];
@@ -52,9 +75,7 @@ const PUB_SOURCES = ['single', 'bulk'];
 exports.unlockProperty = onCall(
   { region: REGION, maxInstances: 10 },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Debes iniciar sesión para desbloquear una propiedad.');
-    }
+    requireVerifiedAuth(request);
     const uid = request.auth.uid;
     const propertyId = request.data && request.data.propertyId;
     if (!propertyId || typeof propertyId !== 'string' || propertyId.length > 128) {
@@ -150,9 +171,7 @@ exports.unlockProperty = onCall(
 exports.publishProperty = onCall(
   { region: REGION, maxInstances: 20 },
   async (request) => {
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Debes iniciar sesión para publicar un inmueble.');
-    }
+    requireVerifiedAuth(request);
     const uid = request.auth.uid;
     const raw = request.data;
     if (!raw || typeof raw !== 'object') {
