@@ -8094,10 +8094,12 @@ async function submitContactRequest() {
   const originalLabel = btn.textContent;
   btn.textContent = 'Enviando…';
   try {
-    // Deterministic doc ID enforces "one contact per (sender, property,
-    // modality)" at the Firestore rules layer. See firestore.rules.
-    const reqId = auth.currentUser.uid + '_' + _contactCtx.propertyId + '_' + _contactCtx.kind;
-    await db.collection('contactRequests').doc(reqId).set({
+    // Deterministic doc ID + rate limit + shape validation all live
+    // in the submitContactRequest Cloud Function now. Firestore
+    // rules deny direct client writes to /contactRequests so this
+    // is the only path.
+    const call = _getFunctions().httpsCallable('submitContactRequest');
+    await call({
       propertyId:          _contactCtx.propertyId,
       propertyAddress:     _contactCtx.propertyAddress || null,
       propertyDistrict:    _contactCtx.propertyDistrict || null,
@@ -8106,13 +8108,10 @@ async function submitContactRequest() {
       propertyCurrency:    _contactCtx.propertyCurrency,
       publicationOwnerId:  _contactCtx.publicationOwnerId,
       kind:                _contactCtx.kind,
-      fromUserId:          auth.currentUser.uid,
       fromName:            name,
       fromEmail:           email,
       fromPhone:           phone || null,
       message,
-      status:              'new',
-      createdAt:           firebase.firestore.FieldValue.serverTimestamp()
     });
     // If it's a user-published property, also email the owner via the
     // Trigger Email extension. For the 2,663 static properties there is
@@ -8136,10 +8135,20 @@ async function submitContactRequest() {
     setTimeout(closeContactModal, 1800);
   } catch (e) {
     console.error('[reco] contactRequest failed:', e);
-    if (e && e.code === 'permission-denied') {
+    const code = (e && e.code) || '';
+    if (code === 'functions/already-exists' || code === 'already-exists') {
       _showContactError('Ya contactaste al propietario de este inmueble. Solo se permite un contacto por propiedad.');
+    } else if (code === 'functions/resource-exhausted' || code === 'resource-exhausted') {
+      _showContactError('Alcanzaste el límite de contactos por hora. Reintentá en un rato.');
+    } else if (code === 'functions/unauthenticated' || code === 'unauthenticated') {
+      _showContactError('Debes iniciar sesión.');
+      openAuthModal('login');
+    } else if (code === 'functions/failed-precondition' || code === 'failed-precondition') {
+      _showContactError('Verificá tu email antes de continuar. Revisá tu bandeja de entrada.');
+    } else if (code === 'functions/invalid-argument' || code === 'invalid-argument') {
+      _showContactError('Datos inválidos: ' + (e.message || 'revisa el formulario'));
     } else {
-      _showContactError('No se pudo enviar la solicitud: ' + (e.message || 'error desconocido'));
+      _showContactError('No se pudo enviar la solicitud: ' + ((e && e.message) || 'error desconocido'));
     }
     btn.disabled = false;
     btn.textContent = originalLabel;

@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "contactRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "fromUserId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt",  "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
