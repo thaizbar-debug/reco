@@ -26,19 +26,16 @@ const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
 
-// AppCheck rollout is in SOFT MODE: the client sends tokens, the
-// runtime validates them (via consumeAppCheckToken: true on the onCall
-// config), and this helper writes a structured log line saying whether
-// a valid token showed up. Requests without a token still succeed
-// today, which is why the flag on the onCall config is
-// `enforceAppCheck: false`.
+// AppCheck is ENFORCED on both callables (enforceAppCheck: true on
+// the onCall config below). Requests without a valid reCAPTCHA v3
+// token minted from an allowed origin are rejected with
+// `unauthenticated` before this function body runs, so bot / curl
+// traffic cannot burn the invocation quota.
 //
-// Once Cloud Logging shows real traffic consistently arriving with
-// `appCheck ok`, flip enforceAppCheck to true in a follow-up deploy
-// (or in the Firebase Console → App Check → this function, which does
-// not require a deploy). At that point anonymous / bot / curl traffic
-// gets rejected with `unauthenticated` before the function even runs,
-// which is what protects the invocation quota from abuse.
+// The helper below still fires from inside handler code so we get
+// structured logs on the requests that make it past enforcement.
+// If we ever need to roll back to soft mode, flip both callables to
+// `consumeAppCheckToken: true, enforceAppCheck: false` and redeploy.
 function _logAppCheck(request, fn) {
   const t = request.app; // v2 exposes { appId, token } after validation
   if (t && t.appId) {
@@ -107,10 +104,14 @@ exports.unlockProperty = onCall(
   {
     region: REGION,
     maxInstances: 10,
-    // Validate AppCheck tokens on every call, but do NOT reject calls
-    // that omit them (yet). See _logAppCheck for the rollout plan.
+    // AppCheck enforced: requests without a valid reCAPTCHA v3 token
+    // are rejected before this function runs. Soft-mode logs from
+    // PR #66 / #68 confirmed real browser traffic carries valid
+    // tokens (verifications.app === 'VALID'), so it's safe to flip.
+    // Rolling back is one PR: flip both flags to
+    // `consumeAppCheckToken: true, enforceAppCheck: false`.
     consumeAppCheckToken: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
   },
   async (request) => {
     _logAppCheck(request, 'unlockProperty');
