@@ -26,16 +26,16 @@ const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
 
-// AppCheck is ENFORCED on both callables (enforceAppCheck: true on
-// the onCall config below). Requests without a valid reCAPTCHA v3
-// token minted from an allowed origin are rejected with
-// `unauthenticated` before this function body runs, so bot / curl
-// traffic cannot burn the invocation quota.
-//
-// The helper below still fires from inside handler code so we get
-// structured logs on the requests that make it past enforcement.
-// If we ever need to roll back to soft mode, flip both callables to
-// `consumeAppCheckToken: true, enforceAppCheck: false` and redeploy.
+// AppCheck is in SOFT mode on both callables (consumeAppCheckToken:
+// true, enforceAppCheck: false). Tokens are consumed and logged but
+// requests without a valid token are still allowed through. Enforce
+// was tried in PR #69 and rolled back because the client on
+// github.io was returning 401 unauthenticated on unlockProperty
+// (authenticated users, valid session — tokens were not being
+// attached from the production origin). To re-enable enforcement:
+// confirm the reCAPTCHA site key is authorized for the production
+// domain and the AppCheck provider is registered in Firebase
+// Console, then flip both callables back to `enforceAppCheck: true`.
 function _logAppCheck(request, fn) {
   const t = request.app; // v2 exposes { appId, token } after validation
   if (t && t.appId) {
@@ -104,14 +104,15 @@ exports.unlockProperty = onCall(
   {
     region: REGION,
     maxInstances: 10,
-    // AppCheck enforced: requests without a valid reCAPTCHA v3 token
-    // are rejected before this function runs. Soft-mode logs from
-    // PR #66 / #68 confirmed real browser traffic carries valid
-    // tokens (verifications.app === 'VALID'), so it's safe to flip.
-    // Rolling back is one PR: flip both flags to
-    // `consumeAppCheckToken: true, enforceAppCheck: false`.
+    // AppCheck in SOFT mode: tokens are consumed and logged, but
+    // requests without a valid token are not rejected. Enforce was
+    // enabled in PR #69 and rolled back here because the client on
+    // github.io was failing to attach tokens (auth was valid, calls
+    // still returned 401 unauthenticated). Once the reCAPTCHA site
+    // key / AppCheck provider registration is confirmed for the
+    // production domain, flip enforceAppCheck back to true.
     consumeAppCheckToken: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     _logAppCheck(request, 'unlockProperty');
@@ -212,10 +213,10 @@ exports.publishProperty = onCall(
   {
     region: REGION,
     maxInstances: 20,
-    // AppCheck enforced (same as unlockProperty). See _logAppCheck
-    // and the file-header comment for the rollback path.
+    // AppCheck in SOFT mode (same as unlockProperty). See the header
+    // comment on unlockProperty for the reason behind this rollback.
     consumeAppCheckToken: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     _logAppCheck(request, 'publishProperty');
