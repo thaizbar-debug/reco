@@ -7005,22 +7005,65 @@ function _syncToFirestore(patch){
   if(!Object.keys(safe).length) return;
   ref.set(safe, {merge:true}).catch(e => console.warn('[reco] Firestore write failed:', e.message));
 }
+// Cap on how many favorites we accept from a client on any write. The
+// public app UI has no way to accumulate hundreds — someone with 200+
+// favorites is either an edge case we can live with or an attacker
+// trying to bloat their /users doc.
+const _FAVORITES_MAX = 200;
+
+// Sanitise what we actually seed into /users/{uid} on first login.
+// Historically we forwarded whatever was in localStorage, but three of
+// those fields cannot be legitimately populated by an anonymous
+// session — an attacker with access to the browser (malicious
+// extension, physical access, XSS on a related page) could plant fake
+// data and see it persist as soon as the victim registered:
+//
+//   keyHistory   All spend history entries require an authenticated
+//                Firestore write (unlockAndOpen, _ppub) that anon
+//                sessions cannot make. A non-empty local history is
+//                by definition attacker-injected.
+//   keysLeft     Same: keys are granted server-side (unlockProperty /
+//                publishProperty / future grantKeys webhook). S.keysLeft
+//                only reflects the local visual counter.
+//   favorites    LEGITIMATELY populated by anon users (they browse and
+//                heart properties before signing up). Keep the array
+//                but cap it at _FAVORITES_MAX so a hostile localStorage
+//                cannot bloat the user doc.
+//
+// Firestore rules already reject non-empty keyHistory / non-zero
+// keysLeft on /users create, so the previous seed would have silently
+// failed for a poisoned client — which is worse than clean: the user
+// ends up with no /users doc, and every subsequent sync attempts to
+// merge into a non-existent doc. Explicitly clamping here also stops
+// the silent-failure path.
+function _sanitizedSeed() {
+  let favs = [];
+  try {
+    const raw = _getFavorites();
+    if (Array.isArray(raw)) {
+      favs = raw.filter(x => typeof x === 'string' && x.length < 128).slice(0, _FAVORITES_MAX);
+    }
+  } catch (e) { favs = []; }
+  return {
+    email: auth.currentUser.email || null,
+    displayName: auth.currentUser.displayName || null,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    favorites: favs,
+    keyHistory: [],
+    keysLeft: 0,
+  };
+}
+
 async function _pullUserDataFromFirestore(){
   const ref = _userDocRef();
   if(!ref) return;
   try {
     const snap = await ref.get();
     if(!snap.exists){
-      // First login: seed the doc from any local data the anonymous session may have
-      const seed = {
-        email: auth.currentUser.email || null,
-        displayName: auth.currentUser.displayName || null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        favorites: _getFavorites(),
-        keyHistory: _getKeyHistory(),
-        keysLeft: S.keysLeft || 0
-      };
-      await ref.set(seed);
+      // First login: seed with SERVER-TRUSTED defaults for keyHistory /
+      // keysLeft; only local favorites survive the migration (and even
+      // those are capped). See _sanitizedSeed() above for the rationale.
+      await ref.set(_sanitizedSeed());
       return;
     }
     const data = snap.data() || {};
@@ -7051,7 +7094,16 @@ function _clearUserCache(){
 
 // ─────────────────────── FAVORITES & RECENTS (localStorage) ───────────────────────
 function _getFavorites() { try { return JSON.parse(localStorage.getItem('reco_favs') || '[]'); } catch(e) { return []; } }
-function _saveFavorites(arr) { localStorage.setItem('reco_favs', JSON.stringify(arr)); _syncToFirestore({favorites: arr}); }
+function _saveFavorites(arr) {
+  // Same cap as _sanitizedSeed. Prevents an attacker with browser
+  // access from bloating the user doc through the update path — the
+  // create seed is only one of two gates.
+  const safe = Array.isArray(arr)
+    ? arr.filter(x => typeof x === 'string' && x.length < 128).slice(0, _FAVORITES_MAX)
+    : [];
+  localStorage.setItem('reco_favs', JSON.stringify(safe));
+  _syncToFirestore({favorites: safe});
+}
 function _getRecents() { try { return JSON.parse(localStorage.getItem('reco_recents') || '[]'); } catch(e) { return []; } }
 function _saveRecents(arr) { localStorage.setItem('reco_recents', JSON.stringify(arr)); }
 function _getKeyHistory() { try { return JSON.parse(localStorage.getItem('reco_key_hist') || '[]'); } catch(e) { return []; } }
