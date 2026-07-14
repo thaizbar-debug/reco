@@ -32,11 +32,14 @@ const HISTORY_CAP = 200;
 const CONTACT_RATE_LIMIT_PER_HOUR = 15;
 const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
 
-// AppCheck is ENFORCED on both callables (enforceAppCheck: true on
-// the onCall config below). Requests without a valid reCAPTCHA v3
-// token minted from an allowed origin are rejected with
-// `unauthenticated` before this function body runs, so bot / curl
-// traffic cannot burn the invocation quota.
+// AppCheck is in SOFT mode on both callables. Enforce was enabled in
+// PR #69 and rolled back here because production requests started
+// getting rejected with `unauthenticated` even with valid tokens
+// attached — verified by inspecting request headers (both
+// authorization and x-firebase-appcheck were present and valid) and
+// decoding both JWTs. The request never reached the handler code
+// (0 application logs across ~55 invocations in 24h). Root cause
+// pending investigation with Firebase Support.
 //
 // The helper below still fires from inside handler code so we get
 // structured logs on the requests that make it past enforcement.
@@ -117,7 +120,7 @@ exports.unlockProperty = onCall(
     // Rolling back is one PR: flip both flags to
     // `consumeAppCheckToken: true, enforceAppCheck: false`.
     consumeAppCheckToken: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     _logAppCheck(request, 'unlockProperty');
@@ -221,7 +224,7 @@ exports.publishProperty = onCall(
     // AppCheck enforced (same as unlockProperty). See _logAppCheck
     // and the file-header comment for the rollback path.
     consumeAppCheckToken: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     _logAppCheck(request, 'publishProperty');
@@ -367,7 +370,7 @@ exports.submitContactRequest = onCall(
     region: REGION,
     maxInstances: 20,
     consumeAppCheckToken: true,
-    enforceAppCheck: true,
+    enforceAppCheck: false,
   },
   async (request) => {
     _logAppCheck(request, 'submitContactRequest');
