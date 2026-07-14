@@ -228,3 +228,100 @@ until the next migration. Delete
 `functions/scripts/service-account-key.json` to shrink the blast
 radius if the laptop is ever compromised. Regenerating a fresh key
 next time takes 30 seconds.
+
+## 7. App Check (reCAPTCHA v3)
+
+AppCheck proves that a request to our Cloud Functions, Firestore or
+Storage came from the real Reco SPA running in a real browser — not
+from `curl`, a script, or a bot farm. Without it, an attacker who
+signs up (or steals an ID token) can hammer `unlockProperty` and
+`publishProperty` and burn our monthly invocation quota. Even the
+rejected calls cost a Function invocation.
+
+### 7.1 Register the site with reCAPTCHA v3
+
+1. Sign in to https://www.google.com/recaptcha/admin with the
+   Google account that owns the reco-5a5dd Firebase project.
+2. Click **+ Create** (top-right). Fill in:
+   - **Label:** `Reco (AppCheck)`
+   - **reCAPTCHA type:** `reCAPTCHA v3`
+   - **Domains:** add each origin the app is served from, one per
+     line:
+     ```
+     thaizbar-debug.github.io
+     reco.pe
+     www.reco.pe
+     localhost
+     ```
+   - Accept the ToS. Click **Submit**.
+3. Copy the **Site key** (public string starting with `6L...`) —
+   you'll paste it into the client. Ignore the **Secret key** for
+   AppCheck; only reCAPTCHA-direct integrations need it.
+
+### 7.2 Wire the site key into the client
+
+Open `index.html` and find the line:
+
+```
+const RECAPTCHA_V3_SITE_KEY = ''; // TODO: paste real site key after registering
+```
+
+Paste the site key inside the quotes, commit, deploy Pages.
+
+### 7.3 Register the provider in Firebase AppCheck
+
+1. Open
+   https://console.firebase.google.com/project/reco-5a5dd/appcheck
+2. Under **Apps** find `1:553146114942:web:3dcba5bb9bd1276c6b892f`
+   (the web app). Click **Register**.
+3. Provider: **reCAPTCHA v3**. Paste the same site key.
+4. **Token time-to-live:** leave default (1 hour). Click **Save**.
+
+At this point the client sends tokens on every Firebase call and
+the Cloud Functions log whether each token was valid — nothing is
+enforced yet. That is soft mode.
+
+### 7.4 Verify soft mode is working
+
+Open Cloud Logging for the functions and filter:
+
+```
+resource.type="cloud_run_revision"
+resource.labels.service_name="unlockproperty"
+```
+
+You should see lines like:
+
+```
+INFO  [unlockProperty] appCheck ok   { appId: '1:5531...', uid: 'abc123' }
+```
+
+If instead you see `[unlockProperty] appCheck MISSING` for calls
+you know came from the real SPA, the site key is wrong or the
+domain is not registered in the reCAPTCHA console.
+
+### 7.5 Enforce (final step)
+
+Once you're confident the logs are clean, enable enforcement two
+places:
+
+1. **Cloud Functions.** In `functions/index.js`, both callables
+   have `enforceAppCheck: false`. Flip both to `true`, redeploy:
+   ```
+   firebase deploy --only functions
+   ```
+2. **Firestore + Storage** (optional but recommended). Firebase
+   Console → App Check → **Firestore** → Enforce. Same for
+   Storage. This kicks in-browser hammering out of every Firebase
+   surface, not just the two callables.
+
+After enforcement, an unauthenticated curl to a callable now fails
+with `unauthenticated` **before** the function code runs. That is
+what protects the invocation quota.
+
+### 7.6 What happens if I forget step 7.5
+
+Nothing bad — the client keeps sending tokens, the server keeps
+logging, and everything still works. AppCheck only shields the
+quota when enforcement is on. Do not forget it, but the site is
+not broken if you delay.
