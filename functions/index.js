@@ -212,9 +212,10 @@ exports.publishProperty = onCall(
   {
     region: REGION,
     maxInstances: 20,
-    // Same soft-mode rollout as unlockProperty. See _logAppCheck.
+    // AppCheck enforced (same as unlockProperty). See _logAppCheck
+    // and the file-header comment for the rollback path.
     consumeAppCheckToken: true,
-    enforceAppCheck: false,
+    enforceAppCheck: true,
   },
   async (request) => {
     _logAppCheck(request, 'publishProperty');
