@@ -124,18 +124,16 @@ service cloud.firestore {
                   && (resource.data.fromUserId == request.auth.uid
                       || resource.data.publicationOwnerId == request.auth.uid
                       || isAdmin());
-      // The doc ID must be `${fromUserId}_${propertyId}_${kind}`. Since
-      // `allow create` only fires when the doc does not already exist,
-      // this forces one contactRequest per (sender, property, modality).
-      // A second attempt reads as an update, which the sender is not
-      // permitted to perform (see `allow update` below), so it fails
-      // with permission-denied.
-      allow create: if request.auth != null
-                    && request.resource.data.fromUserId == request.auth.uid
-                    && request.resource.data.status == 'new'
-                    && request.resource.data.propertyId is string
-                    && request.resource.data.kind in ['arrendador','vendedor','asesor_reco']
-                    && reqId == request.auth.uid + '_' + request.resource.data.propertyId + '_' + request.resource.data.kind;
+      // DENIED from the client. The submitContactRequest Cloud
+      // Function is the sole creation path. It enforces the same
+      // shape constraints as the old rule (deterministic doc ID,
+      // status: 'new', fromUserId from the auth context) AND adds
+      // a rate limit (CONTACT_RATE_LIMIT_PER_HOUR per fromUserId
+      // per rolling hour) that Firestore rules cannot express.
+      // The admin SDK inside the callable bypasses this rule, so
+      // the callable still works; DevTools attempts to .set() a
+      // contactRequest directly get PERMISSION_DENIED.
+      allow create: if false;
       // Admins can update anything; the publication owner can only flip
       // `status` (e.g. 'new' → 'handled'). The prior version of this rule
       // let the owner rewrite fromName, fromEmail, message and other

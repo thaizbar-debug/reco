@@ -25,6 +25,12 @@ const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
+// Max contactRequests a single fromUserId can create in the rolling
+// last hour. Above this, submitContactRequest throws resource-exhausted.
+// A legit user contacting 15 property owners in 60 minutes is already
+// aggressive; anything much beyond that is scraper behaviour.
+const CONTACT_RATE_LIMIT_PER_HOUR = 15;
+const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -325,5 +331,136 @@ exports.publishProperty = onCall(
         keysLeft: currentKeys - PUBLISH_COST,
       };
     });
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// submitContactRequest — create a contactRequest doc, subject to a
+// per-user rate limit that Firestore rules cannot express.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('submitContactRequest');
+//   const { data } = await fn({
+//     propertyId, kind,
+//     publicationOwnerId?, publicationOwnerEmail?, publicationOwnerName?,
+//     propertyAddress?, propertyDistrict?, propertyOp?,
+//     propertyPrice?, propertyCurrency?,
+//     fromName, fromEmail, fromPhone?, message
+//   });
+//   // data = { contactRequestId }
+//
+// Errors:
+//   unauthenticated       — no auth context
+//   failed-precondition   — email not verified
+//   invalid-argument      — missing / malformed field
+//   already-exists        — this (fromUserId, propertyId, kind) already contacted
+//   resource-exhausted    — hit CONTACT_RATE_LIMIT_PER_HOUR
+//
+// The doc ID is deterministic: `${uid}_${propertyId}_${kind}`. The
+// rules used to enforce that shape from the client; now the callable
+// enforces it server-side and Firestore rules deny direct client
+// creates. Rate limit: count contactRequests by this uid with
+// createdAt > now-1h and reject when the count is at the cap.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.submitContactRequest = onCall(
+  {
+    region: REGION,
+    maxInstances: 20,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'submitContactRequest');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const raw = request.data;
+    if (!raw || typeof raw !== 'object') {
+      throw new HttpsError('invalid-argument', 'Cuerpo del contacto requerido.');
+    }
+
+    // Validate + coerce
+    const str = (v, name, max) => {
+      if (v == null) throw new HttpsError('invalid-argument', `Falta ${name}.`);
+      const s = String(v).trim();
+      if (!s) throw new HttpsError('invalid-argument', `Falta ${name}.`);
+      if (s.length > max) throw new HttpsError('invalid-argument', `${name} muy largo (máx ${max}).`);
+      return s;
+    };
+    const optStr = (v, max) => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      if (!s) return null;
+      return s.slice(0, max);
+    };
+
+    const propertyId = str(raw.propertyId, 'propertyId', 128);
+    const kind = raw.kind;
+    if (!CONTACT_KINDS.includes(kind)) {
+      throw new HttpsError('invalid-argument', 'kind inválido.');
+    }
+    const fromName  = str(raw.fromName, 'fromName', 200);
+    const fromEmail = str(raw.fromEmail, 'fromEmail', 200);
+    if (!/.+@.+\..+/.test(fromEmail)) {
+      throw new HttpsError('invalid-argument', 'fromEmail inválido.');
+    }
+    const message = str(raw.message, 'message', 2000);
+    if (message.length < 10) {
+      throw new HttpsError('invalid-argument', 'El mensaje debe tener al menos 10 caracteres.');
+    }
+
+    const reqId = `${uid}_${propertyId}_${kind}`;
+    const reqRef = db.collection('contactRequests').doc(reqId);
+
+    // Existence check + rate limit outside the transaction. Duplicates
+    // are impossible-to-race on the deterministic ID (Firestore create
+    // with an existing ID fails naturally), and the rate-limit query
+    // trades a tiny lag window for a much simpler / cheaper Function
+    // (transactional aggregation queries are unavailable in Firestore).
+    const existing = await reqRef.get();
+    if (existing.exists) {
+      throw new HttpsError(
+        'already-exists',
+        'Ya contactaste al propietario de este inmueble.'
+      );
+    }
+
+    const oneHourAgoMs = Date.now() - 60 * 60 * 1000;
+    const oneHourAgo = new Date(oneHourAgoMs);
+    const recent = await db.collection('contactRequests')
+      .where('fromUserId', '==', uid)
+      .where('createdAt', '>=', oneHourAgo)
+      .count()
+      .get();
+    if (recent.data().count >= CONTACT_RATE_LIMIT_PER_HOUR) {
+      logger.warn(`[submitContactRequest] rate-limit hit`, {
+        uid,
+        recentCount: recent.data().count,
+        limit: CONTACT_RATE_LIMIT_PER_HOUR,
+      });
+      throw new HttpsError(
+        'resource-exhausted',
+        `Alcanzaste el límite de ${CONTACT_RATE_LIMIT_PER_HOUR} contactos por hora. Reintentá en un rato.`
+      );
+    }
+
+    await reqRef.create({
+      propertyId,
+      propertyAddress:     optStr(raw.propertyAddress, 500),
+      propertyDistrict:    optStr(raw.propertyDistrict, 100),
+      propertyOp:          optStr(raw.propertyOp, 40),
+      propertyPrice:       (typeof raw.propertyPrice === 'number' && isFinite(raw.propertyPrice)) ? raw.propertyPrice : null,
+      propertyCurrency:    optStr(raw.propertyCurrency, 10),
+      publicationOwnerId:  optStr(raw.publicationOwnerId, 128),
+      kind,
+      fromUserId:          uid,
+      fromName,
+      fromEmail,
+      fromPhone:           optStr(raw.fromPhone, 40),
+      message,
+      status:              'new',
+      createdAt:           FieldValue.serverTimestamp(),
+    });
+
+    return { contactRequestId: reqId };
   }
 );
