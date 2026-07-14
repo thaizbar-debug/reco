@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
@@ -24,6 +25,36 @@ const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
+
+// AppCheck rollout is in SOFT MODE: the client sends tokens, the
+// runtime validates them (via consumeAppCheckToken: true on the onCall
+// config), and this helper writes a structured log line saying whether
+// a valid token showed up. Requests without a token still succeed
+// today, which is why the flag on the onCall config is
+// `enforceAppCheck: false`.
+//
+// Once Cloud Logging shows real traffic consistently arriving with
+// `appCheck ok`, flip enforceAppCheck to true in a follow-up deploy
+// (or in the Firebase Console → App Check → this function, which does
+// not require a deploy). At that point anonymous / bot / curl traffic
+// gets rejected with `unauthenticated` before the function even runs,
+// which is what protects the invocation quota from abuse.
+function _logAppCheck(request, fn) {
+  const t = request.app; // v2 exposes { appId, token } after validation
+  if (t && t.appId) {
+    logger.info(`[${fn}] appCheck ok`, {
+      appId: t.appId,
+      uid: request.auth && request.auth.uid,
+    });
+  } else {
+    const headers = (request.rawRequest && request.rawRequest.headers) || {};
+    logger.warn(`[${fn}] appCheck MISSING`, {
+      uid: request.auth && request.auth.uid,
+      ua: headers['user-agent'],
+      origin: headers['origin'],
+    });
+  }
+}
 
 // Any callable that changes state or reads premium data must go through
 // this. Two properties matter:
@@ -73,8 +104,16 @@ const PUB_SOURCES = ['single', 'bulk'];
 // re-fetch premium data on refresh without risking a double charge.
 // ─────────────────────────────────────────────────────────────────────────────
 exports.unlockProperty = onCall(
-  { region: REGION, maxInstances: 10 },
+  {
+    region: REGION,
+    maxInstances: 10,
+    // Validate AppCheck tokens on every call, but do NOT reject calls
+    // that omit them (yet). See _logAppCheck for the rollout plan.
+    consumeAppCheckToken: true,
+    enforceAppCheck: false,
+  },
   async (request) => {
+    _logAppCheck(request, 'unlockProperty');
     requireVerifiedAuth(request);
     const uid = request.auth.uid;
     const propertyId = request.data && request.data.propertyId;
@@ -169,8 +208,15 @@ exports.unlockProperty = onCall(
 // ten publications for the price of three.
 // ─────────────────────────────────────────────────────────────────────────────
 exports.publishProperty = onCall(
-  { region: REGION, maxInstances: 20 },
+  {
+    region: REGION,
+    maxInstances: 20,
+    // Same soft-mode rollout as unlockProperty. See _logAppCheck.
+    consumeAppCheckToken: true,
+    enforceAppCheck: false,
+  },
   async (request) => {
+    _logAppCheck(request, 'publishProperty');
     requireVerifiedAuth(request);
     const uid = request.auth.uid;
     const raw = request.data;
