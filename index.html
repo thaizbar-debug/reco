@@ -7200,6 +7200,31 @@ function _isAdmin(){
   return !!(u && u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
 }
 
+// Fire-and-forget audit trail for admin actions. Writes a doc to
+// /adminAuditLog with the acting admin, the action string, the
+// target (usually a Firestore doc id) and a server timestamp. Rules
+// enforce adminUid == auth.uid and deny updates/deletes so the log
+// is append-only. Silently no-op for non-admin callers and non-fatal
+// on failure — we don't want an audit hiccup to break the actual
+// moderation action the admin is performing.
+async function _adminAudit(action, targetType, targetId, extras) {
+  const u = auth.currentUser;
+  if (!u || !_isAdmin()) return;
+  try {
+    await db.collection('adminAuditLog').add({
+      adminUid: u.uid,
+      adminEmail: u.email || null,
+      action: String(action).slice(0, 80),
+      targetType: targetType ? String(targetType).slice(0, 40) : null,
+      targetId: targetId ? String(targetId).slice(0, 200) : null,
+      extras: (extras && typeof extras === 'object') ? extras : null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    console.warn('[reco] adminAudit failed:', e && e.message);
+  }
+}
+
 // ── SOLICITUDES DE CONTACTO (vendedor / arrendador) ──
 // Contact requests routed to the current user as publication owner.
 function _crStatusBadge(status){
@@ -7280,6 +7305,10 @@ async function renderSolicitudes(el){
 async function _crMarkHandled(id){
   try {
     await db.collection('contactRequests').doc(id).update({ status: 'handled' });
+    // Only audit when an admin does it. Legit owners marking their own
+    // solicitud as handled is normal user activity, not something we
+    // need in the admin audit log — the update itself is the record.
+    if (_isAdmin()) _adminAudit('contactRequest.markHandled', 'contactRequest', id);
     toast('Marcada como atendida');
     renderSolicitudes(document.getElementById('userSectionContent'));
   } catch(e){
@@ -7299,6 +7328,9 @@ async function renderAdminPanel(el){
       + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>No tienes permisos de admin.</p></div></div>';
     return;
   }
+  // Audit: log that this admin opened the moderation panel + which tab.
+  // Gives an "access timeline" per admin even before any action fires.
+  _adminAudit('publication.list', 'publications', null, { tab: _adminTab });
   let pubs = [];
   let queryError = null;
   try {
@@ -7412,6 +7444,7 @@ async function _adminApprove(id){
       moderatedBy: auth.currentUser.uid,
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
+    _adminAudit('publication.approve', 'publication', id, pub ? { userId: pub.userId||null } : null);
     if(pub) _queueModerationEmail(pub, 'approved');
     toast('✓ Publicación aprobada');
     renderAdminPanel(document.getElementById('userSectionContent'));
@@ -7431,6 +7464,7 @@ async function _adminReject(id){
       moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       moderatedBy: auth.currentUser.uid
     });
+    _adminAudit('publication.reject', 'publication', id, { reason: reason || '', userId: (pub && pub.userId) || null });
     if(pub) _queueModerationEmail(pub, 'rejected', reason);
     toast('✕ Publicación rechazada');
     renderAdminPanel(document.getElementById('userSectionContent'));
@@ -7446,6 +7480,7 @@ async function _adminUnapprove(id){
       moderatedBy: auth.currentUser.uid,
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
+    _adminAudit('publication.unapprove', 'publication', id);
     toast('Movida a pendiente');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] unapprove failed:', e); toast('⚠️ Error: '+e.message); }

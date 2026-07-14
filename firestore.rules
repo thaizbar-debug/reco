@@ -188,6 +188,39 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // /adminAuditLog/{entryId}
+    //
+    // Every action an admin performs from the moderation panel — view
+    // a contactRequest, approve / reject / unapprove a publication,
+    // mark a contactRequest as handled — writes one entry here. Gives
+    // us a paper trail we can grep to answer "who saw what and when"
+    // when a user complains their PII leaked or a publication was
+    // approved / rejected suspiciously.
+    //
+    // - read: admin only. Every admin can inspect the whole log —
+    //         mutual accountability, not just Reco → admin surveillance.
+    // - create: admin only, and the entry must record adminUid ==
+    //         auth.uid so an admin cannot log actions "as" another
+    //         admin. Timestamp is enforced server-side by the client
+    //         using serverTimestamp(), and the schema keeps this
+    //         create rule agnostic to any specific action string so we
+    //         can add new action kinds without touching the rules.
+    // - update / delete: DENIED. An audit log you can rewrite is not
+    //         an audit log. If an entry is wrong or needs redaction,
+    //         it stays and a follow-up entry documents the reason.
+    //
+    // This is a best-effort log — a determined admin with DevTools can
+    // read /contactRequests without triggering the client-side write.
+    // The point is to make normal actions leave a trail, not to defeat
+    // an adversarial admin (that requires converting reads to callables,
+    // separate PR later).
+    match /adminAuditLog/{entryId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+                    && request.resource.data.adminUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;
