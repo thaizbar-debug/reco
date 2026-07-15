@@ -47,6 +47,16 @@ const JSON_PATH = path.join(__dirname, '..', 'data', 'properties.json');
 const PREMIUM_PROP_FIELDS = ['owner', 'phone', 'val', 'sun'];
 const isPremiumDriveKey = (k) => k.startsWith('pdf_');
 
+// Fields removed from every histórico row after they have been
+// mirrored to Firestore /propertiesHistoricoDetail. They used to
+// ship in this JSON, which meant `curl` on the raw file gave a
+// scraper the full curated dataset. The getHistoricoDetail callable
+// now serves them behind auth + AppCheck + rate limit. Non-histórico
+// rows keep price / cur because those are the user-published listings
+// where the sale price IS the whole product — protecting them behind
+// login would break browsing.
+const HIST_SENSITIVE_FIELDS = ['price', 'priceTotal', 'priceProp', 'areaTech', 'areaOcup', 'txKey', 'cur'];
+
 // ── helpers that mirror the ones in index.html; kept in sync so the
 // public numbers we bake in match what getHistTotal / parkCount / etc.
 // would have computed at render time from sun. ──────────────────────
@@ -108,6 +118,7 @@ const properties = Array.isArray(raw.properties) ? raw.properties : [];
 const drive = raw.drive && typeof raw.drive === 'object' ? raw.drive : {};
 
 let strippedProp = 0;
+let strippedHistFields = 0;
 let hist = 0;
 let precomputed = { priceTotal: 0, priceProp: 0, areaTech: 0, areaOcup: 0, park: 0, dep: 0, txKey: 0 };
 
@@ -115,6 +126,13 @@ for (const prop of properties) {
   if (prop.op === 'Histórico') {
     hist++;
     // Precompute the derived public fields BEFORE deleting sun.
+    // These land on the property temporarily and then get removed
+    // below (they belong to /propertiesHistoricoDetail now, not the
+    // public JSON). The precompute still runs because the migration
+    // script for /propertiesHistoricoDetail reads the same fields
+    // from properties.json; we need them present at that moment.
+    // In the current pipeline the migration is a separate step, so
+    // this is a no-op unless you re-run it — safe either way.
     const pt = computeHistPriceTotal(prop);
     const pp = computeHistPriceProp(prop);
     if (pt != null) { prop.priceTotal = pt; precomputed.priceTotal++; }
@@ -122,12 +140,24 @@ for (const prop of properties) {
     const sun = prop.sun || {};
     if (Number(sun.areaTech) > 0) { prop.areaTech = Number(sun.areaTech); precomputed.areaTech++; }
     if (Number(sun.areaOcup) > 0) { prop.areaOcup = Number(sun.areaOcup); precomputed.areaOcup++; }
+    // park and dep are counts, not monetary values. They stay in the
+    // public JSON so the card / list filters keep working without a
+    // per-row callable roundtrip.
     const park = computeHistPark(prop);
     if (park > 0) { prop.park = park; precomputed.park++; }
     const dep = computeHistDep(prop);
     if (dep > 0) { prop.dep = dep; precomputed.dep++; }
     const tk = computeTxKey(prop);
     if (tk != null) { prop.txKey = tk; precomputed.txKey++; }
+
+    // Now strip the sensitive fields. price, priceTotal, priceProp,
+    // areaTech, areaOcup, txKey and cur are served by the
+    // getHistoricoDetail callable behind auth + AppCheck + rate
+    // limit. `curl` on this JSON no longer yields the curated
+    // dataset for scrapers.
+    for (const f of HIST_SENSITIVE_FIELDS) {
+      if (f in prop) { delete prop[f]; strippedHistFields++; }
+    }
   }
 
   for (const f of PREMIUM_PROP_FIELDS) {
@@ -146,7 +176,8 @@ for (const key of Object.keys(drive)) {
 
 fs.writeFileSync(JSON_PATH, JSON.stringify(raw));
 console.log(`✓ Stripped ${strippedProp} premium fields across ${properties.length} properties.`);
+console.log(`✓ Stripped ${strippedHistFields} histórico sensitive fields (${HIST_SENSITIVE_FIELDS.join(', ')}) across ${hist} histórico rows.`);
 console.log(`✓ Stripped ${strippedDrive} pdf_* keys across ${Object.keys(drive).length} drive entries.`);
-console.log(`✓ Precomputed derived public fields (out of ${hist} históricos):`);
+console.log(`✓ Precomputed derived fields (out of ${hist} históricos; note: sensitive ones were removed after precompute):`);
 for (const k of Object.keys(precomputed)) console.log(`    ${k}: ${precomputed[k]}`);
 console.log(`✓ Wrote ${JSON_PATH}`);
