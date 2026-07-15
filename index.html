@@ -2909,6 +2909,53 @@ function _premiumPdfsToPartidas(pdfs){
   return out;
 }
 
+// ── Histórico detail cache ─────────────────────────────────────────
+// price, priceTotal, priceProp, areaTech, areaOcup, txKey, cur for
+// histórico rows used to ship in the public JSON. They now come
+// from getHistoricoDetail (auth + AppCheck + rate limit) so `curl`
+// on the JSON cannot pull the curated dataset.
+//
+// The helpers getHistTotal / getHistPropPrice / histSqmNet all read
+// straight off the property object. fetchHistDetail merges the
+// server response back into the same object and stashes a flag so
+// second calls are a no-op — the helpers keep working without an
+// async dance in every call site. Backward compatible: if a row
+// already carries the fields (JSON not yet stripped), we skip the
+// network entirely.
+const _histDetailPending = new Set();
+function _histDetailAlreadyLoaded(p){
+  if (!p || p.op !== 'Histórico') return true;
+  if (p._detailLoaded) return true;
+  return ['price','priceTotal','priceProp'].some(f => typeof p[f] === 'number');
+}
+async function fetchHistDetail(propertyId){
+  const p = properties.find(x => x.id === propertyId);
+  if (!p) return null;
+  if (_histDetailAlreadyLoaded(p)) return p;
+  if (_histDetailPending.has(propertyId)){
+    while (_histDetailPending.has(propertyId) && !p._detailLoaded){
+      await new Promise(r => setTimeout(r, 80));
+    }
+    return p;
+  }
+  _histDetailPending.add(propertyId);
+  try {
+    const call = _getFunctions().httpsCallable('getHistoricoDetail');
+    const res = await call({ propertyId });
+    const detail = res && res.data && res.data.detail;
+    if (detail && typeof detail === 'object'){
+      for (const [k, v] of Object.entries(detail)){
+        if (k === 'id') continue;
+        p[k] = v;
+      }
+      p._detailLoaded = true;
+    }
+    return p;
+  } finally {
+    _histDetailPending.delete(propertyId);
+  }
+}
+
 async function fetchPremium(propertyId){
   if(_premiumCache.has(propertyId)) return _premiumCache.get(propertyId);
   if(_premiumPending.has(propertyId)){
@@ -4822,6 +4869,20 @@ function openDetail(id){
     return;
   }
 
+  // Histórico public fields (price, priceTotal, priceProp, areaTech,
+  // areaOcup, txKey) live behind getHistoricoDetail after the scraping
+  // hardening. Fetch on first open so the detail modal, the card
+  // re-render, and the area modal all get real numbers. Skips the
+  // network for rows that still carry the fields inline (JSON not yet
+  // stripped) — controlled by _histDetailAlreadyLoaded.
+  if(p.op==='Histórico' && !_histDetailAlreadyLoaded(p)){
+    fetchHistDetail(id).then(()=>{
+      if(S.selectedId === id) openDetail(id);
+    }).catch(err => {
+      console.warn('[reco] hist detail fetch failed:', err && err.code, err && err.message);
+    });
+  }
+
   // Histórico already unlocked but premium not yet in the local cache —
   // typical on a fresh page load when unlockedIds was hydrated from
   // Firestore but no callable calls have happened yet. Kick off the
@@ -5018,6 +5079,14 @@ async function unlockAndOpen(id){
     // lives on the server-side user doc that the callable wrote to.
     if(typeof addKeyHistoryEntry === 'function'){
       addKeyHistoryEntry('use', 1, id, p ? (p.address+', '+p.district) : id);
+    }
+    // Prefetch the histórico detail (price / area fields that no
+    // longer ship in the public JSON) so the card re-render below
+    // shows real numbers instead of "$ 0". Fire-and-forget on purpose:
+    // openDetail already triggers the same fetch and re-renders when
+    // it lands, so we do not need to await here.
+    if (p && p.op === 'Histórico'){
+      fetchHistDetail(id).then(() => applyFilters()).catch(()=>{});
     }
     toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
     openDetail(id);
