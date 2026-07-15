@@ -600,14 +600,40 @@ exports.onMailWrite = onDocumentWritten(
     const subject = (after.message && after.message.subject) || '(no subject)';
     const errorInfo = after.delivery.info || after.delivery.error || null;
 
+    const mailId = event.params && event.params.mailId;
+    const errorStr = errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null;
+
     logger.warn(`[onMailWrite] mail ${state}`, {
-      mailId: event.params && event.params.mailId,
-      to,
-      subject: String(subject).slice(0, 200),
-      state,
-      attempts: after.delivery.attempts,
-      error: errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null,
+      mailId, to, subject: String(subject).slice(0, 200), state,
+      attempts: after.delivery.attempts, error: errorStr,
       fromUserId: after.fromUserId || null,
     });
+
+    // Also write to /adminAuditLog so admins see mail failures in-app
+    // (alongside publication moderation, contactRequest handling, etc.)
+    // without having to open Cloud Logging. The admin SDK bypasses the
+    // rule that normally requires adminUid == request.auth.uid; we use
+    // 'system' as the adminUid marker so it's obvious from the log
+    // which entries came from a Cloud Function versus a real admin.
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: 'system',
+        adminEmail: null,
+        action: state === 'ERROR' ? 'mail.error' : 'mail.retryLimit',
+        targetType: 'mail',
+        targetId: mailId,
+        extras: {
+          to: String(to || '').slice(0, 200),
+          subject: String(subject).slice(0, 200),
+          state,
+          attempts: after.delivery.attempts || null,
+          error: errorStr,
+          fromUserId: after.fromUserId || null,
+        },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[onMailWrite] adminAuditLog write failed', { mailId, err: e && e.message });
+    }
   }
 );
