@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -462,5 +463,65 @@ exports.submitContactRequest = onCall(
     });
 
     return { contactRequestId: reqId };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onMailWrite — trigger on /mail docs.
+//
+// The "Trigger Email from Firestore" Firebase extension writes a
+// `delivery` subfield to each /mail doc as it processes it:
+//   { state: 'PENDING' | 'SUCCESS' | 'ERROR' | 'RETRY', ... }
+//
+// Before this trigger, an ERROR was completely silent — nothing in the
+// app or in Cloud Logging surfaced the failure, so a Resend outage or a
+// bad SMTP config could bury moderation notifications and contact-owner
+// emails for days without anyone noticing. This trigger:
+//
+//   1. Watches every /mail create + update.
+//   2. When delivery.state flips to ERROR (or on any RETRY beyond ~3
+//      attempts), writes a WARN log with the doc id, `to`, subject and
+//      the exact error string from the extension.
+//   3. That WARN log is easy to alert on: set up a Cloud Logging
+//      Alerting Policy (Cloud Console → Monitoring → Alerting) that
+//      fires when this Function emits a WARN. Ping goes to
+//      admin's email / Slack without any code changes here.
+//
+// We do NOT try to auto-retry — the extension already retries with
+// backoff on transient errors. This function is purely observability.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.onMailWrite = onDocumentWritten(
+  { region: REGION, document: 'mail/{mailId}' },
+  async (event) => {
+    const after = event.data && event.data.after && event.data.after.data();
+    if (!after || !after.delivery) return;
+    const before = event.data && event.data.before && event.data.before.data();
+    const beforeState = before && before.delivery && before.delivery.state;
+    const state = after.delivery.state;
+
+    // Only fire when we transition INTO an error-like state. Avoids
+    // repeat WARNs on subsequent updates that keep state === 'ERROR'.
+    const isNewError = state === 'ERROR' && beforeState !== 'ERROR';
+    const isRetryPastThreshold =
+      state === 'RETRY' &&
+      typeof after.delivery.attempts === 'number' &&
+      after.delivery.attempts >= 3 &&
+      (!before || !before.delivery || before.delivery.attempts !== after.delivery.attempts);
+
+    if (!isNewError && !isRetryPastThreshold) return;
+
+    const to = Array.isArray(after.to) ? after.to.join(', ') : after.to;
+    const subject = (after.message && after.message.subject) || '(no subject)';
+    const errorInfo = after.delivery.info || after.delivery.error || null;
+
+    logger.warn(`[onMailWrite] mail ${state}`, {
+      mailId: event.params && event.params.mailId,
+      to,
+      subject: String(subject).slice(0, 200),
+      state,
+      attempts: after.delivery.attempts,
+      error: errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null,
+      fromUserId: after.fromUserId || null,
+    });
   }
 );
