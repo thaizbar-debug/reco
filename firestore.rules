@@ -188,6 +188,31 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // /propertiesHistoricoDetail/{propertyId}
+    //
+    // Server-only collection. Holds the price + area fields for
+    // histórico properties that used to ship in the public
+    // properties.json (price, priceTotal, priceProp, areaTech,
+    // areaOcup, txKey, cur). Moving them out makes `curl` on the
+    // JSON useless for scraping the historical dataset. The
+    // getHistoricoDetail callable is the sole read path — it
+    // verifies auth + AppCheck + a per-user rate limit before
+    // returning any field.
+    match /propertiesHistoricoDetail/{propertyId} {
+      allow read, write: if false;
+    }
+
+    // /histDetailAccess/{docId}
+    //
+    // Audit trail of getHistoricoDetail calls, used only by the
+    // callable itself to enforce HIST_DETAIL_RATE_LIMIT_PER_HOUR
+    // via an aggregation count() query. Not readable from clients:
+    // the aggregate is computed inside the callable using the admin
+    // SDK. Individual entries carry uid, propertyId, at.
+    match /histDetailAccess/{docId} {
+      allow read, write: if false;
+    }
+
     // /adminAuditLog/{entryId}
     //
     // Every action an admin performs from the moderation panel — view
