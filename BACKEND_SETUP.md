@@ -147,6 +147,21 @@ Only for local dev. Never commit those lines.
   `status: 'pending'`. Returns `{ publicationId, keysLeft }`. Firestore
   rules now deny direct client writes to `/publications` — this
   callable is the sole creation path.
+- `submitContactRequest` — takes the contactRequest fields
+  (propertyId, kind, fromName, fromEmail, message, …), enforces the
+  same "one contact per (uid, property, kind)" invariant the old
+  Firestore rule enforced, PLUS a rolling per-user rate limit
+  (`CONTACT_RATE_LIMIT_PER_HOUR = 15`). Firestore rules deny direct
+  writes to `/contactRequests` — this callable is the sole creation
+  path. Needs the composite index in `firestore.indexes.json` (auto-
+  deployed on `firebase deploy --only firestore`).
+- `onMailWrite` — Firestore trigger on `/mail/{mailId}`. Watches the
+  `delivery` subfield the Trigger Email extension writes as it
+  processes each queued email. When `delivery.state` transitions to
+  `ERROR` (or `RETRY` past 3 attempts), emits a structured
+  `logger.warn` line with `mailId`, `to`, subject, error info. Set up
+  a Cloud Logging alert on this WARN to get pinged when Resend / SMTP
+  starts silently dropping mail (see § 8 below).
 
 ### 5.5 What is NOT yet in place
 
@@ -325,3 +340,37 @@ Nothing bad — the client keeps sending tokens, the server keeps
 logging, and everything still works. AppCheck only shields the
 quota when enforcement is on. Do not forget it, but the site is
 not broken if you delay.
+
+## 8. Mail failure alerts
+
+The `onMailWrite` trigger (see § 5.4) emits a `WARN`-level log entry
+every time the Trigger Email extension marks a `/mail` doc as
+`delivery.state === 'ERROR'` or as retrying past 3 attempts. To turn
+that into an actual notification:
+
+1. Open https://console.cloud.google.com/monitoring/alerting?project=reco-5a5dd
+2. **+ Create Policy**.
+3. **Select a metric** → search **Log entries** → choose
+   `logging.googleapis.com/user/log_entries` (or use the
+   log-based-metric shortcut described below).
+4. Filter:
+   ```
+   resource.type="cloud_run_revision"
+   resource.labels.service_name="onmailwrite"
+   severity="WARNING"
+   ```
+5. **Notification channels** → add your email (`webmaster@recosac.com`
+   and `sebastiand@recosac.com` are the natural choices) or a Slack
+   webhook if you have one.
+6. Trigger condition: any occurrence, threshold `> 0`, alert on
+   every incident.
+7. Save.
+
+You'll get an email within a few minutes of any mail failure — no
+more silent bounces. Alerts cost nothing until you hit ~150 policies
+per project.
+
+If you prefer not to use Cloud Monitoring, the same info is always
+visible at
+https://console.cloud.google.com/logs/query?project=reco-5a5dd
+with the filter above.
