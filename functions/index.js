@@ -17,10 +17,19 @@ const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 const db = getFirestore();
+
+// Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
+// Used by setAdminClaim to accept the current caller as admin even if
+// their token does not yet carry the `admin` custom claim — needed so
+// the very first invocation (when nobody has the claim yet) doesn't
+// hit chicken-and-egg. Keep in sync with the rules block AND the
+// client-side _ADMIN_EMAILS constant.
+const SEED_ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
 
 const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
@@ -609,5 +618,100 @@ exports.onMailWrite = onDocumentWritten(
       error: errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null,
       fromUserId: after.fromUserId || null,
     });
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// setAdminClaim — grant or revoke the `admin` custom claim on a user
+// by email. Only existing admins can call it (either via existing
+// admin claim OR the seed email allowlist during the migration
+// window), so bootstrapping is possible without a service-account
+// script: the first seed admin logs in, calls setAdminClaim on
+// themselves, and Firebase gives them the claim.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('setAdminClaim');
+//   const { data } = await fn({ email: 'sebastian@recosac.com', admin: true });
+//   // data = { targetUid, admin }
+//
+// After the callable succeeds, the CALLER's claim is unchanged (only
+// the target gets the update). The target has to reload their ID
+// token to see the new claim — the client-side refreshAdminClaim()
+// helper does that on the next sign-in, or the caller can promote
+// themselves and use `getIdToken(true)` to refresh in-place.
+//
+// Errors:
+//   unauthenticated       — no auth context / AppCheck failed
+//   failed-precondition   — email not verified
+//   permission-denied     — caller is not an admin
+//   invalid-argument      — missing or malformed email / admin flag
+//   not-found             — no user account with that email
+// ─────────────────────────────────────────────────────────────────────────────
+function _requireAdminCaller(request) {
+  requireVerifiedAuth(request);
+  const token = request.auth.token || {};
+  const email = String(token.email || '').toLowerCase();
+  const isAdmin = token.admin === true || SEED_ADMIN_EMAILS.includes(email);
+  if (!isAdmin) {
+    throw new HttpsError('permission-denied', 'Solo un admin puede realizar esta acción.');
+  }
+  return { uid: request.auth.uid, email };
+}
+
+exports.setAdminClaim = onCall(
+  {
+    region: REGION,
+    maxInstances: 5,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'setAdminClaim');
+    const caller = _requireAdminCaller(request);
+
+    const targetEmailRaw = request.data && request.data.email;
+    if (!targetEmailRaw || typeof targetEmailRaw !== 'string' || !/.+@.+\..+/.test(targetEmailRaw)) {
+      throw new HttpsError('invalid-argument', 'email requerido.');
+    }
+    const targetEmail = targetEmailRaw.trim().toLowerCase();
+
+    const admin = request.data && request.data.admin;
+    if (typeof admin !== 'boolean') {
+      throw new HttpsError('invalid-argument', 'admin (boolean) requerido.');
+    }
+
+    let targetUser;
+    try {
+      targetUser = await getAuth().getUserByEmail(targetEmail);
+    } catch (e) {
+      throw new HttpsError('not-found', 'No hay una cuenta con ese email.');
+    }
+
+    // Merge with existing custom claims to avoid clobbering future
+    // unrelated flags.
+    const existing = targetUser.customClaims || {};
+    const next = { ...existing };
+    if (admin) next.admin = true; else delete next.admin;
+    await getAuth().setCustomUserClaims(targetUser.uid, next);
+
+    // Audit trail. The rule on /adminAuditLog requires adminUid ==
+    // auth.uid; the caller's uid satisfies that. If the caller is a
+    // seed admin without the claim, adminEmail still records who
+    // actually did it.
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email || null,
+        action: admin ? 'admin.claim.grant' : 'admin.claim.revoke',
+        targetType: 'user',
+        targetId: targetUser.uid,
+        extras: { targetEmail },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[setAdminClaim] audit write failed', { err: e && e.message });
+    }
+
+    return { targetUid: targetUser.uid, admin };
   }
 );

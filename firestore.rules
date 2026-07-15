@@ -2,22 +2,32 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Hardcoded admin allowlist. Edit this list to grant or revoke
-    // moderation rights. Phase 3 keeps the auth model simple; later
-    // phases may move this to custom claims or an /admins collection.
+    // Admin check. Prefers the `admin` custom claim on the auth token
+    // (set via the setAdminClaim callable in functions/index.js);
+    // falls back to the hardcoded email allowlist so a) the first
+    // deploy after this PR does not lock out the existing admins
+    // before their tokens refresh with the new claim, and b) if the
+    // custom claim ever gets accidentally cleared the two seed
+    // admins keep working.
     //
-    // The email from the auth token is lower-cased before the lookup so
-    // an admin who happened to register with mixed case (e.g. "Webmaster
-    // @recosac.com") still matches the allowlist. The client-side
-    // _isAdmin() helper already lower-cases; this keeps the two checks
-    // in sync so the UI and the rule agree on who is admin.
+    // Removal plan for the hardcoded fallback: verify from Cloud
+    // Logging that both seed admins have request.auth.token.admin ==
+    // true consistently (their next login refreshes the token). Then
+    // a one-line follow-up PR drops the `|| ... in [...]` branch.
+    //
+    // Email is lower-cased so admins who happened to register with
+    // mixed case still match. The client-side _isAdmin() helper does
+    // the same, keeping UI and rule in sync.
     function isAdmin() {
       return request.auth != null
-             && request.auth.token.email != null
-             && request.auth.token.email.lower() in [
-               'webmaster@recosac.com',
-               'sebastiand@recosac.com'
-             ];
+             && (
+               request.auth.token.admin == true
+               || (request.auth.token.email != null
+                   && request.auth.token.email.lower() in [
+                     'webmaster@recosac.com',
+                     'sebastiand@recosac.com'
+                   ])
+             );
     }
 
     // /users/{uid}
