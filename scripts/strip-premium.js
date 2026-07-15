@@ -55,7 +55,11 @@ const isPremiumDriveKey = (k) => k.startsWith('pdf_');
 // rows keep price / cur because those are the user-published listings
 // where the sale price IS the whole product — protecting them behind
 // login would break browsing.
-const HIST_SENSITIVE_FIELDS = ['price', 'priceTotal', 'priceProp', 'areaTech', 'areaOcup', 'txKey', 'cur'];
+// cur (currency symbol $ vs S/) intentionally stays in the public
+// JSON: it is not sensitive on its own (the value is just "$" or
+// "S/") and dropping it breaks the "🔒 $" placeholder on locked
+// cards, since the card would render "undefined 🔒" instead.
+const HIST_SENSITIVE_FIELDS = ['price', 'priceTotal', 'priceProp', 'areaTech', 'areaOcup', 'txKey'];
 
 // ── helpers that mirror the ones in index.html; kept in sync so the
 // public numbers we bake in match what getHistTotal / parkCount / etc.
