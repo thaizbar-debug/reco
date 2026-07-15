@@ -31,6 +31,12 @@ const HISTORY_CAP = 200;
 // aggressive; anything much beyond that is scraper behaviour.
 const CONTACT_RATE_LIMIT_PER_HOUR = 15;
 const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
+// Max getHistoricoDetail calls per authenticated user per rolling hour.
+// A user browsing 500 histórico cards in one hour is already very
+// intense; beyond that suggests a script trying to pull the full
+// dataset. Hitting the cap throws resource-exhausted (client shows
+// "demasiadas consultas, espera un momento").
+const HIST_DETAIL_RATE_LIMIT_PER_HOUR = 500;
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -462,5 +468,86 @@ exports.submitContactRequest = onCall(
     });
 
     return { contactRequestId: reqId };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getHistoricoDetail — return the price and area fields for one histórico.
+//
+// These used to live in the public data/properties.json shipped with the
+// SPA. Anyone with `curl` could scrape the full 1,750-row histórico
+// dataset in one request: address, exact sale price, propietario,
+// estacionamiento breakdown proxy, month index. That defeats the value
+// prop of Reco (having those numbers curated), so this callable moves
+// the sensitive fields behind auth + AppCheck + a per-user rate limit.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('getHistoricoDetail');
+//   const { data } = await fn({ propertyId: '748-1749-20' });
+//   // data = { detail: { price, priceTotal, priceProp, areaTech, areaOcup, txKey, cur } }
+//
+// Errors:
+//   unauthenticated       — no auth context / AppCheck failed
+//   failed-precondition   — email not verified
+//   invalid-argument      — missing / malformed propertyId
+//   not-found             — id has no detail doc (non-histórico or unmigrated)
+//   resource-exhausted    — hit HIST_DETAIL_RATE_LIMIT_PER_HOUR
+//
+// Idempotent: reading the same detail 500 times returns the same
+// numbers. Rate-limit records live in /histDetailAccess and are
+// pruned by a scheduled function (or grow indefinitely with minimal
+// cost; consider TTL policy after v1).
+// ─────────────────────────────────────────────────────────────────────────────
+exports.getHistoricoDetail = onCall(
+  {
+    region: REGION,
+    maxInstances: 20,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'getHistoricoDetail');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const propertyId = request.data && request.data.propertyId;
+    if (!propertyId || typeof propertyId !== 'string' || propertyId.length > 128) {
+      throw new HttpsError('invalid-argument', 'propertyId requerido.');
+    }
+
+    // Rate limit: aggregation count of this uid's accesses in the last
+    // rolling hour. count() is a single billed operation regardless of
+    // the number of matched docs, so this stays cheap even if a user
+    // hits the cap. Trades a tiny race window for simplicity — a burst
+    // of parallel requests may overshoot the cap by a handful, which
+    // is acceptable for a browsing rate limit (not a payment gate).
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    const recentSnap = await db.collection('histDetailAccess')
+      .where('uid', '==', uid)
+      .where('at', '>', oneHourAgo)
+      .count().get();
+    const recent = recentSnap.data().count;
+    if (recent >= HIST_DETAIL_RATE_LIMIT_PER_HOUR) {
+      throw new HttpsError(
+        'resource-exhausted',
+        `Demasiadas consultas de detalle en la última hora (máx ${HIST_DETAIL_RATE_LIMIT_PER_HOUR}). Intenta de nuevo más tarde.`
+      );
+    }
+
+    const detailRef = db.collection('propertiesHistoricoDetail').doc(propertyId);
+    const snap = await detailRef.get();
+    if (!snap.exists) {
+      throw new HttpsError('not-found', 'Detalle no encontrado.');
+    }
+
+    // Log the access AFTER the read succeeds. Not inside a transaction
+    // with the count(): the aggregation query cannot participate in a
+    // Firestore transaction. The trade-off is documented above.
+    await db.collection('histDetailAccess').add({
+      uid,
+      propertyId,
+      at: FieldValue.serverTimestamp(),
+    });
+
+    return { detail: snap.data() };
   }
 );
