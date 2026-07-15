@@ -7,6 +7,14 @@
         { "fieldPath": "fromUserId", "order": "ASCENDING" },
         { "fieldPath": "createdAt",  "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "histDetailAccess",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" },
+        { "fieldPath": "at",  "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
