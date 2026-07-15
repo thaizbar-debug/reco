@@ -7262,11 +7262,40 @@ function renderUserSection(section) {
   else { closeUserSection(); return; }
 }
 
-// Mirror of the firestore.rules allowlist. If you change either, change both.
+// Admin check. Mirrors firestore.rules → isAdmin(): prefers the
+// custom claim on the ID token, falls back to the seed email list
+// so the first deploy after the custom-claim rollout doesn't lock
+// out the two seed admins before their tokens refresh with the
+// new claim.
+//
+// Cached token claims live on auth.currentUser via getIdTokenResult().
+// The check below reads _adminClaimCache (populated on auth state
+// change below) instead of calling getIdTokenResult() sync, because
+// that returns a promise. The cache refreshes on every sign-in and
+// whenever refreshAdminClaim() is called (used by setAdminClaim to
+// give a newly-minted admin their moderation UI without a logout).
 const _ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
+let _adminClaimCache = false;
 function _isAdmin(){
   const u = auth.currentUser;
-  return !!(u && u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
+  if (!u) return false;
+  if (_adminClaimCache === true) return true;
+  return !!(u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
+}
+// Refresh the cached admin claim from the current user's ID token.
+// Called on auth state change AND right after setAdminClaim so a
+// promoted admin sees the moderation UI without having to logout.
+async function refreshAdminClaim() {
+  const u = auth.currentUser;
+  if (!u) { _adminClaimCache = false; return false; }
+  try {
+    const r = await u.getIdTokenResult(/* forceRefresh */ true);
+    _adminClaimCache = (r && r.claims && r.claims.admin === true);
+  } catch (e) {
+    _adminClaimCache = false;
+    console.warn('[reco] refreshAdminClaim failed:', e && e.message);
+  }
+  return _adminClaimCache;
 }
 
 // Fire-and-forget audit trail for admin actions. Writes a doc to
@@ -8446,9 +8475,14 @@ auth.onAuthStateChanged(function(user) {
     }
   }
   if (user){
+    // Refresh the admin claim cache. If the user was just promoted
+    // to admin via setAdminClaim they get moderation UI without
+    // needing to logout (the callable returns and we refresh here).
+    refreshAdminClaim();
     _pullUserDataFromFirestore();
     _checkUserHash();
   } else {
+    _adminClaimCache = false;
     _clearUserCache();
     if (document.body.classList.contains('show-user')) closeUserSection();
   }

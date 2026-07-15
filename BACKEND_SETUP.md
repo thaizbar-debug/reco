@@ -172,6 +172,14 @@ Only for local dev. Never commit those lines.
   post-deploy (needs Cloud Scheduler API enabled — Firebase enables
   it during `firebase deploy` if this is the first scheduled
   function in the project).
+- `setAdminClaim` — takes `{ email, admin: true|false }`, sets the
+  `admin` custom claim on that user's Firebase Auth token. Only
+  existing admins can call it (either via the claim or the seed
+  email allowlist during migration). Newly-promoted admins need to
+  refresh their ID token to see the moderation UI — the client
+  helper `refreshAdminClaim()` does this on the next sign-in, or
+  the caller can promote themselves and immediately call
+  `firebase.auth().currentUser.getIdToken(true)`.
 
 ### 5.5 What is NOT yet in place
 
@@ -384,3 +392,59 @@ If you prefer not to use Cloud Monitoring, the same info is always
 visible at
 https://console.cloud.google.com/logs/query?project=reco-5a5dd
 with the filter above.
+
+## 9. Admin custom claims (bootstrap + rotation)
+
+Admins used to be a hardcoded email list mirrored in `firestore.rules`,
+`functions/index.js` and `index.html`. Rotating an admin required a
+code change and three-file edit in lockstep. Post PR-#XX, admin is a
+Firebase custom claim (`token.admin === true`), managed by the
+`setAdminClaim` callable.
+
+### 9.1 Bootstrap on first deploy
+
+The rules and the callable both accept the SEED_ADMIN_EMAILS list
+(`webmaster@recosac.com`, `sebastiand@recosac.com`) as a fallback so
+the very first invocation works before anyone has the claim.
+
+1. Deploy Functions + rules.
+2. Log in as `webmaster@recosac.com` (or `sebastiand@recosac.com`).
+3. From the browser console, mint your own claim:
+   ```js
+   firebase.app().functions('southamerica-east1')
+     .httpsCallable('setAdminClaim')({email: 'webmaster@recosac.com', admin: true})
+     .then(r => console.log('claim set:', r.data))
+     .then(() => firebase.auth().currentUser.getIdToken(true))
+     .then(() => refreshAdminClaim())
+     .then(v => console.log('local claim cache:', v));
+   ```
+4. Repeat for `sebastiand@recosac.com` (log in as them, or grant them
+   from the same session; either works).
+5. Verify from Cloud Logging that subsequent moderation actions carry
+   `request.auth.token.admin === true`.
+
+### 9.2 Adding a new admin
+
+Existing admin, browser console:
+```js
+firebase.app().functions('southamerica-east1')
+  .httpsCallable('setAdminClaim')({email: 'nuevo@equipo.com', admin: true})
+  .then(r => console.log(r.data));
+```
+The new admin sees moderation UI on their next login (their token
+refreshes and `refreshAdminClaim()` populates the cache).
+
+### 9.3 Revoking
+
+Same callable with `admin: false`. Firestore rules stop honouring the
+claim immediately; the client hides the moderation UI on the next
+`onAuthStateChanged` firing. Force-refresh a token with
+`getIdToken(true)` if the change needs to be instant on their side.
+
+### 9.4 Removing the hardcoded fallback (follow-up)
+
+After both seed admins have `token.admin === true` for a few days
+(check Cloud Logging), drop the `|| ... in ['webmaster@recosac.com'
+...]` branch from `firestore.rules` and `SEED_ADMIN_EMAILS` from
+`functions/index.js` and `index.html`. Small PR, one-line change per
+file.
