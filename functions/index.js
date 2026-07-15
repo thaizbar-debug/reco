@@ -15,6 +15,7 @@
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
@@ -609,15 +610,98 @@ exports.onMailWrite = onDocumentWritten(
     const subject = (after.message && after.message.subject) || '(no subject)';
     const errorInfo = after.delivery.info || after.delivery.error || null;
 
+    const mailId = event.params && event.params.mailId;
+    const errorStr = errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null;
+
     logger.warn(`[onMailWrite] mail ${state}`, {
-      mailId: event.params && event.params.mailId,
-      to,
-      subject: String(subject).slice(0, 200),
-      state,
-      attempts: after.delivery.attempts,
-      error: errorInfo ? JSON.stringify(errorInfo).slice(0, 500) : null,
+      mailId, to, subject: String(subject).slice(0, 200), state,
+      attempts: after.delivery.attempts, error: errorStr,
       fromUserId: after.fromUserId || null,
     });
+
+    // Also write to /adminAuditLog so admins see mail failures in-app
+    // (alongside publication moderation, contactRequest handling, etc.)
+    // without having to open Cloud Logging. The admin SDK bypasses the
+    // rule that normally requires adminUid == request.auth.uid; we use
+    // 'system' as the adminUid marker so it's obvious from the log
+    // which entries came from a Cloud Function versus a real admin.
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: 'system',
+        adminEmail: null,
+        action: state === 'ERROR' ? 'mail.error' : 'mail.retryLimit',
+        targetType: 'mail',
+        targetId: mailId,
+        extras: {
+          to: String(to || '').slice(0, 200),
+          subject: String(subject).slice(0, 200),
+          state,
+          attempts: after.delivery.attempts || null,
+          error: errorStr,
+          fromUserId: after.fromUserId || null,
+        },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[onMailWrite] adminAuditLog write failed', { mailId, err: e && e.message });
+    }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// cleanupHistDetailAccess — scheduled cleanup for /histDetailAccess.
+//
+// getHistoricoDetail writes one doc per call to /histDetailAccess so
+// the rate-limit aggregation count() knows how many calls a uid made
+// in the last hour. Those docs have no purpose past that 1-hour
+// window — after they age out of the rate window, they're just paying
+// storage cost forever.
+//
+// This scheduled function runs every 6 hours, queries for docs with
+// `at < now - 2h`, and batch-deletes them. Buffer past the 1-hour
+// rate-limit window so we never race with an in-flight aggregation.
+//
+// Scale check: at 500 requests/user/hour * 100 active users = 50k
+// docs/hour, cleanup deletes ~300k per run. Firestore batch cap is
+// 500, so we chunk into multiple batches. Runs southamerica-east1
+// same as the rest.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.cleanupHistDetailAccess = onSchedule(
+  { region: REGION, schedule: 'every 6 hours', timeZone: 'America/Lima', memory: '256MiB' },
+  async () => {
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    let totalDeleted = 0;
+    let round = 0;
+    const perRoundLimit = 500;
+
+    // Chunk deletes into batches of 500 (Firestore batch cap).
+    // Loop until a query returns fewer than the limit — that's when
+    // there's nothing older left.
+    while (true) {
+      round++;
+      const snap = await db.collection('histDetailAccess')
+        .where('at', '<', cutoff)
+        .limit(perRoundLimit)
+        .get();
+      if (snap.empty) break;
+
+      const batch = db.batch();
+      snap.docs.forEach(d => batch.delete(d.ref));
+      await batch.commit();
+      totalDeleted += snap.size;
+
+      // Safety brake: never run more than 200 rounds (100k deletes)
+      // in a single invocation. If we're consistently hitting this
+      // cap the schedule is too infrequent or a bot is hammering
+      // getHistoricoDetail — page a human.
+      if (round >= 200) {
+        logger.warn(`[cleanupHistDetailAccess] hit round cap`, { totalDeleted, round });
+        break;
+      }
+      if (snap.size < perRoundLimit) break;
+    }
+
+    logger.info(`[cleanupHistDetailAccess] deleted ${totalDeleted} old access records in ${round} rounds`);
   }
 );
 

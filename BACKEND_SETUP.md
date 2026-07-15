@@ -162,6 +162,16 @@ Only for local dev. Never commit those lines.
   `logger.warn` line with `mailId`, `to`, subject, error info. Set up
   a Cloud Logging alert on this WARN to get pinged when Resend / SMTP
   starts silently dropping mail (see § 8 below).
+- `cleanupHistDetailAccess` — scheduled function that runs every 6
+  hours (America/Lima) and deletes `/histDetailAccess` docs older
+  than 2 hours. Those docs only exist to feed the per-user rate
+  limit in `getHistoricoDetail`; past the 1-hour window they are
+  storage overhead. Batches deletes at 500-per-round, capped at 200
+  rounds per invocation so a runaway growth doesn't blow the
+  Function timeout. First run happens automatically on schedule
+  post-deploy (needs Cloud Scheduler API enabled — Firebase enables
+  it during `firebase deploy` if this is the first scheduled
+  function in the project).
 - `setAdminClaim` — takes `{ email, admin: true|false }`, sets the
   `admin` custom claim on that user's Firebase Auth token. Only
   existing admins can call it (either via the claim or the seed
