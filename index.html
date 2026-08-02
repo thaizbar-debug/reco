@@ -14,17 +14,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
-<!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
+<!-- Geocodificación: HERE (principal) / Photon (fallback) -->
 <script>
-// HERE API key. Owned by the thaizbar@gmail.com account on
-// platform.here.com. Restricted to https://thaizbar-debug.github.io/*,
+// HERE API key. Restricted to https://thaizbar-debug.github.io/*,
 // https://reco.pe/*, https://*.reco.pe/*, http://localhost:*/* and
 // http://127.0.0.1:*/* via the "App restrictions" panel on that key —
 // this is what stops someone from copying it into another site and
 // draining our monthly quota. If you rotate this, update the
 // restriction list on the new key before publishing.
 const HERE_API_KEY='dInOXAAJVAKb3WAEZO1-gajllipt9cmi0MvXSje89no';
-const GOOGLE_MAPS_KEY='';
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -60,6 +58,15 @@ input,select{font-family:inherit}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
 
+/* ══════════════ VERIFY BANNER ══════════════ */
+.verify-banner{display:none;background:#fff4e5;border-bottom:1px solid #f5b342;color:#8a5a00;padding:10px 16px;font-size:.86rem;line-height:1.4;position:sticky;top:0;z-index:1200}
+.verify-banner-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.verify-banner-icon{font-size:1rem}
+.verify-banner-msg{flex:1;min-width:200px}
+.verify-banner-btn{padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer}
+.verify-banner-resend{background:#8a5a00;color:#fff;border:none}
+.verify-banner-check{background:transparent;color:#8a5a00;border:1px solid #f5b342}
+
 /* ══════════════ HEADER ══════════════ */
 header{
   position:fixed;top:0;left:0;right:0;z-index:200;
@@ -84,6 +91,8 @@ header .spacer{flex:1}
   transition:background .12s,border-color .12s;
 }
 .btn-publish:hover{background:var(--light);border-color:#94a3b8}
+header>.btn-ingresar{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none;padding:8px 18px;border-radius:var(--r);font-size:.82rem;font-weight:700;transition:opacity .12s;cursor:pointer}
+header>.btn-ingresar:hover{opacity:.88}
 
 /* ── Publish modal ── */
 .pub-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -519,8 +528,7 @@ header .spacer{flex:1}
 .res-list.view-list .card-dist{font-size:.75rem;margin-bottom:5px;flex-shrink:0}
 .res-list.view-list .card-specs{margin-bottom:4px;font-size:.77rem;gap:8px;flex-shrink:0}
 .res-list.view-list .card-feats{display:none;max-height:24px;overflow:hidden;margin:2px 0 0;flex-shrink:0}
-.res-list.view-list .card-bottom{flex-shrink:0}
-.res-list.view-list .card-bottom{gap:8px;margin-top:auto;padding-top:5px}
+.res-list.view-list .card-bottom{flex-shrink:0;gap:8px;margin-top:auto;padding-top:5px}
 .res-list.view-list .card-price{font-size:1.02rem}
 .res-list.view-list .card-detail-btn{font-size:.75rem;padding:5px 12px}
 .res-list.view-list .card-badges{position:absolute;bottom:14px;left:6px;top:auto;gap:4px}
@@ -1089,7 +1097,11 @@ header .spacer{flex:1}
   font-size:.92rem;font-weight:700;transition:opacity .15s;
 }
 .btn-pay:hover{opacity:.92}
+.btn-pay-disabled{opacity:.55;cursor:not-allowed}
 .pay-logos{text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px}
+.contact-alt{margin-top:24px;font-size:.82rem;color:var(--muted);line-height:1.6}
+.contact-alt-email{margin-top:6px}
+.contact-alt a{color:var(--blue);font-weight:700}
 .modal-close{
   float:right;background:rgba(255,255,255,.2);border:none;
   color:#fff;width:28px;height:28px;border-radius:99px;
@@ -1153,7 +1165,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 
 /* ═══ landing styles (scoped) ═══ */
 /* HEADER */
-#homeView header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-cyan);display:flex;align-items:center;padding:0 20px;gap:14px}
+#homeView header{position:fixed;top:0;left:0;right:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-cyan);display:flex;align-items:center;padding:0 20px;gap:14px}
 #homeView .logo{display:flex;align-items:center;cursor:pointer}
 #homeView .logo img{display:block;height:36px;width:auto;filter:drop-shadow(0 0 0.3px #06b6d4)}
 #homeView .btn-pub{background:transparent;border:1.5px solid var(--border);color:var(--txt);padding:7px 14px;border-radius:var(--r);font-size:.8rem;font-weight:600;transition:background .12s,border-color .12s;cursor:pointer}
@@ -1163,8 +1175,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 
 /* HERO */
 #homeView .hero{position:relative;height:clamp(460px,58vh,640px);overflow:visible;display:flex;align-items:flex-end}
-#homeView .hero-photo{overflow:hidden}
-#homeView .hero-photo{position:absolute;inset:0;background-image:url('data/hero-landing.png');background-size:cover;background-position:center center}
+#homeView .hero-photo{overflow:hidden;position:absolute;inset:0;background-image:url('data/hero-landing.png');background-size:cover;background-position:center center}
 #homeView .hero-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(5,28,46,.75) 0%,rgba(5,28,46,.5) 48%,rgba(5,28,46,.08) 80%,transparent 100%)}
 #homeView .hero-content{position:relative;z-index:1;width:100%;padding:0 6% 56px;max-width:840px}
 #homeView .hero h1{font-size:clamp(2.4rem,5.2vw,3.8rem);font-weight:900;color:#fff;line-height:1.04;letter-spacing:-.5px;margin-bottom:32px;text-shadow:0 2px 20px rgba(0,0,0,.28)}
@@ -1503,21 +1514,147 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .auth-switch{font-size:.82rem;color:var(--muted);text-align:center;margin-top:18px}
 .auth-switch a{color:var(--blue);font-weight:600;cursor:pointer;text-decoration:none}
 .auth-panel-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
+
+/* ── Full Report Overlay ── */
+#frOverlay{
+  position:fixed;inset:0;z-index:9999;
+  background:#F5F3EF;
+  overflow-y:auto;
+  transform:translateY(100%);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+  pointer-events:none;
+}
+#frOverlay.open{pointer-events:auto;transform:translateY(0)}
+.fr-wrap{max-width:1100px;margin:0 auto;}
+.fr-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#FDFCFA;border-bottom:1px solid rgba(14,17,23,.1);position:sticky;top:0;z-index:10;}
+.fr-nav-back{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:#2A2F3A;}
+.fr-nav-back:hover{background:#F5F3EF}
+.fr-nav-logo{font-family:'DM Serif Display',Georgia,serif;font-size:20px;display:flex;align-items:center;gap:7px;}
+.fr-nav-logo span{font-family:system-ui,sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:#0E1117;color:#fff;padding:2px 7px;border-radius:4px;}
+.fr-breadcrumb{font-size:12px;color:#8E94A0;display:none;}
+@media(min-width:600px){.fr-breadcrumb{display:block}}
+.fr-btn-ghost{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 12px;border-radius:6px;font-size:13px;cursor:pointer;color:#555B6A;}
+.fr-btn-ghost:hover{background:#F5F3EF}
+.fr-gallery{position:relative;background:#0E1117;overflow:hidden;height:420px;}
+@media(min-width:700px){.fr-gallery{height:480px;}}
+.fr-gallery-track{display:flex;height:100%;transition:transform .35s cubic-bezier(.4,0,.2,1);}
+.fr-gallery-slide{flex:0 0 100%;height:100%;overflow:hidden;position:relative;}
+.fr-gallery-slide img{width:100%;height:100%;object-fit:cover;display:block;}
+.fr-gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);border:1.5px solid rgba(255,255,255,.25);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;user-select:none;}
+.fr-gallery-arrow:hover{background:rgba(0,0,0,.8);}
+.fr-gallery-prev{left:14px;}
+.fr-gallery-next{right:14px;}
+.fr-gallery-arrow.hidden{display:none;}
+.fr-gallery-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5;}
+.fr-gallery-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;transition:background .2s,transform .2s;}
+.fr-gallery-dot.active{background:#fff;transform:scale(1.25);}
+.fr-gallery-counter{position:absolute;top:14px;right:14px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);color:#fff;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;z-index:5;}
+.fr-gallery-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:rgba(255,255,255,.7);background:#1e2535;}
+.fr-layout{display:grid;grid-template-columns:1fr;gap:0;padding:28px 20px 60px;align-items:start;}
+@media(min-width:820px){.fr-layout{grid-template-columns:1fr 320px;gap:32px;padding:32px 24px 60px;}}
+.fr-main{border-right:none;}
+@media(min-width:820px){.fr-main{border-right:1px solid rgba(14,17,23,.1);padding-right:32px;}}
+.fr-title{font-family:'DM Serif Display',Georgia,serif;font-size:28px;line-height:1.2;margin-bottom:6px;margin-top:4px;}
+@media(min-width:600px){.fr-title{font-size:34px;}}
+.fr-loc{font-size:13px;color:#555B6A;margin-bottom:22px;}
+.fr-verdict{background:linear-gradient(180deg,#EAF0FD,rgba(234,240,253,.4));border:1px solid rgba(26,79,191,.15);border-radius:14px;padding:20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start;}
+.fr-verdict-icon{width:44px;height:44px;border-radius:10px;background:#1A4FBF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.fr-verdict-body h3{font-family:'DM Serif Display',Georgia,serif;font-size:20px;color:#1A4FBF;margin-bottom:4px;}
+.fr-verdict-body p{font-size:13px;color:#555B6A;line-height:1.55;}
+.fr-verdict-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.fr-vchip{font-size:12px;font-weight:500;background:rgba(255,255,255,.8);border:1px solid rgba(26,79,191,.2);padding:5px 11px;border-radius:6px;color:#0E1117;}
+.fr-vchip strong{color:#1A4FBF;}
+.fr-price-block{margin-bottom:18px;}
+.fr-price-lbl{font-size:11px;color:#8E94A0;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px;}
+.fr-price-ask{font-family:'DM Serif Display',Georgia,serif;font-size:40px;line-height:1;margin-bottom:8px;}
+.fr-price-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.fr-price-pill{background:#EAF0FD;color:#1A4FBF;font-size:13px;font-weight:600;padding:4px 11px;border-radius:6px;}
+.fr-badge-new{background:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;}
+.fr-badge-bank{background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;}
+.fr-specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(14,17,23,.1);border:1px solid rgba(14,17,23,.1);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+@media(min-width:500px){.fr-specs-grid{grid-template-columns:repeat(5,1fr);}}
+.fr-spec-cell{background:#FDFCFA;padding:14px 10px;text-align:center;}
+.fr-spec-val{font-family:'DM Serif Display',Georgia,serif;font-size:22px;color:#0E1117;margin-bottom:2px;}
+.fr-spec-lbl{font-size:11px;color:#8E94A0;}
+.fr-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px;}
+.fr-tag{font-size:11px;color:#555B6A;background:#FDFCFA;border:1px solid rgba(14,17,23,.12);border-radius:4px;padding:4px 9px;}
+.fr-sec{margin-bottom:36px;}
+.fr-sec-title{font-family:'DM Serif Display',Georgia,serif;font-size:21px;margin-bottom:14px;display:flex;align-items:baseline;gap:10px;}
+.fr-sec-title small{font-family:system-ui,sans-serif;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0;}
+.fr-desc{font-size:14px;color:#2A2F3A;line-height:1.65;}
+.fr-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+@media(min-width:500px){.fr-photo-grid{grid-template-columns:repeat(3,1fr);}}
+.fr-photo-thumb{border-radius:8px;overflow:hidden;aspect-ratio:4/3;display:block;background:#E0DDD7;}
+.fr-photo-thumb img{width:100%;height:100%;object-fit:cover;}
+.fr-sec-sunarp{background:linear-gradient(135deg,#f8f6ff,#f0f4fc);border:1px solid rgba(26,79,191,.15);border-radius:14px;padding:22px;}
+.fr-sun-grid{display:grid;grid-template-columns:1fr;gap:20px;}
+@media(min-width:600px){.fr-sun-grid{grid-template-columns:1fr 1fr;}}
+.fr-sun-col-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:12px;}
+.fr-sun-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(14,17,23,.07);font-size:13px;}
+.fr-sun-row:last-child{border-bottom:none;}
+.fr-sun-row span{color:#555B6A;}
+.fr-sun-row strong{color:#0E1117;font-weight:600;}
+.fr-sun-row-total{background:rgba(26,79,191,.06);border-radius:6px;padding:8px 10px;border-bottom:none;margin-top:6px;}
+.fr-sun-row-total strong{font-size:15px;color:#1A4FBF;}
+.fr-pdf-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
+.fr-pdf-btn{display:inline-flex;align-items:center;gap:7px;background:#FDFCFA;border:1.5px solid rgba(26,79,191,.25);border-radius:8px;padding:9px 14px;font-size:13px;color:#1A4FBF;text-decoration:none;font-weight:500;transition:background .15s;}
+.fr-pdf-btn:hover{background:#EAF0FD;}
+.fr-ctx-grid{display:grid;grid-template-columns:1fr;gap:12px;}
+@media(min-width:500px){.fr-ctx-grid{grid-template-columns:repeat(3,1fr);}}
+.fr-ctx-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:16px;}
+.fr-ctx-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:6px;}
+.fr-ctx-val{font-family:'DM Serif Display',Georgia,serif;font-size:24px;margin-bottom:4px;}
+.fr-ctx-sub{font-size:12px;color:#555B6A;line-height:1.5;}
+.fr-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-top:8px;}
+.fr-badge.green{background:#E8F4EE;color:#1A6B4A;}
+.fr-badge.amber{background:#FDF3E3;color:#8B5E0A;}
+.fr-score-layout{display:grid;grid-template-columns:1fr;gap:16px;}
+@media(min-width:500px){.fr-score-layout{grid-template-columns:1fr 200px;}}
+.fr-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fr-score-item{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:10px;padding:12px;}
+.fr-score-label{font-size:12px;color:#555B6A;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.fr-score-label span{font-family:'DM Serif Display',Georgia,serif;font-size:16px;color:#0E1117;}
+.fr-score-bar-track{height:5px;background:#E0DDD7;border-radius:3px;overflow:hidden;}
+.fr-score-total{background:#0E1117;color:#fff;border-radius:12px;padding:22px;text-align:center;}
+.fr-score-num{font-family:'DM Serif Display',Georgia,serif;font-size:58px;line-height:1;}
+.fr-sidebar{margin-top:24px;}
+@media(min-width:820px){.fr-sidebar{margin-top:0;position:sticky;top:70px;}}
+.fr-sidebar-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:14px;padding:18px;margin-bottom:14px;}
+.fr-sidebar-title{font-size:13px;font-weight:600;margin-bottom:14px;}
+.fr-cta-main{display:block;width:100%;background:#1A4FBF;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
+.fr-cta-main:hover{background:#1642a8}
+.fr-cta-sec{display:block;width:100%;background:none;color:#0E1117;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;}
+.fr-cta-sec:hover{background:#F5F3EF}
+.fr-agent-row{display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(14,17,23,.1);margin-top:14px;}
+.fr-agent-av{width:36px;height:36px;border-radius:50%;background:#EAF0FD;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#1A4FBF;}
+.fr-agent-name{font-size:13px;font-weight:500;}
+.fr-agent-resp{font-size:11px;color:#8E94A0;}
+.fr-sim-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:#555B6A;}
+.fr-sim-input{width:88px;border:1px solid rgba(14,17,23,.18);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;text-align:right;color:#0E1117;background:#F5F3EF;outline:none;}
+.fr-sim-results{background:#F5F3EF;border-radius:8px;padding:12px;margin-top:10px;}
+.fr-sim-result-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px;}
+.fr-sim-result-row span:last-child{font-weight:600;}
+.fr-sim-total{padding-top:8px;border-top:1px solid rgba(14,17,23,.1);font-weight:600;margin-bottom:0;}
+.fr-sim-total span:last-child{color:#1A4FBF;}
+.fr-vanet{display:flex;align-items:flex-start;gap:10px;background:#F5F3EF;border:1px solid rgba(14,17,23,.1);border-radius:8px;padding:12px;}
+.fr-vanet-dot{width:8px;height:8px;border-radius:50%;background:#3DB07A;flex-shrink:0;margin-top:4px;}
+.fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
+.fr-vanet-text strong{color:#0E1117;font-weight:600;}
 </style>
 </head>
 <body>
 <!-- Email verification banner. Sits at the very top so it can't be
      scrolled past. Hidden by default; auth.onAuthStateChanged toggles
      it based on user.emailVerified. -->
-<div id="verifyBanner" style="display:none;background:#fff4e5;border-bottom:1px solid #f5b342;color:#8a5a00;padding:10px 16px;font-size:.86rem;line-height:1.4;position:sticky;top:0;z-index:1200">
-  <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span style="font-size:1rem">⚠️</span>
-    <span style="flex:1;min-width:200px">
+<div id="verifyBanner" class="verify-banner">
+  <div class="verify-banner-inner">
+    <span class="verify-banner-icon">⚠️</span>
+    <span class="verify-banner-msg">
       Verificá tu email <strong id="verifyBannerEmail"></strong> para publicar y desbloquear informes.
       Revisá tu bandeja (y spam) por el link que te enviamos.
     </span>
-    <button id="verifyResendBtn" onclick="resendVerificationEmail()" style="background:#8a5a00;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Reenviar link</button>
-    <button onclick="refreshVerificationStatus()" style="background:transparent;color:#8a5a00;border:1px solid #f5b342;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Ya lo verifiqué</button>
+    <button class="verify-banner-btn verify-banner-resend" id="verifyResendBtn" onclick="resendVerificationEmail()">Reenviar link</button>
+    <button class="verify-banner-btn verify-banner-check" onclick="refreshVerificationStatus()">Ya lo verifiqué</button>
   </div>
 </div>
 <script>
@@ -1534,13 +1671,31 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <div id="homeView">
 <header>
   <div class="logo" onclick="goHome()" style="cursor:pointer">
-      <img src="data:image/png;base64,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" alt="reco"/>
+      <img data-logo alt="reco"/>
   </div>
   <div class="spacer"></div>
   <button class="btn-pub" onclick="goToApp('#publish')">Publicar inmueble</button>
   <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="homeKeyCount">0</span></button>
   <button class="btn-ingresar" id="homeIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
-  <div id="homeUserWrap" style="display:none;align-items:center;position:relative"></div>
+  <div class="user-wrap" id="homeUserWrap" style="display:none">
+    <button class="user-btn" id="homeUserInitials" onclick="toggleUserDropdown(this)">U</button>
+    <div class="user-dropdown">
+      <div class="user-dropdown-inner">
+        <div class="u-header">
+          <div class="u-name" id="homeUserName">Usuario</div>
+          <div class="u-email" id="homeUserEmail">email</div>
+        </div>
+        <a href="#perfil" onclick="navigateUserSection('perfil')">👤 Mi perfil</a>
+        <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
+        <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
+        <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
+        <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
+        <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
+        <hr/>
+        <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
+      </div>
+    </div>
+  </div>
 </header>
 
 <section class="hero">
@@ -1739,7 +1894,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="footer-inner">
     <div class="footer-grid">
       <div>
-        <div class="footer-logo"><img src="data:image/png;base64,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" alt="reco" style="height:32px;width:auto;filter:brightness(0) invert(1)"/></div>
+        <div class="footer-logo"><img data-logo alt="reco" style="height:32px;width:auto;filter:brightness(0) invert(1)"/></div>
         <p class="footer-desc">La plataforma de valores inmobiliarios más completa de Lima. Precios de venta, alquiler e históricos de Registros Públicos.</p>
       </div>
       <div class="footer-col"><h4>Explorar</h4><ul>
@@ -1825,7 +1980,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: TÉRMINOS ══════ -->
 <div class="legal-page-view" id="pageTerminos">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -1914,7 +2069,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: PRIVACIDAD ══════ -->
 <div class="legal-page-view" id="pagePrivacidad">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -1983,7 +2138,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: POLÍTICA DE COOKIES ══════ -->
 <div class="legal-page-view" id="pageCookies">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -2051,7 +2206,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: LIBRO DE RECLAMACIONES ══════ -->
 <div class="legal-page-view" id="pageReclamaciones">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -2078,7 +2233,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: FAQS ══════ -->
 <div class="legal-page-view" id="pageFaqs">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -2094,7 +2249,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ PAGE: CONTACTO ══════ -->
 <div class="legal-page-view" id="pageContacto">
   <nav class="legal-page-nav">
-    <div class="logo" onclick="goHome()"><img src="data:image/png;base64,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" alt="reco"/></div>
+    <div class="logo" onclick="goHome()"><img data-logo alt="reco"/></div>
     <button class="legal-back" onclick="goHome()">← Volver al inicio</button>
   </nav>
   <div class="legal-page-wrap">
@@ -2103,22 +2258,22 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <h1>Contacto</h1>
       <p class="legal-lead">¿Tienes alguna consulta, sugerencia o comentario? Completa el formulario y te responderemos a la brevedad.</p>
     </div>
-    <div class="rec-form">
+    <form class="rec-form" onsubmit="event.preventDefault();enviarContacto()">
       <div class="rec-section">
         <div class="rec-grid">
-          <div class="rec-field"><label>Nombre *</label><input id="ctNombre" placeholder="Tu nombre"></div>
-          <div class="rec-field"><label>Email *</label><input type="email" id="ctEmail" placeholder="tu@email.com"></div>
-          <div class="rec-field rec-col-2"><label>Asunto *</label><input id="ctAsunto" placeholder="¿Sobre qué nos escribes?"></div>
-          <div class="rec-field rec-col-2"><label>Mensaje *</label><textarea id="ctMensaje" rows="5" placeholder="Escribe tu mensaje aquí…"></textarea></div>
+          <div class="rec-field"><label>Nombre *</label><input id="ctNombre" placeholder="Tu nombre" required></div>
+          <div class="rec-field"><label>Email *</label><input type="email" id="ctEmail" placeholder="tu@email.com" required></div>
+          <div class="rec-field rec-col-2"><label>Asunto *</label><input id="ctAsunto" placeholder="¿Sobre qué nos escribes?" required></div>
+          <div class="rec-field rec-col-2"><label>Mensaje *</label><textarea id="ctMensaje" rows="5" placeholder="Escribe tu mensaje aquí…" required></textarea></div>
         </div>
       </div>
-    </div>
-    <div class="rec-actions">
-      <button class="btn-primary" onclick="enviarContacto()">Enviar mensaje</button>
-    </div>
-    <div style="margin-top:24px;font-size:.82rem;color:var(--muted);line-height:1.6">
+      <div class="rec-actions">
+        <button type="submit" class="btn-primary">Enviar mensaje</button>
+      </div>
+    </form>
+    <div class="contact-alt">
       <p>También puedes escribirnos directamente a:</p>
-      <p style="margin-top:6px"><a href="mailto:webmaster@recosac.com" style="color:var(--blue);font-weight:700">webmaster@recosac.com</a> — Consultas generales, temas legales y técnicos</p>
+      <p class="contact-alt-email"><a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> — Consultas generales, temas legales y técnicos</p>
     </div>
   </div>
 </div>
@@ -2126,7 +2281,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <!-- ══════ HEADER ══════ -->
 <header>
   <div class="logo" style="cursor:pointer" onclick="goHome()">
-    <img src="data:image/png;base64,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" alt="reco" style="height:36px;width:auto"/>
+    <img data-logo alt="reco" style="height:36px;width:auto"/>
   </div>
 
   <div class="spacer"></div>
@@ -2135,7 +2290,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="keyCount">0</span></button>
 
-  <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
+  <button class="btn-ingresar" id="appIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
     <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV</button>
     <div class="user-dropdown">
@@ -2646,7 +2801,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-uv">S/ 7 / llave · Ahorra 30%</div>
         </div>
       </div>
-      <button class="btn-pay" id="payBtn" onclick="simulatePay()" disabled style="opacity:.55;cursor:not-allowed">Compra deshabilitada · Próximamente</button>
+      <button class="btn-pay btn-pay-disabled" id="payBtn" onclick="simulatePay()" disabled>Compra deshabilitada · Próximamente</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
     </div>
   </div>
@@ -2655,6 +2810,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 <div class="toast" id="toast"></div>
 
 <script>
+const LOGO_SRC='data:image/png;base64,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';
 // ══════════════════════════════════════════════════════════════
 //  CONFIGURACIÓN — pega aquí los IDs de tus Google Sheets
 
@@ -2881,6 +3037,9 @@ const S = {
 const _premiumCache = new Map(); // propertyId -> { owner, phone, sun, val, pdfs, ... }
 const _premiumPending = new Set(); // propertyId currently being fetched (dedupe)
 
+// TODO: Audit direct Firestore writes (db.collection('mail').add, admin ops)
+// vs Cloud Function calls for consistency. User-facing mutations should
+// go through Cloud Functions; admin ops can stay client-side with rules.
 function _getFunctions(){
   return firebase.app().functions('southamerica-east1');
 }
@@ -4167,21 +4326,9 @@ function _propHtml(hits,val){
   return `<div class="sg-section">Propiedades</div>`+hits.map(s=>_sgItemHtml(s,val)).join('');
 }
 function showSuggestions(val){
-  const el=document.getElementById('sgDrop');
-  if(!val||val.length<1){el.style.display='none';return;}
-  const q=val.toLowerCase();
-  const allHits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q));
-  const distHits=allHits.filter(s=>s.sub==='Distrito').slice(0,3);
-  const propHits=allHits.filter(s=>s.sub!=='Distrito').slice(0,4);
-  let body='';
-  if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtml(s,val)).join('');
-  if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtml(s,val)).join('');
-  const showGeoLoading=val.length>=3;
-  const geoPlaceholder=showGeoLoading?'<div id="sgGeo"><div class="sg-geo-loading">Buscando ubicaciones…</div></div>':'<div id="sgGeo"></div>';
-  el.innerHTML=body+geoPlaceholder;
-  el.style.display=(body||showGeoLoading)?'block':'none';
+  _renderSearchDropdown(val,SG_DATA,'sgDrop','sgGeo',_sgItemHtml);
 }
-// ─── Geocodificación: HERE (principal) → Google (opcional) → Photon (fallback) ───
+// ─── Geocodificación: HERE (principal) → Photon (fallback) ───
 
 // HERE Autosuggest — devuelve sugerencias CON coordenadas (1 sola llamada)
 async function _fetchHere(q){
@@ -4200,47 +4347,6 @@ async function _fetchHere(q){
   }));
 }
 
-// Google Places Autocomplete (carga dinámica si hay key)
-let _gAutoService=null, _gGeocoder=null, _gReady=false;
-(function _loadGooglePlaces(){
-  if(typeof GOOGLE_MAPS_KEY==='undefined'||!GOOGLE_MAPS_KEY) return;
-  const s=document.createElement('script');
-  s.src=`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_KEY}&libraries=places&language=es&callback=_gPlacesInit`;
-  s.async=true; s.defer=true;
-  document.head.appendChild(s);
-})();
-function _gPlacesInit(){
-  _gAutoService=new google.maps.places.AutocompleteService();
-  _gGeocoder=new google.maps.Geocoder();
-  _gReady=true;
-}
-function _fetchGooglePlaces(q){
-  return new Promise((resolve)=>{
-    if(!_gReady||!_gAutoService){ resolve([]); return; }
-    _gAutoService.getPlacePredictions({
-      input:q, componentRestrictions:{country:'pe'}, types:['geocode','establishment']
-    },(preds,status)=>{
-      if(status!==google.maps.places.PlacesServiceStatus.OK||!preds){ resolve([]); return; }
-      resolve(preds.slice(0,5).map(p=>({
-        label:p.structured_formatting.main_text,
-        sub:p.structured_formatting.secondary_text||'Perú',
-        placeId:p.place_id,
-        src:'google'
-      })));
-    });
-  });
-}
-function _geocodePlaceId(placeId){
-  return new Promise((resolve)=>{
-    if(!_gGeocoder){ resolve(null); return; }
-    _gGeocoder.geocode({placeId},(results,status)=>{
-      if(status!=='OK'||!results||!results[0]){ resolve(null); return; }
-      const loc=results[0].geometry.location;
-      resolve({lat:loc.lat(),lng:loc.lng()});
-    });
-  });
-}
-
 // Photon (Komoot) — fallback gratuito sin key
 async function _fetchPhoton(q){
   const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=es&lat=-12.05&lon=-77.04`;
@@ -4256,63 +4362,61 @@ async function _fetchPhoton(q){
   });
 }
 
-// Cadena de búsqueda: HERE → Google → Photon
+// Cadena de búsqueda: HERE → Photon
 async function _fetchGeoResults(q){
-  // 1. HERE (principal — datos propietarios, 250K gratis/mes)
   if(HERE_API_KEY){
     const hereResults=await _fetchHere(q);
     if(hereResults.length) return hereResults;
   }
-  // 2. Google Places (si está configurado)
-  if(_gReady){
-    const googleResults=await _fetchGooglePlaces(q);
-    if(googleResults.length) return googleResults;
-  }
-  // 3. Photon (fallback gratuito sin key)
   return await _fetchPhoton(q);
 }
 
-let _geoFetchId=0;
-async function _fetchGeo(q){
-  const fetchId=++_geoFetchId;
+function _renderSearchDropdown(val,sgData,dropId,geoId,itemHtmlFn){
+  const drop=document.getElementById(dropId);
+  if(!val||val.length<1){drop.style.display='none';return;}
+  const q=val.toLowerCase();
+  const allHits=sgData.filter(s=>s.label.toLowerCase().includes(q));
+  const distHits=allHits.filter(s=>s.sub==='Distrito').slice(0,3);
+  const propHits=allHits.filter(s=>s.sub!=='Distrito').slice(0,4);
+  let body='';
+  if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>itemHtmlFn(s,val)).join('');
+  if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>itemHtmlFn(s,val)).join('');
+  const showGeo=val.length>=3;
+  drop.innerHTML=body+(showGeo?`<div id="${geoId}"><div class="sg-geo-loading">Buscando ubicaciones…</div></div>`:`<div id="${geoId}"></div>`);
+  drop.style.display=(body||showGeo)?'block':'none';
+}
+
+const _geoFetchState={app:0,landing:0};
+async function _fetchGeoInto(q,geoId,dropId,pickFn,stateKey){
+  const fetchId=++_geoFetchState[stateKey];
   try{
     const items=await _fetchGeoResults(q);
-    if(fetchId!==_geoFetchId) return;
-    const el=document.getElementById('sgGeo');
-    const drop=document.getElementById('sgDrop');
+    if(fetchId!==_geoFetchState[stateKey]) return;
+    const el=document.getElementById(geoId);
+    const drop=document.getElementById(dropId);
     if(!drop) return;
     if(!items.length){
       if(el) el.innerHTML='<div class="sg-geo-loading">No se encontraron ubicaciones</div>';
-      setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
+      setTimeout(()=>{const e=document.getElementById(geoId);if(e)e.innerHTML='';},2000);
       return;
     }
     const secHtml=`<div class="sg-section">Direcciones</div>`
       +items.map(r=>{
-        if(r.src==='here'){
-          return `<div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
-            <span class="sg-ico">📍</span>
-            <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
-          </div>`;
-        }
-        if(r.src==='google'){
-          return `<div class="sg-item sg-geo" onmousedown="pickGoogleResult('${r.placeId}','${r.label.replace(/'/g,"\\'")}')">
-            <span class="sg-ico">📍</span>
-            <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
-          </div>`;
-        }
-        return `<div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
-          <span class="sg-ico">🗺️</span>
-          <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
-        </div>`;
+        const icon=r.src==='here'?'📍':'🗺️';
+        return `<div class="sg-item sg-geo" onmousedown="${pickFn}(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">${icon}</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
       }).join('');
-    if(el) el.outerHTML=secHtml;
-    else drop.insertAdjacentHTML('beforeend',secHtml);
+    if(el) el.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
     drop.style.display='block';
   }catch(e){
-    const el=document.getElementById('sgGeo');
+    const el=document.getElementById(geoId);
     if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
-    setTimeout(()=>{const e=document.getElementById('sgGeo');if(e)e.innerHTML='';},2000);
+    setTimeout(()=>{const e=document.getElementById(geoId);if(e)e.innerHTML='';},2000);
   }
+}
+
+let _geoFetchId=0;
+async function _fetchGeo(q){
+  return _fetchGeoInto(q,'sgGeo','sgDrop','pickGeoResult','app');
 }
 
 function _activateRadiusAt(lat,lng,label){
@@ -4327,13 +4431,6 @@ function _activateRadiusAt(lat,lng,label){
   drawRadiusCircle();
   leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
   applyFilters();
-}
-async function pickGoogleResult(placeId,label){
-  document.getElementById('searchQ').value='';
-  document.getElementById('sgDrop').style.display='none';
-  const loc=await _geocodePlaceId(placeId);
-  if(!loc){ toast('No se pudo obtener la ubicación'); return; }
-  _activateRadiusAt(loc.lat,loc.lng,label);
 }
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
@@ -4705,12 +4802,14 @@ function buildValChart(p, valOverride){
 }
 
 // ─────────────────────── SERIE HISTÓRICA TASACIONES ───────────────────────
-const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1897,"y":{"2017":{"m":1800.0,"n":566},"2018":{"m":2500.0,"n":1,"v":38.9},"2019":{"m":1800.0,"n":218,"v":-28.0},"2020":{"m":1800.0,"n":264,"v":0.0},"2021":{"m":1700.0,"n":377,"v":-5.6},"2022":{"m":1700.0,"n":61,"v":0.0},"2023":{"m":1800.0,"n":353,"v":5.9},"2024":{"m":4200.0,"n":2,"v":133.3}}},"MIRAFLORES":{"dep":"LIMA","n":1303,"y":{"2017":{"m":2800.0,"n":340},"2018":{"m":3000.0,"n":21,"v":7.1},"2019":{"m":3300.0,"n":133,"v":10.0},"2020":{"m":3700.0,"n":167,"v":12.1},"2021":{"m":500.0,"n":7,"v":-86.5},"2022":{"m":2750.0,"n":36,"v":450.0},"2023":{"m":900.0,"n":5,"v":-67.3},"2024":{"m":6250.0,"n":2,"v":594.4}}},"CERCADO DE LIMA":{"dep":"LIMA","n":1121,"y":{"2017":{"m":1980.0,"n":267},"2018":{"m":1700.0,"n":23,"v":-14.1},"2019":{"m":1400.0,"n":155,"v":-17.6},"2020":{"m":1850.0,"n":118,"v":32.1},"2021":{"m":2200.0,"n":216,"v":18.9},"2022":{"m":1300.0,"n":39,"v":-40.9},"2023":{"m":2000.0,"n":302,"v":53.8},"2024":{"m":1200.0,"n":1,"v":-40.0}}},"SAN ISIDRO":{"dep":"LIMA","n":819,"y":{"2017":{"m":3000.0,"n":251},"2018":{"m":4500.0,"n":11,"v":50.0},"2019":{"m":3800.0,"n":88,"v":-15.6},"2020":{"m":3900.0,"n":173,"v":2.6},"2021":{"m":3150.0,"n":117,"v":-19.2},"2022":{"m":3255.0,"n":24,"v":3.3},"2023":{"m":3250.0,"n":153,"v":-0.2},"2024":{"m":3360.0,"n":2,"v":3.4}}},"ATE":{"dep":"LIMA","n":807,"y":{"2017":{"m":1400.0,"n":193},"2018":{"m":1200.0,"n":15,"v":-14.3},"2019":{"m":1150.0,"n":113,"v":-4.2},"2020":{"m":800.0,"n":113,"v":-30.4},"2021":{"m":765.0,"n":171,"v":-4.4},"2022":{"m":1300.0,"n":35,"v":69.9},"2023":{"m":1075.0,"n":166,"v":-17.3},"2024":{"m":1400.0,"n":1,"v":30.2}}},"LA VICTORIA":{"dep":"LIMA","n":785,"y":{"2017":{"m":1785.0,"n":116},"2018":{"m":1400.0,"n":13,"v":-21.6},"2019":{"m":2550.0,"n":76,"v":82.1},"2020":{"m":2000.0,"n":102,"v":-21.6},"2021":{"m":1850.0,"n":155,"v":-7.5},"2022":{"m":1675.0,"n":36,"v":-9.5},"2023":{"m":422.5,"n":14,"v":-74.8},"2024":{"m":1870.0,"n":3,"v":342.6}}},"LA MOLINA":{"dep":"LIMA","n":721,"y":{"2017":{"m":1400.0,"n":184},"2018":{"m":1200.0,"n":18,"v":-14.3},"2019":{"m":1200.0,"n":89,"v":0.0},"2020":{"m":1200.0,"n":123,"v":0.0},"2021":{"m":1100.0,"n":162,"v":-8.3},"2022":{"m":1000.0,"n":19,"v":-9.1},"2023":{"m":700.0,"n":1,"v":-30.0},"2024":{"m":2650.0,"n":2,"v":278.6}}},"SAN BORJA":{"dep":"LIMA","n":640,"y":{"2017":{"m":2000.0,"n":188},"2018":{"m":2000.0,"n":27,"v":0.0},"2019":{"m":2312.5,"n":72,"v":15.6},"2020":{"m":2100.0,"n":109,"v":-9.2},"2021":{"m":1900.0,"n":122,"v":-9.5},"2022":{"m":2005.0,"n":22,"v":5.5},"2023":{"m":1865.0,"n":100,"v":-7.0}}},"LINCE":{"dep":"LIMA","n":628,"y":{"2017":{"m":1980.0,"n":114},"2018":{"m":2200.0,"n":8,"v":11.1},"2019":{"m":2300.0,"n":40,"v":4.5},"2020":{"m":4500.0,"n":121,"v":95.7},"2021":{"m":3875.0,"n":198,"v":-13.9},"2022":{"m":4500.0,"n":28,"v":16.1},"2023":{"m":2640.0,"n":118,"v":-41.3},"2024":{"m":2700.0,"n":1,"v":2.3}}},"SAN MIGUEL":{"dep":"LIMA","n":605,"y":{"2017":{"m":1500.0,"n":160},"2018":{"m":1550.0,"n":10,"v":3.3},"2019":{"m":1500.0,"n":61,"v":-3.2},"2020":{"m":1500.0,"n":83,"v":0.0},"2021":{"m":1650.0,"n":114,"v":10.0},"2022":{"m":1400.0,"n":17,"v":-15.2},"2023":{"m":1500.0,"n":157,"v":7.1},"2024":{"m":1840.0,"n":3,"v":22.7}}},"CARABAYLLO":{"dep":"LIMA","n":556,"y":{"2017":{"m":380.0,"n":77},"2018":{"m":400.0,"n":5,"v":5.3},"2019":{"m":350.0,"n":52,"v":-12.5},"2020":{"m":300.0,"n":115,"v":-14.3},"2021":{"m":300.0,"n":118,"v":0.0},"2022":{"m":290.0,"n":14,"v":-3.3},"2023":{"m":400.0,"n":174,"v":37.9},"2024":{"m":550.0,"n":1,"v":37.5}}},"TRUJILLO":{"dep":"LA LIBERTAD","n":553,"y":{"2017":{"m":1300.0,"n":1},"2019":{"m":1000.0,"n":1,"v":-23.1},"2020":{"m":450.0,"n":1,"v":-55.0},"2021":{"m":415.0,"n":4,"v":-7.8},"2022":{"m":800.0,"n":31,"v":92.8},"2023":{"m":990.0,"n":2,"v":23.8},"2024":{"m":1300.0,"n":2,"v":31.3}}},"PUEBLO LIBRE":{"dep":"LIMA","n":512,"y":{"2017":{"m":1800.0,"n":164},"2018":{"m":1800.0,"n":10,"v":0.0},"2019":{"m":1875.0,"n":36,"v":4.2},"2020":{"m":2250.0,"n":71,"v":20.0},"2021":{"m":2400.0,"n":120,"v":6.7},"2022":{"m":2650.0,"n":24,"v":10.4},"2023":{"m":530.0,"n":1,"v":-80.0},"2024":{"m":3750.0,"n":1,"v":607.5}}},"SAN JUAN DE LURIGANCHO":{"dep":"LIMA","n":506,"y":{"2017":{"m":930.0,"n":1},"2018":{"m":700.0,"n":8,"v":-24.7},"2019":{"m":700.0,"n":73,"v":0.0},"2020":{"m":670.0,"n":58,"v":-4.3},"2021":{"m":700.0,"n":94,"v":4.5},"2022":{"m":665.0,"n":12,"v":-5.0},"2023":{"m":800.0,"n":167,"v":20.3},"2024":{"m":650.0,"n":4,"v":-18.8}}},"CHORRILLOS":{"dep":"LIMA","n":491,"y":{"2017":{"m":950.0,"n":142},"2018":{"m":900.0,"n":6,"v":-5.3},"2019":{"m":1000.0,"n":64,"v":11.1},"2020":{"m":915.0,"n":76,"v":-8.5},"2021":{"m":920.0,"n":99,"v":0.5},"2022":{"m":840.0,"n":15,"v":-8.7},"2023":{"m":840.0,"n":89,"v":0.0}}},"SURQUILLO":{"dep":"LIMA","n":491,"y":{"2017":{"m":2000.0,"n":166},"2018":{"m":2700.0,"n":11,"v":35.0},"2019":{"m":2000.0,"n":68,"v":-25.9},"2020":{"m":2250.0,"n":63,"v":12.5},"2021":{"m":2150.0,"n":98,"v":-4.4},"2022":{"m":2275.0,"n":14,"v":5.8},"2023":{"m":2100.0,"n":69,"v":-7.7},"2024":{"m":1900.0,"n":2,"v":-9.5}}},"SAN MARTIN DE PORRES":{"dep":"LIMA","n":435,"y":{"2017":{"m":800.0,"n":89},"2018":{"m":800.0,"n":9,"v":0.0},"2019":{"m":800.0,"n":46,"v":0.0},"2020":{"m":800.0,"n":54,"v":0.0},"2021":{"m":800.0,"n":75,"v":0.0},"2022":{"m":780.0,"n":13,"v":-2.5},"2023":{"m":830.0,"n":146,"v":6.4},"2024":{"m":500.0,"n":3,"v":-39.8}}},"MAGDALENA DEL MAR":{"dep":"LIMA","n":426,"y":{"2017":{"m":2150.0,"n":108},"2018":{"m":1700.0,"n":10,"v":-20.9},"2019":{"m":1900.0,"n":24,"v":11.8},"2020":{"m":2400.0,"n":58,"v":26.3},"2021":{"m":2200.0,"n":112,"v":-8.3},"2022":{"m":2250.0,"n":12,"v":2.3},"2023":{"m":2515.0,"n":102,"v":11.8}}},"LOS OLIVOS":{"dep":"LIMA","n":424,"y":{"2017":{"m":1100.0,"n":88},"2018":{"m":1250.0,"n":10,"v":13.6},"2019":{"m":1025.0,"n":48,"v":-18.0},"2020":{"m":1100.0,"n":67,"v":7.3},"2021":{"m":1150.0,"n":71,"v":4.5},"2022":{"m":1150.0,"n":13,"v":0.0},"2023":{"m":1050.0,"n":125,"v":-8.7},"2024":{"m":1050.0,"n":2,"v":0.0}}},"JESUS MARIA":{"dep":"LIMA","n":416,"y":{"2017":{"m":2100.0,"n":135},"2018":{"m":2400.0,"n":7,"v":14.3},"2019":{"m":2500.0,"n":32,"v":4.2},"2020":{"m":2550.0,"n":58,"v":2.0},"2021":{"m":2500.0,"n":86,"v":-2.0},"2022":{"m":1900.0,"n":9,"v":-24.0},"2023":{"m":2600.0,"n":87,"v":36.8},"2024":{"m":3325.0,"n":2,"v":27.9}}},"CHICLAYO":{"dep":"LA LIBERTAD","n":356,"y":{"2017":{"m":1225.0,"n":2},"2018":{"m":2100.0,"n":1,"v":71.4},"2019":{"m":1500.0,"n":3,"v":-28.6},"2020":{"m":250.0,"n":1,"v":-83.3},"2021":{"m":950.0,"n":2,"v":280.0},"2022":{"m":690.0,"n":26,"v":-27.4},"2023":{"m":780.0,"n":1,"v":13.0}}},"BREÑA":{"dep":"LIMA","n":344,"y":{"2017":{"m":1350.0,"n":72},"2018":{"m":1350.0,"n":7,"v":0.0},"2019":{"m":1400.0,"n":28,"v":3.7},"2020":{"m":1205.0,"n":44,"v":-13.9},"2021":{"m":1150.0,"n":87,"v":-4.6},"2022":{"m":1150.0,"n":19,"v":0.0},"2023":{"m":1250.0,"n":87,"v":8.7}}},"BARRANCO":{"dep":"LIMA","n":331,"y":{"2017":{"m":2500.0,"n":68},"2018":{"m":2700.0,"n":4,"v":8.0},"2019":{"m":3800.0,"n":53,"v":40.7},"2020":{"m":3800.0,"n":72,"v":0.0},"2021":{"m":4000.0,"n":72,"v":5.3},"2022":{"m":3400.0,"n":7,"v":-15.0},"2023":{"m":2010.0,"n":55,"v":-40.9}}},"LURIN":{"dep":"LIMA","n":308,"y":{"2017":{"m":300.0,"n":57},"2018":{"m":350.0,"n":10,"v":16.7},"2019":{"m":220.0,"n":30,"v":-37.1},"2020":{"m":255.0,"n":32,"v":15.9},"2021":{"m":600.0,"n":1,"v":135.3},"2022":{"m":140.0,"n":27,"v":-76.7},"2023":{"m":240.0,"n":75,"v":71.4},"2024":{"m":530.0,"n":1,"v":120.8}}},"VILLA EL SALVADOR":{"dep":"LIMA","n":305,"y":{"2017":{"m":500.0,"n":61},"2018":{"m":600.0,"n":7,"v":20.0},"2019":{"m":475.0,"n":36,"v":-20.8},"2020":{"m":450.0,"n":42,"v":-5.3},"2021":{"m":550.0,"n":60,"v":22.2},"2022":{"m":485.0,"n":6,"v":-11.8},"2023":{"m":600.0,"n":92,"v":23.7},"2024":{"m":585.0,"n":1,"v":-2.5}}},"COMAS":{"dep":"LIMA","n":300,"y":{"2017":{"m":565.0,"n":56},"2018":{"m":340.0,"n":4,"v":-39.8},"2019":{"m":675.0,"n":36,"v":98.5},"2020":{"m":650.0,"n":36,"v":-3.7},"2021":{"m":500.0,"n":46,"v":-23.1},"2022":{"m":685.0,"n":11,"v":37.0},"2023":{"m":600.0,"n":111,"v":-12.4}}},"HUANCAYO":{"dep":"HUANCAYO","n":279,"y":{"2017":{"m":1100.0,"n":1},"2019":{"m":2280.0,"n":1,"v":107.3},"2020":{"m":1000.0,"n":1,"v":-56.1},"2021":{"m":340.0,"n":1,"v":-66.0},"2022":{"m":505.0,"n":40,"v":48.5},"2023":{"m":900.0,"n":1,"v":78.2}}},"PUENTE PIEDRA":{"dep":"LIMA","n":241,"y":{"2017":{"m":320.0,"n":45},"2018":{"m":400.0,"n":2,"v":25.0},"2019":{"m":400.0,"n":20,"v":0.0},"2020":{"m":355.0,"n":32,"v":-11.2},"2021":{"m":340.0,"n":44,"v":-4.2},"2022":{"m":675.0,"n":3,"v":98.5},"2023":{"m":405.0,"n":94,"v":-40.0},"2024":{"m":400.0,"n":1,"v":-1.2}}},"SAN JUAN DE MIRAFLORES":{"dep":"LIMA","n":201,"y":{"2017":{"m":820.0,"n":51},"2018":{"m":1025.0,"n":2,"v":25.0},"2019":{"m":900.0,"n":23,"v":-12.2},"2020":{"m":850.0,"n":19,"v":-5.6},"2021":{"m":860.0,"n":42,"v":1.2},"2022":{"m":925.0,"n":6,"v":7.6},"2023":{"m":825.0,"n":58,"v":-10.8}}},"LURIGANCHO":{"dep":"LIMA","n":174,"y":{"2017":{"m":475.0,"n":2},"2018":{"m":480.0,"n":1,"v":1.1},"2019":{"m":495.0,"n":14,"v":3.1},"2020":{"m":360.0,"n":41,"v":-27.3},"2021":{"m":400.0,"n":48,"v":11.1},"2022":{"m":400.0,"n":11,"v":0.0},"2023":{"m":395.0,"n":56,"v":-1.2},"2024":{"m":345.0,"n":1,"v":-12.7}}},"VILLA MARIA DEL TRIUNFO":{"dep":"LIMA","n":159,"y":{"2017":{"m":450.0,"n":22},"2018":{"m":380.0,"n":4,"v":-15.6},"2019":{"m":400.0,"n":12,"v":5.3},"2020":{"m":460.0,"n":26,"v":15.0},"2021":{"m":405.0,"n":30,"v":-12.0},"2022":{"m":570.0,"n":8,"v":40.7},"2023":{"m":495.0,"n":56,"v":-13.2},"2024":{"m":600.0,"n":1,"v":21.2}}},"EL AGUSTINO":{"dep":"LIMA","n":155,"y":{"2017":{"m":650.0,"n":17},"2018":{"m":600.0,"n":1,"v":-7.7},"2019":{"m":800.0,"n":15,"v":33.3},"2020":{"m":630.0,"n":29,"v":-21.2},"2021":{"m":550.0,"n":33,"v":-12.7},"2022":{"m":575.0,"n":12,"v":4.5},"2023":{"m":680.0,"n":47,"v":18.3},"2024":{"m":400.0,"n":1,"v":-41.2}}},"CERRO COLORADO":{"dep":"LIMA","n":153,"y":{"2017":{"m":297.5,"n":2},"2019":{"m":340.0,"n":1,"v":14.3},"2020":{"m":1350.0,"n":2,"v":297.1},"2021":{"m":350.0,"n":1,"v":-74.1},"2022":{"m":665.0,"n":2,"v":90.0},"2023":{"m":620.0,"n":1,"v":-6.8}}},"CASTILLA":{"dep":"PIURA","n":150,"y":{"2017":{"m":850.0,"n":5},"2019":{"m":900.0,"n":5,"v":5.9},"2020":{"m":900.0,"n":2,"v":0.0},"2021":{"m":297.5,"n":36,"v":-66.9},"2022":{"m":350.0,"n":10,"v":17.6},"2023":{"m":417.5,"n":56,"v":19.3},"2024":{"m":450.0,"n":1,"v":7.8}}},"SAN LUIS":{"dep":"LIMA","n":149,"y":{"2017":{"m":1410.0,"n":61},"2018":{"m":950.0,"n":2,"v":-32.6},"2019":{"m":1300.0,"n":11,"v":36.8},"2020":{"m":1450.0,"n":24,"v":11.5},"2021":{"m":1350.0,"n":19,"v":-6.9},"2022":{"m":1215.0,"n":4,"v":-10.0},"2023":{"m":1445.0,"n":28,"v":18.9}}},"SANTA ANITA":{"dep":"LIMA","n":145,"y":{"2017":{"m":1125.0,"n":18},"2018":{"m":1200.0,"n":2,"v":6.7},"2019":{"m":1050.0,"n":24,"v":-12.5},"2020":{"m":1200.0,"n":19,"v":14.3},"2021":{"m":1050.0,"n":34,"v":-12.5},"2022":{"m":1300.0,"n":4,"v":23.8},"2023":{"m":1240.0,"n":43,"v":-4.6},"2024":{"m":3150.0,"n":1,"v":154.0}}},"INDEPENDENCIA":{"dep":"ANCASH","n":145,"y":{"2017":{"m":12000.0,"n":1},"2018":{"m":1300.0,"n":1,"v":-89.2},"2019":{"m":570.0,"n":2,"v":-56.2},"2020":{"m":430.0,"n":1,"v":-24.6},"2021":{"m":700.0,"n":11,"v":62.8},"2022":{"m":1260.0,"n":1,"v":80.0},"2023":{"m":90.0,"n":1,"v":-92.9},"2024":{"m":800.0,"n":1,"v":788.9}}},"CALLAO":{"dep":"-","n":129,"y":{"2017":{"m":880.0,"n":5},"2019":{"m":675.0,"n":4,"v":-23.3},"2020":{"m":650.0,"n":3,"v":-3.7},"2022":{"m":820.0,"n":7,"v":26.2},"2023":{"m":860.0,"n":3,"v":4.9}}},"PIURA":{"dep":"PIURA","n":121,"y":{"2017":{"m":800.0,"n":4},"2018":{"m":900.0,"n":2,"v":12.5},"2019":{"m":1500.0,"n":3,"v":66.7},"2020":{"m":1000.0,"n":2,"v":-33.3},"2022":{"m":485.0,"n":4,"v":-51.5},"2023":{"m":510.0,"n":105,"v":5.2}}},"RIMAC":{"dep":"LIMA","n":118,"y":{"2017":{"m":1000.0,"n":26},"2018":{"m":975.0,"n":2,"v":-2.5},"2019":{"m":1000.0,"n":7,"v":2.6},"2020":{"m":800.0,"n":18,"v":-20.0},"2021":{"m":840.0,"n":18,"v":5.0},"2022":{"m":900.0,"n":4,"v":7.1},"2023":{"m":300.0,"n":1,"v":-66.7},"2024":{"m":665.0,"n":2,"v":121.7}}},"ICA":{"dep":"LIMA","n":117,"y":{"2017":{"m":625.0,"n":4},"2018":{"m":1800.0,"n":1,"v":188.0},"2019":{"m":950.0,"n":5,"v":-47.2},"2020":{"m":2500.0,"n":7,"v":163.2},"2022":{"m":300.0,"n":3,"v":-88.0},"2023":{"m":710.0,"n":1,"v":136.7}}},"BELLAVISTA":{"dep":"SAN MARTIN","n":110,"y":{"2017":{"m":850.0,"n":10},"2020":{"m":1000.0,"n":26,"v":17.6},"2021":{"m":850.0,"n":1,"v":-15.0},"2023":{"m":320.0,"n":1,"v":-62.4}}},"VENTANILLA":{"dep":"LIMA","n":108,"y":{"2017":{"m":75.0,"n":1},"2020":{"m":250.0,"n":17,"v":233.3},"2021":{"m":300.0,"n":40,"v":20.0},"2023":{"m":180.0,"n":2,"v":-40.0}}},"CHIMBOTE":{"dep":"ANCASH","n":102,"y":{"2017":{"m":290.0,"n":27},"2018":{"m":200.0,"n":1,"v":-31.0},"2019":{"m":290.0,"n":13,"v":45.0},"2020":{"m":250.0,"n":22,"v":-13.8},"2021":{"m":290.0,"n":8,"v":16.0},"2023":{"m":372.0,"n":29,"v":28.3}}},"JOSE LUIS BUSTAMANTE Y RIVERO":{"dep":"AREQUIPA","n":101,"y":{"2020":{"m":680.0,"n":17},"2021":{"m":520.0,"n":22,"v":-23.5},"2022":{"m":675.0,"n":12,"v":29.8},"2023":{"m":520.0,"n":49,"v":-23.0},"2024":{"m":90.0,"n":1,"v":-82.7}}},"CAÑETE":{"dep":"LIMA","n":100,"y":{"2017":{"m":750.0,"n":6},"2020":{"m":130.0,"n":24,"v":-82.7},"2021":{"m":150.0,"n":57,"v":15.4},"2022":{"m":120.0,"n":1,"v":-20.0},"2023":{"m":135.0,"n":2,"v":12.5}}},"CIENEGUILLA":{"dep":"LIMA","n":99,"y":{"2017":{"m":235.0,"n":17},"2018":{"m":60.0,"n":1,"v":-74.5},"2019":{"m":210.0,"n":8,"v":250.0},"2020":{"m":160.0,"n":22,"v":-23.8},"2021":{"m":170.0,"n":23,"v":6.2},"2022":{"m":140.0,"n":3,"v":-17.6},"2023":{"m":170.0,"n":23,"v":21.4},"2024":{"m":95.0,"n":2,"v":-44.1}}},"VICTOR LARCO HERRERA":{"dep":"LIMA","n":87,"y":{"2019":{"m":1250.0,"n":1},"2020":{"m":1000.0,"n":29,"v":-20.0},"2022":{"m":1170.0,"n":1,"v":17.0},"2023":{"m":570.0,"n":1,"v":-51.3}}},"PUNTA HERMOSA":{"dep":"LIMA","n":86,"y":{"2017":{"m":1250.0,"n":23},"2018":{"m":1250.0,"n":2,"v":0.0},"2019":{"m":650.0,"n":3,"v":-48.0},"2020":{"m":1200.0,"n":20,"v":84.6},"2021":{"m":770.0,"n":21,"v":-35.8},"2022":{"m":1000.0,"n":2,"v":29.9},"2023":{"m":1100.0,"n":15,"v":10.0}}},"PACHACAMAC":{"dep":"LIMA","n":86,"y":{"2017":{"m":185.0,"n":11},"2018":{"m":166.0,"n":2,"v":-10.3},"2019":{"m":180.0,"n":16,"v":8.4},"2020":{"m":225.0,"n":10,"v":25.0},"2021":{"m":90.0,"n":17,"v":-60.0},"2022":{"m":77.5,"n":6,"v":-13.9},"2023":{"m":170.0,"n":24,"v":119.4}}},"CHACLACAYO":{"dep":"LIMA","n":85,"y":{"2017":{"m":500.0,"n":36},"2019":{"m":400.0,"n":11,"v":-20.0},"2020":{"m":400.0,"n":11,"v":0.0},"2021":{"m":400.0,"n":13,"v":0.0},"2022":{"m":450.0,"n":3,"v":12.5},"2023":{"m":335.0,"n":10,"v":-25.6},"2024":{"m":300.0,"n":1,"v":-10.4}}},"CAYMA":{"dep":"LIMA","n":85,"y":{"2017":{"m":25.0,"n":1},"2020":{"m":900.0,"n":21,"v":3500.0},"2021":{"m":900.0,"n":37,"v":0.0},"2022":{"m":900.0,"n":5,"v":0.0},"2023":{"m":1050.0,"n":1,"v":16.7}}},"LA PERLA":{"dep":"CALLAO","n":84,"y":{"2017":{"m":1100.0,"n":1},"2019":{"m":950.0,"n":1,"v":-13.6},"2020":{"m":895.0,"n":14,"v":-5.8},"2021":{"m":995.0,"n":34,"v":11.2},"2022":{"m":900.0,"n":7,"v":-9.5},"2023":{"m":900.0,"n":23,"v":0.0}}},"HUARAZ":{"dep":"ANCASH","n":84,"y":{"2017":{"m":850.0,"n":1},"2019":{"m":1000.0,"n":1,"v":17.6},"2020":{"m":690.0,"n":5,"v":-31.0},"2021":{"m":890.0,"n":16,"v":29.0},"2022":{"m":200.0,"n":1,"v":-77.5},"2023":{"m":1100.0,"n":51,"v":450.0},"2024":{"m":2100.0,"n":1,"v":90.9}}},"ASIA":{"dep":"LIMA","n":81,"y":{"2017":{"m":1100.0,"n":21},"2019":{"m":450.0,"n":9,"v":-59.1},"2020":{"m":900.0,"n":1,"v":100.0},"2021":{"m":550.0,"n":11,"v":-38.9},"2023":{"m":600.0,"n":15,"v":9.1}}},"SULLANA":{"dep":"PIURA","n":81,"y":{"2017":{"m":10.0,"n":1},"2020":{"m":240.0,"n":14,"v":2300.0},"2021":{"m":180.0,"n":17,"v":-25.0},"2022":{"m":180.0,"n":3,"v":0.0},"2023":{"m":500.0,"n":46,"v":177.8}}},"TARAPOTO":{"dep":"SAN MARTIN","n":80,"y":{"2017":{"m":350.0,"n":1},"2018":{"m":120.0,"n":1,"v":-65.7},"2019":{"m":1800.0,"n":1,"v":1400.0},"2020":{"m":250.0,"n":10,"v":-86.1},"2021":{"m":185.0,"n":11,"v":-26.0},"2022":{"m":475.0,"n":2,"v":156.8},"2023":{"m":600.0,"n":1,"v":26.3},"2024":{"m":530.0,"n":1,"v":-11.7}}},"PISCO":{"dep":"ICA","n":78,"y":{"2017":{"m":160.0,"n":18},"2019":{"m":6.0,"n":1,"v":-96.2},"2020":{"m":115.0,"n":18,"v":1816.7},"2021":{"m":42.5,"n":14,"v":-63.0},"2022":{"m":12.5,"n":12,"v":-70.6},"2023":{"m":300.0,"n":15,"v":2300.0}}},"WANCHAQ":{"dep":"CUSCO","n":74,"y":{"2017":{"m":1400.0,"n":1},"2019":{"m":3200.0,"n":1,"v":128.6},"2020":{"m":1950.0,"n":2,"v":-39.1},"2021":{"m":1500.0,"n":21,"v":-23.1},"2022":{"m":1400.0,"n":5,"v":-6.7},"2023":{"m":2050.0,"n":32,"v":46.4}}},"AREQUIPA":{"dep":"AREQUIPA","n":70,"y":{"2017":{"m":1000.0,"n":1},"2019":{"m":1500.0,"n":7,"v":50.0},"2020":{"m":1350.0,"n":8,"v":-10.0},"2022":{"m":1250.0,"n":1,"v":-7.4},"2023":{"m":1185.0,"n":2,"v":-5.2},"2024":{"m":715.0,"n":1,"v":-39.7}}},"CHILCA":{"dep":"LIMA","n":64,"y":{"2017":{"m":120.0,"n":9},"2019":{"m":90.0,"n":6,"v":-25.0},"2020":{"m":400.0,"n":4,"v":344.4},"2022":{"m":30.0,"n":1,"v":-92.5},"2023":{"m":725.0,"n":6,"v":2316.7},"2024":{"m":18.0,"n":1,"v":-97.5}}},"PUCUSANA":{"dep":"LIMA","n":64,"y":{"2017":{"m":475.0,"n":10},"2018":{"m":1400.0,"n":1,"v":194.7},"2019":{"m":245.0,"n":2,"v":-82.5},"2020":{"m":15.0,"n":39,"v":-93.9},"2021":{"m":80.0,"n":7,"v":433.3},"2023":{"m":415.0,"n":5,"v":418.8}}},"HUAURA":{"dep":"LIMA","n":62,"y":{"2019":{"m":140.0,"n":1},"2020":{"m":760.0,"n":23,"v":442.9},"2021":{"m":390.0,"n":27,"v":-48.7},"2022":{"m":230.0,"n":4,"v":-41.0},"2023":{"m":1640.0,"n":7,"v":613.0}}},"VEINTISEIS DE OCTUBRE":{"dep":"PIURA","n":61,"y":{"2020":{"m":250.0,"n":8},"2021":{"m":350.0,"n":1,"v":40.0},"2022":{"m":250.0,"n":4,"v":-28.6},"2023":{"m":245.0,"n":2,"v":-2.0},"2024":{"m":45.0,"n":1,"v":-81.6}}},"YANAHUARA":{"dep":"AREQUIPA","n":59,"y":{"2017":{"m":2500.0,"n":6},"2019":{"m":2200.0,"n":1,"v":-12.0},"2020":{"m":1000.0,"n":1,"v":-54.5},"2021":{"m":1000.0,"n":1,"v":0.0},"2022":{"m":1200.0,"n":3,"v":20.0},"2023":{"m":840.0,"n":15,"v":-30.0}}},"PARACAS":{"dep":"ICA","n":54,"y":{"2017":{"m":40.0,"n":9},"2018":{"m":51.5,"n":2,"v":28.7},"2019":{"m":12.0,"n":2,"v":-76.7},"2020":{"m":51.5,"n":2,"v":329.2},"2023":{"m":200.0,"n":38,"v":288.3}}},"HUARAL":{"dep":"LIMA","n":54,"y":{"2017":{"m":492.5,"n":6},"2018":{"m":180.0,"n":1,"v":-63.5},"2019":{"m":7.0,"n":2,"v":-96.1},"2020":{"m":85.0,"n":16,"v":1114.3},"2021":{"m":70.0,"n":13,"v":-17.6},"2023":{"m":500.0,"n":16,"v":614.3}}},"SACHACA":{"dep":"AREQUIPA","n":53,"y":{"2020":{"m":830.0,"n":1},"2021":{"m":735.0,"n":18,"v":-11.4},"2022":{"m":850.0,"n":4,"v":15.6},"2023":{"m":805.0,"n":16,"v":-5.3}}},"CHANCHAMAYO":{"dep":"JUNIN","n":49,"y":{"2020":{"m":350.0,"n":14},"2021":{"m":315.0,"n":8,"v":-10.0},"2023":{"m":600.0,"n":27,"v":90.5}}},"IQUITOS":{"dep":"LORETO","n":47,"y":{"2017":{"m":3100.0,"n":1},"2018":{"m":3500.0,"n":2,"v":12.9},"2019":{"m":3800.0,"n":1,"v":8.6},"2020":{"m":500.0,"n":9,"v":-86.8},"2023":{"m":300.0,"n":34,"v":-40.0}}},"CORONEL PORTILLO":{"dep":"UCAYALI","n":47,"y":{"2019":{"m":200.0,"n":1},"2020":{"m":180.0,"n":9,"v":-10.0},"2021":{"m":185.0,"n":21,"v":2.8},"2022":{"m":450.0,"n":15,"v":143.2},"2023":{"m":350.0,"n":1,"v":-22.2}}},"PIMENTEL":{"dep":"LA LIBERTAD","n":46,"y":{"2019":{"m":70.0,"n":3},"2020":{"m":220.0,"n":1,"v":214.3},"2023":{"m":350.0,"n":1,"v":59.1}}},"VIRU":{"dep":"LA LIBERTAD","n":45,"y":{"2017":{"m":22000.0,"n":20},"2018":{"m":22000.0,"n":16,"v":0.0},"2020":{"m":150.0,"n":1,"v":-99.3},"2021":{"m":20.0,"n":2,"v":-86.7},"2023":{"m":160.0,"n":6,"v":700.0}}},"ANCON":{"dep":"LIMA","n":44,"y":{"2017":{"m":675.0,"n":6},"2018":{"m":725.0,"n":2,"v":7.4},"2019":{"m":425.0,"n":6,"v":-41.4},"2020":{"m":1200.0,"n":9,"v":182.4},"2021":{"m":275.0,"n":11,"v":-77.1},"2022":{"m":1100.0,"n":1,"v":300.0},"2023":{"m":230.0,"n":9,"v":-79.1}}},"SANTA":{"dep":"ANCASH","n":44,"y":{"2020":{"m":200.0,"n":7},"2021":{"m":200.0,"n":26,"v":0.0},"2022":{"m":380.0,"n":7,"v":90.0},"2023":{"m":250.0,"n":3,"v":-34.2},"2024":{"m":1130.0,"n":1,"v":352.0}}},"MAYNAS":{"dep":"LORETO","n":43,"y":{"2017":{"m":155.0,"n":1},"2020":{"m":430.0,"n":7,"v":177.4},"2021":{"m":370.0,"n":1,"v":-14.0},"2022":{"m":250.0,"n":10,"v":-32.4}}},"PARIÑAS":{"dep":"PIURA","n":43,"y":{"2020":{"m":170.0,"n":3},"2021":{"m":400.0,"n":2,"v":135.3},"2023":{"m":600.0,"n":38,"v":50.0}}},"CHINCHA ALTA":{"dep":"CHINCHA","n":42,"y":{"2019":{"m":400.0,"n":1},"2020":{"m":550.0,"n":1,"v":37.5},"2023":{"m":1040.0,"n":1,"v":89.1}}},"OXAPAMPA":{"dep":"PASCO","n":41,"y":{"2017":{"m":2400.0,"n":4},"2020":{"m":400.0,"n":1,"v":-83.3},"2021":{"m":60.0,"n":4,"v":-85.0},"2022":{"m":30.0,"n":1,"v":-50.0},"2023":{"m":350.0,"n":23,"v":1066.7},"2024":{"m":1.45,"n":1,"v":-99.6}}},"CALLERIA":{"dep":"UCAYALI","n":40,"y":{"2017":{"m":350.0,"n":1},"2020":{"m":75.0,"n":1,"v":-78.6},"2021":{"m":270.0,"n":3,"v":260.0},"2023":{"m":270.0,"n":27,"v":0.0}}},"NUEVO CHIMBOTE":{"dep":"LIMA","n":37,"y":{"2019":{"m":272.5,"n":2},"2020":{"m":189.0,"n":3,"v":-30.6},"2023":{"m":300.0,"n":1,"v":58.7}}},"SUBTANJALLA":{"dep":"ICA","n":36,"y":{"2017":{"m":120.0,"n":2},"2019":{"m":130.0,"n":6,"v":8.3},"2020":{"m":110.0,"n":3,"v":-15.4},"2021":{"m":20.0,"n":7,"v":-81.8},"2023":{"m":170.0,"n":18,"v":750.0}}},"SATIPO":{"dep":"JUNIN","n":36,"y":{"2019":{"m":700.0,"n":1},"2020":{"m":500.0,"n":7,"v":-28.6},"2021":{"m":347.5,"n":4,"v":-30.5},"2023":{"m":695.0,"n":24,"v":100.0}}},"PAUCARPATA":{"dep":"AREQUIPA","n":35,"y":{"2017":{"m":510.0,"n":2},"2020":{"m":665.0,"n":4,"v":30.4},"2021":{"m":850.0,"n":16,"v":27.8},"2023":{"m":640.0,"n":13,"v":-24.7}}},"PAITA":{"dep":"PAITA","n":34,"y":{"2017":{"m":35.0,"n":3},"2020":{"m":60.0,"n":1,"v":71.4},"2021":{"m":67.5,"n":8,"v":12.5},"2023":{"m":340.0,"n":1,"v":403.7}}},"HUACHO":{"dep":"LIMA","n":34,"y":{"2017":{"m":495.0,"n":4},"2018":{"m":2355.0,"n":1,"v":375.8},"2019":{"m":900.0,"n":5,"v":-61.8},"2020":{"m":400.0,"n":3,"v":-55.6},"2023":{"m":960.0,"n":21,"v":140.0}}},"CHANCAY":{"dep":"LIMA","n":33,"y":{"2017":{"m":87500.0,"n":6},"2018":{"m":70.0,"n":1,"v":-99.9},"2019":{"m":250.0,"n":1,"v":257.1},"2020":{"m":130.0,"n":3,"v":-48.0},"2021":{"m":40000.0,"n":1,"v":30669.2},"2023":{"m":182.5,"n":20,"v":-99.5}}},"HUANCHACO":{"dep":"LA LIBERTAD","n":32,"y":{"2017":{"m":300.0,"n":1},"2019":{"m":200.0,"n":1,"v":-33.3},"2020":{"m":340.0,"n":6,"v":70.0},"2023":{"m":325.0,"n":24,"v":-4.4}}},"CAJAMARCA":{"dep":"PASCO","n":32,"y":{"2017":{"m":1000.0,"n":1},"2019":{"m":1600.0,"n":1,"v":60.0},"2021":{"m":700.0,"n":2,"v":-56.2},"2022":{"m":700.0,"n":7,"v":0.0},"2023":{"m":510.0,"n":1,"v":-27.1}}},"SAN SEBASTIAN":{"dep":"LIMA","n":32,"y":{"2020":{"m":1375.0,"n":4},"2021":{"m":1000.0,"n":5,"v":-27.3},"2023":{"m":1500.0,"n":2,"v":50.0}}},"SAN BARTOLO":{"dep":"LIMA","n":31,"y":{"2017":{"m":500.0,"n":5},"2018":{"m":950.0,"n":2,"v":90.0},"2019":{"m":520.0,"n":3,"v":-45.3},"2020":{"m":750.0,"n":7,"v":44.2},"2021":{"m":1500.0,"n":6,"v":100.0},"2022":{"m":600.0,"n":1,"v":-60.0},"2023":{"m":700.0,"n":7,"v":16.7}}},"ILO":{"dep":"MOQUEGUA","n":31,"y":{"2020":{"m":275.0,"n":6},"2021":{"m":240.0,"n":19,"v":-12.7},"2023":{"m":360.0,"n":6,"v":50.0}}},"LURIGANCHO CHOSICA":{"dep":"LIMA","n":30,"y":{"2017":{"m":445.0,"n":28},"2020":{"m":350.0,"n":1,"v":-21.3},"2023":{"m":140.0,"n":1,"v":-60.0}}},"CUSCO":{"dep":"CUSCO","n":29,"y":{"2017":{"m":1500.0,"n":1},"2018":{"m":21.0,"n":2,"v":-98.6},"2019":{"m":5500.0,"n":2,"v":26090.5},"2020":{"m":1500.0,"n":1,"v":-72.7},"2022":{"m":2100.0,"n":2,"v":40.0},"2023":{"m":2400.0,"n":19,"v":14.3}}},"SAN JUAN BAUTISTA":{"dep":"ICA","n":29,"y":{"2017":{"m":212.5,"n":2},"2020":{"m":175.0,"n":2,"v":-17.6},"2023":{"m":200.0,"n":5,"v":14.3}}},"MOCHE":{"dep":"LA LIBERTAD","n":28,"y":{"2019":{"m":765.0,"n":1},"2020":{"m":200.0,"n":4,"v":-73.9},"2023":{"m":260.0,"n":23,"v":30.0}}},"HUANUCO":{"dep":"HUANUCO","n":27,"y":{"2017":{"m":757.5,"n":2},"2019":{"m":1100.0,"n":1,"v":45.2},"2022":{"m":680.0,"n":1,"v":-38.2},"2023":{"m":1000.0,"n":23,"v":47.1}}},"AMARILIS":{"dep":"HUANUCO","n":26,"y":{"2020":{"m":407.5,"n":2},"2021":{"m":515.0,"n":2,"v":26.4},"2022":{"m":400.0,"n":1,"v":-22.3},"2023":{"m":500.0,"n":21,"v":25.0}}},"CHINCHA BAJA":{"dep":"ICA","n":25,"y":{"2017":{"m":25.0,"n":2},"2019":{"m":25.0,"n":4,"v":0.0},"2020":{"m":145.0,"n":2,"v":480.0},"2021":{"m":65000.0,"n":1,"v":44727.6},"2023":{"m":92.5,"n":16,"v":-99.9}}},"SANTIAGO":{"dep":"CUSCO","n":25,"y":{"2020":{"m":950.0,"n":5},"2021":{"m":250.0,"n":1,"v":-73.7},"2022":{"m":675.0,"n":1,"v":170.0},"2023":{"m":940.0,"n":3,"v":39.3}}},"SOCABAYA":{"dep":"AREQUIPA","n":25,"y":{"2020":{"m":400.0,"n":5},"2021":{"m":400.0,"n":7,"v":0.0},"2023":{"m":415.0,"n":12,"v":3.8},"2024":{"m":670.0,"n":1,"v":61.4}}},"HUAROCHIRI":{"dep":"LIMA","n":24,"y":{"2019":{"m":110.0,"n":3},"2020":{"m":87.5,"n":6,"v":-20.5},"2021":{"m":127.5,"n":12,"v":45.7},"2022":{"m":135.0,"n":3,"v":5.9}}},"PUNTA NEGRA":{"dep":"LIMA","n":23,"y":{"2017":{"m":375.0,"n":6},"2020":{"m":650.0,"n":3,"v":73.3},"2021":{"m":530.0,"n":5,"v":-18.5},"2023":{"m":360.0,"n":7,"v":-32.1},"2024":{"m":700.0,"n":2,"v":94.4}}},"ABANCAY":{"dep":"LIMA","n":23,"y":{"2020":{"m":850.0,"n":4},"2021":{"m":400.0,"n":5,"v":-52.9},"2023":{"m":930.0,"n":1,"v":132.5}}},"BARRANCA":{"dep":"LIMA","n":23,"y":{"2020":{"m":121.5,"n":2},"2021":{"m":302.5,"n":2,"v":149.0},"2022":{"m":190.0,"n":5,"v":-37.2},"2023":{"m":2220.0,"n":14,"v":1068.4}}},"MALA":{"dep":"CAÑETE","n":21,"y":{"2017":{"m":320.0,"n":3},"2019":{"m":1000.0,"n":1,"v":212.5},"2020":{"m":150.0,"n":2,"v":-85.0},"2023":{"m":700.0,"n":1,"v":366.7}}},"LURIGANCHO - CHOSICA":{"dep":"LIMA","n":21,"y":{"2017":{"m":450.0,"n":19},"2019":{"m":400.0,"n":1,"v":-11.1},"2022":{"m":680.0,"n":1,"v":70.0}}},"OLMOS":{"dep":"LAMBAYEQUE","n":21,"y":{"2017":{"m":8050.0,"n":2},"2018":{"m":16500.0,"n":2,"v":105.0},"2019":{"m":17000.0,"n":1,"v":3.0},"2021":{"m":5700.0,"n":5,"v":-66.5},"2023":{"m":8500.0,"n":5,"v":49.1}}},"JOSE LEONARDO ORTIZ":{"dep":"LAMBAYEQUE","n":21,"y":{"2017":{"m":2000.0,"n":1},"2020":{"m":420.0,"n":3,"v":-79.0},"2023":{"m":540.0,"n":17,"v":28.6}}},"SAN VICENTE DE CAÑETE":{"dep":"LIMA","n":21,"y":{"2017":{"m":650.0,"n":1},"2019":{"m":450.0,"n":1,"v":-30.8},"2020":{"m":33150.0,"n":2,"v":7266.7},"2023":{"m":420.0,"n":15,"v":-98.7}}},"CHINCHA":{"dep":"ICA","n":21,"y":{"2017":{"m":320.0,"n":1},"2020":{"m":180.0,"n":5,"v":-43.8},"2021":{"m":250.0,"n":9,"v":38.9},"2022":{"m":550.0,"n":2,"v":120.0},"2023":{"m":290.0,"n":3,"v":-47.3}}},"SAN ANTONIO":{"dep":"LIMA","n":21,"y":{"2019":{"m":20.0,"n":5},"2020":{"m":1000.0,"n":1,"v":4900.0},"2021":{"m":120.0,"n":4,"v":-88.0},"2023":{"m":130.0,"n":11,"v":8.3}}},"LAMBAYEQUE":{"dep":"CHICLAYO","n":20,"y":{"2017":{"m":55.0,"n":3},"2019":{"m":1720.0,"n":1,"v":3027.3},"2020":{"m":430.0,"n":4,"v":-75.0},"2023":{"m":335.0,"n":1,"v":-22.1}}},"SANTA MARIA DEL MAR":{"dep":"LIMA","n":20,"y":{"2017":{"m":1625.0,"n":6},"2020":{"m":1700.0,"n":4,"v":4.6},"2021":{"m":1300.0,"n":1,"v":-23.5},"2023":{"m":1250.0,"n":9,"v":-3.8}}},"HUAMANGA":{"dep":"AYACUCHO","n":20,"y":{"2017":{"m":1000.0,"n":1},"2020":{"m":350.0,"n":5,"v":-65.0},"2021":{"m":570.0,"n":13,"v":62.9},"2023":{"m":550.0,"n":1,"v":-3.5}}},"NAZCA":{"dep":"ICA","n":20,"y":{"2019":{"m":1700.0,"n":1},"2020":{"m":640.0,"n":2,"v":-62.4},"2021":{"m":1000.0,"n":5,"v":56.2},"2022":{"m":180.0,"n":1,"v":-82.0},"2023":{"m":550.0,"n":11,"v":205.6}}}};
+const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1897,"y":{"2017":{"m":1800.0,"n":566},"2018":{"m":2500.0,"n":1,"v":38.9},"2019":{"m":1800.0,"n":218,"v":-28.0},"2020":{"m":1800.0,"n":264,"v":0.0},"2021":{"m":1700.0,"n":377,"v":-5.6},"2022":{"m":1700.0,"n":61,"v":0.0},"2023":{"m":1800.0,"n":353,"v":5.9},"2024":{"m":4200.0,"n":2,"v":133.3}}},"MIRAFLORES":{"dep":"LIMA","n":1303,"y":{"2017":{"m":2800.0,"n":340},"2018":{"m":3000.0,"n":21,"v":7.1},"2019":{"m":3300.0,"n":133,"v":10.0},"2020":{"m":3700.0,"n":167,"v":12.1},"2021":{"m":500.0,"n":7,"v":-86.5},"2022":{"m":2750.0,"n":36,"v":450.0},"2023":{"m":900.0,"n":5,"v":-67.3},"2024":{"m":6250.0,"n":2,"v":594.4}}},"CERCADO DE LIMA":{"dep":"LIMA","n":1121,"y":{"2017":{"m":1980.0,"n":267},"2018":{"m":1700.0,"n":23,"v":-14.1},"2019":{"m":1400.0,"n":155,"v":-17.6},"2020":{"m":1850.0,"n":118,"v":32.1},"2021":{"m":2200.0,"n":216,"v":18.9},"2022":{"m":1300.0,"n":39,"v":-40.9},"2023":{"m":2000.0,"n":302,"v":53.8},"2024":{"m":1200.0,"n":1,"v":-40.0}}},"SAN ISIDRO":{"dep":"LIMA","n":819,"y":{"2017":{"m":3000.0,"n":251},"2018":{"m":4500.0,"n":11,"v":50.0},"2019":{"m":3800.0,"n":88,"v":-15.6},"2020":{"m":3900.0,"n":173,"v":2.6},"2021":{"m":3150.0,"n":117,"v":-19.2},"2022":{"m":3255.0,"n":24,"v":3.3},"2023":{"m":3250.0,"n":153,"v":-0.2},"2024":{"m":3360.0,"n":2,"v":3.4}}},"ATE":{"dep":"LIMA","n":807,"y":{"2017":{"m":1400.0,"n":193},"2018":{"m":1200.0,"n":15,"v":-14.3},"2019":{"m":1150.0,"n":113,"v":-4.2},"2020":{"m":800.0,"n":113,"v":-30.4},"2021":{"m":765.0,"n":171,"v":-4.4},"2022":{"m":1300.0,"n":35,"v":69.9},"2023":{"m":1075.0,"n":166,"v":-17.3},"2024":{"m":1400.0,"n":1,"v":30.2}}},"LA VICTORIA":{"dep":"LIMA","n":785,"y":{"2017":{"m":1785.0,"n":116},"2018":{"m":1400.0,"n":13,"v":-21.6},"2019":{"m":2550.0,"n":76,"v":82.1},"2020":{"m":2000.0,"n":102,"v":-21.6},"2021":{"m":1850.0,"n":155,"v":-7.5},"2022":{"m":1675.0,"n":36,"v":-9.5},"2023":{"m":422.5,"n":14,"v":-74.8},"2024":{"m":1870.0,"n":3,"v":342.6}}},"LA MOLINA":{"dep":"LIMA","n":721,"y":{"2017":{"m":1400.0,"n":184},"2018":{"m":1200.0,"n":18,"v":-14.3},"2019":{"m":1200.0,"n":89,"v":0.0},"2020":{"m":1200.0,"n":123,"v":0.0},"2021":{"m":1100.0,"n":162,"v":-8.3},"2022":{"m":1000.0,"n":19,"v":-9.1},"2023":{"m":700.0,"n":1,"v":-30.0},"2024":{"m":2650.0,"n":2,"v":278.6}}},"SAN BORJA":{"dep":"LIMA","n":640,"y":{"2017":{"m":2000.0,"n":188},"2018":{"m":2000.0,"n":27,"v":0.0},"2019":{"m":2312.5,"n":72,"v":15.6},"2020":{"m":2100.0,"n":109,"v":-9.2},"2021":{"m":1900.0,"n":122,"v":-9.5},"2022":{"m":2005.0,"n":22,"v":5.5},"2023":{"m":1865.0,"n":100,"v":-7.0}}},"LINCE":{"dep":"LIMA","n":628,"y":{"2017":{"m":1980.0,"n":114},"2018":{"m":2200.0,"n":8,"v":11.1},"2019":{"m":2300.0,"n":40,"v":4.5},"2020":{"m":4500.0,"n":121,"v":95.7},"2021":{"m":3875.0,"n":198,"v":-13.9},"2022":{"m":4500.0,"n":28,"v":16.1},"2023":{"m":2640.0,"n":118,"v":-41.3},"2024":{"m":2700.0,"n":1,"v":2.3}}},"SAN MIGUEL":{"dep":"LIMA","n":605,"y":{"2017":{"m":1500.0,"n":160},"2018":{"m":1550.0,"n":10,"v":3.3},"2019":{"m":1500.0,"n":61,"v":-3.2},"2020":{"m":1500.0,"n":83,"v":0.0},"2021":{"m":1650.0,"n":114,"v":10.0},"2022":{"m":1400.0,"n":17,"v":-15.2},"2023":{"m":1500.0,"n":157,"v":7.1},"2024":{"m":1840.0,"n":3,"v":22.7}}},"CARABAYLLO":{"dep":"LIMA","n":556,"y":{"2017":{"m":380.0,"n":77},"2018":{"m":400.0,"n":5,"v":5.3},"2019":{"m":350.0,"n":52,"v":-12.5},"2020":{"m":300.0,"n":115,"v":-14.3},"2021":{"m":300.0,"n":118,"v":0.0},"2022":{"m":290.0,"n":14,"v":-3.3},"2023":{"m":400.0,"n":174,"v":37.9},"2024":{"m":550.0,"n":1,"v":37.5}}},"TRUJILLO":{"dep":"LA LIBERTAD","n":553,"y":{"2017":{"m":1300.0,"n":1},"2019":{"m":1000.0,"n":1,"v":-23.1},"2020":{"m":450.0,"n":1,"v":-55.0},"2021":{"m":415.0,"n":4,"v":-7.8},"2022":{"m":800.0,"n":31,"v":92.8},"2023":{"m":990.0,"n":2,"v":23.8},"2024":{"m":1300.0,"n":2,"v":31.3}}},"PUEBLO LIBRE":{"dep":"LIMA","n":512,"y":{"2017":{"m":1800.0,"n":164},"2018":{"m":1800.0,"n":10,"v":0.0},"2019":{"m":1875.0,"n":36,"v":4.2},"2020":{"m":2250.0,"n":71,"v":20.0},"2021":{"m":2400.0,"n":120,"v":6.7},"2022":{"m":2650.0,"n":24,"v":10.4},"2023":{"m":530.0,"n":1,"v":-80.0},"2024":{"m":3750.0,"n":1,"v":607.5}}},"SAN JUAN DE LURIGANCHO":{"dep":"LIMA","n":506,"y":{"2017":{"m":930.0,"n":1},"2018":{"m":700.0,"n":8,"v":-24.7},"2019":{"m":700.0,"n":73,"v":0.0},"2020":{"m":670.0,"n":58,"v":-4.3},"2021":{"m":700.0,"n":94,"v":4.5},"2022":{"m":665.0,"n":12,"v":-5.0},"2023":{"m":800.0,"n":167,"v":20.3},"2024":{"m":650.0,"n":4,"v":-18.8}}},"CHORRILLOS":{"dep":"LIMA","n":491,"y":{"2017":{"m":950.0,"n":142},"2018":{"m":900.0,"n":6,"v":-5.3},"2019":{"m":1000.0,"n":64,"v":11.1},"2020":{"m":915.0,"n":76,"v":-8.5},"2021":{"m":920.0,"n":99,"v":0.5},"2022":{"m":840.0,"n":15,"v":-8.7},"2023":{"m":840.0,"n":89,"v":0.0}}},"SURQUILLO":{"dep":"LIMA","n":491,"y":{"2017":{"m":2000.0,"n":166},"2018":{"m":2700.0,"n":11,"v":35.0},"2019":{"m":2000.0,"n":68,"v":-25.9},"2020":{"m":2250.0,"n":63,"v":12.5},"2021":{"m":2150.0,"n":98,"v":-4.4},"2022":{"m":2275.0,"n":14,"v":5.8},"2023":{"m":2100.0,"n":69,"v":-7.7},"2024":{"m":1900.0,"n":2,"v":-9.5}}},"SAN MARTIN DE PORRES":{"dep":"LIMA","n":435,"y":{"2017":{"m":800.0,"n":89},"2018":{"m":800.0,"n":9,"v":0.0},"2019":{"m":800.0,"n":46,"v":0.0},"2020":{"m":800.0,"n":54,"v":0.0},"2021":{"m":800.0,"n":75,"v":0.0},"2022":{"m":780.0,"n":13,"v":-2.5},"2023":{"m":830.0,"n":146,"v":6.4},"2024":{"m":500.0,"n":3,"v":-39.8}}},"MAGDALENA DEL MAR":{"dep":"LIMA","n":426,"y":{"2017":{"m":2150.0,"n":108},"2018":{"m":1700.0,"n":10,"v":-20.9},"2019":{"m":1900.0,"n":24,"v":11.8},"2020":{"m":2400.0,"n":58,"v":26.3},"2021":{"m":2200.0,"n":112,"v":-8.3},"2022":{"m":2250.0,"n":12,"v":2.3},"2023":{"m":2515.0,"n":102,"v":11.8}}},"LOS OLIVOS":{"dep":"LIMA","n":424,"y":{"2017":{"m":1100.0,"n":88},"2018":{"m":1250.0,"n":10,"v":13.6},"2019":{"m":1025.0,"n":48,"v":-18.0},"2020":{"m":1100.0,"n":67,"v":7.3},"2021":{"m":1150.0,"n":71,"v":4.5},"2022":{"m":1150.0,"n":13,"v":0.0},"2023":{"m":1050.0,"n":125,"v":-8.7},"2024":{"m":1050.0,"n":2,"v":0.0}}},"JESUS MARIA":{"dep":"LIMA","n":416,"y":{"2017":{"m":2100.0,"n":135},"2018":{"m":2400.0,"n":7,"v":14.3},"2019":{"m":2500.0,"n":32,"v":4.2},"2020":{"m":2550.0,"n":58,"v":2.0},"2021":{"m":2500.0,"n":86,"v":-2.0},"2022":{"m":1900.0,"n":9,"v":-24.0},"2023":{"m":2600.0,"n":87,"v":36.8},"2024":{"m":3325.0,"n":2,"v":27.9}}},"CHICLAYO":{"dep":"LA LIBERTAD","n":356,"y":{"2017":{"m":1225.0,"n":2},"2018":{"m":2100.0,"n":1,"v":71.4},"2019":{"m":1500.0,"n":3,"v":-28.6},"2020":{"m":250.0,"n":1,"v":-83.3},"2021":{"m":950.0,"n":2,"v":280.0},"2022":{"m":690.0,"n":26,"v":-27.4},"2023":{"m":780.0,"n":1,"v":13.0}}},"BREÑA":{"dep":"LIMA","n":344,"y":{"2017":{"m":1350.0,"n":72},"2018":{"m":1350.0,"n":7,"v":0.0},"2019":{"m":1400.0,"n":28,"v":3.7},"2020":{"m":1205.0,"n":44,"v":-13.9},"2021":{"m":1150.0,"n":87,"v":-4.6},"2022":{"m":1150.0,"n":19,"v":0.0},"2023":{"m":1250.0,"n":87,"v":8.7}}},"BARRANCO":{"dep":"LIMA","n":331,"y":{"2017":{"m":2500.0,"n":68},"2018":{"m":2700.0,"n":4,"v":8.0},"2019":{"m":3800.0,"n":53,"v":40.7},"2020":{"m":3800.0,"n":72,"v":0.0},"2021":{"m":4000.0,"n":72,"v":5.3},"2022":{"m":3400.0,"n":7,"v":-15.0},"2023":{"m":2010.0,"n":55,"v":-40.9}}},"LURIN":{"dep":"LIMA","n":308,"y":{"2017":{"m":300.0,"n":57},"2018":{"m":350.0,"n":10,"v":16.7},"2019":{"m":220.0,"n":30,"v":-37.1},"2020":{"m":255.0,"n":32,"v":15.9},"2021":{"m":600.0,"n":1,"v":135.3},"2022":{"m":140.0,"n":27,"v":-76.7},"2023":{"m":240.0,"n":75,"v":71.4},"2024":{"m":530.0,"n":1,"v":120.8}}},"VILLA EL SALVADOR":{"dep":"LIMA","n":305,"y":{"2017":{"m":500.0,"n":61},"2018":{"m":600.0,"n":7,"v":20.0},"2019":{"m":475.0,"n":36,"v":-20.8},"2020":{"m":450.0,"n":42,"v":-5.3},"2021":{"m":550.0,"n":60,"v":22.2},"2022":{"m":485.0,"n":6,"v":-11.8},"2023":{"m":600.0,"n":92,"v":23.7},"2024":{"m":585.0,"n":1,"v":-2.5}}},"COMAS":{"dep":"LIMA","n":300,"y":{"2017":{"m":565.0,"n":56},"2018":{"m":340.0,"n":4,"v":-39.8},"2019":{"m":675.0,"n":36,"v":98.5},"2020":{"m":650.0,"n":36,"v":-3.7},"2021":{"m":500.0,"n":46,"v":-23.1},"2022":{"m":685.0,"n":11,"v":37.0},"2023":{"m":600.0,"n":111,"v":-12.4}}},"HUANCAYO":{"dep":"HUANCAYO","n":279,"y":{"2017":{"m":1100.0,"n":1},"2019":{"m":2280.0,"n":1,"v":107.3},"2020":{"m":1000.0,"n":1,"v":-56.1},"2021":{"m":340.0,"n":1,"v":-66.0},"2022":{"m":505.0,"n":40,"v":48.5},"2023":{"m":900.0,"n":1,"v":78.2}}},"PUENTE PIEDRA":{"dep":"LIMA","n":241,"y":{"2017":{"m":320.0,"n":45},"2018":{"m":400.0,"n":2,"v":25.0},"2019":{"m":400.0,"n":20,"v":0.0},"2020":{"m":355.0,"n":32,"v":-11.2},"2021":{"m":340.0,"n":44,"v":-4.2},"2022":{"m":675.0,"n":3,"v":98.5},"2023":{"m":405.0,"n":94,"v":-40.0},"2024":{"m":400.0,"n":1,"v":-1.2}}},"SAN JUAN DE MIRAFLORES":{"dep":"LIMA","n":201,"y":{"2017":{"m":820.0,"n":51},"2018":{"m":1025.0,"n":2,"v":25.0},"2019":{"m":900.0,"n":23,"v":-12.2},"2020":{"m":850.0,"n":19,"v":-5.6},"2021":{"m":860.0,"n":42,"v":1.2},"2022":{"m":925.0,"n":6,"v":7.6},"2023":{"m":825.0,"n":58,"v":-10.8}}},"LURIGANCHO":{"dep":"LIMA","n":225,"y":{"2017":{"m":460.0,"n":49},"2018":{"m":480.0,"n":1,"v":4.3},"2019":{"m":490.0,"n":15,"v":2.1},"2020":{"m":360.0,"n":42,"v":-26.5},"2021":{"m":400.0,"n":48,"v":11.1},"2022":{"m":430.0,"n":12,"v":7.5},"2023":{"m":390.0,"n":57,"v":-9.3},"2024":{"m":345.0,"n":1,"v":-11.5}}},"VILLA MARIA DEL TRIUNFO":{"dep":"LIMA","n":159,"y":{"2017":{"m":450.0,"n":22},"2018":{"m":380.0,"n":4,"v":-15.6},"2019":{"m":400.0,"n":12,"v":5.3},"2020":{"m":460.0,"n":26,"v":15.0},"2021":{"m":405.0,"n":30,"v":-12.0},"2022":{"m":570.0,"n":8,"v":40.7},"2023":{"m":495.0,"n":56,"v":-13.2},"2024":{"m":600.0,"n":1,"v":21.2}}},"EL AGUSTINO":{"dep":"LIMA","n":155,"y":{"2017":{"m":650.0,"n":17},"2018":{"m":600.0,"n":1,"v":-7.7},"2019":{"m":800.0,"n":15,"v":33.3},"2020":{"m":630.0,"n":29,"v":-21.2},"2021":{"m":550.0,"n":33,"v":-12.7},"2022":{"m":575.0,"n":12,"v":4.5},"2023":{"m":680.0,"n":47,"v":18.3},"2024":{"m":400.0,"n":1,"v":-41.2}}},"CERRO COLORADO":{"dep":"LIMA","n":153,"y":{"2017":{"m":297.5,"n":2},"2019":{"m":340.0,"n":1,"v":14.3},"2020":{"m":1350.0,"n":2,"v":297.1},"2021":{"m":350.0,"n":1,"v":-74.1},"2022":{"m":665.0,"n":2,"v":90.0},"2023":{"m":620.0,"n":1,"v":-6.8}}},"CASTILLA":{"dep":"PIURA","n":150,"y":{"2017":{"m":850.0,"n":5},"2019":{"m":900.0,"n":5,"v":5.9},"2020":{"m":900.0,"n":2,"v":0.0},"2021":{"m":297.5,"n":36,"v":-66.9},"2022":{"m":350.0,"n":10,"v":17.6},"2023":{"m":417.5,"n":56,"v":19.3},"2024":{"m":450.0,"n":1,"v":7.8}}},"SAN LUIS":{"dep":"LIMA","n":149,"y":{"2017":{"m":1410.0,"n":61},"2018":{"m":950.0,"n":2,"v":-32.6},"2019":{"m":1300.0,"n":11,"v":36.8},"2020":{"m":1450.0,"n":24,"v":11.5},"2021":{"m":1350.0,"n":19,"v":-6.9},"2022":{"m":1215.0,"n":4,"v":-10.0},"2023":{"m":1445.0,"n":28,"v":18.9}}},"SANTA ANITA":{"dep":"LIMA","n":145,"y":{"2017":{"m":1125.0,"n":18},"2018":{"m":1200.0,"n":2,"v":6.7},"2019":{"m":1050.0,"n":24,"v":-12.5},"2020":{"m":1200.0,"n":19,"v":14.3},"2021":{"m":1050.0,"n":34,"v":-12.5},"2022":{"m":1300.0,"n":4,"v":23.8},"2023":{"m":1240.0,"n":43,"v":-4.6},"2024":{"m":3150.0,"n":1,"v":154.0}}},"INDEPENDENCIA":{"dep":"ANCASH","n":145,"y":{"2017":{"m":12000.0,"n":1},"2018":{"m":1300.0,"n":1,"v":-89.2},"2019":{"m":570.0,"n":2,"v":-56.2},"2020":{"m":430.0,"n":1,"v":-24.6},"2021":{"m":700.0,"n":11,"v":62.8},"2022":{"m":1260.0,"n":1,"v":80.0},"2023":{"m":90.0,"n":1,"v":-92.9},"2024":{"m":800.0,"n":1,"v":788.9}}},"CALLAO":{"dep":"-","n":129,"y":{"2017":{"m":880.0,"n":5},"2019":{"m":675.0,"n":4,"v":-23.3},"2020":{"m":650.0,"n":3,"v":-3.7},"2022":{"m":820.0,"n":7,"v":26.2},"2023":{"m":860.0,"n":3,"v":4.9}}},"PIURA":{"dep":"PIURA","n":121,"y":{"2017":{"m":800.0,"n":4},"2018":{"m":900.0,"n":2,"v":12.5},"2019":{"m":1500.0,"n":3,"v":66.7},"2020":{"m":1000.0,"n":2,"v":-33.3},"2022":{"m":485.0,"n":4,"v":-51.5},"2023":{"m":510.0,"n":105,"v":5.2}}},"RIMAC":{"dep":"LIMA","n":118,"y":{"2017":{"m":1000.0,"n":26},"2018":{"m":975.0,"n":2,"v":-2.5},"2019":{"m":1000.0,"n":7,"v":2.6},"2020":{"m":800.0,"n":18,"v":-20.0},"2021":{"m":840.0,"n":18,"v":5.0},"2022":{"m":900.0,"n":4,"v":7.1},"2023":{"m":300.0,"n":1,"v":-66.7},"2024":{"m":665.0,"n":2,"v":121.7}}},"ICA":{"dep":"LIMA","n":117,"y":{"2017":{"m":625.0,"n":4},"2018":{"m":1800.0,"n":1,"v":188.0},"2019":{"m":950.0,"n":5,"v":-47.2},"2020":{"m":2500.0,"n":7,"v":163.2},"2022":{"m":300.0,"n":3,"v":-88.0},"2023":{"m":710.0,"n":1,"v":136.7}}},"BELLAVISTA":{"dep":"SAN MARTIN","n":110,"y":{"2017":{"m":850.0,"n":10},"2020":{"m":1000.0,"n":26,"v":17.6},"2021":{"m":850.0,"n":1,"v":-15.0},"2023":{"m":320.0,"n":1,"v":-62.4}}},"VENTANILLA":{"dep":"LIMA","n":108,"y":{"2017":{"m":75.0,"n":1},"2020":{"m":250.0,"n":17,"v":233.3},"2021":{"m":300.0,"n":40,"v":20.0},"2023":{"m":180.0,"n":2,"v":-40.0}}},"CHIMBOTE":{"dep":"ANCASH","n":102,"y":{"2017":{"m":290.0,"n":27},"2018":{"m":200.0,"n":1,"v":-31.0},"2019":{"m":290.0,"n":13,"v":45.0},"2020":{"m":250.0,"n":22,"v":-13.8},"2021":{"m":290.0,"n":8,"v":16.0},"2023":{"m":372.0,"n":29,"v":28.3}}},"JOSE LUIS BUSTAMANTE Y RIVERO":{"dep":"AREQUIPA","n":101,"y":{"2020":{"m":680.0,"n":17},"2021":{"m":520.0,"n":22,"v":-23.5},"2022":{"m":675.0,"n":12,"v":29.8},"2023":{"m":520.0,"n":49,"v":-23.0},"2024":{"m":90.0,"n":1,"v":-82.7}}},"CAÑETE":{"dep":"LIMA","n":100,"y":{"2017":{"m":750.0,"n":6},"2020":{"m":130.0,"n":24,"v":-82.7},"2021":{"m":150.0,"n":57,"v":15.4},"2022":{"m":120.0,"n":1,"v":-20.0},"2023":{"m":135.0,"n":2,"v":12.5}}},"CIENEGUILLA":{"dep":"LIMA","n":99,"y":{"2017":{"m":235.0,"n":17},"2018":{"m":60.0,"n":1,"v":-74.5},"2019":{"m":210.0,"n":8,"v":250.0},"2020":{"m":160.0,"n":22,"v":-23.8},"2021":{"m":170.0,"n":23,"v":6.2},"2022":{"m":140.0,"n":3,"v":-17.6},"2023":{"m":170.0,"n":23,"v":21.4},"2024":{"m":95.0,"n":2,"v":-44.1}}},"VICTOR LARCO HERRERA":{"dep":"LIMA","n":87,"y":{"2019":{"m":1250.0,"n":1},"2020":{"m":1000.0,"n":29,"v":-20.0},"2022":{"m":1170.0,"n":1,"v":17.0},"2023":{"m":570.0,"n":1,"v":-51.3}}},"PUNTA HERMOSA":{"dep":"LIMA","n":86,"y":{"2017":{"m":1250.0,"n":23},"2018":{"m":1250.0,"n":2,"v":0.0},"2019":{"m":650.0,"n":3,"v":-48.0},"2020":{"m":1200.0,"n":20,"v":84.6},"2021":{"m":770.0,"n":21,"v":-35.8},"2022":{"m":1000.0,"n":2,"v":29.9},"2023":{"m":1100.0,"n":15,"v":10.0}}},"PACHACAMAC":{"dep":"LIMA","n":86,"y":{"2017":{"m":185.0,"n":11},"2018":{"m":166.0,"n":2,"v":-10.3},"2019":{"m":180.0,"n":16,"v":8.4},"2020":{"m":225.0,"n":10,"v":25.0},"2021":{"m":90.0,"n":17,"v":-60.0},"2022":{"m":77.5,"n":6,"v":-13.9},"2023":{"m":170.0,"n":24,"v":119.4}}},"CHACLACAYO":{"dep":"LIMA","n":85,"y":{"2017":{"m":500.0,"n":36},"2019":{"m":400.0,"n":11,"v":-20.0},"2020":{"m":400.0,"n":11,"v":0.0},"2021":{"m":400.0,"n":13,"v":0.0},"2022":{"m":450.0,"n":3,"v":12.5},"2023":{"m":335.0,"n":10,"v":-25.6},"2024":{"m":300.0,"n":1,"v":-10.4}}},"CAYMA":{"dep":"LIMA","n":85,"y":{"2017":{"m":25.0,"n":1},"2020":{"m":900.0,"n":21,"v":3500.0},"2021":{"m":900.0,"n":37,"v":0.0},"2022":{"m":900.0,"n":5,"v":0.0},"2023":{"m":1050.0,"n":1,"v":16.7}}},"LA PERLA":{"dep":"CALLAO","n":84,"y":{"2017":{"m":1100.0,"n":1},"2019":{"m":950.0,"n":1,"v":-13.6},"2020":{"m":895.0,"n":14,"v":-5.8},"2021":{"m":995.0,"n":34,"v":11.2},"2022":{"m":900.0,"n":7,"v":-9.5},"2023":{"m":900.0,"n":23,"v":0.0}}},"HUARAZ":{"dep":"ANCASH","n":84,"y":{"2017":{"m":850.0,"n":1},"2019":{"m":1000.0,"n":1,"v":17.6},"2020":{"m":690.0,"n":5,"v":-31.0},"2021":{"m":890.0,"n":16,"v":29.0},"2022":{"m":200.0,"n":1,"v":-77.5},"2023":{"m":1100.0,"n":51,"v":450.0},"2024":{"m":2100.0,"n":1,"v":90.9}}},"ASIA":{"dep":"LIMA","n":81,"y":{"2017":{"m":1100.0,"n":21},"2019":{"m":450.0,"n":9,"v":-59.1},"2020":{"m":900.0,"n":1,"v":100.0},"2021":{"m":550.0,"n":11,"v":-38.9},"2023":{"m":600.0,"n":15,"v":9.1}}},"SULLANA":{"dep":"PIURA","n":81,"y":{"2017":{"m":10.0,"n":1},"2020":{"m":240.0,"n":14,"v":2300.0},"2021":{"m":180.0,"n":17,"v":-25.0},"2022":{"m":180.0,"n":3,"v":0.0},"2023":{"m":500.0,"n":46,"v":177.8}}},"TARAPOTO":{"dep":"SAN MARTIN","n":80,"y":{"2017":{"m":350.0,"n":1},"2018":{"m":120.0,"n":1,"v":-65.7},"2019":{"m":1800.0,"n":1,"v":1400.0},"2020":{"m":250.0,"n":10,"v":-86.1},"2021":{"m":185.0,"n":11,"v":-26.0},"2022":{"m":475.0,"n":2,"v":156.8},"2023":{"m":600.0,"n":1,"v":26.3},"2024":{"m":530.0,"n":1,"v":-11.7}}},"PISCO":{"dep":"ICA","n":78,"y":{"2017":{"m":160.0,"n":18},"2019":{"m":6.0,"n":1,"v":-96.2},"2020":{"m":115.0,"n":18,"v":1816.7},"2021":{"m":42.5,"n":14,"v":-63.0},"2022":{"m":12.5,"n":12,"v":-70.6},"2023":{"m":300.0,"n":15,"v":2300.0}}},"WANCHAQ":{"dep":"CUSCO","n":74,"y":{"2017":{"m":1400.0,"n":1},"2019":{"m":3200.0,"n":1,"v":128.6},"2020":{"m":1950.0,"n":2,"v":-39.1},"2021":{"m":1500.0,"n":21,"v":-23.1},"2022":{"m":1400.0,"n":5,"v":-6.7},"2023":{"m":2050.0,"n":32,"v":46.4}}},"AREQUIPA":{"dep":"AREQUIPA","n":70,"y":{"2017":{"m":1000.0,"n":1},"2019":{"m":1500.0,"n":7,"v":50.0},"2020":{"m":1350.0,"n":8,"v":-10.0},"2022":{"m":1250.0,"n":1,"v":-7.4},"2023":{"m":1185.0,"n":2,"v":-5.2},"2024":{"m":715.0,"n":1,"v":-39.7}}},"CHILCA":{"dep":"LIMA","n":64,"y":{"2017":{"m":120.0,"n":9},"2019":{"m":90.0,"n":6,"v":-25.0},"2020":{"m":400.0,"n":4,"v":344.4},"2022":{"m":30.0,"n":1,"v":-92.5},"2023":{"m":725.0,"n":6,"v":2316.7},"2024":{"m":18.0,"n":1,"v":-97.5}}},"PUCUSANA":{"dep":"LIMA","n":64,"y":{"2017":{"m":475.0,"n":10},"2018":{"m":1400.0,"n":1,"v":194.7},"2019":{"m":245.0,"n":2,"v":-82.5},"2020":{"m":15.0,"n":39,"v":-93.9},"2021":{"m":80.0,"n":7,"v":433.3},"2023":{"m":415.0,"n":5,"v":418.8}}},"HUAURA":{"dep":"LIMA","n":62,"y":{"2019":{"m":140.0,"n":1},"2020":{"m":760.0,"n":23,"v":442.9},"2021":{"m":390.0,"n":27,"v":-48.7},"2022":{"m":230.0,"n":4,"v":-41.0},"2023":{"m":1640.0,"n":7,"v":613.0}}},"VEINTISEIS DE OCTUBRE":{"dep":"PIURA","n":61,"y":{"2020":{"m":250.0,"n":8},"2021":{"m":350.0,"n":1,"v":40.0},"2022":{"m":250.0,"n":4,"v":-28.6},"2023":{"m":245.0,"n":2,"v":-2.0},"2024":{"m":45.0,"n":1,"v":-81.6}}},"YANAHUARA":{"dep":"AREQUIPA","n":59,"y":{"2017":{"m":2500.0,"n":6},"2019":{"m":2200.0,"n":1,"v":-12.0},"2020":{"m":1000.0,"n":1,"v":-54.5},"2021":{"m":1000.0,"n":1,"v":0.0},"2022":{"m":1200.0,"n":3,"v":20.0},"2023":{"m":840.0,"n":15,"v":-30.0}}},"PARACAS":{"dep":"ICA","n":54,"y":{"2017":{"m":40.0,"n":9},"2018":{"m":51.5,"n":2,"v":28.7},"2019":{"m":12.0,"n":2,"v":-76.7},"2020":{"m":51.5,"n":2,"v":329.2},"2023":{"m":200.0,"n":38,"v":288.3}}},"HUARAL":{"dep":"LIMA","n":54,"y":{"2017":{"m":492.5,"n":6},"2018":{"m":180.0,"n":1,"v":-63.5},"2019":{"m":7.0,"n":2,"v":-96.1},"2020":{"m":85.0,"n":16,"v":1114.3},"2021":{"m":70.0,"n":13,"v":-17.6},"2023":{"m":500.0,"n":16,"v":614.3}}},"SACHACA":{"dep":"AREQUIPA","n":53,"y":{"2020":{"m":830.0,"n":1},"2021":{"m":735.0,"n":18,"v":-11.4},"2022":{"m":850.0,"n":4,"v":15.6},"2023":{"m":805.0,"n":16,"v":-5.3}}},"CHANCHAMAYO":{"dep":"JUNIN","n":49,"y":{"2020":{"m":350.0,"n":14},"2021":{"m":315.0,"n":8,"v":-10.0},"2023":{"m":600.0,"n":27,"v":90.5}}},"IQUITOS":{"dep":"LORETO","n":47,"y":{"2017":{"m":3100.0,"n":1},"2018":{"m":3500.0,"n":2,"v":12.9},"2019":{"m":3800.0,"n":1,"v":8.6},"2020":{"m":500.0,"n":9,"v":-86.8},"2023":{"m":300.0,"n":34,"v":-40.0}}},"CORONEL PORTILLO":{"dep":"UCAYALI","n":47,"y":{"2019":{"m":200.0,"n":1},"2020":{"m":180.0,"n":9,"v":-10.0},"2021":{"m":185.0,"n":21,"v":2.8},"2022":{"m":450.0,"n":15,"v":143.2},"2023":{"m":350.0,"n":1,"v":-22.2}}},"PIMENTEL":{"dep":"LA LIBERTAD","n":46,"y":{"2019":{"m":70.0,"n":3},"2020":{"m":220.0,"n":1,"v":214.3},"2023":{"m":350.0,"n":1,"v":59.1}}},"VIRU":{"dep":"LA LIBERTAD","n":45,"y":{"2017":{"m":22000.0,"n":20},"2018":{"m":22000.0,"n":16,"v":0.0},"2020":{"m":150.0,"n":1,"v":-99.3},"2021":{"m":20.0,"n":2,"v":-86.7},"2023":{"m":160.0,"n":6,"v":700.0}}},"ANCON":{"dep":"LIMA","n":44,"y":{"2017":{"m":675.0,"n":6},"2018":{"m":725.0,"n":2,"v":7.4},"2019":{"m":425.0,"n":6,"v":-41.4},"2020":{"m":1200.0,"n":9,"v":182.4},"2021":{"m":275.0,"n":11,"v":-77.1},"2022":{"m":1100.0,"n":1,"v":300.0},"2023":{"m":230.0,"n":9,"v":-79.1}}},"SANTA":{"dep":"ANCASH","n":44,"y":{"2020":{"m":200.0,"n":7},"2021":{"m":200.0,"n":26,"v":0.0},"2022":{"m":380.0,"n":7,"v":90.0},"2023":{"m":250.0,"n":3,"v":-34.2},"2024":{"m":1130.0,"n":1,"v":352.0}}},"MAYNAS":{"dep":"LORETO","n":43,"y":{"2017":{"m":155.0,"n":1},"2020":{"m":430.0,"n":7,"v":177.4},"2021":{"m":370.0,"n":1,"v":-14.0},"2022":{"m":250.0,"n":10,"v":-32.4}}},"PARIÑAS":{"dep":"PIURA","n":43,"y":{"2020":{"m":170.0,"n":3},"2021":{"m":400.0,"n":2,"v":135.3},"2023":{"m":600.0,"n":38,"v":50.0}}},"CHINCHA ALTA":{"dep":"CHINCHA","n":42,"y":{"2019":{"m":400.0,"n":1},"2020":{"m":550.0,"n":1,"v":37.5},"2023":{"m":1040.0,"n":1,"v":89.1}}},"OXAPAMPA":{"dep":"PASCO","n":41,"y":{"2017":{"m":2400.0,"n":4},"2020":{"m":400.0,"n":1,"v":-83.3},"2021":{"m":60.0,"n":4,"v":-85.0},"2022":{"m":30.0,"n":1,"v":-50.0},"2023":{"m":350.0,"n":23,"v":1066.7},"2024":{"m":1.45,"n":1,"v":-99.6}}},"CALLERIA":{"dep":"UCAYALI","n":40,"y":{"2017":{"m":350.0,"n":1},"2020":{"m":75.0,"n":1,"v":-78.6},"2021":{"m":270.0,"n":3,"v":260.0},"2023":{"m":270.0,"n":27,"v":0.0}}},"NUEVO CHIMBOTE":{"dep":"LIMA","n":37,"y":{"2019":{"m":272.5,"n":2},"2020":{"m":189.0,"n":3,"v":-30.6},"2023":{"m":300.0,"n":1,"v":58.7}}},"SUBTANJALLA":{"dep":"ICA","n":36,"y":{"2017":{"m":120.0,"n":2},"2019":{"m":130.0,"n":6,"v":8.3},"2020":{"m":110.0,"n":3,"v":-15.4},"2021":{"m":20.0,"n":7,"v":-81.8},"2023":{"m":170.0,"n":18,"v":750.0}}},"SATIPO":{"dep":"JUNIN","n":36,"y":{"2019":{"m":700.0,"n":1},"2020":{"m":500.0,"n":7,"v":-28.6},"2021":{"m":347.5,"n":4,"v":-30.5},"2023":{"m":695.0,"n":24,"v":100.0}}},"PAUCARPATA":{"dep":"AREQUIPA","n":35,"y":{"2017":{"m":510.0,"n":2},"2020":{"m":665.0,"n":4,"v":30.4},"2021":{"m":850.0,"n":16,"v":27.8},"2023":{"m":640.0,"n":13,"v":-24.7}}},"PAITA":{"dep":"PAITA","n":34,"y":{"2017":{"m":35.0,"n":3},"2020":{"m":60.0,"n":1,"v":71.4},"2021":{"m":67.5,"n":8,"v":12.5},"2023":{"m":340.0,"n":1,"v":403.7}}},"HUACHO":{"dep":"LIMA","n":34,"y":{"2017":{"m":495.0,"n":4},"2018":{"m":2355.0,"n":1,"v":375.8},"2019":{"m":900.0,"n":5,"v":-61.8},"2020":{"m":400.0,"n":3,"v":-55.6},"2023":{"m":960.0,"n":21,"v":140.0}}},"CHANCAY":{"dep":"LIMA","n":33,"y":{"2017":{"m":87500.0,"n":6},"2018":{"m":70.0,"n":1,"v":-99.9},"2019":{"m":250.0,"n":1,"v":257.1},"2020":{"m":130.0,"n":3,"v":-48.0},"2021":{"m":40000.0,"n":1,"v":30669.2},"2023":{"m":182.5,"n":20,"v":-99.5}}},"HUANCHACO":{"dep":"LA LIBERTAD","n":32,"y":{"2017":{"m":300.0,"n":1},"2019":{"m":200.0,"n":1,"v":-33.3},"2020":{"m":340.0,"n":6,"v":70.0},"2023":{"m":325.0,"n":24,"v":-4.4}}},"CAJAMARCA":{"dep":"PASCO","n":32,"y":{"2017":{"m":1000.0,"n":1},"2019":{"m":1600.0,"n":1,"v":60.0},"2021":{"m":700.0,"n":2,"v":-56.2},"2022":{"m":700.0,"n":7,"v":0.0},"2023":{"m":510.0,"n":1,"v":-27.1}}},"SAN SEBASTIAN":{"dep":"LIMA","n":32,"y":{"2020":{"m":1375.0,"n":4},"2021":{"m":1000.0,"n":5,"v":-27.3},"2023":{"m":1500.0,"n":2,"v":50.0}}},"SAN BARTOLO":{"dep":"LIMA","n":31,"y":{"2017":{"m":500.0,"n":5},"2018":{"m":950.0,"n":2,"v":90.0},"2019":{"m":520.0,"n":3,"v":-45.3},"2020":{"m":750.0,"n":7,"v":44.2},"2021":{"m":1500.0,"n":6,"v":100.0},"2022":{"m":600.0,"n":1,"v":-60.0},"2023":{"m":700.0,"n":7,"v":16.7}}},"ILO":{"dep":"MOQUEGUA","n":31,"y":{"2020":{"m":275.0,"n":6},"2021":{"m":240.0,"n":19,"v":-12.7},"2023":{"m":360.0,"n":6,"v":50.0}}},"CUSCO":{"dep":"CUSCO","n":29,"y":{"2017":{"m":1500.0,"n":1},"2018":{"m":21.0,"n":2,"v":-98.6},"2019":{"m":5500.0,"n":2,"v":26090.5},"2020":{"m":1500.0,"n":1,"v":-72.7},"2022":{"m":2100.0,"n":2,"v":40.0},"2023":{"m":2400.0,"n":19,"v":14.3}}},"SAN JUAN BAUTISTA":{"dep":"ICA","n":29,"y":{"2017":{"m":212.5,"n":2},"2020":{"m":175.0,"n":2,"v":-17.6},"2023":{"m":200.0,"n":5,"v":14.3}}},"MOCHE":{"dep":"LA LIBERTAD","n":28,"y":{"2019":{"m":765.0,"n":1},"2020":{"m":200.0,"n":4,"v":-73.9},"2023":{"m":260.0,"n":23,"v":30.0}}},"HUANUCO":{"dep":"HUANUCO","n":27,"y":{"2017":{"m":757.5,"n":2},"2019":{"m":1100.0,"n":1,"v":45.2},"2022":{"m":680.0,"n":1,"v":-38.2},"2023":{"m":1000.0,"n":23,"v":47.1}}},"AMARILIS":{"dep":"HUANUCO","n":26,"y":{"2020":{"m":407.5,"n":2},"2021":{"m":515.0,"n":2,"v":26.4},"2022":{"m":400.0,"n":1,"v":-22.3},"2023":{"m":500.0,"n":21,"v":25.0}}},"CHINCHA BAJA":{"dep":"ICA","n":25,"y":{"2017":{"m":25.0,"n":2},"2019":{"m":25.0,"n":4,"v":0.0},"2020":{"m":145.0,"n":2,"v":480.0},"2021":{"m":65000.0,"n":1,"v":44727.6},"2023":{"m":92.5,"n":16,"v":-99.9}}},"SANTIAGO":{"dep":"CUSCO","n":25,"y":{"2020":{"m":950.0,"n":5},"2021":{"m":250.0,"n":1,"v":-73.7},"2022":{"m":675.0,"n":1,"v":170.0},"2023":{"m":940.0,"n":3,"v":39.3}}},"SOCABAYA":{"dep":"AREQUIPA","n":25,"y":{"2020":{"m":400.0,"n":5},"2021":{"m":400.0,"n":7,"v":0.0},"2023":{"m":415.0,"n":12,"v":3.8},"2024":{"m":670.0,"n":1,"v":61.4}}},"HUAROCHIRI":{"dep":"LIMA","n":24,"y":{"2019":{"m":110.0,"n":3},"2020":{"m":87.5,"n":6,"v":-20.5},"2021":{"m":127.5,"n":12,"v":45.7},"2022":{"m":135.0,"n":3,"v":5.9}}},"PUNTA NEGRA":{"dep":"LIMA","n":23,"y":{"2017":{"m":375.0,"n":6},"2020":{"m":650.0,"n":3,"v":73.3},"2021":{"m":530.0,"n":5,"v":-18.5},"2023":{"m":360.0,"n":7,"v":-32.1},"2024":{"m":700.0,"n":2,"v":94.4}}},"ABANCAY":{"dep":"LIMA","n":23,"y":{"2020":{"m":850.0,"n":4},"2021":{"m":400.0,"n":5,"v":-52.9},"2023":{"m":930.0,"n":1,"v":132.5}}},"BARRANCA":{"dep":"LIMA","n":23,"y":{"2020":{"m":121.5,"n":2},"2021":{"m":302.5,"n":2,"v":149.0},"2022":{"m":190.0,"n":5,"v":-37.2},"2023":{"m":2220.0,"n":14,"v":1068.4}}},"MALA":{"dep":"CAÑETE","n":21,"y":{"2017":{"m":320.0,"n":3},"2019":{"m":1000.0,"n":1,"v":212.5},"2020":{"m":150.0,"n":2,"v":-85.0},"2023":{"m":700.0,"n":1,"v":366.7}}},"OLMOS":{"dep":"LAMBAYEQUE","n":21,"y":{"2017":{"m":8050.0,"n":2},"2018":{"m":16500.0,"n":2,"v":105.0},"2019":{"m":17000.0,"n":1,"v":3.0},"2021":{"m":5700.0,"n":5,"v":-66.5},"2023":{"m":8500.0,"n":5,"v":49.1}}},"JOSE LEONARDO ORTIZ":{"dep":"LAMBAYEQUE","n":21,"y":{"2017":{"m":2000.0,"n":1},"2020":{"m":420.0,"n":3,"v":-79.0},"2023":{"m":540.0,"n":17,"v":28.6}}},"SAN VICENTE DE CAÑETE":{"dep":"LIMA","n":21,"y":{"2017":{"m":650.0,"n":1},"2019":{"m":450.0,"n":1,"v":-30.8},"2020":{"m":33150.0,"n":2,"v":7266.7},"2023":{"m":420.0,"n":15,"v":-98.7}}},"CHINCHA":{"dep":"ICA","n":21,"y":{"2017":{"m":320.0,"n":1},"2020":{"m":180.0,"n":5,"v":-43.8},"2021":{"m":250.0,"n":9,"v":38.9},"2022":{"m":550.0,"n":2,"v":120.0},"2023":{"m":290.0,"n":3,"v":-47.3}}},"SAN ANTONIO":{"dep":"LIMA","n":21,"y":{"2019":{"m":20.0,"n":5},"2020":{"m":1000.0,"n":1,"v":4900.0},"2021":{"m":120.0,"n":4,"v":-88.0},"2023":{"m":130.0,"n":11,"v":8.3}}},"LAMBAYEQUE":{"dep":"CHICLAYO","n":20,"y":{"2017":{"m":55.0,"n":3},"2019":{"m":1720.0,"n":1,"v":3027.3},"2020":{"m":430.0,"n":4,"v":-75.0},"2023":{"m":335.0,"n":1,"v":-22.1}}},"SANTA MARIA DEL MAR":{"dep":"LIMA","n":20,"y":{"2017":{"m":1625.0,"n":6},"2020":{"m":1700.0,"n":4,"v":4.6},"2021":{"m":1300.0,"n":1,"v":-23.5},"2023":{"m":1250.0,"n":9,"v":-3.8}}},"HUAMANGA":{"dep":"AYACUCHO","n":20,"y":{"2017":{"m":1000.0,"n":1},"2020":{"m":350.0,"n":5,"v":-65.0},"2021":{"m":570.0,"n":13,"v":62.9},"2023":{"m":550.0,"n":1,"v":-3.5}}},"NAZCA":{"dep":"ICA","n":20,"y":{"2019":{"m":1700.0,"n":1},"2020":{"m":640.0,"n":2,"v":-62.4},"2021":{"m":1000.0,"n":5,"v":56.2},"2022":{"m":180.0,"n":1,"v":-82.0},"2023":{"m":550.0,"n":11,"v":205.6}}}};
 
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
+const _TAS_ALIAS={'LURIGANCHO CHOSICA':'LURIGANCHO','LURIGANCHO - CHOSICA':'LURIGANCHO','CHOSICA':'LURIGANCHO'};
 
 function buildTasChart(district, isFullReport){
-  const nd=_normDistTas(district);
+  let nd=_normDistTas(district);
+  nd=_TAS_ALIAS[nd]||nd;
   const d=TASACIONES_HIST[nd];
   if(!d)return'';
   const years=Object.keys(d.y).sort();
@@ -4836,9 +4935,8 @@ function buildSunarpPanel(p, partidas, sunOverride){
 }
 
 function openDetail(id){
-  console.log('[reco] openDetail called:', id);
   const p=properties.find(x=>x.id===id);
-  if(!p){ console.log('[reco] property not found:', id); return; }
+  if(!p){ return; }
   S.selectedId=id;
   addRecent(id);
 
@@ -5603,10 +5701,8 @@ document.addEventListener('keydown',function(e){
   else if(e.key==='ArrowRight') lbMove(1);
   else if(e.key==='ArrowLeft') lbMove(-1);
 });
-document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('photoLightbox').addEventListener('click',function(e){
-    if(e.target===this) closeLightbox();
-  });
+document.getElementById('photoLightbox').addEventListener('click',function(e){
+  if(e.target===this) closeLightbox();
 });
 let toastTimer;
 function toast(msg){
@@ -6345,17 +6441,12 @@ function toggleMobileMap(){
     {id:'294-RP3445-25',photos:['11IngRbzRlD-5Fl5UvuDc593NJ8zaHSQD','1wib6eS3CXXb99RulKHR1wWf-aq-IpMYS','1JrLoaqBRpphslzZCax2JNgxucLxgOqb3','1nTWsd3tN_cJzyHfM6GRBZqRrqAKjvmeu','1zdSzcrLZby6wt0JUjdjsBT8UkWCkelxd','1MvnnJfJYtce_1gOVyu816bQHNx4uWjHy','1hCMH10e70IqFcd7uEEQ3RMjfWVXvH6F7','1op1itDGszcIuu9zBshPCEyd4NAZnhyRf'], address:'Av. Las Palmeras 51',                        district:'San Bartolo',      type:'Departamento', price:850,    cur:'$', area:66,     beds:3, baths:2,   park:1, floor:9, floors:9,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Alquiler'},
     {id:'296-RP3353-25',photos:['1Qpg4ES7hdRSEZuYr13HKtmOFhiobsms5','1gnjHkqcT-abe05tDpdJhmdgxvSKg70rP','1mtvv1eCk5mF5VqMnlf7f3-2XXNpDqU9d','1GlifUweaazppbWfn62pG00RteMrjqoCj','1UHoKcCS7k-1B2thhOK0M4fxi8SUWLtGS','1dn0dS03WMOJcSeLHyLUAGUROIUNufkUw','1LGzT-xBhU10G0QP3-OnIC3gprAFOiAkm','1CGoZNCNrHybyj3WIYejwfoTbu2XFq8sJ'], address:'Av. Principal 818',                          district:'Surquillo',        type:'Departamento', price:720,    cur:'$', area:48,     beds:2, baths:2,   park:1, floor:9, floors:9,  gradient:'linear-gradient(135deg,#4facfe,#00f2fe)', emoji:'🏙️', op:'Alquiler'},
     {id:'365-RP0198-25',photos:['1W6otvJ31Q5AQRpPfcf0g5vt6xrzKqeuT','1Qq3ica05BVq8ZZmDQtN0YtWVFhEsDgCq','1DVpGLNcv_yNc6lDA4l33sp6RiA_K8DqD','1OYDrA90Dy0ty0c1NnwoIshl-PoW4NrDs','1kgIXk5xhKRt9vIS-s_6V9ep-qt-n4kPV','1bFvVH3W1O87BVhrs9g7YAth14-o8_pJY','1a6HkfiM_r8yZ4-ZiMEOOyc-ldkohmdW6','1sfTJyyYl-5rR5gdnvEsk07rgF3LWEKFv'], address:'Av. La Paz 118',                             district:'San Miguel',       type:'Departamento', price:1950,   cur:'S/', area:78,     beds:2, baths:2,   park:2, floor:7, floors:7,  gradient:'linear-gradient(135deg,#c084fc,#a855f7)', emoji:'🏙️', op:'Alquiler'},
-    {id:'263-RP4792-25b',photos:['16S3YVGEdN85kUMsIdevENn55wxOS_r9D','1AvoTry36r6FxO_Iy60MzntSl01pwCmvT','1T5ldvAxqshEcoift3tE46rYm5RB_2Zk2','17a0t80oylDkK7AWfNPZhtLJQUKP7XWBx','1fMhyzIhxSpAE60hAtCpdyUyGyoSuIoN3','1iQV_OAWAV620S1G6Gsq4wqBmOGBVllON','1Q8GUCEH6i6JoWq3aZTe9vfSCWyCbPYSU','1uyLOytVaz2SPUsh0bHtACAcEeLm5Ldxu'], address:'Paseo Real 139',                            district:'La Molina',        type:'Departamento', price:600,    cur:'$', area:50,     beds:2, baths:1,   park:1, floor:3, floors:3,  gradient:'linear-gradient(135deg,#667eea,#764ba2)', emoji:'🏙️', op:'Alquiler'},
   ];
   const FEATURED_LUJO=[
     {id:'37-CI1476-25', photos:['1GkYmnbwIpNizXnVQ4_rc2IX4HeS2Jfj7','1PLQyhJPuARyNe8icNXWhLcsmP_Rno0ue','1zhp9171lQoVWvQLn9FlxfKQvbGO3pyfz','18_FBrcGdsOC3Xmg9H-feFeXyBJhM0hgk','10SECdWQBBYn-iLyEcI9Q64BBOU4aYwhA','1fpziEoaswV9gpdnkKjqPTecOu-GyNyy3','1lqS90oueXEYQEL1F68bnPnouuw-rU6xX','1hoob05nuH7a_dWK8BR2I0fIE7pilSwNv'], address:'Calle Bresciani 153, Dpto 501 D',            district:'Barranco',         type:'Departamento', price:2400000, cur:'$', area:595,    beds:6, baths:6.5, park:5, floor:5, floors:5,  gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
     {id:'118-CI1508-25',photos:['1APiOfUkhPHRlPbE8f15VmTdBMvncoi6Z','1ngteKClxvYMHWiNPZltBbn0N4pmnCPJd','1nxP-55YFo6MQbqnAQr-5COvhO_vSxrwt','1Wee4NhI-tceFcu9u0p15CFP0VfVNepgI','1Dcqn3R1HQRvmtnTywlJplYqWbBHUr8jg','1X6TbwfUxGeMcGS_laG7GJJHU5NmWbn4x','1KZP4Ycr79dSOuRlWkZJB0ryPt5k7o3Er','1-YZm26PLH3zXKD9F0M9HbhlqFz3rgLWd'], address:'Calle Las Viñas 126, Dpto 204',              district:'Miraflores',       type:'Departamento', price:716112,  cur:'$', area:244,    beds:3, baths:3.5, park:2, floor:2, floors:4,  gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Venta'},
     {id:'130-CI1724-25',photos:['18AIVTP85Db3JIJ6Fub9Eo9qK-gFZTANj','1mxbqxdGV1a6PbLVkA2F_U9N9ucDW7de9','1ebb4YHpsBP-F-okq2fANOBVglD2i27Q3','1iaerxxnRkx-JmWTg2x2NNyyULZEb-T0A','1tDT4Jf1J28HQX7wCYc7GWGfH9j5xk_99','11HYU1OmfHMNZZ74QusYtXnYonGdm4HAb','1raAy3tufhfY-Y4N57Kylxi-Y7dyL6oZZ','1ZvVJNJ8hWG_EpZ8In9ZbuwYTNO_ER2I0'], address:'Calle José Nicolás Rodrigo 250, Magna Haus', district:'Santiago de Surco', type:'Departamento', price:350000,  cur:'$', area:172,    beds:3, baths:3.5, park:2, floor:1, floors:4,  gradient:'linear-gradient(135deg,#0c3547,#1a5276)', emoji:'🏙️', op:'Venta'},
     {id:'466-RP4664-25',photos:['1708hHTjQJyU2DB1yQ7Ebi461RetBuC7u','1BBYZ4Qy8OSrM8cPvHcYQD9rYBbeYC8xe','1ySDwJG8tWwU-7A6sHg4wz0SiHmwBR8hD','1ZEVV_v0kaZlUbmjSCxIyyQAbCjokWpGH','1jZ05Isbi82hWcHm2eJnPNAERDzUyBc7r','1cEQbSMaDjryvlNo-NawsPq2ZTBre7ZvS','1c3k25OEWTqtDeOSjMiWj3VVQOnmdd9id','1hNtxJ9D1YwK-6MaSHdNEgOxog2PIGz9M'], address:'Av. Manuel Villarán 460',                    district:'Miraflores',       type:'Departamento', price:220000,  cur:'$', area:114,    beds:3, baths:3.5, park:3, floor:3, floors:3,  gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
-    {id:'157-CI1706-25b',photos:['1X6tRa2sTZqzR8KkEt2FH3ELXAUh3Adyz','1hGN8FgtFGxuFOHyJsI7rN9aW_breoJ09','1FCbXEo-Aarkijjh8viStenM4inJMIL3T','1xRkHO-yunyEhMqmM-6RcHFxBV8Spai3y','1hgxPY1dI0y8znG_iwnV7AO8Z9nq1uARU','1QPugWB_rN56fqtDobBqyISYHZox0_EIa','1snncsxPQ1dyIpGcrvJI-52FTmWAHyaHf','10tE17dcSquEiP2l_gnFQixdocqQeCOTf'], address:'Av. José Pardo 1543, Dpto AX3',              district:'Miraflores',       type:'Departamento', price:151900,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:3, floors:23, gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Venta'},
-    {id:'166-CI1716-25b',photos:['1CDwVD6OMlUTMALWybPjFiC4RfiRp-DmZ','1cQNx7VUj7xZORDqk6taQnD5vj5RSp41K','1WXoGLoESbZKazhl27WhFth1IKMNWXGXe','1zMCuO20pOLbs5XTF5iQ3ad1qgiaqafWA','1jvd56mSU7DzqxYoyHBDNHOeAJ16YSiY1','1IyjveHC2U_iFWcvMgm0o_tMzO0glv8bU','1jNzsC_BypQGSghWHqjTFqtUswxYB--G3','1luYLHneVeNc1uo0IuT8iZVaZkDtvzTxp'], address:'Av. José Pardo 1543, Dpto AX8c',             district:'Miraflores',       type:'Departamento', price:147400,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#0c3547,#1a5276)', emoji:'🏙️', op:'Venta'},
-    {id:'167-CI1715-25b',photos:['1dyy29NibiN8qwKqyLEHpiaoMBy3py8ZF','1HtqKYzCggB1SJEXxGDLGFuAX6awTMIuP','1eUEq2DxzrxWNGXnsVCWPQ0ddV0Dqo1sQ','16X_W4YRZw2Q9arlnHbHwylr7jcWg58nI','1udAC9Zpr1VMG123rb38XMLECh3HcK8nv','1TOS2Qtmh52guzEZu9qIBonKLAcM3GGOp','1hY_FoQX4KdmpovtEFbv-dlGUkrsnrh75','1EifHxHZbKUIVts8fTtzaN7ZMTPQBpzB3'], address:'Av. José Pardo 1543, Dpto AX8i',             district:'Miraflores',       type:'Departamento', price:141000,  cur:'$', area:60,     beds:2, baths:2,   park:0, floor:8, floors:23, gradient:'linear-gradient(135deg,#2d1b69,#11998e)', emoji:'🏙️', op:'Venta'},
-    {id:'30-CI1413-25b', photos:['1lFZxwEy5-eCZ0ftLbbP810vdsV9olTgc','1nf5LlN4Qg-pNRXQQnUzgkOZYkIrgnqzo','1MBcrAZ_UOU2Xym_LdpbvYL8aReNckJ4p','1m5-FhHbdLzHSv_JVJv4r-XuIYZpfDDb0','14JThCHTVoTWM70f-aYVUPCP0C_OeJiOG','1qGjMBp2up0D6gYJubA5sRVRHd3cExSh7','1lHg_AaajFkSzf2EYfQJ7HhaXhS7XN-o1','1cQHtn160NzmEHkrYjOBCqOAexXtUMWed'], address:'Av. Gral. Juan Antonio Pezet 375, Dpto 501', district:'San Isidro',       type:'Departamento', price:12000,   cur:'$', area:798,    beds:4, baths:4,   park:7, floor:5, floors:5,  gradient:'linear-gradient(135deg,#1a1a2e,#16213e)', emoji:'🏙️', op:'Alquiler'},
   ];
   const ALL_FEATURED = [...FEATURED_VENTA, ...FEATURED_ALQ, ...FEATURED_ESTRENO, ...FEATURED_LUJO];
   function renderCarousel(items, containerId) {
@@ -6464,69 +6555,15 @@ function toggleMobileMap(){
     setTimeout(()=>document.getElementById('heroQ').focus(),400);
   }
 
-  function boldMatch(text,q){
-    const i=text.toLowerCase().indexOf(q.toLowerCase());
-    if(i<0)return text;
-    return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
-  }
   function _sgItemHtmlLanding(s,val){
     return `<div class="sg-item" onmousedown="pickLanding('${s.label.replace(/'/g,"\\'")}')"><span class="sg-ico">${s.icon}</span><span class="sg-txt"><span class="sg-main">${boldMatch(s.label,val)}</span><span class="sg-sub">${s.sub}</span></span></div>`;
   }
   function onSearchLanding(v){
     _lastGeoL=null;
-    const drop=document.getElementById('sgDropLanding');
-    if(!v||v.length<1){drop.style.display='none';clearTimeout(_geoTimerL);return;}
-    const q=v.toLowerCase();
-    const allHits=SG_DATA.filter(s=>s.label.toLowerCase().includes(q));
-    const distHits=allHits.filter(s=>s.sub==='Distrito').slice(0,3);
-    const propHits=allHits.filter(s=>s.sub!=='Distrito').slice(0,4);
-    let body='';
-    if(distHits.length) body+=`<div class="sg-section">Distritos</div>`+distHits.map(s=>_sgItemHtmlLanding(s,v)).join('');
-    if(propHits.length) body+=`<div class="sg-section">Propiedades</div>`+propHits.map(s=>_sgItemHtmlLanding(s,v)).join('');
-    const showGeoLoadingL=v.length>=3;
-    const geoPlaceholderL=showGeoLoadingL?'<div id="sgGeoL"><div class="sg-geo-loading">Buscando ubicaciones…</div></div>':'<div id="sgGeoL"></div>';
-    drop.innerHTML=body+geoPlaceholderL;
-    drop.style.display=(body||showGeoLoadingL)?'block':'none';
+    if(!v||v.length<1){document.getElementById('sgDropLanding').style.display='none';clearTimeout(_geoTimerL);return;}
+    _renderSearchDropdown(v,SG_DATA,'sgDropLanding','sgGeoL',_sgItemHtmlLanding);
     clearTimeout(_geoTimerL);
-    if(v.length>=3) _geoTimerL=setTimeout(()=>_fetchGeoLanding(v),500);
-  }
-  let _geoFetchIdL=0;
-  async function _fetchGeoLanding(q){
-    const fetchIdL=++_geoFetchIdL;
-    try{
-      const items=await _fetchGeoResults(q);
-      if(fetchIdL!==_geoFetchIdL) return;
-      const el=document.getElementById('sgGeoL');
-      const drop=document.getElementById('sgDropLanding');
-      if(!drop) return;
-      if(!items.length){
-        if(el) el.innerHTML='<div class="sg-geo-loading">No se encontraron ubicaciones</div>';
-        setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
-        return;
-      }
-      const secHtml=`<div class="sg-section">Direcciones</div>`
-        +items.map(r=>{
-          if(r.src==='here'){
-            return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
-          }
-          if(r.src==='google'){
-            return `<div class="sg-item sg-geo" onmousedown="pickGoogleLanding('${r.placeId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
-          }
-          return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
-        }).join('');
-      if(el) el.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
-      drop.style.display='block';
-    }catch(e){
-      const el=document.getElementById('sgGeoL');
-      if(el) el.innerHTML='<div class="sg-geo-loading">Error al buscar ubicaciones</div>';
-      setTimeout(()=>{const e=document.getElementById('sgGeoL');if(e)e.innerHTML='';},2000);
-    }
-  }
-  async function pickGoogleLanding(placeId,label){
-    document.getElementById('heroQ').value=label;
-    document.getElementById('sgDropLanding').style.display='none';
-    const loc=await _geocodePlaceId(placeId);
-    if(loc) _lastGeoL={lat:loc.lat,lng:loc.lng,label};
+    if(v.length>=3) _geoTimerL=setTimeout(()=>_fetchGeoInto(v,'sgGeoL','sgDropLanding','pickGeoLanding','landing'),500);
   }
   function pickLanding(val){
     document.getElementById('heroQ').value=val;
@@ -6558,7 +6595,7 @@ function toggleMobileMap(){
   function closeAnun(){document.getElementById('anunOverlay').classList.remove('open');_unlockScroll();}
   document.addEventListener('click',e=>{if(e.target.id==='anunOverlay')closeAnun();});
   Object.assign(window,{onSearchLanding:onSearchLanding,goSearch:goSearch,
-    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,pickGoogleLanding:pickGoogleLanding,
+    pickLanding:pickLanding,pickGeoLanding:pickGeoLanding,
     setTab:setTab,goTab:goTab,openAnun:openAnun,closeAnun:closeAnun,
     scrollCarousel:scrollCarousel,slideImg:slideImg});
 })();
@@ -6644,6 +6681,7 @@ function hideLegalPages(){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('img[data-logo]').forEach(el=>{el.src=LOGO_SRC;});
   try{ initMap(); }catch(e){ console.warn('Mapa no disponible:', e && e.message); }
   recalcBody();
   window.addEventListener('resize',recalcBody);
@@ -6731,177 +6769,6 @@ function _applyLandingHash(){
   <!-- contenido generado dinámicamente por openFullReport() -->
 </div>
 
-<style>
-/* ── Full Report Overlay ── */
-#frOverlay{
-  position:fixed;inset:0;z-index:9999;
-  background:#F5F3EF;
-  overflow-y:auto;
-  transform:translateY(100%);
-  transition:transform .35s cubic-bezier(.4,0,.2,1);
-  pointer-events:none;
-}
-#frOverlay.open{pointer-events:auto;}
-#frOverlay.open{transform:translateY(0)}
-
-/* NAV */
-.fr-wrap{max-width:1100px;margin:0 auto;}
-.fr-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#FDFCFA;border-bottom:1px solid rgba(14,17,23,.1);position:sticky;top:0;z-index:10;}
-.fr-nav-back{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:#2A2F3A;}
-.fr-nav-back:hover{background:#F5F3EF}
-.fr-nav-logo{font-family:'DM Serif Display',Georgia,serif;font-size:20px;display:flex;align-items:center;gap:7px;}
-.fr-nav-logo span{font-family:system-ui,sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:#0E1117;color:#fff;padding:2px 7px;border-radius:4px;}
-.fr-breadcrumb{font-size:12px;color:#8E94A0;display:none;}
-@media(min-width:600px){.fr-breadcrumb{display:block}}
-.fr-btn-ghost{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 12px;border-radius:6px;font-size:13px;cursor:pointer;color:#555B6A;}
-.fr-btn-ghost:hover{background:#F5F3EF}
-
-/* GALLERY — carrusel adaptativo */
-.fr-gallery{position:relative;background:#0E1117;overflow:hidden;height:420px;}
-@media(min-width:700px){.fr-gallery{height:480px;}}
-.fr-gallery-track{display:flex;height:100%;transition:transform .35s cubic-bezier(.4,0,.2,1);}
-.fr-gallery-slide{flex:0 0 100%;height:100%;overflow:hidden;position:relative;}
-.fr-gallery-slide img{width:100%;height:100%;object-fit:cover;display:block;}
-.fr-gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;
-  width:44px;height:44px;border-radius:50%;
-  background:rgba(0,0,0,.55);backdrop-filter:blur(6px);
-  border:1.5px solid rgba(255,255,255,.25);color:#fff;
-  font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:background .15s;user-select:none;}
-.fr-gallery-arrow:hover{background:rgba(0,0,0,.8);}
-.fr-gallery-prev{left:14px;}
-.fr-gallery-next{right:14px;}
-.fr-gallery-arrow.hidden{display:none;}
-.fr-gallery-dots{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
-  display:flex;gap:6px;z-index:5;}
-.fr-gallery-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.45);
-  cursor:pointer;transition:background .2s,transform .2s;}
-.fr-gallery-dot.active{background:#fff;transform:scale(1.25);}
-.fr-gallery-counter{position:absolute;top:14px;right:14px;
-  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
-  color:#fff;font-size:12px;font-weight:500;padding:5px 11px;border-radius:20px;z-index:5;}
-.fr-gallery-placeholder{display:flex;flex-direction:column;align-items:center;
-  justify-content:center;height:300px;color:rgba(255,255,255,.7);background:#1e2535;}
-
-/* LAYOUT */
-.fr-layout{display:grid;grid-template-columns:1fr;gap:0;padding:28px 20px 60px;align-items:start;}
-@media(min-width:820px){.fr-layout{grid-template-columns:1fr 320px;gap:32px;padding:32px 24px 60px;}}
-.fr-main{border-right:none;}
-@media(min-width:820px){.fr-main{border-right:1px solid rgba(14,17,23,.1);padding-right:32px;}}
-
-/* TITLE */
-.fr-title{font-family:'DM Serif Display',Georgia,serif;font-size:28px;line-height:1.2;margin-bottom:6px;margin-top:4px;}
-@media(min-width:600px){.fr-title{font-size:34px;}}
-.fr-loc{font-size:13px;color:#555B6A;margin-bottom:22px;}
-
-/* VERDICT */
-.fr-verdict{background:linear-gradient(180deg,#EAF0FD,rgba(234,240,253,.4));border:1px solid rgba(26,79,191,.15);border-radius:14px;padding:20px;margin-bottom:24px;display:flex;gap:14px;align-items:flex-start;}
-.fr-verdict-icon{width:44px;height:44px;border-radius:10px;background:#1A4FBF;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.fr-verdict-body h3{font-family:'DM Serif Display',Georgia,serif;font-size:20px;color:#1A4FBF;margin-bottom:4px;}
-.fr-verdict-body p{font-size:13px;color:#555B6A;line-height:1.55;}
-.fr-verdict-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
-.fr-vchip{font-size:12px;font-weight:500;background:rgba(255,255,255,.8);border:1px solid rgba(26,79,191,.2);padding:5px 11px;border-radius:6px;color:#0E1117;}
-.fr-vchip strong{color:#1A4FBF;}
-
-/* PRICE */
-.fr-price-block{margin-bottom:18px;}
-.fr-price-lbl{font-size:11px;color:#8E94A0;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px;}
-.fr-price-ask{font-family:'DM Serif Display',Georgia,serif;font-size:40px;line-height:1;margin-bottom:8px;}
-.fr-price-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.fr-price-pill{background:#EAF0FD;color:#1A4FBF;font-size:13px;font-weight:600;padding:4px 11px;border-radius:6px;}
-.fr-badge-new{background:#d1fae5;color:#065f46;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;}
-.fr-badge-bank{background:#fef3c7;color:#92400e;font-size:11px;font-weight:600;padding:3px 8px;border-radius:5px;}
-
-/* SPECS */
-.fr-specs-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(14,17,23,.1);border:1px solid rgba(14,17,23,.1);border-radius:10px;overflow:hidden;margin-bottom:16px;}
-@media(min-width:500px){.fr-specs-grid{grid-template-columns:repeat(5,1fr);}}
-.fr-spec-cell{background:#FDFCFA;padding:14px 10px;text-align:center;}
-.fr-spec-val{font-family:'DM Serif Display',Georgia,serif;font-size:22px;color:#0E1117;margin-bottom:2px;}
-.fr-spec-lbl{font-size:11px;color:#8E94A0;}
-
-/* TAGS */
-.fr-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px;}
-.fr-tag{font-size:11px;color:#555B6A;background:#FDFCFA;border:1px solid rgba(14,17,23,.12);border-radius:4px;padding:4px 9px;}
-
-/* SECTIONS */
-.fr-sec{margin-bottom:36px;}
-.fr-sec-title{font-family:'DM Serif Display',Georgia,serif;font-size:21px;margin-bottom:14px;display:flex;align-items:baseline;gap:10px;}
-.fr-sec-title small{font-family:system-ui,sans-serif;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0;}
-.fr-desc{font-size:14px;color:#2A2F3A;line-height:1.65;}
-
-/* PHOTO GRID */
-.fr-photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
-@media(min-width:500px){.fr-photo-grid{grid-template-columns:repeat(3,1fr);}}
-.fr-photo-thumb{border-radius:8px;overflow:hidden;aspect-ratio:4/3;display:block;background:#E0DDD7;}
-.fr-photo-thumb img{width:100%;height:100%;object-fit:cover;}
-
-/* SUNARP */
-.fr-sec-sunarp{background:linear-gradient(135deg,#f8f6ff,#f0f4fc);border:1px solid rgba(26,79,191,.15);border-radius:14px;padding:22px;}
-.fr-sun-grid{display:grid;grid-template-columns:1fr;gap:20px;}
-@media(min-width:600px){.fr-sun-grid{grid-template-columns:1fr 1fr;}}
-.fr-sun-col-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:12px;}
-.fr-sun-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(14,17,23,.07);font-size:13px;}
-.fr-sun-row:last-child{border-bottom:none;}
-.fr-sun-row span{color:#555B6A;}
-.fr-sun-row strong{color:#0E1117;font-weight:600;}
-.fr-sun-row-total{background:rgba(26,79,191,.06);border-radius:6px;padding:8px 10px;border-bottom:none;margin-top:6px;}
-.fr-sun-row-total strong{font-size:15px;color:#1A4FBF;}
-.fr-pdf-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;}
-.fr-pdf-btn{display:inline-flex;align-items:center;gap:7px;background:#FDFCFA;border:1.5px solid rgba(26,79,191,.25);border-radius:8px;padding:9px 14px;font-size:13px;color:#1A4FBF;text-decoration:none;font-weight:500;transition:background .15s;}
-.fr-pdf-btn:hover{background:#EAF0FD;}
-
-/* CONTEXT */
-.fr-ctx-grid{display:grid;grid-template-columns:1fr;gap:12px;}
-@media(min-width:500px){.fr-ctx-grid{grid-template-columns:repeat(3,1fr);}}
-.fr-ctx-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:16px;}
-.fr-ctx-lbl{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:6px;}
-.fr-ctx-val{font-family:'DM Serif Display',Georgia,serif;font-size:24px;margin-bottom:4px;}
-.fr-ctx-sub{font-size:12px;color:#555B6A;line-height:1.5;}
-.fr-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-top:8px;}
-.fr-badge.green{background:#E8F4EE;color:#1A6B4A;}
-.fr-badge.amber{background:#FDF3E3;color:#8B5E0A;}
-
-/* SCORE */
-.fr-score-layout{display:grid;grid-template-columns:1fr;gap:16px;}
-@media(min-width:500px){.fr-score-layout{grid-template-columns:1fr 200px;}}
-.fr-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.fr-score-item{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:10px;padding:12px;}
-.fr-score-label{font-size:12px;color:#555B6A;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
-.fr-score-label span{font-family:'DM Serif Display',Georgia,serif;font-size:16px;color:#0E1117;}
-.fr-score-bar-track{height:5px;background:#E0DDD7;border-radius:3px;overflow:hidden;}
-.fr-score-total{background:#0E1117;color:#fff;border-radius:12px;padding:22px;text-align:center;}
-.fr-score-num{font-family:'DM Serif Display',Georgia,serif;font-size:58px;line-height:1;}
-
-/* SIDEBAR */
-.fr-sidebar{margin-top:24px;}
-@media(min-width:820px){.fr-sidebar{margin-top:0;position:sticky;top:70px;}}
-.fr-sidebar-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:14px;padding:18px;margin-bottom:14px;}
-.fr-sidebar-title{font-size:13px;font-weight:600;margin-bottom:14px;}
-.fr-sidebar-cta{}
-.fr-cta-main{display:block;width:100%;background:#1A4FBF;color:#fff;border:none;border-radius:9px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;}
-.fr-cta-main:hover{background:#1642a8}
-.fr-cta-sec{display:block;width:100%;background:none;color:#0E1117;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;}
-.fr-cta-sec:hover{background:#F5F3EF}
-.fr-agent-row{display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(14,17,23,.1);margin-top:14px;}
-.fr-agent-av{width:36px;height:36px;border-radius:50%;background:#EAF0FD;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#1A4FBF;}
-.fr-agent-name{font-size:13px;font-weight:500;}
-.fr-agent-resp{font-size:11px;color:#8E94A0;}
-
-/* SIM */
-.fr-sim-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:#555B6A;}
-.fr-sim-input{width:88px;border:1px solid rgba(14,17,23,.18);border-radius:6px;padding:5px 10px;font-size:13px;font-weight:500;text-align:right;color:#0E1117;background:#F5F3EF;outline:none;}
-.fr-sim-results{background:#F5F3EF;border-radius:8px;padding:12px;margin-top:10px;}
-.fr-sim-result-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:7px;}
-.fr-sim-result-row span:last-child{font-weight:600;}
-.fr-sim-total{padding-top:8px;border-top:1px solid rgba(14,17,23,.1);font-weight:600;margin-bottom:0;}
-.fr-sim-total span:last-child{color:#1A4FBF;}
-
-/* VANET */
-.fr-vanet{display:flex;align-items:flex-start;gap:10px;background:#F5F3EF;border:1px solid rgba(14,17,23,.1);border-radius:8px;padding:12px;}
-.fr-vanet-dot{width:8px;height:8px;border-radius:50%;background:#3DB07A;flex-shrink:0;margin-top:4px;}
-.fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
-.fr-vanet-text strong{color:#0E1117;font-weight:600;}
-</style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
 <div id="userSection">
@@ -7048,6 +6915,8 @@ firebase.initializeApp(firebaseConfig);
 // rotate, generate a new v3 site key at
 // https://www.google.com/recaptcha/admin and paste it here.
 //
+// TODO: Switch AppCheck from SOFT to ENFORCE mode once Cloud Logging
+// confirms real traffic consistently carries `appCheck ok`.
 // Rollout is SOFT MODE end-to-end: the client sends tokens, the
 // Cloud Functions log whether they arrive (see _logAppCheck in
 // functions/index.js) but do not reject calls that miss them. Once
@@ -8430,26 +8299,13 @@ auth.onAuthStateChanged(function(user) {
     if (user) {
       homeIngresarBtn.style.display = 'none';
       homeUserWrap.style.display    = 'flex';
-      homeUserWrap.innerHTML = `
-        <div class="user-wrap" style="position:relative">
-          <button class="user-btn" onclick="toggleUserDropdown(this)">${_getInitials(user.displayName || user.email)}</button>
-          <div class="user-dropdown">
-            <div class="user-dropdown-inner">
-              <div class="u-header">
-                <div class="u-name">${user.displayName || user.email}</div>
-                <div class="u-email">${user.email}</div>
-              </div>
-              <a href="#perfil" onclick="navigateUserSection('perfil')">👤 Mi perfil</a>
-              <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
-              <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
-              <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
-              <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
-              ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
-              <hr/>
-              <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
-            </div>
-          </div>
-        </div>`;
+      const nameEl     = document.getElementById('homeUserName');
+      const emailEl    = document.getElementById('homeUserEmail');
+      const initialsEl = document.getElementById('homeUserInitials');
+      if (nameEl)     nameEl.textContent     = user.displayName || user.email;
+      if (emailEl)    emailEl.textContent    = user.email;
+      if (initialsEl) initialsEl.textContent = _getInitials(user.displayName || user.email);
+      homeUserWrap.querySelectorAll('.admin-only').forEach(el => { el.style.display = _isAdmin() ? '' : 'none'; });
     } else {
       homeIngresarBtn.style.display = '';
       homeUserWrap.style.display    = 'none';
@@ -8504,7 +8360,7 @@ if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
 });
 
 // ── FAQs ─────────────────────────────────────────────────────
-var FAQS=[
+const FAQS=[
   {cat:'Sobre Reco',items:[
     {q:'¿Qué es Reco y para quién está pensado?',a:'Reco es una plataforma de inteligencia inmobiliaria para Lima. Te dice si una propiedad vale lo que piden, basándose en transacciones reales de SUNARP, no en avisos. Útil para compradores, inversionistas, tasadores, bancos y desarrolladores.'},
     {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, sumando un veredicto IA (sobrevalorado / justo / oportunidad), liquidez de la zona, yield estimado y señales predictivas por distrito.'},
@@ -8533,39 +8389,39 @@ var FAQS=[
   ]},
 ];
 (function buildFaqs(){
-  var container=document.getElementById('faqListContainer');
+  const container=document.getElementById('faqListContainer');
   if(!container)return;
-  var html='';
-  FAQS.forEach(function(g){
+  let html='';
+  FAQS.forEach(g=>{
     html+='<section class="faq-group"><h2 class="faq-cat">'+g.cat+'</h2><div class="faq-items">';
-    g.items.forEach(function(f,i){
+    g.items.forEach((f,i)=>{
       html+='<details class="faq-item"'+(i===0?' open':'')+'><summary><span class="faq-q">'+f.q+'</span><span class="faq-icon">'+(i===0?'–':'+')+'</span></summary><p class="faq-a">'+f.a+'</p></details>';
     });
     html+='</div></section>';
   });
   container.innerHTML=html;
-  document.querySelectorAll('.faq-item').forEach(function(d){
-    d.addEventListener('toggle',function(){var ico=d.querySelector('.faq-icon');if(ico)ico.textContent=d.open?'–':'+';});
+  document.querySelectorAll('.faq-item').forEach(d=>{
+    d.addEventListener('toggle',()=>{const ico=d.querySelector('.faq-icon');if(ico)ico.textContent=d.open?'–':'+';});
   });
 })();
 
 // ── Contacto ─────────────────────────────────────────────────
 function enviarContacto(){
-  var nombre=document.getElementById('ctNombre').value.trim();
-  var email=document.getElementById('ctEmail').value.trim();
-  var asunto=document.getElementById('ctAsunto').value.trim();
-  var mensaje=document.getElementById('ctMensaje').value.trim();
-  var errs=[];
+  const nombre=document.getElementById('ctNombre').value.trim();
+  const email=document.getElementById('ctEmail').value.trim();
+  const asunto=document.getElementById('ctAsunto').value.trim();
+  const mensaje=document.getElementById('ctMensaje').value.trim();
+  const errs=[];
   if(!nombre)errs.push('nombre');
   if(!/^\S+@\S+\.\S+$/.test(email))errs.push('email válido');
   if(!asunto)errs.push('asunto');
   if(mensaje.length<10)errs.push('mensaje (mín. 10 caracteres)');
-  if(errs.length){alert('Completa: '+errs.join(', '));return;}
-  var mailTo='webmaster@recosac.com';
-  var subject=encodeURIComponent(asunto);
-  var body=encodeURIComponent('Nombre: '+nombre+'\nEmail: '+email+'\n\n'+mensaje);
+  if(errs.length){toast('Completa: '+errs.join(', '));return;}
+  const mailTo='webmaster@recosac.com';
+  const subject=encodeURIComponent(asunto);
+  const body=encodeURIComponent('Nombre: '+nombre+'\nEmail: '+email+'\n\n'+mensaje);
   window.open('mailto:'+mailTo+'?subject='+subject+'&body='+body,'_self');
-  alert('Se abrirá tu cliente de correo para enviar el mensaje. ¡Gracias por escribirnos!');
+  toast('Se abrirá tu cliente de correo para enviar el mensaje. ¡Gracias por escribirnos!');
   document.getElementById('ctNombre').value='';
   document.getElementById('ctEmail').value='';
   document.getElementById('ctAsunto').value='';
