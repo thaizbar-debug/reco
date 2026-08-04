@@ -19,10 +19,11 @@
 // HERE API key. Owned by the thaizbar@gmail.com account on
 // platform.here.com. Restricted to https://thaizbar-debug.github.io/*,
 // https://reco.pe/*, https://*.reco.pe/*, http://localhost:*/* and
-// http://127.0.0.1:*/* via the "App restrictions" panel on that key —
-// this is what stops someone from copying it into another site and
-// draining our monthly quota. If you rotate this, update the
-// restriction list on the new key before publishing.
+// http://127.0.0.1:*/* via the "App restrictions" panel on that key.
+// ⚠️  El dominio https://recosac.com/* DEBE agregarse a la lista
+// de restricciones en platform.here.com para que la geocodificación
+// funcione desde el dominio principal (CNAME actual: recosac.com).
+// Mientras tanto, el fallback a Photon (Komoot) se activa automáticamente.
 const HERE_API_KEY='dInOXAAJVAKb3WAEZO1-gajllipt9cmi0MvXSje89no';
 const GOOGLE_MAPS_KEY='';
 </script>
@@ -1164,7 +1165,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 /* HERO */
 #homeView .hero{position:relative;height:clamp(460px,58vh,640px);overflow:visible;display:flex;align-items:flex-end}
 #homeView .hero-photo{overflow:hidden}
-#homeView .hero-photo{position:absolute;inset:0;background-image:url('data/hero-landing.png');background-size:cover;background-position:center center}
+#homeView .hero-photo{position:absolute;inset:0;background-image:url('https://images.unsplash.com/photo-1531968455001-5c5272a41129?auto=format&fit=crop&w=1920&q=80');background-size:cover;background-position:center 60%}
 #homeView .hero-photo::after{content:'';position:absolute;inset:0;background:linear-gradient(to right,rgba(5,28,46,.75) 0%,rgba(5,28,46,.5) 48%,rgba(5,28,46,.08) 80%,transparent 100%)}
 #homeView .hero-content{position:relative;z-index:1;width:100%;padding:0 6% 56px;max-width:840px}
 #homeView .hero h1{font-size:clamp(2.4rem,5.2vw,3.8rem);font-weight:900;color:#fff;line-height:1.04;letter-spacing:-.5px;margin-bottom:32px;text-shadow:0 2px 20px rgba(0,0,0,.28)}
@@ -4186,18 +4187,20 @@ function showSuggestions(val){
 // HERE Autosuggest — devuelve sugerencias CON coordenadas (1 sola llamada)
 async function _fetchHere(q){
   if(!HERE_API_KEY) return [];
-  const url=`https://autosuggest.search.hereapi.com/v1/autosuggest?q=${encodeURIComponent(q)}&in=countryCode:PER&at=-12.05,-77.04&lang=es&limit=5&apiKey=${HERE_API_KEY}`;
-  const res=await fetch(url);
-  if(!res.ok){ console.warn('[reco] HERE autosuggest HTTP',res.status); return []; }
-  const data=await res.json();
-  if(!data.items||!data.items.length) return [];
-  return data.items.filter(it=>it.position).map(it=>({
-    label:it.title,
-    sub:it.address?(it.address.district||it.address.city||it.address.county||'Perú'):'Perú',
-    lat:it.position.lat,
-    lng:it.position.lng,
-    src:'here'
-  }));
+  try{
+    const url=`https://autosuggest.search.hereapi.com/v1/autosuggest?q=${encodeURIComponent(q)}&in=countryCode:PER&at=-12.05,-77.04&lang=es&limit=5&apiKey=${HERE_API_KEY}`;
+    const res=await fetch(url);
+    if(!res.ok){ console.warn('[reco] HERE autosuggest HTTP',res.status); return []; }
+    const data=await res.json();
+    if(!data.items||!data.items.length) return [];
+    return data.items.filter(it=>it.position).map(it=>({
+      label:it.title,
+      sub:it.address?(it.address.district||it.address.city||it.address.county||'Perú'):'Perú',
+      lat:it.position.lat,
+      lng:it.position.lng,
+      src:'here'
+    }));
+  }catch(e){ console.warn('[reco] HERE autosuggest error:',e.message); return []; }
 }
 
 // Google Places Autocomplete (carga dinámica si hay key)
@@ -4243,33 +4246,41 @@ function _geocodePlaceId(placeId){
 
 // Photon (Komoot) — fallback gratuito sin key
 async function _fetchPhoton(q){
-  const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=es&lat=-12.05&lon=-77.04`;
-  const res=await fetch(url);
-  const data=await res.json();
-  if(!data.features||!data.features.length) return [];
-  return data.features.map(f=>{
-    const p=f.properties;
-    const label=[p.name,p.street,p.housenumber].filter(Boolean).join(' ')||p.name||'Ubicación';
-    const sub=[p.district,p.city,p.county,p.state].filter(Boolean).slice(0,2).join(', ')||'Perú';
-    const [lng,lat]=f.geometry.coordinates;
-    return {label,sub,lat,lng,src:'photon'};
-  });
+  try{
+    const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=es&lat=-12.05&lon=-77.04`;
+    const res=await fetch(url);
+    const data=await res.json();
+    if(!data.features||!data.features.length) return [];
+    return data.features.map(f=>{
+      const p=f.properties;
+      const label=[p.name,p.street,p.housenumber].filter(Boolean).join(' ')||p.name||'Ubicación';
+      const sub=[p.district,p.city,p.county,p.state].filter(Boolean).slice(0,2).join(', ')||'Perú';
+      const [lng,lat]=f.geometry.coordinates;
+      return {label,sub,lat,lng,src:'photon'};
+    });
+  }catch(e){ console.warn('[reco] Photon error:',e.message); return []; }
 }
 
 // Cadena de búsqueda: HERE → Google → Photon
 async function _fetchGeoResults(q){
   // 1. HERE (principal — datos propietarios, 250K gratis/mes)
-  if(HERE_API_KEY){
-    const hereResults=await _fetchHere(q);
-    if(hereResults.length) return hereResults;
-  }
+  try{
+    if(HERE_API_KEY){
+      const hereResults=await _fetchHere(q);
+      if(hereResults.length) return hereResults;
+    }
+  }catch(e){ console.warn('[reco] HERE chain error:',e.message); }
   // 2. Google Places (si está configurado)
-  if(_gReady){
-    const googleResults=await _fetchGooglePlaces(q);
-    if(googleResults.length) return googleResults;
-  }
+  try{
+    if(_gReady){
+      const googleResults=await _fetchGooglePlaces(q);
+      if(googleResults.length) return googleResults;
+    }
+  }catch(e){ console.warn('[reco] Google chain error:',e.message); }
   // 3. Photon (fallback gratuito sin key)
-  return await _fetchPhoton(q);
+  try{
+    return await _fetchPhoton(q);
+  }catch(e){ console.warn('[reco] Photon chain error:',e.message); return []; }
 }
 
 let _geoFetchId=0;
@@ -4348,18 +4359,20 @@ async function _flyToDistrictGeo(district){
   if(!leafletMap) return;
   try{
     if(HERE_API_KEY){
-      const url=`https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&apiKey=${HERE_API_KEY}`;
-      const res=await fetch(url); const data=await res.json();
-      if(data.items&&data.items.length){
-        const it=data.items[0];
-        if(it.mapView){
-          const b=it.mapView;
-          leafletMap.flyToBounds([[b.south,b.west],[b.north,b.east]],{padding:[30,30],duration:1.2});
-        } else if(it.position){
-          leafletMap.flyTo([it.position.lat,it.position.lng],14,{duration:1.2});
+      try{
+        const url=`https://geocode.search.hereapi.com/v1/geocode?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&apiKey=${HERE_API_KEY}`;
+        const res=await fetch(url); const data=await res.json();
+        if(data.items&&data.items.length){
+          const it=data.items[0];
+          if(it.mapView){
+            const b=it.mapView;
+            leafletMap.flyToBounds([[b.south,b.west],[b.north,b.east]],{padding:[30,30],duration:1.2});
+          } else if(it.position){
+            leafletMap.flyTo([it.position.lat,it.position.lng],14,{duration:1.2});
+          }
+          return;
         }
-        return;
-      }
+      }catch(e){ console.warn('[reco] HERE geocode error:',e.message); }
     }
     const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&lat=-12.05&lon=-77.04`;
     const res=await fetch(url);
