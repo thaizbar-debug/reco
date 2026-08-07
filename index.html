@@ -1509,7 +1509,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 <!-- Email verification banner. Sits at the very top so it can't be
      scrolled past. Hidden by default; auth.onAuthStateChanged toggles
      it based on user.emailVerified. -->
-<div id="verifyBanner" style="display:none;background:#fff4e5;border-bottom:1px solid #f5b342;color:#8a5a00;padding:10px 16px;font-size:.86rem;line-height:1.4;position:sticky;top:0;z-index:1200">
+<div id="verifyBanner" style="display:none;background:#fff4e5;border-bottom:1px solid #f5b342;color:#8a5a00;padding:10px 16px;font-size:.86rem;line-height:1.4;position:fixed;top:var(--nav);left:0;right:0;z-index:199">
   <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <span style="font-size:1rem">⚠️</span>
     <span style="flex:1;min-width:200px">
@@ -1518,6 +1518,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
     </span>
     <button id="verifyResendBtn" onclick="resendVerificationEmail()" style="background:#8a5a00;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Reenviar link</button>
     <button onclick="refreshVerificationStatus()" style="background:transparent;color:#8a5a00;border:1px solid #f5b342;padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer">Ya lo verifiqué</button>
+    <button onclick="document.getElementById('verifyBanner').style.display='none'" style="background:none;border:none;color:#8a5a00;font-size:1.1rem;cursor:pointer;padding:0 4px;line-height:1" title="Cerrar">✕</button>
   </div>
 </div>
 <script>
@@ -2168,7 +2169,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         onblur="hideSuggestions()"/>
       <div class="sg-drop" id="sgDrop"></div>
     </div>
-    <button class="btn-search" onclick="applyFilters()">Buscar</button>
+    <button class="btn-search" onclick="submitSearch()">Buscar</button>
   </div>
 
   <div class="filters-row">
@@ -3191,18 +3192,26 @@ function closeAreaModal(){
 
 function renderHistTable(list){
   _histTableList=list;
+  const allLoaded=list.every(p=>_histDetailAlreadyLoaded(p));
   const validRows=list.filter(p=>{const a=(p.areaTech>0)?p.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
   const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.areaTech>0)?p.areaTech:p.area),0)/validRows.length):0;
   const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
   const avgCur=validRows.length?validRows[0].cur:'$';
+  const areaText=avgArea>0?`${avgArea} m²`:(allLoaded?'—':'Cargando…');
+  const sqmText=avgSqm>0?`${avgCur} ${avgSqm.toLocaleString()}/m²`:(allLoaded?'—':'Cargando…');
+
+  if(!allLoaded){
+    const unloaded=list.filter(p=>!_histDetailAlreadyLoaded(p));
+    Promise.all(unloaded.map(p=>fetchHistDetail(p.id).catch(()=>{}))).then(()=>applyFilters());
+  }
 
   return `<div class="area-summary-bar">
     <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--blue);text-transform:uppercase;display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--blue)"></span>Resumen del área · ${list.length} propiedades</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div class="area-summary-stats">
-        <div class="area-stat"><div class="area-stat-val">${avgArea} m²</div><div class="area-stat-lbl">Área promedio</div></div>
+        <div class="area-stat"><div class="area-stat-val">${areaText}</div><div class="area-stat-lbl">Área promedio</div></div>
         <div class="area-stat-sep"></div>
-        <div class="area-stat"><div class="area-stat-val" style="color:var(--blue)">${avgCur} ${avgSqm.toLocaleString()}/m²</div><div class="area-stat-lbl">Valor promedio/m²</div></div>
+        <div class="area-stat"><div class="area-stat-val" style="color:var(--blue)">${sqmText}</div><div class="area-stat-lbl">Valor promedio/m²</div></div>
       </div>
       <button class="area-ver-mas-btn" onclick="openAreaModal()">Ver detalle →</button>
     </div>
@@ -3247,7 +3256,7 @@ function renderCards(list){
     const histLocked=p.op==='Histórico'&&!S.unlockedIds.has(p.id);
     const priceHtml=histLocked
       ?`<div class="card-price-row"><div class="card-price card-price-locked">${esc(p.cur)} 🔒</div></div>`
-      :`<div class="card-price-row"><div class="card-price">${esc(p.cur)}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=sqmPriceNet(p);return s>0?`<div class="card-sqm">${esc(p.cur)}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
+      :`<div class="card-price-row"><div class="card-price">${esc(p.cur)}${Math.round(p.op==='Histórico'?getHistTotal(p):p.price).toLocaleString('en-US')}</div>${(()=>{const s=p.op==='Histórico'?histSqmNet(p):sqmPriceNet(p);return s>0?`<div class="card-sqm">${esc(p.cur)}${Math.round(s).toLocaleString('en-US')}<span class="card-sqm-lbl">/m²</span></div>`:''})()}</div>`;
     const optSpecs=[];
     if(p.beds>0) optSpecs.push(`<span class="spec"><span>🛏</span>${esc(p.beds)}</span>`);
     if(p.baths>0) optSpecs.push(`<span class="spec spec-baths"><span>🚿</span>${esc(p.baths)}</span>`);
@@ -3960,7 +3969,9 @@ function detailNearby(id){
 }
 
 function fmtPinPrice(p){
-  return p.price>=1000000?(p.price/1000000).toFixed(1)+'M':p.price>=1000?Math.round(p.price/1000)+'K':p.price;
+  const raw=p.op==='Histórico'?getHistTotal(p):p.price;
+  if(!raw||raw<=0) return null;
+  return raw>=1000000?(raw/1000000).toFixed(1)+'M':raw>=1000?Math.round(raw/1000)+'K':raw;
 }
 
 function _pinHoverHtml(p){
@@ -3979,12 +3990,15 @@ function _pinHoverHtml(p){
   const badges=`<div class="hc-badges"><span class="badge badge-op">${esc(p.op)}</span><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div>`;
   const pk=parkCount(p);
   const specs=`<div class="hc-specs"><span class="spec"><span>📐</span>${esc(p.area)} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${esc(p.beds)}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${esc(p.baths)}</span>`:''}${pk>0?`<span class="spec"><span>🚗</span>${esc(pk)}</span>`:''}</div>`;
-  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div></div></div>`;
+  const hcPriceVal=p.op==='Histórico'?getHistTotal(p):p.price;
+  const hcPriceHtml=hcPriceVal>0?`${esc(p.cur||'$')} ${fmtPrice(hcPriceVal)}`:'🔑 Ver informe';
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${hcPriceHtml}</div></div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
   const price=fmtPinPrice(p);
-  return `<div class="lf-pin${isActive?' active':''}" id="pin-${esc(p.id)}"><div class="lf-pill">${esc(p.cur)}${price}</div>${_pinHoverHtml(p)}</div>`;
+  const label=price!==null?`${esc(p.cur||'$')}${price}`:'🔑 Ver informe';
+  return `<div class="lf-pin${isActive?' active':''}" id="pin-${esc(p.id)}"><div class="lf-pill">${label}</div>${_pinHoverHtml(p)}</div>`;
 }
 
 function renderPins(list){
@@ -4328,12 +4342,20 @@ function _activateRadiusAt(lat,lng,label){
   leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
   applyFilters();
 }
+function _flyToGeoResult(lat,lng,label){
+  _deactivateAllTools();
+  S.query='';
+  document.getElementById('searchQ').value='';
+  document.getElementById('searchQ').placeholder='📍 '+label;
+  leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
+  applyFilters();
+}
 async function pickGoogleResult(placeId,label){
   document.getElementById('searchQ').value='';
   document.getElementById('sgDrop').style.display='none';
   const loc=await _geocodePlaceId(placeId);
   if(!loc){ toast('No se pudo obtener la ubicación'); return; }
-  _activateRadiusAt(loc.lat,loc.lng,label);
+  _flyToGeoResult(loc.lat,loc.lng,label);
 }
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
@@ -4379,7 +4401,7 @@ async function _flyToDistrictGeo(district){
 function pickGeoResult(lat,lng,label){
   document.getElementById('searchQ').value='';
   document.getElementById('sgDrop').style.display='none';
-  _activateRadiusAt(lat,lng,label);
+  _flyToGeoResult(lat,lng,label);
 }
 function hideSuggestions(){
   setTimeout(()=>{document.getElementById('sgDrop').style.display='none';},150);
@@ -4387,9 +4409,38 @@ function hideSuggestions(){
 function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
   if(e.key==='Enter'){
-    S.query=document.getElementById('searchQ').value.trim();
-    hideSuggestions();applyFilters();
+    const val=document.getElementById('searchQ').value.trim();
+    hideSuggestions();
+    if(!val){ applyFilters(); return; }
+    const q=val.toLowerCase();
+    const exactMatch=SG_DATA.find(s=>s.label.toLowerCase()===q);
+    if(exactMatch){
+      pickSuggestion(exactMatch.label);
+      return;
+    }
+    const partialMatch=SG_DATA.find(s=>s.label.toLowerCase().includes(q)&&s.sub==='Distrito');
+    if(partialMatch){
+      pickSuggestion(partialMatch.label);
+      return;
+    }
+    S.query=val;
+    applyFilters();
+    if(val.length>=3){
+      _fetchGeoResults(val).then(items=>{
+        if(!items||!items.length) return;
+        const first=items[0];
+        if(first.src==='google'&&first.placeId){
+          pickGoogleResult(first.placeId,first.label);
+        } else if(first.lat!=null&&first.lng!=null){
+          pickGeoResult(first.lat,first.lng,first.label);
+        }
+      }).catch(()=>{});
+    }
   }
+}
+
+function submitSearch(){
+  handleSearchKey({key:'Enter'});
 }
 
 // ─────────────────────── SEGMENT CONTROLS ───────────────────────
@@ -4896,7 +4947,7 @@ function openDetail(id){
     });
   }
 
-  const sqm=sqmPriceNet(p);
+  const sqm=p.op==='Histórico'?histSqmNet(p):sqmPriceNet(p);
   const assets=driveAssets(p);
   const photos=assets.photos;
   const dpid = 'dp_' + p.id.replace(/[^a-zA-Z0-9]/g,'_');
@@ -4930,9 +4981,9 @@ function openDetail(id){
     <div class="detail-body">
       <div class="detail-price-row">
         <div>
-          <div class="detail-price">${esc(p.cur)} ${fmtNum(p.op==='Histórico'?getHistTotal(p):p.price)}</div>
+          <div class="detail-price">${(()=>{const v=p.op==='Histórico'?getHistTotal(p):p.price;return v>0?`${esc(p.cur)} ${fmtNum(v)}`:'Cargando…';})()}</div>
           <div style="font-size:.78rem;color:var(--muted);margin-top:2px">${p.op==='Alquiler'?'por mes':p.op==='Histórico'?'Valor total de la transacción':''}</div>
-          ${p.op==='Histórico'&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${esc(p.cur)} ${fmtNum(getHistPropPrice(p))}</strong></div>`:''}
+          ${p.op==='Histórico'&&getHistPropPrice(p)>0&&getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.78rem;color:var(--muted);margin-top:2px">Precio propiedad: <strong>${esc(p.cur)} ${fmtNum(getHistPropPrice(p))}</strong></div>`:''}
         </div>
         ${sqm>0?`<div class="detail-sqm-price"><span class="sqm-val">${esc(p.cur)} ${fmtNum(sqm)}</span><span class="sqm-lbl">Valor por m²</span></div>`:''}
         ${p.bank?'<span class="badge badge-bank" style="font-size:.78rem">🏦 Prop. de Banco</span>':''}
@@ -6705,7 +6756,18 @@ function _applyLandingHash(){
       S.query=q;
       applyFilters();
       const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===q.toLowerCase()&&s.sub==='Distrito');
-      if(isDistrict) _flyToDistrictGeo(q);
+      if(isDistrict){ _flyToDistrictGeo(q); }
+      else if(q.length>=3){
+        _fetchGeoResults(q).then(items=>{
+          if(!items||!items.length) return;
+          const first=items[0];
+          if(first.src==='google'&&first.placeId){
+            pickGoogleResult(first.placeId,first.label);
+          } else if(first.lat!=null&&first.lng!=null){
+            pickGeoResult(first.lat,first.lng,first.label);
+          }
+        }).catch(()=>{});
+      }
     }
   } else if(h.startsWith('#geo=')){
     const raw=h.slice(5).split('&')[0];
