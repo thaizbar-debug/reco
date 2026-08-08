@@ -4339,12 +4339,20 @@ function _activateRadiusAt(lat,lng,label){
   leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
   applyFilters();
 }
+function _flyToLocation(lat,lng,label){
+  _deactivateAllTools();
+  S.query='';
+  const input=document.getElementById('searchQ');
+  if(input){ input.value=''; input.placeholder='📍 '+(label||''); }
+  if(leafletMap) leafletMap.setView([lat,lng],14,{animate:true,duration:.6});
+  applyFilters();
+}
 async function pickGoogleResult(placeId,label){
   document.getElementById('searchQ').value='';
   document.getElementById('sgDrop').style.display='none';
   const loc=await _geocodePlaceId(placeId);
   if(!loc){ toast('No se pudo obtener la ubicación'); return; }
-  _activateRadiusAt(loc.lat,loc.lng,label);
+  _flyToLocation(loc.lat,loc.lng,label);
 }
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
@@ -4392,7 +4400,7 @@ async function _flyToDistrictGeo(district){
 function pickGeoResult(lat,lng,label){
   document.getElementById('searchQ').value='';
   document.getElementById('sgDrop').style.display='none';
-  _activateRadiusAt(lat,lng,label);
+  _flyToLocation(lat,lng,label);
 }
 async function _geoFallback(q){
   if(!q||q.length<3) return;
@@ -4402,7 +4410,7 @@ async function _geoFallback(q){
     const items=await _fetchGeoResults(q);
     if(!items.length) return;
     const r=items[0];
-    if(r.lat!=null&&r.lng!=null) _activateRadiusAt(r.lat,r.lng,q);
+    if(r.lat!=null&&r.lng!=null) _flyToLocation(r.lat,r.lng,q);
   }catch(e){}
 }
 function hideSuggestions(){
