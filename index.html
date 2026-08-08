@@ -6388,7 +6388,7 @@ function toggleMobileMap(){
     const sqm = p => Math.round(p.price / p.area).toLocaleString('es-PE');
     const loc = p => { let s = '📍 ' + p.district; if(p.floor > 1 && p.floors > 1) s += ' · Piso ' + p.floor + '/' + p.floors; return s; };
     const bathsFmt = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
-    const imgUrl = id => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+    const imgUrl = id => `https://lh3.googleusercontent.com/d/${id}=w800`;
     const offsets = {featuredGridVenta:0, featuredGridAlq:FEATURED_VENTA.length, featuredGridEstreno:FEATURED_VENTA.length+FEATURED_ALQ.length, featuredGridLujo:FEATURED_VENTA.length+FEATURED_ALQ.length+FEATURED_ESTRENO.length};
     const globalOffset = offsets[containerId] || 0;
     document.getElementById(containerId).innerHTML = items.map((p, i) => {
@@ -6429,7 +6429,7 @@ function toggleMobileMap(){
     const newIdx = imgIndexes[cardIdx];
     const card = document.querySelector(`[data-card="${cardIdx}"]`);
     const img = card.querySelector('.prop-photo');
-    const url = `https://drive.google.com/thumbnail?id=${p.photos[newIdx]}&sz=w800`;
+    const url = `https://lh3.googleusercontent.com/d/${p.photos[newIdx]}=w800`;
     if (img) { img.src = url; } else {
       const propImg = card.querySelector('.prop-img'); const newImg = document.createElement('img');
       newImg.className = 'prop-photo'; newImg.src = url;
