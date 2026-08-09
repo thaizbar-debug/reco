@@ -8402,7 +8402,18 @@ function _renderVerifyBanner(user) {
     const emailEl = document.getElementById('verifyBannerEmail');
     if (emailEl) emailEl.textContent = user.email ? `(${user.email})` : '';
   }
+  _adjustHeadersForBanner();
 }
+
+function _adjustHeadersForBanner() {
+  const banner = document.getElementById('verifyBanner');
+  const visible = banner && banner.style.display !== 'none';
+  const bannerH = visible ? banner.offsetHeight : 0;
+  document.querySelectorAll('header').forEach(h => { h.style.top = bannerH + 'px'; });
+}
+
+window.addEventListener('resize', _adjustHeadersForBanner);
+document.addEventListener('DOMContentLoaded', _adjustHeadersForBanner);
 
 // Resend the verification email. Firebase rate-limits this server-side
 // so we don't add a hand-rolled cooldown — the "requests-blocked"
