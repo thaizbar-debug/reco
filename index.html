@@ -3960,8 +3960,8 @@ function detailNearby(id){
   toast('📍 Elige categorías para ver establecimientos cercanos');
 }
 
-function fmtPinPrice(p){
-  return p.price>=1000000?(p.price/1000000).toFixed(1)+'M':p.price>=1000?Math.round(p.price/1000)+'K':p.price;
+function fmtPinPrice(price){
+  return price>=1000000?(price/1000000).toFixed(1)+'M':price>=1000?Math.round(price/1000)+'K':price;
 }
 
 function _pinHoverHtml(p){
@@ -3980,12 +3980,19 @@ function _pinHoverHtml(p){
   const badges=`<div class="hc-badges"><span class="badge badge-op">${esc(p.op)}</span><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div>`;
   const pk=parkCount(p);
   const specs=`<div class="hc-specs"><span class="spec"><span>📐</span>${esc(p.area)} m²</span>${p.beds>0?`<span class="spec"><span>🛏</span>${esc(p.beds)}</span>`:''}${p.baths>0?`<span class="spec"><span>🚿</span>${esc(p.baths)}</span>`:''}${pk>0?`<span class="spec"><span>🚗</span>${esc(pk)}</span>`:''}</div>`;
-  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div></div></div>`;
+  const isHistLocked = p.op==='Histórico' && !S.unlockedIds.has(p.id);
+  const priceHtml = isHistLocked
+    ? '<div class="hc-price">🔒 Desbloquear</div>'
+    : `<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>`;
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}${priceHtml}</div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
-  const price=fmtPinPrice(p);
-  return `<div class="lf-pin${isActive?' active':''}" id="pin-${esc(p.id)}"><div class="lf-pill">${esc(p.cur)}${price}</div>${_pinHoverHtml(p)}</div>`;
+  const isHistLocked = p.op==='Histórico' && !S.unlockedIds.has(p.id);
+  const pill = isHistLocked
+    ? '🔒 Desbloquear'
+    : `${esc(p.cur)}${fmtPinPrice(p.op==='Histórico'?getHistTotal(p):p.price)}`;
+  return `<div class="lf-pin${isActive?' active':''}" id="pin-${esc(p.id)}"><div class="lf-pill">${pill}</div>${_pinHoverHtml(p)}</div>`;
 }
 
 function renderPins(list){
