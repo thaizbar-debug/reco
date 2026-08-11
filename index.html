@@ -3192,20 +3192,32 @@ function closeAreaModal(){
 
 function renderHistTable(list){
   _histTableList=list;
-  const validRows=list.filter(p=>{const a=(p.areaTech>0)?p.areaTech:p.area;return a>0&&histSqmNet(p)>0;});
-  const avgArea=validRows.length?Math.round(validRows.reduce((s,p)=>s+((p.areaTech>0)?p.areaTech:p.area),0)/validRows.length):0;
-  const avgSqm=validRows.length?Math.round(validRows.reduce((s,p)=>s+histSqmNet(p),0)/validRows.length):0;
-  const avgCur=validRows.length?validRows[0].cur:'$';
+  const withArea=list.filter(p=>{const a=(p.areaTech>0)?p.areaTech:p.area;return a>0;});
+  const avgArea=withArea.length?Math.round(withArea.reduce((s,p)=>s+((p.areaTech>0)?p.areaTech:p.area),0)/withArea.length):0;
+
+  // Precio/m² varía por op: histórico usa histSqmNet, venta/alquiler usa price/area.
+  const sqmOf=p=>{
+    if(p.op==='Histórico') return histSqmNet(p);
+    return (p.price>0&&p.area>0)?Math.round(p.price/p.area):0;
+  };
+  const withSqm=list.filter(p=>sqmOf(p)>0);
+  const avgSqm=withSqm.length?Math.round(withSqm.reduce((s,p)=>s+sqmOf(p),0)/withSqm.length):0;
+  const avgCur=(withSqm[0]||withArea[0]||list[0])?.cur||'$';
+
+  const sqmLabel=S.op==='Alquiler'?'Alquiler promedio/m²':S.op==='Histórico'?'Valor promedio/m²':'Precio promedio/m²';
+  const sqmValueHtml=avgSqm>0?`${avgCur} ${avgSqm.toLocaleString()}/m²`:'—';
+  const areaValueHtml=avgArea>0?`${avgArea} m²`:'—';
+  const verDetalleBtn=S.op==='Histórico'?'<button class="area-ver-mas-btn" onclick="openAreaModal()">Ver detalle →</button>':'';
 
   return `<div class="area-summary-bar">
     <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--blue);text-transform:uppercase;display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--blue)"></span>Resumen del área · ${list.length} propiedades</div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
       <div class="area-summary-stats">
-        <div class="area-stat"><div class="area-stat-val">${avgArea} m²</div><div class="area-stat-lbl">Área promedio</div></div>
+        <div class="area-stat"><div class="area-stat-val">${areaValueHtml}</div><div class="area-stat-lbl">Área promedio</div></div>
         <div class="area-stat-sep"></div>
-        <div class="area-stat"><div class="area-stat-val" style="color:var(--blue)">${avgCur} ${avgSqm.toLocaleString()}/m²</div><div class="area-stat-lbl">Valor promedio/m²</div></div>
+        <div class="area-stat"><div class="area-stat-val" style="color:var(--blue)">${sqmValueHtml}</div><div class="area-stat-lbl">${sqmLabel}</div></div>
       </div>
-      <button class="area-ver-mas-btn" onclick="openAreaModal()">Ver detalle →</button>
+      ${verDetalleBtn}
     </div>
   </div>
   <div style="font-size:.68rem;font-weight:800;letter-spacing:1px;color:var(--muted);text-transform:uppercase;padding:14px 12px 6px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px"><span style="display:block;width:22px;height:2px;background:var(--border)"></span>Propiedades</div>`;
@@ -3229,7 +3241,7 @@ function renderCards(list){
   }
 
   const spatialActive=(S.radiusCenter)||(S.polyFinished&&S.polyPoints.length>=3);
-  const tablePrefix=(S.op==='Histórico'&&spatialActive)?renderHistTable(list):'';
+  const tablePrefix=spatialActive?renderHistTable(list):'';
 
   el.innerHTML=tablePrefix+list.map((p,_idx)=>{
     const cardAssets=driveAssets(p);
