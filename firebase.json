@@ -1,4 +1,37 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/node_modules/**",
+      "functions/**",
+      "scripts/**",
+      "tools/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Content-Security-Policy",
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.google.com https://apis.google.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.here.com https://*.hereapi.com https://firebasestorage.googleapis.com https://*.tile.openstreetmap.org; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.hereapi.com https://*.here.com https://photon.komoot.io wss://*.firebaseio.com; frame-src https://www.google.com https://recaptcha.google.com https://accounts.google.com; font-src 'self' data:; object-src 'none'; base-uri 'self';"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          }
+        ]
+      }
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

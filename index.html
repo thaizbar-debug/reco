@@ -7296,25 +7296,17 @@ function renderUserSection(section) {
   else { closeUserSection(); return; }
 }
 
-// Admin check. Mirrors firestore.rules → isAdmin(): prefers the
-// custom claim on the ID token, falls back to the seed email list
-// so the first deploy after the custom-claim rollout doesn't lock
-// out the two seed admins before their tokens refresh with the
-// new claim.
-//
-// Cached token claims live on auth.currentUser via getIdTokenResult().
-// The check below reads _adminClaimCache (populated on auth state
-// change below) instead of calling getIdTokenResult() sync, because
-// that returns a promise. The cache refreshes on every sign-in and
-// whenever refreshAdminClaim() is called (used by setAdminClaim to
-// give a newly-minted admin their moderation UI without a logout).
-const _ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
+// Admin check. Relies solely on the `admin` custom claim cached from
+// the ID token. The hardcoded seed-email fallback was removed — all
+// admins must be granted the claim via setAdminClaim. The cache
+// refreshes on every sign-in and whenever refreshAdminClaim() is
+// called (used by setAdminClaim to give a newly-minted admin their
+// moderation UI without a logout).
 let _adminClaimCache = false;
 function _isAdmin(){
   const u = auth.currentUser;
   if (!u) return false;
-  if (_adminClaimCache === true) return true;
-  return !!(u.email && _ADMIN_EMAILS.indexOf(u.email.toLowerCase()) >= 0);
+  return _adminClaimCache === true;
 }
 // Refresh the cached admin claim from the current user's ID token.
 // Called on auth state change AND right after setAdminClaim so a
