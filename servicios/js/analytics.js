@@ -23,6 +23,14 @@ const RecoAnalytics = (() => {
     VALUATION_VIRTUAL_CLICKED: 'valuation_virtual_clicked',
     VALUATION_PRESENTIAL_CLICKED: 'valuation_presential_clicked',
     VALUATION_LEAD_CREATED: 'valuation_lead_created',
+    VISUAL_SERVICE_VIEWED: 'visual_service_viewed',
+    PHOTO_SERVICE_STARTED: 'photo_service_started',
+    PHOTO_BOOKING_COMPLETED: 'photo_booking_completed',
+    AI_TOUR_STARTED: 'ai_tour_started',
+    AI_TOUR_COMPLETED: 'ai_tour_completed',
+    STAGING_STARTED: 'staging_started',
+    STAGING_COMPLETED: 'staging_completed',
+    VISUAL_PACK_PURCHASED: 'visual_pack_purchased',
   });
 
   const _queue = [];
