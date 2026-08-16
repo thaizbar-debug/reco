@@ -42,6 +42,11 @@ const RecoAnalytics = (() => {
     AGENT_CONTACT_REQUESTED: 'agent_contact_requested',
     AGENT_LEAD_CREATED: 'agent_lead_created',
     AGENT_LEAD_CLOSED: 'agent_lead_closed',
+    RENT_PAYMENT_STARTED: 'rent_payment_started',
+    RENT_CHECKOUT_OPENED: 'rent_checkout_opened',
+    RENT_PAYMENT_SUCCESS: 'rent_payment_success',
+    RENT_PAYMENT_FAILED: 'rent_payment_failed',
+    RENT_PAYMENT_REFUNDED: 'rent_payment_refunded',
   });
 
   const _queue = [];

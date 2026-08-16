@@ -470,6 +470,58 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 .agt-pipeline-count{font-size:20px;font-weight:700;color:var(--accent)}
 .agt-pipeline-label{font-size:10px;color:var(--ink-3);margin-top:2px}
 .agt-lead-status{display:inline-block;padding:2px 8px;background:var(--green-bg);color:var(--green);border-radius:6px;font-size:11px;font-weight:600}
+
+/* RENT: HERO */
+.rent-hero{background:linear-gradient(135deg,#EFF6FF 0%,#F0F9FF 50%,#ECFDF5 100%);border:1.5px solid #BFDBFE;border-radius:16px;padding:28px;margin-bottom:28px;position:relative}
+.rent-hero-content{display:flex;gap:24px;align-items:flex-start;margin-bottom:20px}
+.rent-hero-icon{font-size:48px;flex-shrink:0}
+.rent-hero-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.rent-role-toggle{display:flex;gap:8px;justify-content:center}
+.rent-role-btn{padding:10px 20px;border:1.5px solid var(--r-border);border-radius:10px;font-size:13px;font-weight:600;color:var(--ink-3);background:var(--white);cursor:pointer;transition:.15s}
+.rent-role-btn:hover{border-color:var(--accent);color:var(--accent)}
+.rent-role-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:640px){
+  .rent-hero-content{flex-direction:column;align-items:center;text-align:center}
+  .rent-hero-list{grid-template-columns:1fr}
+}
+
+/* RENT: LEASE CARDS */
+.rent-lease-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+@media(max-width:640px){.rent-lease-grid{grid-template-columns:1fr}}
+.rent-lease-card{background:var(--white);border:1.5px solid var(--r-border);border-radius:16px;padding:22px;position:relative;transition:border-color .15s,box-shadow .15s}
+.rent-lease-card:hover{border-color:var(--accent);box-shadow:0 4px 20px rgba(37,99,235,.08)}
+.rent-lease-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+.rent-lease-address strong{display:block;font-size:15px;color:var(--ink);margin-bottom:2px}
+.rent-lease-address span{font-size:12px;color:var(--ink-3)}
+.rent-due-badge{padding:4px 12px;border-radius:8px;font-size:12px;font-weight:700;white-space:nowrap}
+.rent-paid-notice{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--green-bg);border-radius:10px;font-size:13px;font-weight:600;color:var(--green);margin-top:14px;justify-content:center}
+.rent-mock-tag{position:absolute;top:10px;right:10px;background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+
+/* RENT: DETAIL ROWS */
+.rent-lease-details{border-top:1px solid var(--paper-2);padding-top:12px}
+.rent-detail-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;font-size:13px}
+.rent-detail-row span{color:var(--ink-3)}
+.rent-detail-row strong{color:var(--ink);text-align:right;max-width:60%}
+.rent-detail-row.rent-total{border-top:2px solid var(--paper-3);padding-top:10px;margin-top:4px}
+.rent-detail-row.rent-total strong{font-size:18px;color:var(--accent)}
+
+/* RENT: CHECKOUT */
+.rent-checkout-card{background:var(--white);border:1px solid var(--r-border);border-radius:14px;padding:20px;margin-bottom:16px}
+.rent-checkout-card h4{font-size:14px;font-weight:700;margin:0 0 14px;color:var(--ink)}
+.rent-methods{display:flex;flex-direction:column;gap:10px}
+.rent-method-option{display:flex;gap:12px;align-items:center;padding:14px 16px;border:1.5px solid var(--accent);border-radius:12px;background:var(--accent-light)}
+.rent-method-icon{font-size:24px}
+.rent-method-option strong{display:block;font-size:13px;color:var(--ink)}
+.rent-method-option span{font-size:12px;color:var(--ink-3)}
+.rent-mock-notice{background:#FFFBEB;border:1px solid #FCD34D;padding:12px 16px;border-radius:10px;font-size:12px;color:#92400E;margin-top:12px;line-height:1.5}
+.rent-security-note{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--green-bg);border-radius:10px;font-size:13px;color:var(--green);font-weight:500}
+
+/* RENT: PROCESSING */
+.rent-processing-spinner{width:48px;height:48px;border:4px solid var(--paper-3);border-top-color:var(--accent);border-radius:50%;animation:rent-spin 1s linear infinite;margin:0 auto}
+@keyframes rent-spin{to{transform:rotate(360deg)}}
+
+/* RENT: STATUS BADGE */
+.rent-status-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -517,6 +569,8 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 <script src="servicios/js/visual-ui.js"></script>
 <script src="servicios/js/legal-service.js"></script>
 <script src="servicios/js/legal-ui.js"></script>
+<script src="servicios/js/rent-service.js"></script>
+<script src="servicios/js/rent-ui.js"></script>
 <script src="servicios/js/agent-service.js"></script>
 <script src="servicios/js/agent-ui.js"></script>
 <script src="servicios/js/app.js"></script>
