@@ -36,6 +36,12 @@ const RecoAnalytics = (() => {
     PROPERTY_ALERT_VIEWED: 'property_alert_viewed',
     LEGAL_SERVICE_CLICKED: 'legal_service_clicked',
     LEGAL_LEAD_CREATED: 'legal_lead_created',
+    AGENT_MATCH_STARTED: 'agent_match_started',
+    AGENT_MATCH_COMPLETED: 'agent_match_completed',
+    AGENT_PROFILE_VIEWED: 'agent_profile_viewed',
+    AGENT_CONTACT_REQUESTED: 'agent_contact_requested',
+    AGENT_LEAD_CREATED: 'agent_lead_created',
+    AGENT_LEAD_CLOSED: 'agent_lead_closed',
   });
 
   const _queue = [];

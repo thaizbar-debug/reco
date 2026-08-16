@@ -38,6 +38,7 @@ const TABS = [
   { id: CATEGORIES.FINANZAS, icon: '🏦', label: 'Finanzas' },
   { id: CATEGORIES.FOTOGRAFIA, icon: '📸', label: 'Fotografía' },
   { id: CATEGORIES.LEGAL, icon: '⚖️', label: 'Legal' },
+  { id: CATEGORIES.RECO_AGENT, icon: '🏠', label: 'Agentes' },
 ];
 
 // --- PAGOS ---
