@@ -311,7 +311,7 @@ function CategoryLegal(services) {
 const CATEGORY_RENDERERS = {
   [CATEGORIES.PAGOS]: (services) => CategoryPagos(services),
   [CATEGORIES.MANTENIMIENTO]: (services, search) => CategoryMantenimiento(services, search),
-  [CATEGORIES.TASACIONES]: (services) => CategoryTasaciones(services),
+  [CATEGORIES.TASACIONES]: () => ValuationUI.render(),
   [CATEGORIES.FINANZAS]: (services) => CategoryFinanzas(services),
   [CATEGORIES.FOTOGRAFIA]: (services) => CategoryFotografia(services),
   [CATEGORIES.LEGAL]: (services) => CategoryLegal(services),

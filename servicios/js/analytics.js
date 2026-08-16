@@ -16,6 +16,13 @@ const RecoAnalytics = (() => {
     SEARCH_PERFORMED: 'search_performed',
     CTA_CLICKED: 'cta_clicked',
     PAGE_VIEWED: 'page_viewed',
+    VALUATION_STARTED: 'valuation_started',
+    VALUATION_COMPLETED: 'valuation_completed',
+    VALUATION_RESULT_VIEWED: 'valuation_result_viewed',
+    VALUATION_EXPRESS_CLICKED: 'valuation_express_clicked',
+    VALUATION_VIRTUAL_CLICKED: 'valuation_virtual_clicked',
+    VALUATION_PRESENTIAL_CLICKED: 'valuation_presential_clicked',
+    VALUATION_LEAD_CREATED: 'valuation_lead_created',
   });
 
   const _queue = [];
