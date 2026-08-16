@@ -314,7 +314,7 @@ const CATEGORY_RENDERERS = {
   [CATEGORIES.TASACIONES]: () => ValuationUI.render(),
   [CATEGORIES.FINANZAS]: (services) => CategoryFinanzas(services),
   [CATEGORIES.FOTOGRAFIA]: () => VisualUI.render(),
-  [CATEGORIES.LEGAL]: (services) => CategoryLegal(services),
+  [CATEGORIES.LEGAL]: () => LegalUI.render(),
   [CATEGORIES.RECO_AGENT]: () => EmptyState('Reco Agent — Próximamente'),
   [CATEGORIES.PROPERTY_MANAGEMENT]: () => EmptyState('Property Management — Próximamente'),
 };

@@ -316,8 +316,8 @@ const ValuationUI = (() => {
           <div class="val-cross-card" onclick="ValuationUI.crossSell('check')">
             <div class="val-cross-icon">🔍</div>
             <div>
-              <strong>¿Quieres verificar una propiedad?</strong>
-              <span>Property Check — Próximamente</span>
+              <strong>¿Quieres verificar esta propiedad?</strong>
+              <span>Property Check — Verificación legal</span>
             </div>
             <span class="val-cross-arrow">→</span>
           </div>
@@ -385,11 +385,18 @@ const ValuationUI = (() => {
   }
 
   function crossSell(type) {
-    const labels = { agent: 'Reco Agent', check: 'Property Check' };
-    RecoActions.handle('noop');
+    if (type === 'check') {
+      LegalUI.preparePropertyCheck({
+        district: _formData.district,
+        propertyType: _formData.propertyType,
+        area: _formData.area,
+      });
+      RecoApp.setTab(CATEGORIES.LEGAL);
+      return;
+    }
     const d = document.createElement('div');
     d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2)';
-    d.textContent = (labels[type] || 'Servicio') + ' — Próximamente';
+    d.textContent = 'Reco Agent — Próximamente';
     document.body.appendChild(d);
     setTimeout(() => d.remove(), 2500);
   }

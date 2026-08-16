@@ -31,6 +31,11 @@ const RecoAnalytics = (() => {
     STAGING_STARTED: 'staging_started',
     STAGING_COMPLETED: 'staging_completed',
     VISUAL_PACK_PURCHASED: 'visual_pack_purchased',
+    PROPERTY_CHECK_STARTED: 'property_check_started',
+    PROPERTY_CHECK_COMPLETED: 'property_check_completed',
+    PROPERTY_ALERT_VIEWED: 'property_alert_viewed',
+    LEGAL_SERVICE_CLICKED: 'legal_service_clicked',
+    LEGAL_LEAD_CREATED: 'legal_lead_created',
   });
 
   const _queue = [];
