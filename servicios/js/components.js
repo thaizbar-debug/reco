@@ -316,5 +316,5 @@ const CATEGORY_RENDERERS = {
   [CATEGORIES.FOTOGRAFIA]: () => VisualUI.render(),
   [CATEGORIES.LEGAL]: () => LegalUI.render(),
   [CATEGORIES.RECO_AGENT]: () => AgentUI.render(),
-  [CATEGORIES.PROPERTY_MANAGEMENT]: () => EmptyState('Property Management — Próximamente'),
+  [CATEGORIES.PROPERTY_MANAGEMENT]: () => PropertyUI.render(),
 };

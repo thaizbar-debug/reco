@@ -39,6 +39,7 @@ const TABS = [
   { id: CATEGORIES.FOTOGRAFIA, icon: '📸', label: 'Fotografía' },
   { id: CATEGORIES.LEGAL, icon: '⚖️', label: 'Legal' },
   { id: CATEGORIES.RECO_AGENT, icon: '🏠', label: 'Agentes' },
+  { id: CATEGORIES.PROPERTY_MANAGEMENT, icon: '🏢', label: 'Propiedades' },
 ];
 
 // --- PAGOS ---

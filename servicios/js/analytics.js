@@ -53,6 +53,12 @@ const RecoAnalytics = (() => {
     MORTGAGE_PARTNER_CLICKED: 'mortgage_partner_clicked',
     INSURANCE_VIEWED: 'insurance_viewed',
     INSURANCE_LEAD_CREATED: 'insurance_lead_created',
+    PROPERTY_MANAGEMENT_VIEWED: 'property_management_viewed',
+    PROPERTY_ADDED: 'property_added',
+    RENT_RECORDED: 'rent_recorded',
+    MAINTENANCE_CREATED: 'maintenance_created',
+    DOCUMENT_UPLOADED: 'document_uploaded',
+    PROPERTY_SERVICE_CLICKED: 'property_service_clicked',
   });
 
   const _queue = [];

@@ -562,6 +562,62 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 .fin-sim-highlight-label{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px}
 .fin-sim-highlight-value{font-family:var(--serif);font-size:38px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px}
 .fin-sim-highlight-note{font-size:12px;color:rgba(255,255,255,.6)}
+
+/* PROPERTY MANAGEMENT: GRID + CARDS */
+.pm-property-grid{display:grid;grid-template-columns:1fr;gap:16px}
+.pm-property-card{background:var(--white);border:1.5px solid var(--r-border);border-radius:16px;padding:22px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative}
+.pm-property-card:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(37,99,235,.1)}
+.pm-mock-tag{position:absolute;top:10px;right:10px;background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.pm-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.pm-card-address{display:block;font-size:15px;color:var(--ink);margin-bottom:2px}
+.pm-card-district{font-size:12px;color:var(--ink-3)}
+.pm-status-badge{display:inline-block;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;white-space:nowrap}
+.pm-card-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px 0;border-top:1px solid var(--paper-2);border-bottom:1px solid var(--paper-2)}
+@media(max-width:640px){.pm-card-metrics{grid-template-columns:repeat(2,1fr)}}
+.pm-card-metric{display:flex;flex-direction:column;gap:2px}
+.pm-card-metric span{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
+.pm-card-metric strong{font-size:14px;color:var(--ink)}
+.pm-yield-value.low{color:var(--red)}
+.pm-card-footer{display:flex;justify-content:space-between;align-items:center;padding-top:12px;font-size:12px;color:var(--ink-3)}
+
+/* PROPERTY MANAGEMENT: DETAIL */
+.pm-detail-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.pm-detail-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;padding:16px;background:var(--paper-2);border-radius:14px}
+@media(max-width:900px){.pm-detail-summary{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.pm-detail-summary{grid-template-columns:repeat(2,1fr)}}
+.pm-summary-item{display:flex;flex-direction:column;gap:2px}
+.pm-summary-item span{font-size:11px;color:var(--ink-4);text-transform:uppercase;letter-spacing:.04em}
+.pm-summary-item strong{font-size:14px;color:var(--ink)}
+
+/* PROPERTY MANAGEMENT: DETAIL TABS */
+.pm-detail-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:20px;border-bottom:2px solid var(--r-border)}
+.pm-detail-tab{padding:10px 16px;border:none;background:none;font-size:13px;font-weight:600;color:var(--ink-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;font-family:var(--sans);transition:.15s}
+.pm-detail-tab:hover{color:var(--accent)}
+.pm-detail-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.pm-tab-content{min-height:200px}
+
+/* PROPERTY MANAGEMENT: TICKETS */
+.pm-ticket-card{background:var(--white);border:1px solid var(--r-border);border-radius:12px;padding:16px;margin-bottom:10px}
+.pm-ticket-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.pm-ticket-header strong{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.pm-ticket-header span{font-size:12px;color:var(--ink-3)}
+
+/* PROPERTY MANAGEMENT: DOCUMENTS */
+.pm-doc-grid{display:flex;flex-direction:column;gap:10px}
+.pm-doc-card{display:flex;align-items:center;gap:14px;background:var(--white);border:1px solid var(--r-border);border-radius:12px;padding:14px 16px}
+.pm-doc-icon{font-size:24px;flex-shrink:0}
+.pm-doc-info{flex:1;display:flex;flex-direction:column;gap:2px}
+.pm-doc-info strong{font-size:13px;color:var(--ink)}
+.pm-doc-info span{font-size:11px;color:var(--ink-3)}
+
+/* PROPERTY MANAGEMENT: FINANCIAL BARS */
+.pm-financial-row{display:flex;align-items:center;gap:12px;padding:10px 0;font-size:13px}
+.pm-financial-row span{min-width:140px;color:var(--ink-3)}
+.pm-financial-row strong{min-width:80px;text-align:right}
+.pm-financial-bar-wrap{flex:1;height:12px;background:var(--paper-3);border-radius:6px;overflow:hidden}
+.pm-financial-bar{height:100%;border-radius:6px;transition:width .3s}
+.pm-financial-bar.income{background:var(--green-mid)}
+.pm-financial-bar.expense{background:var(--red)}
 </style>
 </head>
 <body>
@@ -615,6 +671,8 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 <script src="servicios/js/finance-ui.js"></script>
 <script src="servicios/js/agent-service.js"></script>
 <script src="servicios/js/agent-ui.js"></script>
+<script src="servicios/js/property-service.js"></script>
+<script src="servicios/js/property-ui.js"></script>
 <script src="servicios/js/app.js"></script>
 
 </body>
