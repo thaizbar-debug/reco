@@ -522,6 +522,46 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 
 /* RENT: STATUS BADGE */
 .rent-status-badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap}
+
+/* FINANCE: PRODUCT CARDS */
+.fin-product-card{background:var(--white);border:1.5px solid var(--r-border);border-radius:16px;padding:24px;margin-bottom:20px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.fin-product-card:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(37,99,235,.1)}
+.fin-product-featured{border-color:var(--accent);background:linear-gradient(135deg,#EFF6FF 0%,#F0F9FF 100%);box-shadow:0 10px 30px rgba(37,99,235,.12)}
+.fin-product-header{display:flex;gap:16px;align-items:flex-start;margin-bottom:14px}
+.fin-product-icon{font-size:36px;flex-shrink:0}
+.fin-feature-list{list-style:none;padding:0;margin:0;display:grid;gap:6px;font-size:13px;color:var(--ink-2)}
+
+/* FINANCE: INSURANCE GRID */
+.fin-insurance-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:640px){.fin-insurance-grid{grid-template-columns:1fr}}
+.fin-insurance-card{background:var(--white);border:1.5px solid var(--r-border);border-radius:16px;padding:22px;cursor:pointer;transition:border-color .15s,box-shadow .15s;display:flex;flex-direction:column}
+.fin-insurance-card:hover{border-color:var(--accent);box-shadow:0 6px 20px rgba(37,99,235,.1)}
+
+/* FINANCE: COVERAGE PREVIEW */
+.fin-coverage-preview{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);margin-bottom:12px}
+.fin-coverage-list{list-style:none;padding:0;margin:0;display:grid;gap:8px;font-size:13px;color:var(--ink-2)}
+.fin-coverage-list li{display:flex;align-items:baseline;gap:8px}
+.fin-cov-check{color:var(--green);font-weight:700;flex-shrink:0}
+
+/* FINANCE: P2 GRID */
+.fin-p2-grid{display:grid;gap:12px}
+.fin-p2-card{display:flex;gap:14px;align-items:center;background:var(--paper-2);border:1px solid var(--r-border);border-radius:14px;padding:16px 18px}
+.fin-p2-icon{font-size:28px;flex-shrink:0}
+.fin-p2-card strong{display:block;font-size:14px;color:var(--ink);margin-bottom:2px}
+.fin-p2-card span{font-size:12px;color:var(--ink-3);line-height:1.4}
+.fin-p2-badge{margin-left:auto;padding:3px 10px;background:var(--paper-3);color:var(--ink-4);border-radius:6px;font-size:11px;font-weight:700;flex-shrink:0}
+
+/* FINANCE: DISCLAIMERS */
+.fin-disclaimer-inline{text-align:center;color:var(--amber);font-size:12px;font-weight:600;margin-bottom:16px}
+.fin-disclaimer-box{background:var(--amber-bg);border:1.5px solid rgba(139,94,10,.2);border-radius:14px;padding:18px 22px;margin-bottom:24px}
+.fin-disclaimer-box strong{display:block;font-size:14px;color:var(--amber);margin-bottom:6px}
+.fin-disclaimer-box p{font-size:13px;color:var(--ink-2);line-height:1.6;margin:0}
+
+/* FINANCE: SIMULATION HIGHLIGHT */
+.fin-sim-highlight{text-align:center;background:linear-gradient(135deg,#1A4FBF 0%,#0E2A5C 100%);color:#fff;border-radius:18px;padding:28px 24px;margin-bottom:24px}
+.fin-sim-highlight-label{font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px}
+.fin-sim-highlight-value{font-family:var(--serif);font-size:38px;font-weight:400;letter-spacing:-.01em;margin-bottom:6px}
+.fin-sim-highlight-note{font-size:12px;color:rgba(255,255,255,.6)}
 </style>
 </head>
 <body>
@@ -571,6 +611,8 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 <script src="servicios/js/legal-ui.js"></script>
 <script src="servicios/js/rent-service.js"></script>
 <script src="servicios/js/rent-ui.js"></script>
+<script src="servicios/js/finance-service.js"></script>
+<script src="servicios/js/finance-ui.js"></script>
 <script src="servicios/js/agent-service.js"></script>
 <script src="servicios/js/agent-ui.js"></script>
 <script src="servicios/js/app.js"></script>

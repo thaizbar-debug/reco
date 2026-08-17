@@ -321,6 +321,14 @@ const ValuationUI = (() => {
             </div>
             <span class="val-cross-arrow">→</span>
           </div>
+          <div class="val-cross-card" onclick="ValuationUI.crossSell('finance')">
+            <div class="val-cross-icon">🏦</div>
+            <div>
+              <strong>¿Necesitas financiamiento?</strong>
+              <span>Reco Finance — Simula tu crédito hipotecario</span>
+            </div>
+            <span class="val-cross-arrow">→</span>
+          </div>
         </div>
 
         <div class="val-disclaimer">
@@ -401,6 +409,15 @@ const ValuationUI = (() => {
         area: _formData.area,
       });
       RecoApp.setTab(CATEGORIES.RECO_AGENT);
+      return;
+    }
+    if (type === 'finance') {
+      FinanceUI.prepareFromEstimate({
+        estimatedPrice: _result ? _result.estimated : '',
+        district: _formData.district,
+        propertyType: _formData.propertyType,
+      });
+      RecoApp.setTab(CATEGORIES.FINANZAS);
       return;
     }
   }

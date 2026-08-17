@@ -473,7 +473,8 @@ const RentUI = (() => {
   function crossSell(type) {
     if (type === 'agent') RecoApp.setTab(CATEGORIES.RECO_AGENT);
     else if (type === 'legal') RecoApp.setTab(CATEGORIES.LEGAL);
-    else if (type === 'insurance' || type === 'finance') RecoApp.setTab(CATEGORIES.FINANZAS);
+    else if (type === 'insurance') { FinanceUI.prepareFromRent(); RecoApp.setTab(CATEGORIES.FINANZAS); }
+    else if (type === 'finance') RecoApp.setTab(CATEGORIES.FINANZAS);
   }
 
   function _rerender() {

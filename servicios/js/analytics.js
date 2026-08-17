@@ -47,6 +47,12 @@ const RecoAnalytics = (() => {
     RENT_PAYMENT_SUCCESS: 'rent_payment_success',
     RENT_PAYMENT_FAILED: 'rent_payment_failed',
     RENT_PAYMENT_REFUNDED: 'rent_payment_refunded',
+    MORTGAGE_STARTED: 'mortgage_started',
+    MORTGAGE_APPLICATION_STARTED: 'mortgage_application_started',
+    MORTGAGE_LEAD_CREATED: 'mortgage_lead_created',
+    MORTGAGE_PARTNER_CLICKED: 'mortgage_partner_clicked',
+    INSURANCE_VIEWED: 'insurance_viewed',
+    INSURANCE_LEAD_CREATED: 'insurance_lead_created',
   });
 
   const _queue = [];
