@@ -59,6 +59,11 @@ const RecoAnalytics = (() => {
     MAINTENANCE_CREATED: 'maintenance_created',
     DOCUMENT_UPLOADED: 'document_uploaded',
     PROPERTY_SERVICE_CLICKED: 'property_service_clicked',
+    MAINTENANCE_VIEWED: 'maintenance_viewed',
+    MAINTENANCE_STARTED: 'maintenance_started',
+    MAINTENANCE_REQUESTED: 'maintenance_requested',
+    MAINTENANCE_COMPLETED: 'maintenance_completed',
+    PROVIDER_RATED: 'provider_rated',
   });
 
   const _queue = [];

@@ -646,7 +646,12 @@ const PropertyUI = (() => {
     else if (type === 'agent') RecoApp.setTab(CATEGORIES.RECO_AGENT);
     else if (type === 'legal') RecoApp.setTab(CATEGORIES.LEGAL);
     else if (type === 'finance') RecoApp.setTab(CATEGORIES.FINANZAS);
-    else if (type === 'maintenance') RecoApp.setTab(CATEGORIES.MANTENIMIENTO);
+    else if (type === 'maintenance') {
+      if (typeof MaintenanceUI !== 'undefined' && _selectedPropertyId) {
+        MaintenanceUI.prepareFromProperty(_selectedPropertyId);
+      }
+      RecoApp.setTab(CATEGORIES.MANTENIMIENTO);
+    }
     else if (type === 'insurance') RecoApp.setTab(CATEGORIES.FINANZAS);
   }
 
