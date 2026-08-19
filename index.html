@@ -7482,7 +7482,34 @@ async function renderAdminPanel(el){
 
   const tab = (key, label, count) => `<button onclick="_adminTab='${key}';renderAdminPanel(document.getElementById('userSectionContent'))" style="background:${_adminTab===key?'var(--blue)':'var(--bg)'};color:${_adminTab===key?'#fff':'var(--txt)'};border:1.5px solid ${_adminTab===key?'var(--blue)':'var(--border)'};padding:7px 14px;border-radius:var(--r);font-size:.82rem;font-weight:600;cursor:pointer">${label}${count!=null?' ('+count+')':''}</button>`;
 
-  const tabs = `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tab('pending','⏳ Pendientes')}${tab('approved','✓ Aprobadas')}${tab('rejected','✕ Rechazadas')}${tab('audit','📜 Audit')}</div>`;
+  const tabs = `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tab('pending','⏳ Pendientes')}${tab('approved','✓ Aprobadas')}${tab('rejected','✕ Rechazadas')}${tab('keys','🔑 Llaves')}${tab('audit','📜 Audit')}</div>`;
+
+  // Keys tab: grant keys to a user by email.
+  if (_adminTab === 'keys') {
+    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+      + '<div class="us-title">🛡️ Moderación</div>' + tabs
+      + `<div class="us-card" style="padding:20px">
+          <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Otorga llaves a un usuario registrado por su email.</p>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">Email del usuario</label>
+              <input id="grantKeysEmail" type="email" placeholder="usuario@ejemplo.com"
+                style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;background:var(--bg);color:var(--txt);box-sizing:border-box">
+            </div>
+            <div>
+              <label style="font-size:.82rem;font-weight:600;display:block;margin-bottom:4px">Cantidad de llaves</label>
+              <input id="grantKeysQty" type="number" min="1" max="10000" value="50" placeholder="50"
+                style="width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;background:var(--bg);color:var(--txt);box-sizing:border-box">
+            </div>
+            <button id="grantKeysBtn" onclick="_adminGrantKeys()"
+              style="background:var(--blue);color:#fff;border:none;padding:12px;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;margin-top:4px">
+              Otorgar llaves
+            </button>
+            <div id="grantKeysResult" style="font-size:.85rem;margin-top:4px"></div>
+          </div>
+        </div>`;
+    return;
+  }
 
   // Audit tab: render the /adminAuditLog collection and stop.
   if (_adminTab === 'audit') {
@@ -7688,6 +7715,31 @@ async function _adminUnapprove(id){
     toast('Movida a pendiente');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] unapprove failed:', e); toast('⚠️ Error: '+e.message); }
+}
+
+async function _adminGrantKeys(){
+  if(!_isAdmin()) return;
+  var emailEl = document.getElementById('grantKeysEmail');
+  var qtyEl = document.getElementById('grantKeysQty');
+  var btn = document.getElementById('grantKeysBtn');
+  var resultEl = document.getElementById('grantKeysResult');
+  var email = (emailEl.value || '').trim().toLowerCase();
+  var qty = parseInt(qtyEl.value, 10);
+  if(!email || !/.+@.+\..+/.test(email)){ resultEl.innerHTML = '<span style="color:var(--red)">⚠️ Ingresa un email válido.</span>'; return; }
+  if(!qty || qty < 1 || qty > 10000){ resultEl.innerHTML = '<span style="color:var(--red)">⚠️ Cantidad entre 1 y 10,000.</span>'; return; }
+  btn.disabled = true; btn.textContent = 'Otorgando…';
+  resultEl.innerHTML = '';
+  try {
+    var fn = firebase.app().functions('southamerica-east1').httpsCallable('grantKeys');
+    var res = await fn({ email: email, qty: qty });
+    var d = res.data;
+    resultEl.innerHTML = '<span style="color:#10b981;font-weight:600">✓ ' + d.added + ' llave' + (d.added !== 1 ? 's' : '') + ' otorgada' + (d.added !== 1 ? 's' : '') + ' a ' + esc(d.email) + '. Nuevo saldo: ' + d.newBalance + '</span>';
+    emailEl.value = '';
+  } catch(e) {
+    var msg = (e && e.message) || 'Error desconocido';
+    resultEl.innerHTML = '<span style="color:var(--red)">⚠️ ' + esc(msg) + '</span>';
+  }
+  btn.disabled = false; btn.textContent = 'Otorgar llaves';
 }
 
 function _propCard(p, opts) {
