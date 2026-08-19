@@ -1,11 +1,14 @@
 /**
  * Reco Servicios — Main Orchestrator
  * Wires data, components, analytics, and actions together.
- * Depends on: data.js, components.js, analytics.js, actions.js (loaded before this).
+ * Default view: Jobs ("¿Qué necesitas hacer?")
+ * Depends on: data.js, jobs-data.js, components.js, analytics.js, actions.js, jobs-ui.js (loaded before this).
  */
 
+const JOBS_VIEW = '__jobs__';
+
 const RecoApp = (() => {
-  let _currentTab = CATEGORIES.PAGOS;
+  let _currentTab = JOBS_VIEW;
   let _searchQuery = '';
 
   function init() {
@@ -17,18 +20,22 @@ const RecoApp = (() => {
   function _renderTabs() {
     const el = document.getElementById('svcTabs');
     if (!el) return;
-    el.innerHTML = TABS.map(t =>
+
+    const jobsTab = `<button class="svc-tab${_currentTab === JOBS_VIEW ? ' active' : ''}" data-tab="${JOBS_VIEW}" onclick="RecoApp.setTab('${JOBS_VIEW}')">🏠 Inicio</button>`;
+
+    const categoryTabs = TABS.map(t =>
       `<button class="svc-tab${_currentTab === t.id ? ' active' : ''}" data-tab="${t.id}" onclick="RecoApp.setTab('${t.id}')">${t.icon} ${t.label}</button>`
     ).join('');
+
+    el.innerHTML = jobsTab + categoryTabs;
   }
 
   function setTab(id) {
     const prevTab = _currentTab;
     _currentTab = id;
     _searchQuery = '';
-    document.querySelectorAll('.svc-tab').forEach(b =>
-      b.classList.toggle('active', b.dataset.tab === id)
-    );
+    if (id === JOBS_VIEW) JobsUI.reset();
+    _renderTabs();
     RecoAnalytics.tabSwitched(prevTab, id);
     _render();
   }
@@ -45,6 +52,11 @@ const RecoApp = (() => {
   function _render() {
     const el = document.getElementById('svcContent');
     if (!el) return;
+
+    if (_currentTab === JOBS_VIEW) {
+      el.innerHTML = JobsUI.render();
+      return;
+    }
 
     const renderer = CATEGORY_RENDERERS[_currentTab];
     if (!renderer) {
