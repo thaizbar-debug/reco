@@ -42,6 +42,15 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .login-btn:hover{border-color:var(--primary);background:var(--primary-light)}
 .login-btn img{width:20px;height:20px}
 .login-error{margin-top:16px;padding:10px 14px;border-radius:var(--r);background:var(--error-light);color:var(--error-dark);font-size:.82rem;display:none}
+.login-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--txt-muted);font-size:.8rem}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.login-form{text-align:left}
+.login-form label{display:block;font-size:.78rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px;margin-top:12px}
+.login-form input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.9rem;background:var(--bg-card);color:var(--txt);outline:none;transition:border-color .15s}
+.login-form input:focus{border-color:var(--primary)}
+.login-form .submit-btn{width:100%;margin-top:16px;padding:12px;border:none;border-radius:var(--r);background:var(--primary);color:#fff;font-size:.9rem;font-weight:600;transition:background .15s}
+.login-form .submit-btn:hover{background:var(--primary-hover)}
+.login-form .submit-btn:disabled{opacity:.6;cursor:not-allowed}
 
 /* ── Admin Shell ── */
 #adminShell{display:none;height:100vh}
@@ -201,9 +210,20 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
     <div class="logo">&#x1F3E0;</div>
     <h1>Reco Admin</h1>
     <p>Panel de administraci&oacute;n &mdash; acceso exclusivo para el equipo</p>
+    <div class="login-form">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="tucorreo@recosac.com" autocomplete="email"/>
+      <label>Contrase&ntilde;a</label>
+      <input type="password" id="loginPassword" placeholder="Tu contrase&ntilde;a" autocomplete="current-password" onkeydown="if(event.key==='Enter')signInWithEmail()"/>
+      <button class="submit-btn" id="loginSubmitBtn" onclick="signInWithEmail()">Iniciar sesi&oacute;n</button>
+      <div style="text-align:center;margin-top:10px">
+        <a href="#" onclick="resetPassword();return false" style="font-size:.78rem">¿Olvidaste tu contrase&ntilde;a?</a>
+      </div>
+    </div>
+    <div class="login-divider">o</div>
     <button class="login-btn" onclick="signInWithGoogle()">
       <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.04 24.04 0 000 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-      Iniciar sesi&oacute;n con Google
+      Iniciar con Google
     </button>
     <div class="login-error" id="loginError"></div>
   </div>
@@ -328,13 +348,50 @@ async function refreshAdminClaim(){
   return _adminClaim;
 }
 
+function signInWithEmail(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if(!email||!password){showLoginError('Ingresa email y contraseña');return;}
+  const btn = document.getElementById('loginSubmitBtn');
+  btn.disabled=true; btn.textContent='Ingresando...';
+  auth.signInWithEmailAndPassword(email,password).catch(e=>{
+    btn.disabled=false; btn.textContent='Iniciar sesión';
+    if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
+      auth.createUserWithEmailAndPassword(email,password).catch(e2=>{
+        showLoginError(authErrorMsg(e2));
+      });
+    }else{
+      showLoginError(authErrorMsg(e));
+    }
+  });
+}
 function signInWithGoogle(){
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e=>{
-    const el=document.getElementById('loginError');
-    el.style.display='block';
-    el.textContent='Error: '+(e.message||'No se pudo iniciar sesión');
+  auth.signInWithRedirect(provider).catch(e=>{
+    showLoginError(authErrorMsg(e));
   });
+}
+auth.getRedirectResult().catch(e=>{
+  if(e.code&&e.code!=='auth/no-auth-event') showLoginError(authErrorMsg(e));
+});
+function resetPassword(){
+  const email = document.getElementById('loginEmail').value.trim();
+  if(!email){showLoginError('Ingresa tu email primero');return;}
+  auth.sendPasswordResetEmail(email).then(()=>{
+    showLoginError('Email de recuperación enviado a '+email);
+    document.getElementById('loginError').style.background='var(--success-light)';
+    document.getElementById('loginError').style.color='var(--success-dark)';
+  }).catch(e=>showLoginError(authErrorMsg(e)));
+}
+function showLoginError(msg){
+  const el=document.getElementById('loginError');
+  el.style.display='block';
+  el.style.background=''; el.style.color='';
+  el.textContent=msg;
+}
+function authErrorMsg(e){
+  const map={'auth/wrong-password':'Contraseña incorrecta','auth/user-not-found':'No hay cuenta con ese email','auth/invalid-email':'Email inválido','auth/email-already-in-use':'Ya existe una cuenta con ese email','auth/weak-password':'La contraseña debe tener al menos 6 caracteres','auth/too-many-requests':'Demasiados intentos. Espera un momento.','auth/invalid-credential':'Email o contraseña incorrectos','auth/network-request-failed':'Error de red. Verifica tu conexión.'};
+  return map[e.code]||e.message||'Error de autenticación';
 }
 function signOut(){
   if(confirm('¿Cerrar sesión?')) auth.signOut();
