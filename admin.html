@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="referrer" content="strict-origin-when-cross-origin"/>
+<title>Reco Admin</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f1f5f9;--bg-card:#ffffff;--bg-sidebar:#0f172a;--bg-hover:#f8fafc;
+  --txt:#0f172a;--txt-muted:#64748b;--txt-sidebar:#94a3b8;--txt-sidebar-active:#ffffff;
+  --border:#e2e8f0;--primary:#0891b2;--primary-hover:#0e7490;--primary-light:#ecfeff;
+  --success:#10b981;--success-light:#d1fae5;--success-dark:#065f46;
+  --warning:#f59e0b;--warning-light:#fef3c7;--warning-dark:#92400e;
+  --error:#ef4444;--error-light:#fef2f2;--error-dark:#991b1b;
+  --r:8px;--r-lg:12px;--shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --shadow-lg:0 4px 12px rgba(0,0,0,.1);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,monospace;
+  --sidebar-w:260px;
+}
+html,body{height:100%;font-family:var(--font);background:var(--bg);color:var(--txt);font-size:14px;line-height:1.5}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:var(--font);cursor:pointer}
+input,select,textarea{font-family:var(--font);font-size:.875rem}
+
+/* ── Login Gate ── */
+#loginGate{display:flex;align-items:center;justify-content:center;height:100vh;background:var(--bg)}
+.login-box{background:var(--bg-card);border-radius:var(--r-lg);padding:40px;box-shadow:var(--shadow-lg);max-width:400px;width:90%;text-align:center}
+.login-box h1{font-size:1.5rem;margin-bottom:4px}
+.login-box p{color:var(--txt-muted);font-size:.875rem;margin-bottom:24px}
+.login-box .logo{font-size:2.5rem;margin-bottom:16px}
+.login-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--bg-card);font-size:.9rem;font-weight:600;transition:all .15s}
+.login-btn:hover{border-color:var(--primary);background:var(--primary-light)}
+.login-btn img{width:20px;height:20px}
+.login-error{margin-top:16px;padding:10px 14px;border-radius:var(--r);background:var(--error-light);color:var(--error-dark);font-size:.82rem;display:none}
+
+/* ── Admin Shell ── */
+#adminShell{display:none;height:100vh}
+.shell{display:flex;height:100%}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg-sidebar);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-brand h2{color:#fff;font-size:1.1rem;font-weight:700}
+.sidebar-brand span{color:var(--txt-sidebar);font-size:.75rem}
+.sidebar-nav{flex:1;padding:12px 10px}
+.nav-section{color:var(--txt-sidebar);font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:16px 10px 6px;opacity:.6}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r);color:var(--txt-sidebar);font-size:.85rem;font-weight:500;transition:all .15s;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#e2e8f0}
+.nav-item.active{background:rgba(8,145,178,.2);color:var(--txt-sidebar-active);font-weight:600}
+.nav-item .icon{font-size:1rem;width:22px;text-align:center;flex-shrink:0}
+.nav-item .badge{margin-left:auto;background:var(--error);color:#fff;font-size:.65rem;font-weight:700;padding:1px 7px;border-radius:99px;min-width:18px;text-align:center}
+.sidebar-user{padding:14px 16px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px}
+.sidebar-user .avatar{width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0}
+.sidebar-user .info{flex:1;min-width:0}
+.sidebar-user .name{color:#fff;font-size:.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user .email{color:var(--txt-sidebar);font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user .logout-btn{background:none;border:none;color:var(--txt-sidebar);font-size:.85rem;padding:4px;opacity:.6;transition:opacity .15s}
+.sidebar-user .logout-btn:hover{opacity:1}
+
+/* ── Main Content ── */
+.main{flex:1;overflow-y:auto;padding:0}
+.main-header{padding:20px 28px;border-bottom:1px solid var(--border);background:var(--bg-card);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.main-header h1{font-size:1.25rem;font-weight:700}
+.main-header .subtitle{color:var(--txt-muted);font-size:.82rem;margin-top:2px}
+.main-body{padding:24px 28px}
+
+/* ── KPI Cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--bg-card);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.kpi-card .kpi-label{font-size:.75rem;color:var(--txt-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+.kpi-card .kpi-value{font-size:1.7rem;font-weight:800;color:var(--txt);line-height:1.1}
+.kpi-card .kpi-sub{font-size:.75rem;color:var(--txt-muted);margin-top:4px}
+.kpi-card .kpi-icon{float:right;font-size:1.5rem;opacity:.6}
+.kpi-card.accent-primary{border-left:3px solid var(--primary)}
+.kpi-card.accent-success{border-left:3px solid var(--success)}
+.kpi-card.accent-warning{border-left:3px solid var(--warning)}
+.kpi-card.accent-error{border-left:3px solid var(--error)}
+
+/* ── Section Cards ── */
+.section-card{background:var(--bg-card);border-radius:var(--r-lg);box-shadow:var(--shadow);border:1px solid var(--border);margin-bottom:20px;overflow:hidden}
+.section-card .card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.section-card .card-header h3{font-size:.95rem;font-weight:700}
+.section-card .card-body{padding:16px 20px}
+.section-card .card-body.no-pad{padding:0}
+
+/* ── Tables ── */
+.data-table{width:100%;border-collapse:collapse;font-size:.82rem}
+.data-table th{text-align:left;padding:10px 14px;font-weight:600;color:var(--txt-muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0}
+.data-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-table tbody tr:hover{background:var(--bg-hover)}
+.data-table tbody tr:last-child td{border-bottom:none}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700}
+.badge-pending{background:var(--warning-light);color:var(--warning-dark)}
+.badge-approved{background:var(--success-light);color:var(--success-dark)}
+.badge-rejected{background:var(--error-light);color:var(--error-dark)}
+.badge-new{background:#dbeafe;color:#1e40af}
+.badge-handled{background:var(--success-light);color:var(--success-dark)}
+.badge-system{background:#f3e8ff;color:#6b21a8}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);font-size:.82rem;font-weight:600;border:none;transition:all .15s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{background:#059669}
+.btn-error{background:var(--error);color:#fff}
+.btn-error:hover{background:#dc2626}
+.btn-outline{background:transparent;border:1.5px solid var(--border);color:var(--txt)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-sm{padding:4px 10px;font-size:.75rem}
+.btn-icon{padding:6px;border-radius:var(--r);background:none;border:none;color:var(--txt-muted);font-size:1rem}
+.btn-icon:hover{background:var(--bg);color:var(--txt)}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.filter-bar input,.filter-bar select{padding:7px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt);outline:none;transition:border-color .15s}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--primary)}
+.filter-bar input{min-width:200px}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:18px}
+.tab-btn{padding:8px 16px;font-size:.82rem;font-weight:600;color:var(--txt-muted);background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-btn:hover{color:var(--txt)}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── Empty state ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--txt-muted)}
+.empty-state .empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.5}
+.empty-state p{font-size:.9rem}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--bg-sidebar);color:#fff;padding:10px 20px;border-radius:var(--r);font-size:.85rem;font-weight:500;box-shadow:var(--shadow-lg);transform:translateY(80px);opacity:0;transition:all .25s;z-index:9999;max-width:400px}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ── Modal ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+.modal-backdrop.open{opacity:1;pointer-events:auto}
+.modal{background:var(--bg-card);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);max-width:560px;width:90%;max-height:85vh;overflow-y:auto;padding:24px}
+.modal h3{font-size:1.1rem;font-weight:700;margin-bottom:16px}
+.modal label{display:block;font-size:.78rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px;margin-top:12px}
+.modal input,.modal select,.modal textarea{width:100%;padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.85rem;background:var(--bg-card);color:var(--txt);outline:none}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--primary)}
+.modal textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ── Detail pane ── */
+.detail-pane{background:var(--bg);border-radius:var(--r-lg);padding:16px 20px;margin-bottom:16px}
+.detail-row{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:.82rem}
+.detail-row:last-child{border-bottom:none}
+.detail-row .label{color:var(--txt-muted);font-weight:600;min-width:130px;flex-shrink:0}
+.detail-row .value{color:var(--txt);word-break:break-word}
+
+/* ── Charts (simple bar/line) ── */
+.chart-container{position:relative;width:100%;height:200px;margin:12px 0}
+.chart-container canvas{width:100%!important;height:100%!important}
+.chart-bars{display:flex;align-items:flex-end;gap:4px;height:160px;padding:0 4px}
+.chart-bar{flex:1;background:var(--primary);border-radius:3px 3px 0 0;min-width:8px;position:relative;transition:background .15s}
+.chart-bar:hover{background:var(--primary-hover)}
+.chart-bar .bar-tooltip{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--bg-sidebar);color:#fff;padding:2px 8px;border-radius:4px;font-size:.65rem;white-space:nowrap;opacity:0;transition:opacity .15s;pointer-events:none}
+.chart-bar:hover .bar-tooltip{opacity:1}
+.chart-labels{display:flex;gap:4px;padding:4px 4px 0;font-size:.6rem;color:var(--txt-muted)}
+.chart-labels span{flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Loading spinner ── */
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-center{display:flex;align-items:center;justify-content:center;padding:40px;gap:10px;color:var(--txt-muted);font-size:.85rem}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .sidebar{position:fixed;left:-var(--sidebar-w);z-index:50;height:100%;transition:left .25s}
+  .sidebar.open{left:0}
+  .main-header{padding:16px 18px}
+  .main-body{padding:16px 18px}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+}
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--txt-muted)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN GATE ═══════════════════ -->
+<div id="loginGate">
+  <div class="login-box">
+    <div class="logo">&#x1F3E0;</div>
+    <h1>Reco Admin</h1>
+    <p>Panel de administraci&oacute;n &mdash; acceso exclusivo para el equipo</p>
+    <button class="login-btn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 010-9.18l-7.98-6.19a24.04 24.04 0 000 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Iniciar sesi&oacute;n con Google
+    </button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ ADMIN SHELL ═══════════════════ -->
+<div id="adminShell">
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h2>&#x1F3E0; Reco Admin</h2>
+      <span>Panel de administraci&oacute;n</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">General</div>
+      <button class="nav-item active" onclick="navigateTo('dashboard')" data-nav="dashboard">
+        <span class="icon">&#x1F4CA;</span> Dashboard
+      </button>
+      <div class="nav-section">Gesti&oacute;n</div>
+      <button class="nav-item" onclick="navigateTo('publications')" data-nav="publications">
+        <span class="icon">&#x1F3E2;</span> Publicaciones
+        <span class="badge" id="pendingBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('contacts')" data-nav="contacts">
+        <span class="icon">&#x1F4E8;</span> Solicitudes
+        <span class="badge" id="contactsBadge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="navigateTo('users')" data-nav="users">
+        <span class="icon">&#x1F465;</span> Usuarios y Llaves
+      </button>
+      <div class="nav-section">Datos</div>
+      <button class="nav-item" onclick="navigateTo('market')" data-nav="market">
+        <span class="icon">&#x1F4C8;</span> Datos de Mercado
+      </button>
+      <button class="nav-item" onclick="navigateTo('audit')" data-nav="audit">
+        <span class="icon">&#x1F4DC;</span> Audit Log
+      </button>
+    </nav>
+    <div class="sidebar-user" id="sidebarUser">
+      <div class="avatar" id="userAvatar">?</div>
+      <div class="info">
+        <div class="name" id="userName">Cargando...</div>
+        <div class="email" id="userEmail">...</div>
+      </div>
+      <button class="logout-btn" onclick="signOut()" title="Cerrar sesi&oacute;n">&#x23FB;</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="main" id="mainContent">
+    <div class="loading-center"><div class="spinner"></div> Cargando...</div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════════ MODAL ═══════════════════ -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- ═══════════════════ TOAST ═══════════════════ -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// Firebase Init
+// ═══════════════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyCri1KjwpUKfYMhjYf0nPU9KD1LipVbh3M",
+  authDomain:        "reco-5a5dd.firebaseapp.com",
+  projectId:         "reco-5a5dd",
+  storageBucket:     "reco-5a5dd.firebasestorage.app",
+  messagingSenderId: "553146114942",
+  appId:             "1:553146114942:web:3dcba5bb9bd1276c6b892f"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+auth.languageCode = 'es';
+const db = firebase.firestore();
+const fns = firebase.app().functions('southamerica-east1');
+
+// ═══════════════════════════════════════════════════════════════════════
+// Utility
+// ═══════════════════════════════════════════════════════════════════════
+function esc(s){ if(s==null)return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function fmtDate(ts){ if(!ts)return '—'; const d=ts.toDate?ts.toDate():new Date(ts); if(isNaN(d))return '—'; return d.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtPrice(n,cur){ if(!n&&n!==0)return '—'; const s=Number(n).toLocaleString('es-PE',{maximumFractionDigits:0}); return (cur==='PEN'?'S/ ':'$ ')+s; }
+function fmtNum(n){ return n!=null?Number(n).toLocaleString('es-PE'):'0'; }
+function truncate(s,max){ if(!s)return ''; return s.length>max?s.slice(0,max)+'…':s; }
+
+let _toastTimer;
+function toast(msg,dur){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),dur||3000);
+}
+function openModal(html){ document.getElementById('modalContent').innerHTML=html; document.getElementById('modalBackdrop').classList.add('open'); }
+function closeModal(){ document.getElementById('modalBackdrop').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Auth
+// ═══════════════════════════════════════════════════════════════════════
+const ADMIN_EMAILS = ['webmaster@recosac.com','sebastiand@recosac.com'];
+let _adminClaim = false;
+let _currentUser = null;
+
+function isAdmin(){
+  if(!_currentUser) return false;
+  if(_adminClaim) return true;
+  return !!(_currentUser.email && ADMIN_EMAILS.indexOf(_currentUser.email.toLowerCase())>=0);
+}
+
+async function refreshAdminClaim(){
+  if(!_currentUser){_adminClaim=false;return false;}
+  try{
+    const r=await _currentUser.getIdTokenResult(true);
+    _adminClaim=(r&&r.claims&&r.claims.admin===true);
+  }catch(e){_adminClaim=false;}
+  return _adminClaim;
+}
+
+function signInWithGoogle(){
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e=>{
+    const el=document.getElementById('loginError');
+    el.style.display='block';
+    el.textContent='Error: '+(e.message||'No se pudo iniciar sesión');
+  });
+}
+function signOut(){
+  if(confirm('¿Cerrar sesión?')) auth.signOut();
+}
+
+auth.onAuthStateChanged(async user=>{
+  _currentUser = user;
+  if(!user){
+    document.getElementById('loginGate').style.display='flex';
+    document.getElementById('adminShell').style.display='none';
+    _adminClaim=false;
+    return;
+  }
+  await refreshAdminClaim();
+  if(!isAdmin()){
+    document.getElementById('loginGate').style.display='flex';
+    document.getElementById('adminShell').style.display='none';
+    const el=document.getElementById('loginError');
+    el.style.display='block';
+    el.textContent='No tienes permisos de administrador. Contacta al equipo Reco.';
+    return;
+  }
+  document.getElementById('loginGate').style.display='none';
+  document.getElementById('adminShell').style.display='block';
+  document.getElementById('loginError').style.display='none';
+  const initials = (user.displayName||user.email||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  document.getElementById('userAvatar').textContent=initials;
+  document.getElementById('userName').textContent=user.displayName||'Admin';
+  document.getElementById('userEmail').textContent=user.email||'';
+  loadAllData();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// Navigation
+// ═══════════════════════════════════════════════════════════════════════
+let _currentView = 'dashboard';
+
+function navigateTo(view){
+  _currentView = view;
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav===view);
+  });
+  renderView();
+}
+
+function renderView(){
+  const c = document.getElementById('mainContent');
+  switch(_currentView){
+    case 'dashboard':  renderDashboard(c);  break;
+    case 'publications': renderPublications(c); break;
+    case 'contacts':   renderContacts(c);    break;
+    case 'users':      renderUsers(c);       break;
+    case 'market':     renderMarket(c);      break;
+    case 'audit':      renderAudit(c);       break;
+    default:           renderDashboard(c);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Data Cache
+// ═══════════════════════════════════════════════════════════════════════
+let _pubs = [];
+let _contacts = [];
+let _auditLog = [];
+let _dataLoaded = false;
+let _marketData = {};
+
+async function loadAllData(){
+  const mc = document.getElementById('mainContent');
+  mc.innerHTML='<div class="loading-center"><div class="spinner"></div> Cargando datos...</div>';
+  try{
+    const [pubSnap, contactSnap, auditSnap] = await Promise.all([
+      db.collection('publications').get(),
+      db.collection('contactRequests').get(),
+      db.collection('adminAuditLog').orderBy('createdAt','desc').limit(200).get()
+    ]);
+    _pubs = pubSnap.docs.map(d=>({id:d.id,...d.data()}));
+    _contacts = contactSnap.docs.map(d=>({id:d.id,...d.data()}));
+    _auditLog = auditSnap.docs.map(d=>({id:d.id,...d.data()}));
+    _dataLoaded = true;
+
+    const pending = _pubs.filter(p=>p.status==='pending').length;
+    const newContacts = _contacts.filter(c=>c.status==='new').length;
+    const pb = document.getElementById('pendingBadge');
+    const cb = document.getElementById('contactsBadge');
+    if(pending>0){pb.textContent=pending;pb.style.display='inline';}else{pb.style.display='none';}
+    if(newContacts>0){cb.textContent=newContacts;cb.style.display='inline';}else{cb.style.display='none';}
+
+    loadMarketData();
+    renderView();
+  }catch(e){
+    console.error('loadAllData failed:',e);
+    mc.innerHTML='<div class="main-body"><div class="empty-state"><div class="empty-icon">&#x26A0;&#xFE0F;</div><p>Error al cargar datos: '+esc(e.message)+'</p></div></div>';
+  }
+}
+
+async function loadMarketData(){
+  try{
+    const [bcrp,tasaciones,mef,zoni] = await Promise.all([
+      fetch('data/serie_precios_bcrp.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('data/serie_precios_tasaciones.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('data/valores_arancelarios_mef.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      fetch('data/zonificacion_lima_imp.json').then(r=>r.ok?r.json():null).catch(()=>null)
+    ]);
+    _marketData = {bcrp,tasaciones,mef,zoni};
+  }catch(e){console.warn('Market data load failed:',e);}
+}
+
+async function refreshPubs(){
+  try{
+    const snap = await db.collection('publications').get();
+    _pubs = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const pending = _pubs.filter(p=>p.status==='pending').length;
+    const pb = document.getElementById('pendingBadge');
+    if(pending>0){pb.textContent=pending;pb.style.display='inline';}else{pb.style.display='none';}
+  }catch(e){console.error('refreshPubs:',e);}
+}
+async function refreshContacts(){
+  try{
+    const snap = await db.collection('contactRequests').get();
+    _contacts = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const nc = _contacts.filter(c=>c.status==='new').length;
+    const cb = document.getElementById('contactsBadge');
+    if(nc>0){cb.textContent=nc;cb.style.display='inline';}else{cb.style.display='none';}
+  }catch(e){console.error('refreshContacts:',e);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Admin Audit Helper
+// ═══════════════════════════════════════════════════════════════════════
+async function adminAudit(action, targetType, targetId, extras){
+  if(!_currentUser||!isAdmin()) return;
+  try{
+    await db.collection('adminAuditLog').add({
+      adminUid: _currentUser.uid,
+      adminEmail: _currentUser.email||null,
+      action: String(action).slice(0,80),
+      targetType: targetType?String(targetType).slice(0,40):null,
+      targetId: targetId?String(targetId).slice(0,200):null,
+      extras: (extras&&typeof extras==='object')?extras:null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){console.warn('adminAudit failed:',e.message);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════
+function renderDashboard(el){
+  const pending = _pubs.filter(p=>p.status==='pending');
+  const approved = _pubs.filter(p=>p.status==='approved');
+  const rejected = _pubs.filter(p=>p.status==='rejected');
+  const newContacts = _contacts.filter(c=>c.status==='new');
+  const totalContacts = _contacts.length;
+
+  const ventas = _pubs.filter(p=>p.op==='Venta');
+  const alquileres = _pubs.filter(p=>p.op==='Alquiler');
+
+  // District distribution
+  const districtMap = {};
+  _pubs.forEach(p=>{
+    const d = p.district||'Sin distrito';
+    districtMap[d]=(districtMap[d]||0)+1;
+  });
+  const topDistricts = Object.entries(districtMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  // Type distribution
+  const typeMap = {};
+  _pubs.forEach(p=>{
+    const t = p.type||'Otros';
+    typeMap[t]=(typeMap[t]||0)+1;
+  });
+
+  // Price stats
+  const pricesUSD = _pubs.filter(p=>p.currency==='USD'&&p.price>0).map(p=>p.price);
+  const pricesPEN = _pubs.filter(p=>p.currency==='PEN'&&p.price>0).map(p=>p.price);
+  const avgPriceUSD = pricesUSD.length ? Math.round(pricesUSD.reduce((a,b)=>a+b,0)/pricesUSD.length) : 0;
+
+  // Area stats
+  const areas = _pubs.filter(p=>p.area>0).map(p=>p.area);
+  const avgArea = areas.length ? Math.round(areas.reduce((a,b)=>a+b,0)/areas.length) : 0;
+
+  // Price per m2
+  const ppm2 = _pubs.filter(p=>p.currency==='USD'&&p.price>0&&p.area>0).map(p=>Math.round(p.price/p.area));
+  const avgPPM2 = ppm2.length ? Math.round(ppm2.reduce((a,b)=>a+b,0)/ppm2.length) : 0;
+
+  // Recent activity (last 7 days)
+  const weekAgo = Date.now() - 7*24*60*60*1000;
+  const recentPubs = _pubs.filter(p=>{
+    const t = p.createdAt&&p.createdAt.toMillis?p.createdAt.toMillis():0;
+    return t>weekAgo;
+  }).length;
+  const recentContacts = _contacts.filter(c=>{
+    const t = c.createdAt&&c.createdAt.toMillis?c.createdAt.toMillis():0;
+    return t>weekAgo;
+  }).length;
+
+  let html = `
+    <div class="main-header">
+      <div><h1>Dashboard</h1><div class="subtitle">Resumen general de la plataforma</div></div>
+      <button class="btn btn-outline" onclick="loadAllData()">&#x21BB; Actualizar</button>
+    </div>
+    <div class="main-body">
+      <div class="kpi-grid">
+        <div class="kpi-card accent-primary">
+          <div class="kpi-icon">&#x1F3E2;</div>
+          <div class="kpi-label">Total Publicaciones</div>
+          <div class="kpi-value">${_pubs.length}</div>
+          <div class="kpi-sub">${recentPubs} esta semana</div>
+        </div>
+        <div class="kpi-card accent-warning">
+          <div class="kpi-icon">&#x23F3;</div>
+          <div class="kpi-label">Pendientes</div>
+          <div class="kpi-value">${pending.length}</div>
+          <div class="kpi-sub">requieren moderaci&oacute;n</div>
+        </div>
+        <div class="kpi-card accent-success">
+          <div class="kpi-icon">&#x2705;</div>
+          <div class="kpi-label">Aprobadas</div>
+          <div class="kpi-value">${approved.length}</div>
+          <div class="kpi-sub">${rejected.length} rechazadas</div>
+        </div>
+        <div class="kpi-card accent-primary">
+          <div class="kpi-icon">&#x1F4E8;</div>
+          <div class="kpi-label">Solicitudes</div>
+          <div class="kpi-value">${totalContacts}</div>
+          <div class="kpi-sub">${newContacts.length} nuevas</div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Precio promedio (USD)</div>
+          <div class="kpi-value">${avgPriceUSD>0?'$'+fmtNum(avgPriceUSD):'—'}</div>
+          <div class="kpi-sub">${pricesUSD.length} propiedades en USD</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">&Aacute;rea promedio</div>
+          <div class="kpi-value">${avgArea>0?fmtNum(avgArea)+' m&sup2;':'—'}</div>
+          <div class="kpi-sub">${areas.length} con &aacute;rea registrada</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Precio / m&sup2; promedio</div>
+          <div class="kpi-value">${avgPPM2>0?'$'+fmtNum(avgPPM2):'—'}</div>
+          <div class="kpi-sub">${ppm2.length} propiedades calculadas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Venta vs Alquiler</div>
+          <div class="kpi-value">${ventas.length} / ${alquileres.length}</div>
+          <div class="kpi-sub">venta / alquiler</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="section-card">
+          <div class="card-header"><h3>&#x1F4CD; Por Distrito (top 10)</h3></div>
+          <div class="card-body">
+            ${topDistricts.length?renderBarChart(topDistricts):'<div class="empty-state"><p>Sin datos de distritos</p></div>'}
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="card-header"><h3>&#x1F3E0; Por Tipo</h3></div>
+          <div class="card-body">
+            ${Object.keys(typeMap).length?renderBarChart(Object.entries(typeMap).sort((a,b)=>b[1]-a[1])):'<div class="empty-state"><p>Sin datos de tipos</p></div>'}
+          </div>
+        </div>
+      </div>
+
+      ${pending.length>0?`
+      <div class="section-card" style="margin-top:20px">
+        <div class="card-header">
+          <h3>&#x23F3; Publicaciones pendientes</h3>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('publications')">Ver todas</button>
+        </div>
+        <div class="card-body no-pad">
+          <table class="data-table">
+            <thead><tr><th>Propiedad</th><th>Distrito</th><th>Tipo</th><th>Precio</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <tbody>
+              ${pending.slice(0,5).map(p=>`<tr>
+                <td><strong>${esc(truncate(p.address||p.title||'—',40))}</strong></td>
+                <td>${esc(p.district||'—')}</td>
+                <td><span class="badge badge-new">${esc(p.type||'—')}</span></td>
+                <td>${fmtPrice(p.price,p.currency)}</td>
+                <td>${fmtDate(p.createdAt)}</td>
+                <td>
+                  <button class="btn btn-success btn-sm" onclick="approvePub('${esc(p.id)}')">Aprobar</button>
+                  <button class="btn btn-error btn-sm" onclick="rejectPub('${esc(p.id)}')">Rechazar</button>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`:''}
+
+      ${newContacts.length>0?`
+      <div class="section-card" style="margin-top:20px">
+        <div class="card-header">
+          <h3>&#x1F4E8; Solicitudes nuevas</h3>
+          <button class="btn btn-primary btn-sm" onclick="navigateTo('contacts')">Ver todas</button>
+        </div>
+        <div class="card-body no-pad">
+          <table class="data-table">
+            <thead><tr><th>De</th><th>Propiedad</th><th>Tipo</th><th>Fecha</th></tr></thead>
+            <tbody>
+              ${newContacts.sort((a,b)=>{
+                const ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+                const tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+                return tb-ta;
+              }).slice(0,5).map(c=>`<tr>
+                <td><strong>${esc(c.fromName||'—')}</strong><br><span style="font-size:.72rem;color:var(--txt-muted)">${esc(c.fromEmail||'')}</span></td>
+                <td>${esc(truncate(c.propertyAddress||c.propertyId||'—',30))}</td>
+                <td>${esc(kindLabel(c.kind))}</td>
+                <td>${fmtDate(c.createdAt)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`:''}
+    </div>`;
+  el.innerHTML = html;
+}
+
+function renderBarChart(entries){
+  if(!entries.length)return '<p style="color:var(--txt-muted);font-size:.82rem">Sin datos</p>';
+  const max = Math.max(...entries.map(e=>e[1]),1);
+  let bars = '';
+  let labels = '';
+  entries.forEach(([label,val])=>{
+    const h = Math.max(4, Math.round((val/max)*140));
+    bars += `<div class="chart-bar" style="height:${h}px"><div class="bar-tooltip">${esc(label)}: ${val}</div></div>`;
+    labels += `<span title="${esc(label)}">${esc(truncate(label,8))}</span>`;
+  });
+  return `<div class="chart-bars">${bars}</div><div class="chart-labels">${labels}</div>`;
+}
+
+function kindLabel(k){
+  return k==='arrendador'?'Alquiler':k==='vendedor'?'Compra':k==='asesor_reco'?'Asesoría':'Contacto';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// PUBLICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+let _pubFilter = {status:'all',search:'',type:'all',op:'all'};
+
+function renderPublications(el){
+  let filtered = _pubs.slice();
+  if(_pubFilter.status!=='all') filtered = filtered.filter(p=>p.status===_pubFilter.status);
+  if(_pubFilter.type!=='all') filtered = filtered.filter(p=>p.type===_pubFilter.type);
+  if(_pubFilter.op!=='all') filtered = filtered.filter(p=>p.op===_pubFilter.op);
+  if(_pubFilter.search){
+    const q = _pubFilter.search.toLowerCase();
+    filtered = filtered.filter(p=>(p.address||'').toLowerCase().includes(q)||(p.district||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q)||(p.userEmail||'').toLowerCase().includes(q));
+  }
+  filtered.sort((a,b)=>{
+    const ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+    const tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+    return tb-ta;
+  });
+
+  const pending = _pubs.filter(p=>p.status==='pending').length;
+  const approved = _pubs.filter(p=>p.status==='approved').length;
+  const rejected = _pubs.filter(p=>p.status==='rejected').length;
+
+  let html = `
+    <div class="main-header">
+      <div><h1>Publicaciones</h1><div class="subtitle">${_pubs.length} total &mdash; ${pending} pendientes, ${approved} aprobadas, ${rejected} rechazadas</div></div>
+      <button class="btn btn-outline" onclick="refreshPubs().then(()=>renderPublications(document.getElementById('mainContent')))">&#x21BB; Actualizar</button>
+    </div>
+    <div class="main-body">
+      <div class="filter-bar">
+        <input placeholder="Buscar direcci&oacute;n, distrito, t&iacute;tulo..." value="${esc(_pubFilter.search)}" oninput="_pubFilter.search=this.value;renderPublications(document.getElementById('mainContent'))"/>
+        <select onchange="_pubFilter.status=this.value;renderPublications(document.getElementById('mainContent'))">
+          <option value="all"${_pubFilter.status==='all'?' selected':''}>Todos los estados</option>
+          <option value="pending"${_pubFilter.status==='pending'?' selected':''}>Pendientes (${pending})</option>
+          <option value="approved"${_pubFilter.status==='approved'?' selected':''}>Aprobadas (${approved})</option>
+          <option value="rejected"${_pubFilter.status==='rejected'?' selected':''}>Rechazadas (${rejected})</option>
+        </select>
+        <select onchange="_pubFilter.op=this.value;renderPublications(document.getElementById('mainContent'))">
+          <option value="all"${_pubFilter.op==='all'?' selected':''}>Todas las operaciones</option>
+          <option value="Venta"${_pubFilter.op==='Venta'?' selected':''}>Venta</option>
+          <option value="Alquiler"${_pubFilter.op==='Alquiler'?' selected':''}>Alquiler</option>
+        </select>
+        <select onchange="_pubFilter.type=this.value;renderPublications(document.getElementById('mainContent'))">
+          <option value="all"${_pubFilter.type==='all'?' selected':''}>Todos los tipos</option>
+          <option value="Departamento"${_pubFilter.type==='Departamento'?' selected':''}>Departamento</option>
+          <option value="Casa"${_pubFilter.type==='Casa'?' selected':''}>Casa</option>
+          <option value="Oficina"${_pubFilter.type==='Oficina'?' selected':''}>Oficina</option>
+          <option value="Local comercial"${_pubFilter.type==='Local comercial'?' selected':''}>Local comercial</option>
+          <option value="Terreno"${_pubFilter.type==='Terreno'?' selected':''}>Terreno</option>
+          <option value="Otros"${_pubFilter.type==='Otros'?' selected':''}>Otros</option>
+        </select>
+      </div>
+
+      ${filtered.length===0?`<div class="section-card"><div class="card-body"><div class="empty-state"><div class="empty-icon">&#x1F4CB;</div><p>No hay publicaciones que coincidan con los filtros.</p></div></div></div>`:
+      `<div class="section-card">
+        <div class="card-body no-pad" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>Estado</th><th>Propiedad</th><th>Distrito</th><th>Tipo</th><th>Op</th><th>Precio</th><th>&Aacute;rea</th><th>Usuario</th><th>Fecha</th><th>Acciones</th>
+            </tr></thead>
+            <tbody>
+              ${filtered.map(p=>`<tr>
+                <td><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></td>
+                <td style="max-width:200px"><strong style="cursor:pointer;color:var(--primary)" onclick="showPubDetail('${esc(p.id)}')">${esc(truncate(p.address||p.title||'—',35))}</strong></td>
+                <td>${esc(p.district||'—')}</td>
+                <td>${esc(p.type||'—')}</td>
+                <td>${esc(p.op||'—')}</td>
+                <td style="white-space:nowrap">${fmtPrice(p.price,p.currency)}</td>
+                <td>${p.area?fmtNum(p.area)+' m²':'—'}</td>
+                <td style="max-width:140px;font-size:.75rem;color:var(--txt-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.userEmail||'')}">${esc(p.userEmail||p.userId||'—')}</td>
+                <td style="white-space:nowrap;font-size:.75rem">${fmtDate(p.createdAt)}</td>
+                <td style="white-space:nowrap">
+                  ${p.status==='pending'?`<button class="btn btn-success btn-sm" onclick="approvePub('${esc(p.id)}')">Aprobar</button> <button class="btn btn-error btn-sm" onclick="rejectPub('${esc(p.id)}')">Rechazar</button>`:
+                   p.status==='approved'?`<button class="btn btn-outline btn-sm" onclick="unapprovePub('${esc(p.id)}')">Despublicar</button>`:
+                   `<button class="btn btn-outline btn-sm" onclick="unapprovePub('${esc(p.id)}')">Re-evaluar</button>`}
+                  <button class="btn-icon" onclick="deletePub('${esc(p.id)}')" title="Eliminar">&#x1F5D1;</button>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`}
+    </div>`;
+  el.innerHTML = html;
+}
+
+function showPubDetail(id){
+  const p = _pubs.find(x=>x.id===id);
+  if(!p)return;
+  adminAudit('publication.view','publication',id);
+  const photos = (p.photoUrls||[]).map(u=>`<img src="${esc(u)}" style="max-height:140px;border-radius:6px;object-fit:cover" loading="lazy"/>`).join(' ');
+  openModal(`
+    <h3>Detalle de Publicaci&oacute;n</h3>
+    ${photos?`<div style="display:flex;gap:8px;overflow-x:auto;margin-bottom:16px">${photos}</div>`:''}
+    <div class="detail-pane">
+      <div class="detail-row"><div class="label">ID</div><div class="value" style="font-family:var(--mono);font-size:.75rem">${esc(p.id)}</div></div>
+      <div class="detail-row"><div class="label">Estado</div><div class="value"><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></div></div>
+      <div class="detail-row"><div class="label">T&iacute;tulo</div><div class="value">${esc(p.title||'—')}</div></div>
+      <div class="detail-row"><div class="label">Direcci&oacute;n</div><div class="value">${esc(p.address||'—')}</div></div>
+      <div class="detail-row"><div class="label">Distrito</div><div class="value">${esc(p.district||'—')}</div></div>
+      <div class="detail-row"><div class="label">Tipo</div><div class="value">${esc(p.type||'—')}</div></div>
+      <div class="detail-row"><div class="label">Operaci&oacute;n</div><div class="value">${esc(p.op||'—')}</div></div>
+      <div class="detail-row"><div class="label">Precio</div><div class="value">${fmtPrice(p.price,p.currency)}</div></div>
+      <div class="detail-row"><div class="label">&Aacute;rea</div><div class="value">${p.area?fmtNum(p.area)+' m²':'—'}</div></div>
+      <div class="detail-row"><div class="label">&Aacute;rea terreno</div><div class="value">${p.areaTerr?fmtNum(p.areaTerr)+' m²':'—'}</div></div>
+      <div class="detail-row"><div class="label">Dormitorios</div><div class="value">${p.beds||0}</div></div>
+      <div class="detail-row"><div class="label">Ba&ntilde;os</div><div class="value">${p.baths||0}</div></div>
+      <div class="detail-row"><div class="label">Estacionamientos</div><div class="value">${p.parking||0}</div></div>
+      <div class="detail-row"><div class="label">Piso / Pisos</div><div class="value">${p.floor||0} / ${p.floors||0}</div></div>
+      <div class="detail-row"><div class="label">Antig&uuml;edad</div><div class="value">${p.age||0} a&ntilde;os</div></div>
+      <div class="detail-row"><div class="label">Estado construcci&oacute;n</div><div class="value">${esc(p.estado||'—')}</div></div>
+      <div class="detail-row"><div class="label">Ascensor</div><div class="value">${p.ascensor?'Sí':'No'}</div></div>
+      <div class="detail-row"><div class="label">Amoblado</div><div class="value">${p.amoblado?'Sí':'No'}</div></div>
+      <div class="detail-row"><div class="label">Pet Friendly</div><div class="value">${p.petFriendly?'Sí':'No'}</div></div>
+      <div class="detail-row"><div class="label">Features</div><div class="value">${(p.features||[]).map(f=>esc(f)).join(', ')||'—'}</div></div>
+      <div class="detail-row"><div class="label">Coordenadas</div><div class="value">${p.lat!=null?p.lat+', '+p.lng:'—'}</div></div>
+      <div class="detail-row"><div class="label">Fuente</div><div class="value">${esc(p.source||'single')}</div></div>
+      <div class="detail-row"><div class="label">Usuario</div><div class="value">${esc(p.userName||'—')}<br><span style="font-size:.75rem;color:var(--txt-muted)">${esc(p.userEmail||'')}</span><br><span style="font-family:var(--mono);font-size:.7rem;color:var(--txt-muted)">${esc(p.userId||'')}</span></div></div>
+      <div class="detail-row"><div class="label">Creada</div><div class="value">${fmtDate(p.createdAt)}</div></div>
+      ${p.moderatedAt?`<div class="detail-row"><div class="label">Moderada</div><div class="value">${fmtDate(p.moderatedAt)} por ${esc(p.moderatedBy||'—')}</div></div>`:''}
+      ${p.rejectionReason?`<div class="detail-row"><div class="label">Raz&oacute;n rechazo</div><div class="value" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
+    </div>
+    ${p.desc?`<div style="margin-top:12px"><strong style="font-size:.82rem">Descripci&oacute;n:</strong><div style="font-size:.82rem;white-space:pre-wrap;margin-top:4px;padding:10px;background:var(--bg);border-radius:var(--r)">${esc(p.desc)}</div></div>`:''}
+    <div class="modal-actions">
+      ${p.status==='pending'?`<button class="btn btn-success" onclick="closeModal();approvePub('${esc(p.id)}')">Aprobar</button><button class="btn btn-error" onclick="closeModal();rejectPub('${esc(p.id)}')">Rechazar</button>`:''}
+      ${p.status==='approved'?`<button class="btn btn-outline" onclick="closeModal();unapprovePub('${esc(p.id)}')">Despublicar</button>`:''}
+      ${p.status==='rejected'?`<button class="btn btn-outline" onclick="closeModal();unapprovePub('${esc(p.id)}')">Re-evaluar</button>`:''}
+      <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
+    </div>
+  `);
+}
+
+async function approvePub(id){
+  if(!isAdmin())return;
+  try{
+    const ref = db.collection('publications').doc(id);
+    const snap = await ref.get();
+    const pub = snap.exists?{id:snap.id,...snap.data()}:null;
+    await ref.update({
+      status:'approved',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: _currentUser.uid,
+      rejectionReason: firebase.firestore.FieldValue.delete()
+    });
+    adminAudit('publication.approve','publication',id,pub?{userId:pub.userId||null}:null);
+    if(pub&&pub.userEmail) queueModerationEmail(pub,'approved');
+    toast('Publicación aprobada');
+    await refreshPubs();
+    renderView();
+  }catch(e){console.error('approve:',e);toast('Error al aprobar: '+e.message);}
+}
+
+async function rejectPub(id){
+  if(!isAdmin())return;
+  const reason = prompt('Razón del rechazo (visible para el usuario):','');
+  if(reason===null)return;
+  try{
+    const ref = db.collection('publications').doc(id);
+    const snap = await ref.get();
+    const pub = snap.exists?{id:snap.id,...snap.data()}:null;
+    await ref.update({
+      status:'rejected',
+      rejectionReason:reason||'',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: _currentUser.uid
+    });
+    adminAudit('publication.reject','publication',id,{reason:reason||'',userId:(pub&&pub.userId)||null});
+    if(pub&&pub.userEmail) queueModerationEmail(pub,'rejected',reason);
+    toast('Publicación rechazada');
+    await refreshPubs();
+    renderView();
+  }catch(e){console.error('reject:',e);toast('Error al rechazar: '+e.message);}
+}
+
+async function unapprovePub(id){
+  if(!isAdmin())return;
+  if(!confirm('¿Volver esta publicación a estado pendiente?'))return;
+  try{
+    await db.collection('publications').doc(id).update({
+      status:'pending',
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: _currentUser.uid,
+      rejectionReason: firebase.firestore.FieldValue.delete()
+    });
+    adminAudit('publication.unapprove','publication',id);
+    toast('Movida a pendiente');
+    await refreshPubs();
+    renderView();
+  }catch(e){console.error('unapprove:',e);toast('Error: '+e.message);}
+}
+
+async function deletePub(id){
+  if(!isAdmin())return;
+  if(!confirm('Esta acción eliminará la publicación permanentemente. ¿Continuar?'))return;
+  try{
+    await db.collection('publications').doc(id).delete();
+    adminAudit('publication.delete','publication',id);
+    toast('Publicación eliminada');
+    await refreshPubs();
+    renderView();
+  }catch(e){console.error('delete:',e);toast('Error al eliminar: '+e.message);}
+}
+
+function queueModerationEmail(pub,kind,reason){
+  if(!pub||!pub.userEmail)return;
+  const isApproved = kind==='approved';
+  const subject = isApproved?'Tu publicación en Reco fue aprobada':'Tu publicación en Reco no pudo ser aprobada';
+  const name = pub.userName?pub.userName.split(' ')[0]:'';
+  const greeting = name?('Hola '+name+','):'Hola,';
+  const html = isApproved
+    ? '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#0891b2">Tu publicación está en línea!</h2><p>'+greeting+'</p><p>Acabamos de aprobar tu publicación de <strong>'+esc(pub.address||'—')+'</strong> en <strong>'+esc(pub.district||'—')+'</strong>. Ya aparece en los resultados de búsqueda de Reco.</p><p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a></p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>'
+    : '<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2><p>'+greeting+'</p><p>Revisamos tu publicación de <strong>'+esc(pub.address||'—')+'</strong> en <strong>'+esc(pub.district||'—')+'</strong> y, por el momento, no podemos publicarla en Reco.</p>'+(reason?'<p><strong>Razón:</strong> '+esc(reason)+'</p>':'')+'<p>Puedes corregir lo indicado y volver a enviarla.</p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
+  const text = isApproved
+    ? greeting+'\n\nTu publicación de '+(pub.address||'')+' en '+(pub.district||'')+' fue aprobada y ya está visible en Reco.\n\n— Equipo Reco'
+    : greeting+'\n\nTu publicación de '+(pub.address||'')+' en '+(pub.district||'')+' no pudo ser aprobada.'+(reason?'\nRazón: '+reason:'')+'\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco';
+  db.collection('mail').add({to:pub.userEmail,message:{subject,html,text}}).catch(e=>console.warn('mail queue failed:',e.message));
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CONTACT REQUESTS
+// ═══════════════════════════════════════════════════════════════════════
+let _contactFilter = {status:'all',search:'',kind:'all'};
+
+function renderContacts(el){
+  let filtered = _contacts.slice();
+  if(_contactFilter.status!=='all') filtered = filtered.filter(c=>c.status===_contactFilter.status);
+  if(_contactFilter.kind!=='all') filtered = filtered.filter(c=>c.kind===_contactFilter.kind);
+  if(_contactFilter.search){
+    const q = _contactFilter.search.toLowerCase();
+    filtered = filtered.filter(c=>(c.fromName||'').toLowerCase().includes(q)||(c.fromEmail||'').toLowerCase().includes(q)||(c.propertyAddress||'').toLowerCase().includes(q)||(c.propertyDistrict||'').toLowerCase().includes(q));
+  }
+  filtered.sort((a,b)=>{
+    const ta=a.createdAt&&a.createdAt.toMillis?a.createdAt.toMillis():0;
+    const tb=b.createdAt&&b.createdAt.toMillis?b.createdAt.toMillis():0;
+    return tb-ta;
+  });
+
+  const newCount = _contacts.filter(c=>c.status==='new').length;
+  const handledCount = _contacts.filter(c=>c.status==='handled').length;
+
+  let html = `
+    <div class="main-header">
+      <div><h1>Solicitudes de Contacto</h1><div class="subtitle">${_contacts.length} total &mdash; ${newCount} nuevas, ${handledCount} atendidas</div></div>
+      <button class="btn btn-outline" onclick="refreshContacts().then(()=>renderContacts(document.getElementById('mainContent')))">&#x21BB; Actualizar</button>
+    </div>
+    <div class="main-body">
+      <div class="filter-bar">
+        <input placeholder="Buscar nombre, email, propiedad..." value="${esc(_contactFilter.search)}" oninput="_contactFilter.search=this.value;renderContacts(document.getElementById('mainContent'))"/>
+        <select onchange="_contactFilter.status=this.value;renderContacts(document.getElementById('mainContent'))">
+          <option value="all"${_contactFilter.status==='all'?' selected':''}>Todos</option>
+          <option value="new"${_contactFilter.status==='new'?' selected':''}>Nuevas (${newCount})</option>
+          <option value="handled"${_contactFilter.status==='handled'?' selected':''}>Atendidas (${handledCount})</option>
+        </select>
+        <select onchange="_contactFilter.kind=this.value;renderContacts(document.getElementById('mainContent'))">
+          <option value="all"${_contactFilter.kind==='all'?' selected':''}>Todos los tipos</option>
+          <option value="vendedor"${_contactFilter.kind==='vendedor'?' selected':''}>Compra</option>
+          <option value="arrendador"${_contactFilter.kind==='arrendador'?' selected':''}>Alquiler</option>
+          <option value="asesor_reco"${_contactFilter.kind==='asesor_reco'?' selected':''}>Asesor&iacute;a</option>
+        </select>
+      </div>
+
+      ${filtered.length===0?`<div class="section-card"><div class="card-body"><div class="empty-state"><div class="empty-icon">&#x1F4E8;</div><p>No hay solicitudes que coincidan con los filtros.</p></div></div></div>`:
+      `<div class="section-card">
+        <div class="card-body no-pad" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Estado</th><th>De</th><th>Email</th><th>Tel&eacute;fono</th><th>Propiedad</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Acciones</th></tr></thead>
+            <tbody>
+              ${filtered.map(c=>`<tr>
+                <td><span class="badge badge-${c.status||'new'}">${c.status==='handled'?'Atendida':'Nueva'}</span></td>
+                <td><strong>${esc(c.fromName||'—')}</strong></td>
+                <td><a href="mailto:${esc(c.fromEmail)}">${esc(c.fromEmail||'—')}</a></td>
+                <td>${esc(c.fromPhone||'—')}</td>
+                <td style="max-width:180px" title="${esc(c.propertyAddress||'')}">${esc(truncate((c.propertyAddress||'')+(c.propertyDistrict?' · '+c.propertyDistrict:''),35)||c.propertyId||'—')}</td>
+                <td><span class="badge badge-new">${esc(kindLabel(c.kind))}</span></td>
+                <td style="max-width:200px;cursor:pointer" title="${esc(c.message||'')}" onclick="showContactDetail('${esc(c.id)}')">${esc(truncate(c.message||'',50))}</td>
+                <td style="white-space:nowrap;font-size:.75rem">${fmtDate(c.createdAt)}</td>
+                <td style="white-space:nowrap">
+                  ${c.status!=='handled'?`<button class="btn btn-success btn-sm" onclick="markContactHandled('${esc(c.id)}')">Atender</button>`:''}
+                  <button class="btn-icon" onclick="deleteContact('${esc(c.id)}')" title="Eliminar">&#x1F5D1;</button>
+                </td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`}
+    </div>`;
+  el.innerHTML = html;
+}
+
+function showContactDetail(id){
+  const c = _contacts.find(x=>x.id===id);
+  if(!c)return;
+  adminAudit('contactRequest.view','contactRequest',id);
+  openModal(`
+    <h3>Solicitud de Contacto</h3>
+    <div class="detail-pane">
+      <div class="detail-row"><div class="label">ID</div><div class="value" style="font-family:var(--mono);font-size:.75rem">${esc(c.id)}</div></div>
+      <div class="detail-row"><div class="label">Estado</div><div class="value"><span class="badge badge-${c.status||'new'}">${c.status==='handled'?'Atendida':'Nueva'}</span></div></div>
+      <div class="detail-row"><div class="label">Tipo</div><div class="value">${esc(kindLabel(c.kind))}</div></div>
+      <div class="detail-row"><div class="label">Nombre</div><div class="value">${esc(c.fromName||'—')}</div></div>
+      <div class="detail-row"><div class="label">Email</div><div class="value"><a href="mailto:${esc(c.fromEmail)}">${esc(c.fromEmail||'—')}</a></div></div>
+      <div class="detail-row"><div class="label">Tel&eacute;fono</div><div class="value">${c.fromPhone?esc(c.fromPhone):'—'}</div></div>
+      <div class="detail-row"><div class="label">Propiedad</div><div class="value">${esc(c.propertyAddress||'—')}</div></div>
+      <div class="detail-row"><div class="label">Distrito</div><div class="value">${esc(c.propertyDistrict||'—')}</div></div>
+      <div class="detail-row"><div class="label">Operaci&oacute;n</div><div class="value">${esc(c.propertyOp||'—')}</div></div>
+      <div class="detail-row"><div class="label">Precio</div><div class="value">${c.propertyPrice?fmtPrice(c.propertyPrice,c.propertyCurrency):'—'}</div></div>
+      <div class="detail-row"><div class="label">Propietario pub.</div><div class="value" style="font-family:var(--mono);font-size:.75rem">${esc(c.publicationOwnerId||'—')}</div></div>
+      <div class="detail-row"><div class="label">Fecha</div><div class="value">${fmtDate(c.createdAt)}</div></div>
+    </div>
+    <div style="margin-top:12px"><strong style="font-size:.82rem">Mensaje:</strong><div style="font-size:.85rem;white-space:pre-wrap;margin-top:6px;padding:12px;background:var(--bg);border-radius:var(--r)">${esc(c.message||'—')}</div></div>
+    <div class="modal-actions">
+      ${c.status!=='handled'?`<button class="btn btn-success" onclick="closeModal();markContactHandled('${esc(c.id)}')">Marcar atendida</button>`:''}
+      <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
+    </div>
+  `);
+}
+
+async function markContactHandled(id){
+  try{
+    await db.collection('contactRequests').doc(id).update({status:'handled'});
+    adminAudit('contactRequest.markHandled','contactRequest',id);
+    toast('Solicitud marcada como atendida');
+    await refreshContacts();
+    renderView();
+  }catch(e){console.error('markHandled:',e);toast('Error: '+e.message);}
+}
+
+async function deleteContact(id){
+  if(!confirm('Eliminar esta solicitud permanentemente?'))return;
+  try{
+    await db.collection('contactRequests').doc(id).delete();
+    adminAudit('contactRequest.delete','contactRequest',id);
+    toast('Solicitud eliminada');
+    await refreshContacts();
+    renderView();
+  }catch(e){console.error('deleteContact:',e);toast('Error: '+e.message);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// USERS & KEYS
+// ═══════════════════════════════════════════════════════════════════════
+function renderUsers(el){
+  let html = `
+    <div class="main-header">
+      <div><h1>Usuarios y Llaves</h1><div class="subtitle">Gesti&oacute;n de usuarios y econom&iacute;a de llaves</div></div>
+    </div>
+    <div class="main-body">
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F511; Gestionar Admin Claims</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Otorgar o revocar permisos de administrador a un usuario por su email. Usa el Cloud Function <code>setAdminClaim</code> ya desplegado.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email del usuario</label>
+              <input id="adminClaimEmail" type="email" placeholder="usuario@ejemplo.com" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);width:280px"/>
+            </div>
+            <button class="btn btn-success" onclick="setAdminClaim(true)">Otorgar Admin</button>
+            <button class="btn btn-error" onclick="setAdminClaim(false)">Revocar Admin</button>
+          </div>
+          <div id="adminClaimResult" style="margin-top:12px;font-size:.85rem"></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F511; Agregar Llaves a Usuario</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Agrega llaves a un usuario espec&iacute;fico. Requiere el Cloud Function <code>adminUpdateUserKeys</code>.</p>
+          <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email del usuario</label>
+              <input id="keysEmail" type="email" placeholder="usuario@ejemplo.com" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);width:280px"/>
+            </div>
+            <div>
+              <label style="display:block;font-size:.78rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Cantidad de llaves</label>
+              <input id="keysAmount" type="number" min="1" max="100" value="5" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--r);width:100px"/>
+            </div>
+            <button class="btn btn-primary" onclick="addUserKeys()">Agregar Llaves</button>
+          </div>
+          <div id="keysResult" style="margin-top:12px;font-size:.85rem"></div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F4CA; Resumen de Actividad</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Estad&iacute;sticas derivadas de publicaciones y solicitudes de contacto.</p>
+          ${renderUserActivitySummary()}
+        </div>
+      </div>
+    </div>`;
+  el.innerHTML = html;
+}
+
+function renderUserActivitySummary(){
+  const userPubs = {};
+  _pubs.forEach(p=>{
+    const key = p.userEmail||p.userId||'unknown';
+    if(!userPubs[key]) userPubs[key]={email:p.userEmail||'',name:p.userName||'',count:0,approved:0,pending:0,rejected:0};
+    userPubs[key].count++;
+    if(p.status==='approved') userPubs[key].approved++;
+    else if(p.status==='pending') userPubs[key].pending++;
+    else if(p.status==='rejected') userPubs[key].rejected++;
+  });
+  const sorted = Object.entries(userPubs).sort((a,b)=>b[1].count-a[1].count).slice(0,20);
+  if(!sorted.length) return '<div class="empty-state"><p>Sin publicaciones registradas</p></div>';
+  return `<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>Usuario</th><th>Email</th><th>Publicaciones</th><th>Aprobadas</th><th>Pendientes</th><th>Rechazadas</th></tr></thead>
+    <tbody>${sorted.map(([key,u])=>`<tr>
+      <td>${esc(u.name||'—')}</td>
+      <td>${esc(u.email||key)}</td>
+      <td><strong>${u.count}</strong></td>
+      <td style="color:var(--success)">${u.approved}</td>
+      <td style="color:var(--warning)">${u.pending}</td>
+      <td style="color:var(--error)">${u.rejected}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+async function setAdminClaim(grant){
+  const email = document.getElementById('adminClaimEmail').value.trim();
+  if(!email){toast('Ingresa un email');return;}
+  const result = document.getElementById('adminClaimResult');
+  result.innerHTML = '<div class="spinner"></div> Procesando...';
+  try{
+    const fn = fns.httpsCallable('setAdminClaim');
+    const res = await fn({email,admin:grant});
+    result.innerHTML = `<span style="color:var(--success)">Admin ${grant?'otorgado':'revocado'} para ${esc(email)} (uid: ${esc(res.data.targetUid)})</span>`;
+    toast(grant?'Admin otorgado':'Admin revocado');
+  }catch(e){
+    result.innerHTML = `<span style="color:var(--error)">Error: ${esc(e.message)}</span>`;
+  }
+}
+
+async function addUserKeys(){
+  const email = document.getElementById('keysEmail').value.trim();
+  const amount = parseInt(document.getElementById('keysAmount').value,10);
+  if(!email){toast('Ingresa un email');return;}
+  if(!amount||amount<1){toast('Cantidad inválida');return;}
+  const result = document.getElementById('keysResult');
+  try{
+    const fn = fns.httpsCallable('adminUpdateUserKeys');
+    result.innerHTML = '<div class="spinner"></div> Procesando...';
+    const res = await fn({email,amount});
+    result.innerHTML = `<span style="color:var(--success)">${amount} llaves agregadas a ${esc(email)}. Nuevo balance: ${res.data.newBalance}</span>`;
+    toast(amount+' llaves agregadas');
+  }catch(e){
+    if(e.code==='functions/not-found'||e.message.includes('not found')||(e.details&&e.details.includes&&e.details.includes('not found'))){
+      result.innerHTML = `<span style="color:var(--warning)">El Cloud Function <code>adminUpdateUserKeys</code> a&uacute;n no est&aacute; desplegado. Se crear&aacute; en la fase de integraci&oacute;n.</span>`;
+    }else{
+      result.innerHTML = `<span style="color:var(--error)">Error: ${esc(e.message)}</span>`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MARKET DATA
+// ═══════════════════════════════════════════════════════════════════════
+let _marketTab = 'bcrp';
+
+function renderMarket(el){
+  let html = `
+    <div class="main-header">
+      <div><h1>Datos de Mercado</h1><div class="subtitle">Precios, valores arancelarios y zonificaci&oacute;n de Lima</div></div>
+    </div>
+    <div class="main-body">
+      <div class="tab-bar">
+        <button class="tab-btn${_marketTab==='bcrp'?' active':''}" onclick="_marketTab='bcrp';renderMarket(document.getElementById('mainContent'))">BCRP Precios</button>
+        <button class="tab-btn${_marketTab==='tasaciones'?' active':''}" onclick="_marketTab='tasaciones';renderMarket(document.getElementById('mainContent'))">Tasaciones</button>
+        <button class="tab-btn${_marketTab==='mef'?' active':''}" onclick="_marketTab='mef';renderMarket(document.getElementById('mainContent'))">Valores MEF</button>
+        <button class="tab-btn${_marketTab==='zoni'?' active':''}" onclick="_marketTab='zoni';renderMarket(document.getElementById('mainContent'))">Zonificaci&oacute;n</button>
+      </div>
+      ${renderMarketTab()}
+    </div>`;
+  el.innerHTML = html;
+}
+
+function renderMarketTab(){
+  const d = _marketData;
+  if(_marketTab==='bcrp'){
+    if(!d.bcrp) return '<div class="empty-state"><p>Datos BCRP no disponibles</p></div>';
+    const anual = d.bcrp.data_anual||{};
+    const years = Object.keys(anual).sort();
+    const entries = years.map(y=>[y,anual[y].precio_promedio_usd_m2||0]);
+    return `
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F4C8; &Iacute;ndice de Precios de Departamentos en Lima Metropolitana (BCRP)</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">${esc(d.bcrp.metadata?.nombre||'')} &mdash; Base: ${esc(d.bcrp.metadata?.base||'')} &mdash; Fuente: ${esc(d.bcrp.metadata?.fuente||'')}</p>
+          ${entries.length?renderBarChart(entries):''}
+          <div style="overflow-x:auto;margin-top:16px">
+            <table class="data-table">
+              <thead><tr><th>A&ntilde;o</th><th>&#x00cd;ndice</th><th>Precio USD/m&sup2;</th><th>Var. Anual</th></tr></thead>
+              <tbody>${years.map(y=>{
+                const v=anual[y];
+                const varColor = (v.variacion_anual_pct||0)>=0?'var(--success)':'var(--error)';
+                return `<tr><td><strong>${y}</strong></td><td>${v.indice||'—'}</td><td>$${fmtNum(v.precio_promedio_usd_m2||0)}</td><td style="color:${varColor}">${(v.variacion_anual_pct||0)>=0?'+':''}${v.variacion_anual_pct||0}%</td></tr>`;
+              }).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+  if(_marketTab==='tasaciones'){
+    if(!d.tasaciones) return '<div class="empty-state"><p>Datos de tasaciones no disponibles</p></div>';
+    const distritos = d.tasaciones.distritos||{};
+    const names = Object.keys(distritos).sort();
+    const summary = names.slice(0,30).map(name=>{
+      const dist = distritos[name];
+      const years = Object.keys(dist.años||dist.años||{}).sort();
+      const latest = years.length?(dist.años||dist.años)[years[years.length-1]]:null;
+      return {name,total:dist.total_tasaciones||0,dept:dist.departamento||'',latest,latestYear:years[years.length-1]||''};
+    }).sort((a,b)=>b.total-a.total);
+    return `
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F4CA; Tasaciones Hist&oacute;ricas por Distrito</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">${esc(d.tasaciones.metadata?.descripcion||'')} &mdash; ${fmtNum(d.tasaciones.metadata?.total_registros||0)} registros, ${fmtNum(d.tasaciones.metadata?.total_distritos||0)} distritos</p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Distrito</th><th>Depto.</th><th>Total Tasaciones</th><th>&Uacute;lt. A&ntilde;o</th><th>Mediana USD/m&sup2;</th><th>Promedio USD/m&sup2;</th><th>Min</th><th>Max</th></tr></thead>
+              <tbody>${summary.map(s=>`<tr>
+                <td><strong>${esc(s.name)}</strong></td>
+                <td>${esc(s.dept)}</td>
+                <td>${fmtNum(s.total)}</td>
+                <td>${esc(s.latestYear)}</td>
+                <td>${s.latest?'$'+fmtNum(s.latest.mediana_usd_m2||0):'—'}</td>
+                <td>${s.latest?'$'+fmtNum(Math.round(s.latest.promedio_usd_m2||0)):'—'}</td>
+                <td>${s.latest?'$'+fmtNum(s.latest.min||0):'—'}</td>
+                <td>${s.latest?'$'+fmtNum(s.latest.max||0):'—'}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+  if(_marketTab==='mef'){
+    if(!d.mef) return '<div class="empty-state"><p>Datos MEF no disponibles</p></div>';
+    const zonas = d.mef.lima_zonas||{};
+    const entries = Object.entries(zonas).sort((a,b)=>(b[1].valor_usd_m2||0)-(a[1].valor_usd_m2||0));
+    return `
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F3DB; Valores Arancelarios MEF &mdash; Lima</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">${esc(d.mef.metadata?.resolucion||'')} &mdash; Vigencia: ${esc(d.mef.metadata?.vigencia||'')} &mdash; TC ref: ${d.mef.metadata?.tipo_cambio_ref||''}</p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Zona</th><th>Distrito</th><th>Uso</th><th>Zona Arancel</th><th>Valor USD/m&sup2;</th></tr></thead>
+              <tbody>${entries.map(([key,z])=>`<tr>
+                <td><strong>${esc(key.replace(/_/g,' '))}</strong></td>
+                <td>${esc(z.distrito||'—')}</td>
+                <td>${esc(z.uso||'—')}</td>
+                <td><span class="badge badge-new">${esc(z.zona_arancel||'—')}</span></td>
+                <td><strong>$${fmtNum(z.valor_usd_m2||0)}</strong></td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+  if(_marketTab==='zoni'){
+    if(!d.zoni) return '<div class="empty-state"><p>Datos de zonificaci&oacute;n no disponibles</p></div>';
+    const tipos = d.zoni.tipos_zonificacion||{};
+    const entries = Object.entries(tipos);
+    return `
+      <div class="section-card">
+        <div class="card-header"><h3>&#x1F3D7; Zonificaci&oacute;n Lima Metropolitana (IMP)</h3></div>
+        <div class="card-body">
+          <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">${esc(d.zoni.metadata?.instrumento||'')} &mdash; ${esc(d.zoni.metadata?.ordenanza_base||'')}</p>
+          <div style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>C&oacute;digo</th><th>Nombre</th><th>Dens. (hab/ha)</th><th>Lote m&iacute;n (m&sup2;)</th><th>Frente m&iacute;n</th><th>Alt. m&aacute;x</th><th>Coef. edif.</th><th>&Aacute;rea libre %</th><th>Distritos t&iacute;picos</th></tr></thead>
+              <tbody>${entries.map(([code,z])=>`<tr>
+                <td><strong>${esc(code)}</strong></td>
+                <td>${esc(z.nombre||'—')}</td>
+                <td>${fmtNum(z.densidad_neta_hab_ha||0)}</td>
+                <td>${fmtNum(z.area_lote_min_m2||0)}</td>
+                <td>${z.frente_min_m||'—'} m</td>
+                <td>${z.altura_max_pisos||'—'} pisos</td>
+                <td>${z.coeficiente_edificacion||'—'}</td>
+                <td>${z.porcentaje_area_libre||'—'}%</td>
+                <td style="max-width:200px;font-size:.75rem">${(z.distritos_tipicos||[]).map(d=>esc(d)).join(', ')}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  }
+  return '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// AUDIT LOG
+// ═══════════════════════════════════════════════════════════════════════
+let _auditFilter = '';
+
+function renderAudit(el){
+  let filtered = _auditLog;
+  if(_auditFilter){
+    const q = _auditFilter.toLowerCase();
+    filtered = filtered.filter(e=>(e.action||'').toLowerCase().includes(q)||(e.adminEmail||'').toLowerCase().includes(q)||(e.targetId||'').toLowerCase().includes(q)||(e.targetType||'').toLowerCase().includes(q));
+  }
+
+  let html = `
+    <div class="main-header">
+      <div><h1>Audit Log</h1><div class="subtitle">${_auditLog.length} entradas cargadas (m&aacute;x 200)</div></div>
+      <button class="btn btn-outline" onclick="refreshAudit()">&#x21BB; Actualizar</button>
+    </div>
+    <div class="main-body">
+      <div class="filter-bar">
+        <input placeholder="Filtrar por acci&oacute;n, email, target..." value="${esc(_auditFilter)}" oninput="_auditFilter=this.value;renderAudit(document.getElementById('mainContent'))"/>
+      </div>
+
+      ${filtered.length===0?`<div class="section-card"><div class="card-body"><div class="empty-state"><div class="empty-icon">&#x1F4DC;</div><p>Sin entradas en el audit log.</p></div></div></div>`:
+      `<div class="section-card">
+        <div class="card-body no-pad" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Acci&oacute;n</th><th>Admin</th><th>Target</th><th>Detalles</th></tr></thead>
+            <tbody>
+              ${filtered.map(e=>{
+                const ts = e.createdAt&&e.createdAt.toMillis
+                  ? new Date(e.createdAt.toMillis()).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'})
+                  : '—';
+                const isSystem = e.adminUid==='system';
+                const isError = (e.action||'').startsWith('mail.')||(e.action||'').includes('reject');
+                const badgeClass = isError?'badge-rejected':isSystem?'badge-system':'badge-approved';
+                const target = e.targetId?esc(e.targetType||'?')+'/'+esc(truncate(e.targetId,20)):(e.targetType||'—');
+                return `<tr>
+                  <td style="white-space:nowrap;font-size:.75rem">${ts}</td>
+                  <td><span class="badge ${badgeClass}">${esc(e.action||'—')}</span></td>
+                  <td style="font-size:.8rem">${isSystem?'Sistema':esc(e.adminEmail||e.adminUid||'—')}</td>
+                  <td style="font-family:var(--mono);font-size:.72rem">${target}</td>
+                  <td>${e.extras?`<button class="btn-icon" onclick="showAuditDetail('${esc(e.id)}')" title="Ver detalle">&#x1F50D;</button>`:'—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`}
+    </div>`;
+  el.innerHTML = html;
+}
+
+function showAuditDetail(id){
+  const e = _auditLog.find(x=>x.id===id);
+  if(!e)return;
+  openModal(`
+    <h3>Detalle de Audit Log</h3>
+    <div class="detail-pane">
+      <div class="detail-row"><div class="label">ID</div><div class="value" style="font-family:var(--mono);font-size:.75rem">${esc(e.id)}</div></div>
+      <div class="detail-row"><div class="label">Acci&oacute;n</div><div class="value">${esc(e.action||'—')}</div></div>
+      <div class="detail-row"><div class="label">Admin UID</div><div class="value" style="font-family:var(--mono);font-size:.75rem">${esc(e.adminUid||'—')}</div></div>
+      <div class="detail-row"><div class="label">Admin Email</div><div class="value">${esc(e.adminEmail||'—')}</div></div>
+      <div class="detail-row"><div class="label">Target Type</div><div class="value">${esc(e.targetType||'—')}</div></div>
+      <div class="detail-row"><div class="label">Target ID</div><div class="value" style="font-family:var(--mono);font-size:.75rem;word-break:break-all">${esc(e.targetId||'—')}</div></div>
+      <div class="detail-row"><div class="label">Fecha</div><div class="value">${fmtDate(e.createdAt)}</div></div>
+    </div>
+    ${e.extras?`<div style="margin-top:12px"><strong style="font-size:.82rem">Extras:</strong><pre style="font-size:.75rem;background:var(--bg);padding:12px;border-radius:var(--r);overflow-x:auto;margin-top:6px;white-space:pre-wrap;word-break:break-all">${esc(JSON.stringify(e.extras,null,2))}</pre></div>`:''}
+    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">Cerrar</button></div>
+  `);
+}
+
+async function refreshAudit(){
+  try{
+    const snap = await db.collection('adminAuditLog').orderBy('createdAt','desc').limit(200).get();
+    _auditLog = snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderAudit(document.getElementById('mainContent'));
+    toast('Audit log actualizado');
+  }catch(e){console.error('refreshAudit:',e);toast('Error: '+e.message);}
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════════
+</script>
+</body>
+</html>
