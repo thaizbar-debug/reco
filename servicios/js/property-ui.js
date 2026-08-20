@@ -110,12 +110,12 @@ const PropertyUI = (() => {
     };
 
     return `
-      <div class="pm-property-card" onclick="PropertyUI.showProperty('${prop.id}')">
+      <div class="pm-property-card" onclick="PropertyUI.showProperty('${escapeAttr(prop.id)}')">
         <div class="pm-mock-tag">MOCK</div>
         <div class="pm-card-header">
           <div>
-            <strong class="pm-card-address">${prop.address}</strong>
-            <span class="pm-card-district">${prop.district} · ${prop.area}m² · ${prop.rooms} hab.</span>
+            <strong class="pm-card-address">${escapeHTML(prop.address)}</strong>
+            <span class="pm-card-district">${escapeHTML(prop.district)} · ${escapeHTML(prop.area)}m² · ${escapeHTML(prop.rooms)} hab.</span>
           </div>
           <span class="pm-status-badge" style="${statusColors[prop.status]}">${PROPERTY_STATUS_LABELS[prop.status]}</span>
         </div>
@@ -141,7 +141,7 @@ const PropertyUI = (() => {
 
         <div class="pm-card-footer">
           <span>${prop.contratoVigente ? '✓ Contrato vigente' : '✗ Sin contrato'}</span>
-          <button class="svc-fin-cta" onclick="event.stopPropagation();PropertyUI.showProperty('${prop.id}')">Ver detalle →</button>
+          <button class="svc-fin-cta" onclick="event.stopPropagation();PropertyUI.showProperty('${escapeAttr(prop.id)}')">Ver detalle →</button>
         </div>
       </div>`;
   }
@@ -187,8 +187,8 @@ const PropertyUI = (() => {
 
       <div class="pm-detail-header">
         <div>
-          <h2 class="font-serif" style="font-size:22px;margin:0 0 4px">${prop.address}</h2>
-          <span style="color:var(--ink-3);font-size:13px">${prop.district} · ${prop.propertyType} · ${prop.area}m² · ${prop.rooms} hab. · ${prop.bathrooms} baño${prop.bathrooms > 1 ? 's' : ''}</span>
+          <h2 class="font-serif" style="font-size:22px;margin:0 0 4px">${escapeHTML(prop.address)}</h2>
+          <span style="color:var(--ink-3);font-size:13px">${escapeHTML(prop.district)} · ${escapeHTML(prop.propertyType)} · ${escapeHTML(prop.area)}m² · ${escapeHTML(prop.rooms)} hab. · ${escapeHTML(prop.bathrooms)} baño${prop.bathrooms > 1 ? 's' : ''}</span>
         </div>
         <span class="pm-status-badge" style="${statusColors[prop.status]}">${PROPERTY_STATUS_LABELS[prop.status]}</span>
       </div>
@@ -230,11 +230,11 @@ const PropertyUI = (() => {
 
       <div class="val-crosssell" style="margin-top:28px">
         ${PropertyService.getCrossSellSuggestions(_selectedPropertyId).slice(0, 3).map(s => `
-          <div class="val-cross-card" onclick="PropertyUI.crossSell('${s.target}')">
-            <div class="val-cross-icon">${s.icon}</div>
+          <div class="val-cross-card" onclick="PropertyUI.crossSell('${escapeAttr(s.target)}')">
+            <div class="val-cross-icon">${escapeHTML(s.icon)}</div>
             <div>
-              <strong>${s.title}</strong>
-              <span>${s.subtitle}</span>
+              <strong>${escapeHTML(s.title)}</strong>
+              <span>${escapeHTML(s.subtitle)}</span>
             </div>
             <span class="val-cross-arrow">→</span>
           </div>
@@ -251,11 +251,11 @@ const PropertyUI = (() => {
     return `
       <div class="leg-detail-section">
         <h4>📊 Resumen de propiedad</h4>
-        <div class="leg-report-row"><span>Tipo</span><strong>${prop.propertyType}</strong></div>
-        <div class="leg-report-row"><span>Área</span><strong>${prop.area} m²</strong></div>
-        <div class="leg-report-row"><span>Habitaciones</span><strong>${prop.rooms}</strong></div>
-        <div class="leg-report-row"><span>Baños</span><strong>${prop.bathrooms}</strong></div>
-        <div class="leg-report-row"><span>Distrito</span><strong>${prop.district}</strong></div>
+        <div class="leg-report-row"><span>Tipo</span><strong>${escapeHTML(prop.propertyType)}</strong></div>
+        <div class="leg-report-row"><span>Área</span><strong>${escapeHTML(prop.area)} m²</strong></div>
+        <div class="leg-report-row"><span>Habitaciones</span><strong>${escapeHTML(prop.rooms)}</strong></div>
+        <div class="leg-report-row"><span>Baños</span><strong>${escapeHTML(prop.bathrooms)}</strong></div>
+        <div class="leg-report-row"><span>Distrito</span><strong>${escapeHTML(prop.district)}</strong></div>
         <div class="leg-report-row"><span>Valor estimado</span><strong>${_fmtUSD(prop.valorEstimado)}</strong></div>
         <div class="leg-report-row"><span>Alquiler mensual</span><strong>${prop.alquilerMensual ? _fmtPEN(prop.alquilerMensual) : 'No alquilada'}</strong></div>
         <div class="leg-report-row"><span>Gastos mensuales</span><strong>${_fmtPEN(expenses)}</strong></div>
@@ -288,7 +288,7 @@ const PropertyUI = (() => {
               <tbody>
                 ${history.map(r => `
                   <tr>
-                    <td>${r.month}</td>
+                    <td>${escapeHTML(r.month)}</td>
                     <td>${_fmtPEN(r.amount)}</td>
                     <td><span class="pm-status-badge" style="${r.status === 'pagado' ? 'background:var(--green-bg);color:var(--green)' : 'background:var(--amber-bg);color:var(--amber)'}">${r.status === 'pagado' ? 'Pagado' : 'Pendiente'}</span></td>
                     <td>${r.date ? _fmtDate(r.date) : '—'}</td>
@@ -316,9 +316,9 @@ const PropertyUI = (() => {
     return `
       <div class="leg-detail-section">
         <h4>👤 Información del inquilino</h4>
-        <div class="leg-report-row"><span>Nombre</span><strong>${t.name}</strong></div>
-        <div class="leg-report-row"><span>Teléfono</span><strong>${t.phone}</strong></div>
-        <div class="leg-report-row"><span>Email</span><strong>${t.email}</strong></div>
+        <div class="leg-report-row"><span>Nombre</span><strong>${escapeHTML(t.name)}</strong></div>
+        <div class="leg-report-row"><span>Teléfono</span><strong>${escapeHTML(t.phone)}</strong></div>
+        <div class="leg-report-row"><span>Email</span><strong>${escapeHTML(t.email)}</strong></div>
       </div>
 
       <div class="leg-detail-section">
@@ -347,20 +347,20 @@ const PropertyUI = (() => {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <h4 style="font-size:14px;font-weight:700;margin:0">🔧 Tickets de mantenimiento</h4>
-        <button class="plan-cta" style="width:auto;padding:8px 18px;font-size:13px" onclick="PropertyUI.showTicketCreate('${prop.id}')">+ Nuevo ticket</button>
+        <button class="plan-cta" style="width:auto;padding:8px 18px;font-size:13px" onclick="PropertyUI.showTicketCreate('${escapeAttr(prop.id)}')">+ Nuevo ticket</button>
       </div>
 
       ${tickets.length > 0 ? tickets.map(t => `
         <div class="pm-ticket-card">
           <div class="pm-ticket-header">
             <div>
-              <strong>${t.title}</strong>
-              <span>${t.category} · <span style="${priorityColors[t.priority]}">Prioridad: ${priorityLabels[t.priority]}</span></span>
+              <strong>${escapeHTML(t.title)}</strong>
+              <span>${escapeHTML(t.category)} · <span style="${priorityColors[t.priority]}">Prioridad: ${priorityLabels[t.priority]}</span></span>
             </div>
             <span class="pm-status-badge" style="${ticketStatusColors[t.status]}">${TICKET_STATUS_LABELS[t.status]}</span>
           </div>
-          <p style="font-size:12px;color:var(--ink-3);margin:8px 0 0;line-height:1.5">${t.description}</p>
-          ${t.assignedTo ? '<div style="font-size:12px;color:var(--ink-2);margin-top:6px">Asignado: <strong>' + t.assignedTo + '</strong></div>' : ''}
+          <p style="font-size:12px;color:var(--ink-3);margin:8px 0 0;line-height:1.5">${escapeHTML(t.description)}</p>
+          ${t.assignedTo ? '<div style="font-size:12px;color:var(--ink-2);margin-top:6px">Asignado: <strong>' + escapeHTML(t.assignedTo) + '</strong></div>' : ''}
           <div style="font-size:11px;color:var(--ink-4);margin-top:6px">Creado: ${_fmtDate(t.createdAt)} · Actualizado: ${_fmtDate(t.updatedAt)}</div>
         </div>
       `).join('') : `
@@ -392,7 +392,7 @@ const PropertyUI = (() => {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <h4 style="font-size:14px;font-weight:700;margin:0">📄 Documentos</h4>
-        <button class="plan-cta" style="width:auto;padding:8px 18px;font-size:13px" onclick="PropertyUI.showDocUpload('${prop.id}')">+ Subir documento</button>
+        <button class="plan-cta" style="width:auto;padding:8px 18px;font-size:13px" onclick="PropertyUI.showDocUpload('${escapeAttr(prop.id)}')">+ Subir documento</button>
       </div>
 
       ${docs.length > 0 ? `
@@ -401,7 +401,7 @@ const PropertyUI = (() => {
             <div class="pm-doc-card">
               <div class="pm-doc-icon">${typeIcons[d.type] || '📎'}</div>
               <div class="pm-doc-info">
-                <strong>${d.name}</strong>
+                <strong>${escapeHTML(d.name)}</strong>
                 <span>${DOCUMENT_TYPE_LABELS[d.type]} · ${_fmtDate(d.date)}</span>
               </div>
               <span class="pm-status-badge" style="background:var(--green-bg);color:var(--green)">${d.status === 'vigente' ? 'Vigente' : d.status}</span>
@@ -424,7 +424,7 @@ const PropertyUI = (() => {
     return `
       <div class="leg-detail-section">
         <h4>📈 Resumen financiero mensual</h4>
-        ${fin._note ? '<p style="font-size:12px;color:var(--amber);margin:0 0 12px">' + fin._note + '</p>' : ''}
+        ${fin._note ? '<p style="font-size:12px;color:var(--amber);margin:0 0 12px">' + escapeHTML(fin._note) + '</p>' : ''}
 
         <div class="pm-financial-row">
           <span>Ingresos (alquiler)</span>
@@ -473,25 +473,25 @@ const PropertyUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="PropertyUI.backToDetail()">← Volver a ${prop.address}</button>
+        <button class="val-back" onclick="PropertyUI.backToDetail()">← Volver a ${escapeHTML(prop.address)}</button>
 
         <div class="val-form-header">
           <div class="val-form-badge" style="background:#FEF3C7;color:#92400E">🔧 Nuevo ticket</div>
           <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Reportar problema</h2>
-          <p class="section-sub" style="text-align:center;margin:0 auto 24px">${prop.address}</p>
+          <p class="section-sub" style="text-align:center;margin:0 auto 24px">${escapeHTML(prop.address)}</p>
         </div>
 
         <div class="val-step">
           <div class="val-row">
             <div class="val-field val-full">
               <label>Título *</label>
-              <input type="text" placeholder="Ej: Fuga en baño principal" value="${_ticketData.title || ''}" oninput="PropertyUI.updateTicket('title',this.value)"/>
+              <input type="text" placeholder="Ej: Fuga en baño principal" value="${escapeAttr(_ticketData.title || '')}" oninput="PropertyUI.updateTicket('title',this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Descripción *</label>
-              <textarea rows="3" placeholder="Describe el problema con detalle..." oninput="PropertyUI.updateTicket('description',this.value)">${_ticketData.description || ''}</textarea>
+              <textarea rows="3" placeholder="Describe el problema con detalle..." oninput="PropertyUI.updateTicket('description',this.value)">${escapeHTML(_ticketData.description || '')}</textarea>
             </div>
           </div>
           <div class="val-row">
@@ -499,7 +499,7 @@ const PropertyUI = (() => {
               <label>Categoría *</label>
               <select onchange="PropertyUI.updateTicket('category',this.value)">
                 <option value="">Selecciona categoría</option>
-                ${TICKET_CATEGORIES.map(c => '<option value="' + c + '"' + (_ticketData.category === c ? ' selected' : '') + '>' + c + '</option>').join('')}
+                ${TICKET_CATEGORIES.map(c => '<option value="' + escapeAttr(c) + '"' + (_ticketData.category === c ? ' selected' : '') + '>' + escapeHTML(c) + '</option>').join('')}
               </select>
             </div>
             <div class="val-field">
@@ -525,7 +525,30 @@ const PropertyUI = (() => {
   }
 
   function submitTicket() {
-    if (!_ticketData.title || !_ticketData.category) return;
+    const formWrap = document.querySelector('.val-form-wrap');
+    if (formWrap) RecoValidation.clearAllErrors(formWrap);
+
+    const titleResult = RecoValidation.validateText(_ticketData.title, { required: true, label: 'Titulo' });
+    const categoryResult = RecoValidation.validateRequired(_ticketData.category, 'Categoria');
+    const descResult = RecoValidation.validateText(_ticketData.description, { required: true, label: 'Descripcion' });
+
+    let hasError = false;
+    if (!titleResult.valid) {
+      const el = formWrap && formWrap.querySelector('input[type="text"]');
+      if (el) RecoValidation.showFieldError(el, titleResult.error);
+      hasError = true;
+    }
+    if (!categoryResult.valid) {
+      const el = formWrap && formWrap.querySelector('select');
+      if (el) RecoValidation.showFieldError(el, categoryResult.error);
+      hasError = true;
+    }
+    if (!descResult.valid) {
+      const el = formWrap && formWrap.querySelector('textarea');
+      if (el) RecoValidation.showFieldError(el, descResult.error);
+      hasError = true;
+    }
+    if (hasError) return;
 
     const ticket = PropertyService.createTicket(
       _selectedPropertyId,
@@ -563,12 +586,12 @@ const PropertyUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="PropertyUI.backToDetail()">← Volver a ${prop.address}</button>
+        <button class="val-back" onclick="PropertyUI.backToDetail()">← Volver a ${escapeHTML(prop.address)}</button>
 
         <div class="val-form-header">
           <div class="val-form-badge">📄 Subir documento</div>
           <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Agregar documento</h2>
-          <p class="section-sub" style="text-align:center;margin:0 auto 24px">${prop.address}</p>
+          <p class="section-sub" style="text-align:center;margin:0 auto 24px">${escapeHTML(prop.address)}</p>
         </div>
 
         <div class="val-step">
@@ -577,12 +600,12 @@ const PropertyUI = (() => {
               <label>Tipo de documento *</label>
               <select onchange="PropertyUI.updateDoc('type',this.value)">
                 <option value="">Selecciona tipo</option>
-                ${Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => '<option value="' + k + '"' + (_documentData.type === k ? ' selected' : '') + '>' + v + '</option>').join('')}
+                ${Object.entries(DOCUMENT_TYPE_LABELS).map(([k, v]) => '<option value="' + escapeAttr(k) + '"' + (_documentData.type === k ? ' selected' : '') + '>' + escapeHTML(v) + '</option>').join('')}
               </select>
             </div>
             <div class="val-field">
               <label>Nombre del documento *</label>
-              <input type="text" placeholder="Ej: Contrato de alquiler 2026" value="${_documentData.name || ''}" oninput="PropertyUI.updateDoc('name',this.value)"/>
+              <input type="text" placeholder="Ej: Contrato de alquiler 2026" value="${escapeAttr(_documentData.name || '')}" oninput="PropertyUI.updateDoc('name',this.value)"/>
             </div>
           </div>
         </div>
@@ -606,7 +629,24 @@ const PropertyUI = (() => {
   }
 
   function submitDoc() {
-    if (!_documentData.type || !_documentData.name) return;
+    const formWrap = document.querySelector('.val-form-wrap');
+    if (formWrap) RecoValidation.clearAllErrors(formWrap);
+
+    const typeResult = RecoValidation.validateRequired(_documentData.type, 'Tipo de documento');
+    const nameResult = RecoValidation.validateRequired(_documentData.name, 'Nombre del documento');
+
+    let hasError = false;
+    if (!typeResult.valid) {
+      const el = formWrap && formWrap.querySelector('select');
+      if (el) RecoValidation.showFieldError(el, typeResult.error);
+      hasError = true;
+    }
+    if (!nameResult.valid) {
+      const el = formWrap && formWrap.querySelector('input[type="text"]');
+      if (el) RecoValidation.showFieldError(el, nameResult.error);
+      hasError = true;
+    }
+    if (hasError) return;
 
     const doc = PropertyService.addDocument(
       _selectedPropertyId,

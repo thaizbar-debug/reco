@@ -51,7 +51,7 @@ const ValuationUI = (() => {
     const badge = service.tags[0] ? ServiceBadge(service.tags[0], service.featured ? 'accent' : service.price.value === 0 ? 'free' : 'accent') : '';
     const featuredClass = service.featured ? ' featured' : '';
     const checks = (service.highlights || []).map(h =>
-      `<li>${h.startsWith('⚠') ? '' : '✓ '}${h}</li>`
+      `<li>${h.startsWith('⚠') ? '' : '✓ '}${escapeHTML(h)}</li>`
     ).join('');
     const ctaStyle = service.cta?.style || 'outline';
     const cls = ctaStyle === 'outline' ? 'plan-cta outline' : 'plan-cta';
@@ -60,17 +60,17 @@ const ValuationUI = (() => {
     if (service.id === 'tas-estimate') {
       onclick = `ValuationUI.showEstimateForm()`;
     } else {
-      onclick = `ValuationUI.showRequestFlow('${service.id}')`;
+      onclick = `ValuationUI.showRequestFlow('${escapeAttr(service.id)}')`;
     }
 
     return `
       <div class="svc-tas-card${featuredClass}">
         ${badge}
-        <div class="svc-tas-icon">${service.icon}</div>
-        <h3>${service.name}</h3>
-        <div class="svc-tas-price">${service.price.display} ${service.price.suffix ? `<small>${service.price.suffix}</small>` : ''}</div>
+        <div class="svc-tas-icon">${escapeHTML(service.icon)}</div>
+        <h3>${escapeHTML(service.name)}</h3>
+        <div class="svc-tas-price">${escapeHTML(service.price.display)} ${service.price.suffix ? `<small>${escapeHTML(service.price.suffix)}</small>` : ''}</div>
         <ul class="svc-tas-checks">${checks}</ul>
-        <button class="${cls}" onclick="${onclick}">${service.cta?.label || 'Solicitar'}</button>
+        <button class="${cls}" onclick="${escapeAttr(onclick)}">${escapeHTML(service.cta?.label || 'Solicitar')}</button>
       </div>`;
   }
 
@@ -101,7 +101,7 @@ const ValuationUI = (() => {
               <label>Distrito *</label>
               <select id="valDistrict" onchange="ValuationUI.updateField('district',this.value)">
                 <option value="">Selecciona distrito</option>
-                ${districts.map(d => `<option value="${d}"${_formData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+                ${districts.map(d => `<option value="${escapeAttr(d)}"${_formData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -110,12 +110,12 @@ const ValuationUI = (() => {
               <label>Tipo de propiedad *</label>
               <select id="valType" onchange="ValuationUI.updateField('propertyType',this.value)">
                 <option value="">Selecciona tipo</option>
-                ${types.map(t => `<option value="${t.value}"${_formData.propertyType === t.value ? ' selected' : ''}>${t.label}</option>`).join('')}
+                ${types.map(t => `<option value="${escapeAttr(t.value)}"${_formData.propertyType === t.value ? ' selected' : ''}>${escapeHTML(t.label)}</option>`).join('')}
               </select>
             </div>
             <div class="val-field">
               <label>Área (m²) *</label>
-              <input type="number" id="valArea" placeholder="Ej: 85" min="10" max="5000" value="${_formData.area || ''}" oninput="ValuationUI.updateField('area',+this.value)"/>
+              <input type="number" id="valArea" placeholder="Ej: 85" min="10" max="5000" value="${escapeAttr(_formData.area || '')}" oninput="ValuationUI.updateField('area',+this.value)"/>
             </div>
           </div>
           <div class="val-row">
@@ -141,11 +141,11 @@ const ValuationUI = (() => {
           <div class="val-row">
             <div class="val-field">
               <label>Antigüedad (años)</label>
-              <input type="number" id="valAge" placeholder="Ej: 10" min="0" max="100" value="${_formData.age || ''}" oninput="ValuationUI.updateField('age',+this.value)"/>
+              <input type="number" id="valAge" placeholder="Ej: 10" min="0" max="100" value="${escapeAttr(_formData.age || '')}" oninput="ValuationUI.updateField('age',+this.value)"/>
             </div>
             <div class="val-field" id="valFloorField" style="${_formData.propertyType === 'departamento' || !_formData.propertyType ? '' : 'display:none'}">
               <label>Piso</label>
-              <input type="number" id="valFloor" placeholder="Ej: 5" min="1" max="50" value="${_formData.floor || ''}" oninput="ValuationUI.updateField('floor',+this.value)"/>
+              <input type="number" id="valFloor" placeholder="Ej: 5" min="1" max="50" value="${escapeAttr(_formData.floor || '')}" oninput="ValuationUI.updateField('floor',+this.value)"/>
             </div>
             <div class="val-field">
               <label>Estacionamientos</label>
@@ -235,38 +235,38 @@ const ValuationUI = (() => {
         <div class="val-result-hero">
           <div class="val-result-tag">Reco Estimate</div>
           <div class="val-result-label">Valor estimado</div>
-          <div class="val-result-value">S/ ${_fmtNum(r.estimatedValue)}</div>
+          <div class="val-result-value">S/ ${escapeHTML(_fmtNum(r.estimatedValue))}</div>
           <div class="val-result-range">
-            <span>S/ ${_fmtNum(r.minValue)}</span>
+            <span>S/ ${escapeHTML(_fmtNum(r.minValue))}</span>
             <div class="val-range-bar">
               <div class="val-range-fill"></div>
               <div class="val-range-marker"></div>
             </div>
-            <span>S/ ${_fmtNum(r.maxValue)}</span>
+            <span>S/ ${escapeHTML(_fmtNum(r.maxValue))}</span>
           </div>
-          <div class="val-result-m2">S/ ${_fmtNum(r.pricePerM2)} /m² · US$ ${_fmtNum(r.pricePerM2USD)} /m²</div>
+          <div class="val-result-m2">S/ ${escapeHTML(_fmtNum(r.pricePerM2))} /m² · US$ ${escapeHTML(_fmtNum(r.pricePerM2USD))} /m²</div>
         </div>
 
         <div class="val-metrics">
           <div class="val-metric">
             <div class="val-metric-label">Confianza</div>
-            <div class="val-metric-value" style="background:${confBgColor};color:${confColor}">${CONFIDENCE_LABELS[r.confidence]}</div>
+            <div class="val-metric-value" style="background:${confBgColor};color:${confColor}">${escapeHTML(CONFIDENCE_LABELS[r.confidence])}</div>
           </div>
           <div class="val-metric">
             <div class="val-metric-label">Comparables</div>
-            <div class="val-metric-value">${r.comparablesCount}</div>
+            <div class="val-metric-value">${escapeHTML(String(r.comparablesCount))}</div>
           </div>
           <div class="val-metric">
             <div class="val-metric-label">Radio</div>
-            <div class="val-metric-value">${r.comparablesRadius}m</div>
+            <div class="val-metric-value">${escapeHTML(String(r.comparablesRadius))}m</div>
           </div>
           <div class="val-metric">
             <div class="val-metric-label">Yield estimado</div>
-            <div class="val-metric-value">${r.yieldEstimated}%</div>
+            <div class="val-metric-value">${escapeHTML(String(r.yieldEstimated))}%</div>
           </div>
           <div class="val-metric">
             <div class="val-metric-label">Score inversión</div>
-            <div class="val-metric-value">${r.investmentScore}/10</div>
+            <div class="val-metric-value">${escapeHTML(String(r.investmentScore))}/10</div>
           </div>
         </div>
 
@@ -278,7 +278,7 @@ const ValuationUI = (() => {
           <label>¿Tiene un precio de venta? Compara contra el mercado:</label>
           <div class="val-asking-row">
             <span>S/</span>
-            <input type="number" placeholder="Precio publicado" value="${_askingPrice || ''}" oninput="ValuationUI.setAskingPrice(+this.value)"/>
+            <input type="number" placeholder="Precio publicado" value="${escapeAttr(_askingPrice || '')}" oninput="ValuationUI.setAskingPrice(+this.value)"/>
             <button class="val-asking-btn" onclick="ValuationUI.comparePrice()">Comparar</button>
           </div>
         </div>
@@ -287,8 +287,8 @@ const ValuationUI = (() => {
         <div class="val-verdict" style="background:${verdictColors[verdict.type].bg};border-color:${verdictColors[verdict.type].color}">
           <span class="val-verdict-icon">${verdictColors[verdict.type].icon}</span>
           <div>
-            <strong style="color:${verdictColors[verdict.type].color}">${VERDICT_LABELS[verdict.type]}</strong>
-            <span>${verdict.diff > 0 ? '+' : ''}${verdict.diff}% vs. estimación de mercado</span>
+            <strong style="color:${verdictColors[verdict.type].color}">${escapeHTML(VERDICT_LABELS[verdict.type])}</strong>
+            <span>${verdict.diff > 0 ? '+' : ''}${escapeHTML(String(verdict.diff))}% vs. estimación de mercado</span>
           </div>
         </div>` : ''}
 
@@ -349,10 +349,10 @@ const ValuationUI = (() => {
         const changeClass = d.v > 0 ? 'val-hist-up' : d.v < 0 ? 'val-hist-down' : '';
         const changeSign = d.v > 0 ? '+' : '';
         return `<tr>
-          <td>${y}</td>
-          <td>US$ ${_fmtNum(d.m)}</td>
-          <td>${d.n || '—'}</td>
-          <td class="val-hist-change ${changeClass}">${d.v !== undefined ? changeSign + d.v + '%' : '—'}</td>
+          <td>${escapeHTML(y)}</td>
+          <td>US$ ${escapeHTML(_fmtNum(d.m))}</td>
+          <td>${escapeHTML(String(d.n || '—'))}</td>
+          <td class="val-hist-change ${changeClass}">${d.v !== undefined ? escapeHTML(changeSign + d.v + '%') : '—'}</td>
         </tr>`;
       }).join('');
     } else {
@@ -360,11 +360,11 @@ const ValuationUI = (() => {
     }
     return `
       <div class="val-historial">
-        <h4>Precio/m² en ${r.district}</h4>
+        <h4>Precio/m² en ${escapeHTML(r.district)}</h4>
         <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;font-size:13px">
-          <div><span style="color:var(--ink-4)">Mediana:</span> <strong>US$ ${_fmtNum(distData.median)}/m²</strong></div>
-          <div><span style="color:var(--ink-4)">Rango:</span> <strong>US$ ${_fmtNum(distData.p25)} – ${_fmtNum(distData.p75)}/m²</strong></div>
-          <div><span style="color:var(--ink-4)">Transacciones (18m):</span> <strong>${distData.tx}</strong></div>
+          <div><span style="color:var(--ink-4)">Mediana:</span> <strong>US$ ${escapeHTML(_fmtNum(distData.median))}/m²</strong></div>
+          <div><span style="color:var(--ink-4)">Rango:</span> <strong>US$ ${escapeHTML(_fmtNum(distData.p25))} – ${escapeHTML(_fmtNum(distData.p75))}/m²</strong></div>
+          <div><span style="color:var(--ink-4)">Transacciones (18m):</span> <strong>${escapeHTML(String(distData.tx))}</strong></div>
         </div>
         <div style="overflow-x:auto">
           <table class="val-hist-table">
@@ -378,12 +378,12 @@ const ValuationUI = (() => {
   function _upsellCard(service, analyticsEvent) {
     if (!service) return '';
     return `
-      <div class="val-upsell-card" onclick="ValuationUI.showRequestFlow('${service.id}');RecoAnalytics.track('${analyticsEvent}',{from:'estimate_result'})">
-        <div style="font-size:24px">${service.icon}</div>
-        <strong>${service.name}</strong>
-        <div class="val-upsell-price">${service.price.display}</div>
-        <div style="font-size:12px;color:var(--ink-3)">${service.price.suffix || ''}</div>
-        <button class="plan-cta outline" style="margin-top:8px;width:100%;padding:8px;font-size:12px">${service.cta?.label || 'Solicitar'}</button>
+      <div class="val-upsell-card" onclick="ValuationUI.showRequestFlow('${escapeAttr(service.id)}');RecoAnalytics.track('${escapeAttr(analyticsEvent)}',{from:'estimate_result'})">
+        <div style="font-size:24px">${escapeHTML(service.icon)}</div>
+        <strong>${escapeHTML(service.name)}</strong>
+        <div class="val-upsell-price">${escapeHTML(service.price.display)}</div>
+        <div style="font-size:12px;color:var(--ink-3)">${escapeHTML(service.price.suffix || '')}</div>
+        <button class="plan-cta outline" style="margin-top:8px;width:100%;padding:8px;font-size:12px">${escapeHTML(service.cta?.label || 'Solicitar')}</button>
       </div>`;
   }
 
@@ -445,9 +445,9 @@ const ValuationUI = (() => {
         <button class="val-back" onclick="ValuationUI.backToTiers()">← Volver a opciones</button>
 
         <div class="val-form-header">
-          <div class="val-form-badge">${service.name} · ${service.price.display}</div>
-          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${service.name}</h2>
-          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${service.description}</p>
+          <div class="val-form-badge">${escapeHTML(service.name)} · ${escapeHTML(service.price.display)}</div>
+          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${escapeHTML(service.name)}</h2>
+          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${escapeHTML(service.description)}</p>
         </div>
 
         <!-- Progress bar -->
@@ -455,7 +455,7 @@ const ValuationUI = (() => {
           ${stepNames.map((name, i) => `
             <div class="val-progress-step ${i < _requestStep ? 'done' : i === _requestStep ? 'active' : ''}">
               <div class="val-progress-dot">${i < _requestStep ? '✓' : i + 1}</div>
-              <div class="val-progress-label">${name}</div>
+              <div class="val-progress-label">${escapeHTML(name)}</div>
             </div>
           `).join('')}
         </div>
@@ -514,7 +514,7 @@ const ValuationUI = (() => {
             <label>Distrito *</label>
             <select onchange="ValuationUI.updateRequest('district',this.value)">
               <option value="">Selecciona distrito</option>
-              ${districts.map(d => `<option value="${d}"${_requestData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+              ${districts.map(d => `<option value="${escapeAttr(d)}"${_requestData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -523,26 +523,26 @@ const ValuationUI = (() => {
             <label>Tipo *</label>
             <select onchange="ValuationUI.updateRequest('propertyType',this.value)">
               <option value="">Selecciona</option>
-              ${types.map(t => `<option value="${t.value}"${_requestData.propertyType === t.value ? ' selected' : ''}>${t.label}</option>`).join('')}
+              ${types.map(t => `<option value="${escapeAttr(t.value)}"${_requestData.propertyType === t.value ? ' selected' : ''}>${escapeHTML(t.label)}</option>`).join('')}
             </select>
           </div>
           <div class="val-field">
             <label>Área (m²) *</label>
-            <input type="number" min="10" placeholder="Ej: 120" value="${_requestData.area || ''}" oninput="ValuationUI.updateRequest('area',+this.value)"/>
+            <input type="number" min="10" placeholder="Ej: 120" value="${escapeAttr(_requestData.area || '')}" oninput="ValuationUI.updateRequest('area',+this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field">
             <label>Dormitorios</label>
-            <input type="number" min="0" max="10" value="${_requestData.bedrooms || ''}" oninput="ValuationUI.updateRequest('bedrooms',+this.value)"/>
+            <input type="number" min="0" max="10" value="${escapeAttr(_requestData.bedrooms || '')}" oninput="ValuationUI.updateRequest('bedrooms',+this.value)"/>
           </div>
           <div class="val-field">
             <label>Baños</label>
-            <input type="number" min="0" max="10" value="${_requestData.bathrooms || ''}" oninput="ValuationUI.updateRequest('bathrooms',+this.value)"/>
+            <input type="number" min="0" max="10" value="${escapeAttr(_requestData.bathrooms || '')}" oninput="ValuationUI.updateRequest('bathrooms',+this.value)"/>
           </div>
           <div class="val-field">
             <label>Antigüedad</label>
-            <input type="number" min="0" max="100" placeholder="Años" value="${_requestData.age || ''}" oninput="ValuationUI.updateRequest('age',+this.value)"/>
+            <input type="number" min="0" max="100" placeholder="Años" value="${escapeAttr(_requestData.age || '')}" oninput="ValuationUI.updateRequest('age',+this.value)"/>
           </div>
         </div>
       </div>`;
@@ -555,7 +555,7 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field val-full">
             <label>Dirección completa *</label>
-            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${_requestData.address || ''}" oninput="ValuationUI.updateRequest('address',this.value)"/>
+            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${escapeAttr(_requestData.address || '')}" oninput="ValuationUI.updateRequest('address',this.value)"/>
           </div>
         </div>
         <div class="val-row">
@@ -563,14 +563,14 @@ const ValuationUI = (() => {
             <label>Distrito *</label>
             <select onchange="ValuationUI.updateRequest('district',this.value)">
               <option value="">Selecciona distrito</option>
-              ${ValuationService.getAvailableDistricts().map(d => `<option value="${d}"${_requestData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+              ${ValuationService.getAvailableDistricts().map(d => `<option value="${escapeAttr(d)}"${_requestData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
             </select>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Referencia</label>
-            <input type="text" placeholder="Cerca de..., cruce con..." value="${_requestData.reference || ''}" oninput="ValuationUI.updateRequest('reference',this.value)"/>
+            <input type="text" placeholder="Cerca de..., cruce con..." value="${escapeAttr(_requestData.reference || '')}" oninput="ValuationUI.updateRequest('reference',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -583,23 +583,23 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${_requestData.contactName || ''}" oninput="ValuationUI.updateRequest('contactName',this.value)"/>
+            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_requestData.contactName || '')}" oninput="ValuationUI.updateRequest('contactName',this.value)"/>
           </div>
           <div class="val-field">
             <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${_requestData.contactPhone || ''}" oninput="ValuationUI.updateRequest('contactPhone',this.value)"/>
+            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_requestData.contactPhone || '')}" oninput="ValuationUI.updateRequest('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${_requestData.contactEmail || ''}" oninput="ValuationUI.updateRequest('contactEmail',this.value)"/>
+            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_requestData.contactEmail || '')}" oninput="ValuationUI.updateRequest('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Notas adicionales</label>
-            <textarea rows="3" placeholder="Información relevante para el tasador..." oninput="ValuationUI.updateRequest('notes',this.value)">${_requestData.notes || ''}</textarea>
+            <textarea rows="3" placeholder="Información relevante para el tasador..." oninput="ValuationUI.updateRequest('notes',this.value)">${escapeHTML(_requestData.notes || '')}</textarea>
           </div>
         </div>
       </div>`;
@@ -613,7 +613,7 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Fecha preferida *</label>
-            <input type="date" min="${_getMinDate()}" value="${_requestData.preferredDate || ''}" onchange="ValuationUI.updateRequest('preferredDate',this.value)"/>
+            <input type="date" min="${_getMinDate()}" value="${escapeAttr(_requestData.preferredDate || '')}" onchange="ValuationUI.updateRequest('preferredDate',this.value)"/>
           </div>
           <div class="val-field">
             <label>Horario preferido</label>
@@ -628,7 +628,7 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field val-full">
             <label>Fecha alternativa</label>
-            <input type="date" min="${_getMinDate()}" value="${_requestData.altDate || ''}" onchange="ValuationUI.updateRequest('altDate',this.value)"/>
+            <input type="date" min="${_getMinDate()}" value="${escapeAttr(_requestData.altDate || '')}" onchange="ValuationUI.updateRequest('altDate',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -642,7 +642,7 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Fecha preferida *</label>
-            <input type="date" min="${_getMinDate()}" value="${_requestData.visitDate || ''}" onchange="ValuationUI.updateRequest('visitDate',this.value)"/>
+            <input type="date" min="${_getMinDate()}" value="${escapeAttr(_requestData.visitDate || '')}" onchange="ValuationUI.updateRequest('visitDate',this.value)"/>
           </div>
           <div class="val-field">
             <label>Horario</label>
@@ -656,7 +656,7 @@ const ValuationUI = (() => {
         <div class="val-row">
           <div class="val-field val-full">
             <label>¿Quién nos recibirá?</label>
-            <input type="text" placeholder="Nombre de quien abrirá" value="${_requestData.contactAtSite || ''}" oninput="ValuationUI.updateRequest('contactAtSite',this.value)"/>
+            <input type="text" placeholder="Nombre de quien abrirá" value="${escapeAttr(_requestData.contactAtSite || '')}" oninput="ValuationUI.updateRequest('contactAtSite',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -669,20 +669,20 @@ const ValuationUI = (() => {
         <div class="val-checkout-summary">
           <div class="val-checkout-row">
             <span>Servicio</span>
-            <strong>${service.name}</strong>
+            <strong>${escapeHTML(service.name)}</strong>
           </div>
           <div class="val-checkout-row">
             <span>Propiedad</span>
-            <strong>${_requestData.propertyType ? PROPERTY_TYPES.find(t => t.value === _requestData.propertyType)?.label : '—'} · ${_requestData.area || '—'} m² · ${_requestData.district || '—'}</strong>
+            <strong>${escapeHTML(_requestData.propertyType ? PROPERTY_TYPES.find(t => t.value === _requestData.propertyType)?.label : '—')} · ${escapeHTML(String(_requestData.area || '—'))} m² · ${escapeHTML(_requestData.district || '—')}</strong>
           </div>
           <div class="val-checkout-row">
             <span>Entrega</span>
-            <strong>${service.price.suffix || '—'}</strong>
+            <strong>${escapeHTML(service.price.suffix || '—')}</strong>
           </div>
           <div class="val-checkout-divider"></div>
           <div class="val-checkout-row val-checkout-total">
             <span>Total</span>
-            <strong>${service.price.display}</strong>
+            <strong>${escapeHTML(service.price.display)}</strong>
           </div>
         </div>
         <div class="val-checkout-notice">
@@ -707,13 +707,13 @@ const ValuationUI = (() => {
         <div style="font-size:48px;margin-bottom:12px">✅</div>
         <h3 class="font-serif" style="font-size:22px;margin-bottom:8px">Solicitud enviada</h3>
         <p style="color:var(--ink-3);font-size:14px;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">
-          Tu solicitud de <strong>${service.name}</strong> ha sido registrada. Un asesor te contactará para confirmar los detalles.
+          Tu solicitud de <strong>${escapeHTML(service.name)}</strong> ha sido registrada. Un asesor te contactará para confirmar los detalles.
         </p>
         <div class="val-order-card">
-          <div class="val-order-row"><span>Orden</span><strong>${_currentOrder.id}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${ORDER_STATUS_LABELS[_currentOrder.status]}</strong></div>
-          <div class="val-order-row"><span>Servicio</span><strong>${service.name}</strong></div>
-          <div class="val-order-row"><span>Precio</span><strong>${service.price.display}</strong></div>
+          <div class="val-order-row"><span>Orden</span><strong>${escapeHTML(_currentOrder.id)}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(ORDER_STATUS_LABELS[_currentOrder.status])}</strong></div>
+          <div class="val-order-row"><span>Servicio</span><strong>${escapeHTML(service.name)}</strong></div>
+          <div class="val-order-row"><span>Precio</span><strong>${escapeHTML(service.price.display)}</strong></div>
         </div>
         <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="ValuationUI.backToTiers()">Volver a Tasaciones</button>
       </div>`;
@@ -721,6 +721,48 @@ const ValuationUI = (() => {
 
   function nextStep() {
     const steps = _getStepsForService(_requestView);
+    const currentStepName = steps[_requestStep].name;
+    const stepEl = document.querySelector('.val-step');
+    if (stepEl) RecoValidation.clearAllErrors(stepEl);
+
+    if (currentStepName === 'Propiedad') {
+      const r1 = RecoValidation.validateRequired(_requestData.district, 'Distrito');
+      const r2 = RecoValidation.validateRequired(_requestData.propertyType, 'Tipo de propiedad');
+      let hasError = false;
+      if (stepEl) {
+        const selects = stepEl.querySelectorAll('select');
+        if (!r1.valid && selects[0]) { RecoValidation.showFieldError(selects[0], r1.error); hasError = true; }
+        if (!r2.valid && selects[1]) { RecoValidation.showFieldError(selects[1], r2.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
+    if (currentStepName === 'Contacto') {
+      const r1 = RecoValidation.validateName(_requestData.contactName);
+      const r2 = RecoValidation.validatePhone(_requestData.contactPhone);
+      const r3 = RecoValidation.validateEmail(_requestData.contactEmail);
+      let hasError = false;
+      if (stepEl) {
+        const nameInput = stepEl.querySelector('input[type="text"]');
+        const phoneInput = stepEl.querySelector('input[type="tel"]');
+        const emailInput = stepEl.querySelector('input[type="email"]');
+        if (!r1.valid && nameInput) { RecoValidation.showFieldError(nameInput, r1.error); hasError = true; }
+        if (!r2.valid && phoneInput) { RecoValidation.showFieldError(phoneInput, r2.error); hasError = true; }
+        if (!r3.valid && emailInput) { RecoValidation.showFieldError(emailInput, r3.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
+    if (currentStepName === 'Dirección') {
+      const r1 = RecoValidation.validateAddress(_requestData.address);
+      let hasError = false;
+      if (stepEl) {
+        const addrInput = stepEl.querySelector('input[type="text"]');
+        if (!r1.valid && addrInput) { RecoValidation.showFieldError(addrInput, r1.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
     if (_requestStep < steps.length - 1) {
       _requestStep++;
       _rerender();

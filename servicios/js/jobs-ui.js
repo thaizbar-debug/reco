@@ -39,18 +39,18 @@ const JobsUI = (() => {
 
   function _jobCard(job, isPrimary) {
     const services = getServicesByJob(job.id);
-    const availableCount = services.filter(s => s.status === 'available').length;
+    const availableCount = services.filter(s => s.status === SERVICE_STATUS.ACTIVE).length;
 
     return `
-      <div class="job-card ${isPrimary ? 'job-card-primary' : ''}" onclick="JobsUI.showJob('${job.id}')">
-        <div class="job-card-gradient" style="background:${job.gradient}">
-          <div class="job-card-icon">${job.icon}</div>
-          <h3 class="job-card-title">${job.title}</h3>
-          <p class="job-card-desc">${job.description}</p>
+      <div class="job-card ${isPrimary ? 'job-card-primary' : ''}" onclick="JobsUI.showJob('${escapeAttr(job.id)}')">
+        <div class="job-card-gradient" style="background:${escapeAttr(job.gradient)}">
+          <div class="job-card-icon">${escapeHTML(job.icon)}</div>
+          <h3 class="job-card-title">${escapeHTML(job.title)}</h3>
+          <p class="job-card-desc">${escapeHTML(job.description)}</p>
           <div class="job-card-count">${availableCount} servicio${availableCount !== 1 ? 's' : ''} disponible${availableCount !== 1 ? 's' : ''}</div>
         </div>
         <div class="job-card-footer">
-          <span class="job-card-cta">${job.ctaPrimary.label} →</span>
+          <span class="job-card-cta">${escapeHTML(job.ctaPrimary.label)} →</span>
         </div>
       </div>`;
   }
@@ -69,8 +69,8 @@ const JobsUI = (() => {
     if (!job) return ErrorState('Bloque no encontrado');
 
     const services = getServicesByJob(job.id);
-    const available = services.filter(s => s.status === 'available');
-    const comingSoon = services.filter(s => s.status === 'coming_soon');
+    const available = services.filter(s => s.status === SERVICE_STATUS.ACTIVE);
+    const comingSoon = services.filter(s => s.status === SERVICE_STATUS.COMING_SOON);
     const related = getRelatedServicesForJob(job.id);
 
     RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.JOB_VIEWED, { job_id: job.id });
@@ -78,10 +78,10 @@ const JobsUI = (() => {
     return `
       <button class="val-back" onclick="JobsUI.backToMain()">← ¿Qué necesitas hacer?</button>
 
-      <div class="job-detail-header" style="background:${job.gradient}">
-        <div class="job-detail-icon">${job.icon}</div>
-        <h2 class="font-serif job-detail-title">${job.title}</h2>
-        <p class="job-detail-desc">${job.description}</p>
+      <div class="job-detail-header" style="background:${escapeAttr(job.gradient)}">
+        <div class="job-detail-icon">${escapeHTML(job.icon)}</div>
+        <h2 class="font-serif job-detail-title">${escapeHTML(job.title)}</h2>
+        <p class="job-detail-desc">${escapeHTML(job.description)}</p>
       </div>
 
       ${available.length > 0 ? `
@@ -108,38 +108,38 @@ const JobsUI = (() => {
       ` : ''}
 
       <div class="job-cta-footer">
-        ${job.ctaPrimary ? `<button class="plan-cta" style="width:auto;padding:12px 28px" onclick="JobsUI.handleJobCTA('${job.id}','primary')">${job.ctaPrimary.label} →</button>` : ''}
-        ${job.ctaSecondary ? `<button class="plan-cta outline" style="width:auto;padding:12px 28px" onclick="JobsUI.handleJobCTA('${job.id}','secondary')">${job.ctaSecondary.label}</button>` : ''}
+        ${job.ctaPrimary ? `<button class="plan-cta" style="width:auto;padding:12px 28px" onclick="JobsUI.handleJobCTA('${escapeAttr(job.id)}','primary')">${escapeHTML(job.ctaPrimary.label)} →</button>` : ''}
+        ${job.ctaSecondary ? `<button class="plan-cta outline" style="width:auto;padding:12px 28px" onclick="JobsUI.handleJobCTA('${escapeAttr(job.id)}','secondary')">${escapeHTML(job.ctaSecondary.label)}</button>` : ''}
       </div>
     `;
   }
 
   function _serviceCard(svc) {
-    const tag = svc.tags[0] && svc.status !== 'coming_soon'
-      ? `<div class="job-svc-tag">${svc.tags[0]}</div>` : '';
-    const comingSoon = svc.status === 'coming_soon';
+    const tag = svc.tags[0] && svc.status !== SERVICE_STATUS.COMING_SOON
+      ? `<div class="job-svc-tag">${escapeHTML(svc.tags[0])}</div>` : '';
+    const comingSoon = svc.status === SERVICE_STATUS.COMING_SOON;
 
     return `
-      <div class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" onclick="${comingSoon ? '' : 'JobsUI.navigateToService(\'' + svc.id + '\')'}">
+      <div class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" onclick="${comingSoon ? '' : 'JobsUI.navigateToService(\'' + escapeAttr(svc.id) + '\')'}">
         ${tag}
-        <div class="job-svc-icon">${svc.icon}</div>
-        <h4 class="job-svc-name">${svc.name}</h4>
-        <p class="job-svc-desc">${svc.description}</p>
-        <div class="job-svc-price">${svc.price}</div>
+        <div class="job-svc-icon">${escapeHTML(svc.icon)}</div>
+        <h4 class="job-svc-name">${escapeHTML(svc.name)}</h4>
+        <p class="job-svc-desc">${escapeHTML(svc.description)}</p>
+        <div class="job-svc-price">${escapeHTML(svc.price)}</div>
         ${comingSoon
           ? '<span class="job-svc-soon">Próximamente</span>'
-          : `<span class="job-svc-cta">${svc.cta ? svc.cta.label : 'Ver más'} →</span>`
+          : `<span class="job-svc-cta">${escapeHTML(svc.cta ? svc.cta.label : 'Ver más')} →</span>`
         }
       </div>`;
   }
 
   function _relatedCard(svc) {
     return `
-      <div class="job-related-card" onclick="JobsUI.navigateToService('${svc.id}')">
-        <div class="job-related-icon">${svc.icon}</div>
+      <div class="job-related-card" onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')">
+        <div class="job-related-icon">${escapeHTML(svc.icon)}</div>
         <div class="job-related-info">
-          <strong>${svc.hook || svc.name}</strong>
-          <span>${svc.name}</span>
+          <strong>${escapeHTML(svc.hook || svc.name)}</strong>
+          <span>${escapeHTML(svc.name)}</span>
         </div>
         <span class="val-cross-arrow">→</span>
       </div>`;

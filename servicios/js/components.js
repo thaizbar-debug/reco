@@ -16,37 +16,37 @@ function ServiceBadge(text, variant) {
     free: 'background:var(--green-mid);color:#fff',
   };
   const style = styles[variant] || styles.accent;
-  return `<div class="svc-tas-badge" style="${style}">${text}</div>`;
+  return `<div class="svc-tas-badge" style="${style}">${escapeHTML(text)}</div>`;
 }
 
 function ServiceTag(text) {
-  return `<div class="svc-service-tag">${text}</div>`;
+  return `<div class="svc-service-tag">${escapeHTML(text)}</div>`;
 }
 
 function FinTag(text, isNew) {
-  return `<div class="svc-fin-tag${isNew ? ' new' : ''}">${text}</div>`;
+  return `<div class="svc-fin-tag${isNew ? ' new' : ''}">${escapeHTML(text)}</div>`;
 }
 
 function PlanCTA(label, action, style) {
   const cls = style === 'outline' ? 'plan-cta outline' : 'plan-cta';
-  return `<button class="${cls}" onclick="RecoActions.handle('${action}')">${label}</button>`;
+  return `<button class="${cls}" onclick="RecoActions.handle('${escapeAttr(action)}')">${escapeHTML(label)}</button>`;
 }
 
 function FinCTA(label, action) {
-  return `<button class="svc-fin-cta" onclick="RecoActions.handle('${action}')">${label} →</button>`;
+  return `<button class="svc-fin-cta" onclick="RecoActions.handle('${escapeAttr(action)}')">${escapeHTML(label)} →</button>`;
 }
 
 function SectionHeader(tag, title, sub) {
   return `
-    <div class="section-tag">${tag}</div>
-    <h2 class="section-title" style="text-align:center">${title}</h2>
-    <p class="section-sub" style="text-align:center;margin:0 auto 28px">${sub}</p>`;
+    <div class="section-tag">${escapeHTML(tag)}</div>
+    <h2 class="section-title" style="text-align:center">${escapeHTML(title)}</h2>
+    <p class="section-sub" style="text-align:center;margin:0 auto 28px">${escapeHTML(sub)}</p>`;
 }
 
 function CategoryDivider(icon, title, count) {
   return `
     <div class="cat-divider">
-      <h3>${icon} ${title}</h3>
+      <h3>${escapeHTML(icon)} ${escapeHTML(title)}</h3>
       <div class="cat-count">${count} ${count === 1 ? 'producto' : 'productos'}</div>
     </div>`;
 }
@@ -54,15 +54,15 @@ function CategoryDivider(icon, title, count) {
 function InfoBanner(title, text) {
   return `
     <div class="svc-info-banner">
-      <strong>${title}</strong>
-      <span>${text}</span>
+      <strong>${escapeHTML(title)}</strong>
+      <span>${escapeHTML(text)}</span>
     </div>`;
 }
 
 function SearchBox(value, placeholder, onInputExpr) {
   return `
     <div class="svc-search">
-      <input class="svc-search-input" placeholder="${placeholder}" value="${value}" oninput="${onInputExpr}"/>
+      <input class="svc-search-input" placeholder="${escapeAttr(placeholder)}" value="${escapeAttr(value)}" oninput="${escapeAttr(onInputExpr)}"/>
     </div>`;
 }
 
@@ -70,7 +70,7 @@ function EmptyState(message) {
   return `
     <div style="text-align:center;padding:48px 24px;color:var(--ink-3)">
       <div style="font-size:48px;margin-bottom:12px">🔍</div>
-      <div style="font-size:15px;font-weight:500">${message}</div>
+      <div style="font-size:15px;font-weight:500">${escapeHTML(message)}</div>
     </div>`;
 }
 
@@ -86,7 +86,7 @@ function ErrorState(message) {
   return `
     <div style="text-align:center;padding:48px 24px;color:var(--red)">
       <div style="font-size:48px;margin-bottom:12px">⚠️</div>
-      <div style="font-size:15px;font-weight:500">${message || 'Error al cargar los servicios'}</div>
+      <div style="font-size:15px;font-weight:500">${escapeHTML(message || 'Error al cargar los servicios')}</div>
     </div>`;
 }
 
@@ -95,11 +95,11 @@ function ErrorState(message) {
 function ServiceCard(service) {
   const tag = service.tags[0] ? ServiceTag(service.tags[0]) : '';
   return `
-    <button class="svc-service-card" onclick="RecoActions.handle('${service.cta ? service.cta.action : 'noop'}', '${service.id}')">
+    <button class="svc-service-card" onclick="RecoActions.handle('${escapeAttr(service.cta ? service.cta.action : 'noop')}', '${escapeAttr(service.id)}')">
       ${tag}
-      <div class="svc-service-icon">${service.icon}</div>
-      <div class="svc-service-title">${service.name}</div>
-      <div class="svc-service-from">${service.price.display}</div>
+      <div class="svc-service-icon">${escapeHTML(service.icon)}</div>
+      <div class="svc-service-title">${escapeHTML(service.name)}</div>
+      <div class="svc-service-from">${escapeHTML(service.price.display)}</div>
     </button>`;
 }
 
@@ -107,7 +107,7 @@ function TierCard(service) {
   const badge = service.tags[0] ? ServiceBadge(service.tags[0], service.featured ? 'accent' : service.price.value === 0 ? 'free' : 'accent') : '';
   const featuredClass = service.featured ? ' featured' : '';
   const checks = (service.highlights || []).map(h =>
-    `<li>${h.startsWith('⚠') ? '' : '✓ '}${h}</li>`
+    `<li>${h.startsWith('⚠') ? '' : '✓ '}${escapeHTML(h)}</li>`
   ).join('');
   const ctaStyle = service.cta?.style || 'outline';
   const ctaLabel = service.cta?.label || 'Solicitar';
@@ -116,9 +116,9 @@ function TierCard(service) {
   return `
     <div class="svc-tas-card${featuredClass}">
       ${badge}
-      <div class="svc-tas-icon">${service.icon}</div>
-      <h3>${service.name}</h3>
-      <div class="svc-tas-price">${service.price.display} ${service.price.suffix ? `<small>${service.price.suffix}</small>` : ''}</div>
+      <div class="svc-tas-icon">${escapeHTML(service.icon)}</div>
+      <h3>${escapeHTML(service.name)}</h3>
+      <div class="svc-tas-price">${escapeHTML(service.price.display)} ${service.price.suffix ? `<small>${escapeHTML(service.price.suffix)}</small>` : ''}</div>
       <ul class="svc-tas-checks">${checks}</ul>
       ${PlanCTA(ctaLabel, ctaAction, ctaStyle)}
     </div>`;
@@ -134,10 +134,10 @@ function FinanceCard(service) {
   return `
     <div class="svc-fin-card">
       ${tag}
-      <div class="svc-fin-icon">${service.icon}</div>
-      <div class="svc-fin-title">${service.name}</div>
-      <div class="svc-fin-desc">${service.description}</div>
-      <div class="svc-fin-price">${service.price.display}</div>
+      <div class="svc-fin-icon">${escapeHTML(service.icon)}</div>
+      <div class="svc-fin-title">${escapeHTML(service.name)}</div>
+      <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
+      <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
       ${FinCTA(ctaLabel, ctaAction)}
     </div>`;
 }
@@ -152,10 +152,10 @@ function LegalCard(service) {
   return `
     <div class="svc-legal-card">
       ${tag}
-      <div class="svc-fin-icon">${service.icon}</div>
-      <div class="svc-fin-title">${service.name}</div>
-      <div class="svc-fin-desc">${service.description}</div>
-      <div class="svc-fin-price">${service.price.display}</div>
+      <div class="svc-fin-icon">${escapeHTML(service.icon)}</div>
+      <div class="svc-fin-title">${escapeHTML(service.name)}</div>
+      <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
+      <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
       ${FinCTA(ctaLabel, ctaAction)}
     </div>`;
 }
@@ -175,27 +175,27 @@ function FotoCard(service) {
   return `
     <div class="svc-foto-card${featuredClass}">
       ${badge}
-      <div class="svc-fin-icon">${service.icon}</div>
-      <div class="svc-fin-title">${service.name}</div>
-      <div class="svc-fin-desc">${service.description}</div>
-      <div class="svc-fin-price">${service.price.display}</div>
+      <div class="svc-fin-icon">${escapeHTML(service.icon)}</div>
+      <div class="svc-fin-title">${escapeHTML(service.name)}</div>
+      <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
+      <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
       ${FinCTA(ctaLabel, ctaAction)}
     </div>`;
 }
 
 function HeroCard(service) {
-  const checks = (service.highlights || []).map(h => `<li>✓ ${h}</li>`).join('');
+  const checks = (service.highlights || []).map(h => `<li>✓ ${escapeHTML(h)}</li>`).join('');
   const ctaLabel = service.cta?.label || 'Comenzar';
   const ctaAction = service.cta?.action || 'noop';
 
   return `
     <div class="svc-hero-card">
-      <div class="svc-eyebrow">${service.category.toUpperCase()}</div>
-      <h2 class="font-serif" style="font-size:30px;margin:6px 0 10px;color:#fff">${service.name}</h2>
-      <p>${service.description}</p>
+      <div class="svc-eyebrow">${escapeHTML(service.category.toUpperCase())}</div>
+      <h2 class="font-serif" style="font-size:30px;margin:6px 0 10px;color:#fff">${escapeHTML(service.name)}</h2>
+      <p>${escapeHTML(service.description)}</p>
       <ul class="svc-checks">${checks}</ul>
       <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
-        <button class="plan-cta" style="width:auto;padding:12px 24px" onclick="RecoActions.handle('${ctaAction}')">${ctaLabel}</button>
+        <button class="plan-cta" style="width:auto;padding:12px 24px" onclick="RecoActions.handle('${escapeAttr(ctaAction)}')">${escapeHTML(ctaLabel)}</button>
       </div>
     </div>`;
 }
@@ -203,8 +203,8 @@ function HeroCard(service) {
 function SideTile(service) {
   return `
     <div class="svc-tile">
-      <div class="svc-tile-title">${service.icon} ${service.name}</div>
-      <div class="svc-tile-desc">${service.description}</div>
+      <div class="svc-tile-title">${escapeHTML(service.icon)} ${escapeHTML(service.name)}</div>
+      <div class="svc-tile-desc">${escapeHTML(service.description)}</div>
     </div>`;
 }
 

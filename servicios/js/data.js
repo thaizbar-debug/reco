@@ -241,9 +241,6 @@ const TASACIONES_SERVICES = [
 
 // --- FINANZAS ---
 const FINANZAS_SERVICES = [
-  { id: 'fin-pago-alquiler', category: CATEGORIES.FINANZAS, subcategory: 'pagos', name: 'Pago de alquiler con tarjeta', shortDescription: 'Paga tu renta mensual con tarjeta de crédito o débito.', description: 'Paga tu renta mensual con tarjeta de crédito o débito. Acumula puntos o millas. Integración con Niubiz / Mercado Pago.', icon: '💳', price: { display: '2.9% comisión', value: null }, priceType: 'commission_percentage', tags: ['Core'], status: SERVICE_STATUS.COMING_SOON, featured: false, monetizationModel: MONETIZATION_MODELS.COMMISSION, cta: { label: 'Próximamente', action: 'coming_soon' }, availability: 'Lima Metropolitana y Callao', providerType: 'platform' },
-  { id: 'fin-recibo-sunat', category: CATEGORIES.FINANZAS, subcategory: 'pagos', name: 'Recibo digital SUNAT', shortDescription: 'Generación automática del Formulario 1683.', description: 'Generación automática del Formulario 1683 (impuesto renta de primera categoría).', icon: '📄', price: { display: 'S/ 5 / recibo', value: 5 }, priceType: 'fixed', tags: ['Nuevo'], status: SERVICE_STATUS.COMING_SOON, featured: false, monetizationModel: MONETIZATION_MODELS.FIXED_PRICE, cta: { label: 'Próximamente', action: 'coming_soon' }, availability: 'Lima Metropolitana y Callao', providerType: 'platform' },
-  { id: 'fin-arbitrios', category: CATEGORIES.FINANZAS, subcategory: 'pagos', name: 'Pago de arbitrios y predial', shortDescription: 'Paga cuotas municipales y mantenimiento desde Reco.', description: 'Paga cuotas municipales y mantenimiento desde Reco. Integración con municipalidades de Lima.', icon: '🏛️', price: { display: '2% comisión', value: null }, priceType: 'commission_percentage', tags: ['Nuevo'], status: SERVICE_STATUS.COMING_SOON, featured: false, monetizationModel: MONETIZATION_MODELS.COMMISSION, cta: { label: 'Próximamente', action: 'coming_soon' }, availability: 'Lima Metropolitana y Callao', providerType: 'platform' },
   { id: 'fin-credito-hipotecario', category: CATEGORIES.FINANZAS, subcategory: 'credito', name: 'Crédito hipotecario', shortDescription: 'Comparador de TCEA en tiempo real.', description: 'Comparador de TCEA en tiempo real. Convenios con BCP, BBVA, Interbank, Scotiabank.', icon: '🏦', price: { display: 'Referral fee', value: null }, priceType: 'referral', tags: [], status: SERVICE_STATUS.ACTIVE, featured: false, monetizationModel: MONETIZATION_MODELS.REFERRAL, cta: { label: 'Ver opciones', action: 'fin_hipotecario' }, availability: 'Nacional', providerType: 'partner' },
   { id: 'fin-prestamo-personal', category: CATEGORIES.FINANZAS, subcategory: 'credito', name: 'Préstamo personal', shortDescription: 'Para remodelación, amoblado o cuota inicial.', description: 'Para remodelación, amoblado o cuota inicial. Hasta S/ 80K. Cross-sell natural después de compra.', icon: '💵', price: { display: 'Hasta S/ 80K', value: null }, priceType: 'referral', tags: [], status: SERVICE_STATUS.ACTIVE, featured: false, monetizationModel: MONETIZATION_MODELS.REFERRAL, cta: { label: 'Ver opciones', action: 'fin_prestamo' }, availability: 'Nacional', providerType: 'partner' },
   { id: 'fin-bnpl', category: CATEGORIES.FINANZAS, subcategory: 'credito', name: 'Renta Ahora, Paga Después', shortDescription: 'BNPL para alquiler — paga en 3 cuotas sin interés.', description: 'BNPL para alquiler — paga en 3 cuotas sin interés. Requiere scoring crediticio.', icon: '💳', price: { display: '3 cuotas s/interés', value: null }, priceType: 'bnpl', tags: ['Nuevo'], status: SERVICE_STATUS.COMING_SOON, featured: false, monetizationModel: MONETIZATION_MODELS.COMMISSION, cta: { label: 'Ver opciones', action: 'fin_bnpl' }, availability: 'Lima Metropolitana', providerType: 'partner' },
@@ -288,6 +285,61 @@ const SERVICE_CATALOG = {
   [CATEGORIES.RECO_AGENT]: RECO_AGENT_SERVICES,
   [CATEGORIES.PROPERTY_MANAGEMENT]: PROPERTY_MANAGEMENT_SERVICES,
 };
+
+// --- ID Mapping: SERVICE_CATALOG ↔ SERVICE_REGISTRY ---
+const SERVICE_ID_MAP = Object.freeze({
+  'tas-estimate': 'reco-estimate',
+  'tas-express': 'tasacion-express',
+  'tas-virtual': 'tasacion-virtual',
+  'tas-presencial': 'tasacion-presencial',
+  'mant-limpieza': 'limpieza',
+  'mant-gasfiteria': 'gasfiteria',
+  'mant-electricista': 'electricista',
+  'mant-pintura': 'pintura',
+  'mant-mudanzas': 'mudanza',
+  'mant-remodelacion': 'remodelacion',
+  'mant-aire': 'aire-acondicionado',
+  'mant-carpinteria': 'carpinteria',
+  'mant-camaras': 'camaras',
+  'mant-jardineria': 'jardineria',
+  'mant-impermeabilizacion': 'impermeabilizacion',
+  'foto-basica': 'foto-basica',
+  'foto-premium': 'foto-premium',
+  'foto-video': 'video-recorrido',
+  'foto-tour-ia': 'tour-virtual-ia',
+  'foto-staging': 'home-staging-ia',
+  'foto-pack': 'pack-reco-visual',
+  'fin-credito-hipotecario': 'credito-hipotecario',
+  'fin-seguro-hogar': 'seguro-hogar',
+  'pago-alquiler-tarjeta': 'pago-alquiler',
+  'pago-arbitrios-predial': null,
+  'recibo-digital-sunat': null,
+  'legal-contrato-alquiler': null,
+  'legal-revision-contrato': null,
+  'legal-minuta': 'minuta',
+  'legal-asesoria': 'asesoria-legal',
+  'legal-estudio-titulos': 'estudio-titulos',
+  'legal-due-diligence': 'due-diligence',
+});
+
+const _REVERSE_ID_MAP = Object.freeze(
+  Object.entries(SERVICE_ID_MAP).reduce((acc, [catalog, registry]) => {
+    if (registry) acc[registry] = catalog;
+    return acc;
+  }, {})
+);
+
+function getCanonicalServiceId(id) {
+  return SERVICE_ID_MAP[id] || _REVERSE_ID_MAP[id] || id;
+}
+
+function getCatalogServiceId(registryId) {
+  return _REVERSE_ID_MAP[registryId] || registryId;
+}
+
+function getRegistryServiceIdFromCatalog(catalogId) {
+  return SERVICE_ID_MAP[catalogId] || catalogId;
+}
 
 // --- Query helpers ---
 function getServicesByCategory(categoryId) {

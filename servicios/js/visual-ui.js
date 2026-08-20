@@ -103,11 +103,11 @@ const VisualUI = (() => {
     return `
       <div class="svc-foto-card${featuredClass}">
         ${badge}
-        <div class="svc-fin-icon">${service.icon}</div>
-        <div class="svc-fin-title">${service.name}</div>
-        <div class="svc-fin-desc">${service.description}</div>
-        <div class="svc-fin-price">${service.price.display}</div>
-        <button class="svc-fin-cta" onclick="VisualUI.showBooking('${service.id}')">${service.cta?.label || 'Solicitar'} →</button>
+        <div class="svc-fin-icon">${escapeHTML(service.icon)}</div>
+        <div class="svc-fin-title">${escapeHTML(service.name)}</div>
+        <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
+        <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
+        <button class="svc-fin-cta" onclick="VisualUI.showBooking('${escapeAttr(service.id)}')">${escapeHTML(service.cta?.label || 'Solicitar')} →</button>
       </div>`;
   }
 
@@ -147,16 +147,16 @@ const VisualUI = (() => {
         <button class="val-back" onclick="VisualUI.backToCatalog()">← Volver a servicios</button>
 
         <div class="val-form-header">
-          <div class="val-form-badge" style="background:var(--accent-light);color:var(--accent)">${service.name} · ${service.price.display}</div>
-          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${service.name}</h2>
-          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${service.description}</p>
+          <div class="val-form-badge" style="background:var(--accent-light);color:var(--accent)">${escapeHTML(service.name)} · ${escapeHTML(service.price.display)}</div>
+          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${escapeHTML(service.name)}</h2>
+          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${escapeHTML(service.description)}</p>
         </div>
 
         <div class="val-progress">
           ${stepNames.map((name, i) => `
             <div class="val-progress-step ${i < _step ? 'done' : i === _step ? 'active' : ''}">
               <div class="val-progress-dot">${i < _step ? '✓' : i + 1}</div>
-              <div class="val-progress-label">${name}</div>
+              <div class="val-progress-label">${escapeHTML(name)}</div>
             </div>
           `).join('')}
         </div>
@@ -242,7 +242,7 @@ const VisualUI = (() => {
             <label>Distrito *</label>
             <select onchange="VisualUI.updateBooking('district',this.value)">
               <option value="">Selecciona distrito</option>
-              ${districts.map(d => `<option value="${d}"${_bookingData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+              ${districts.map(d => `<option value="${escapeAttr(d)}"${_bookingData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -251,22 +251,22 @@ const VisualUI = (() => {
             <label>Tipo de propiedad *</label>
             <select onchange="VisualUI.updateBooking('propertyType',this.value)">
               <option value="">Selecciona tipo</option>
-              ${types.map(t => `<option value="${t.value}"${_bookingData.propertyType === t.value ? ' selected' : ''}>${t.label}</option>`).join('')}
+              ${types.map(t => `<option value="${escapeAttr(t.value)}"${_bookingData.propertyType === t.value ? ' selected' : ''}>${escapeHTML(t.label)}</option>`).join('')}
             </select>
           </div>
           <div class="val-field">
             <label>Área (m²)</label>
-            <input type="number" min="10" placeholder="Ej: 120" value="${_bookingData.area || ''}" oninput="VisualUI.updateBooking('area',+this.value)"/>
+            <input type="number" min="10" placeholder="Ej: 120" value="${escapeAttr(_bookingData.area || '')}" oninput="VisualUI.updateBooking('area',+this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field">
             <label>Ambientes a fotografiar</label>
-            <input type="number" min="1" max="20" placeholder="Ej: 6" value="${_bookingData.rooms || ''}" oninput="VisualUI.updateBooking('rooms',+this.value)"/>
+            <input type="number" min="1" max="20" placeholder="Ej: 6" value="${escapeAttr(_bookingData.rooms || '')}" oninput="VisualUI.updateBooking('rooms',+this.value)"/>
           </div>
           <div class="val-field">
             <label>Notas para el fotógrafo</label>
-            <input type="text" placeholder="Ej: mascotas en casa, portero" value="${_bookingData.propertyNotes || ''}" oninput="VisualUI.updateBooking('propertyNotes',this.value)"/>
+            <input type="text" placeholder="Ej: mascotas en casa, portero" value="${escapeAttr(_bookingData.propertyNotes || '')}" oninput="VisualUI.updateBooking('propertyNotes',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -280,7 +280,7 @@ const VisualUI = (() => {
         <div class="val-row">
           <div class="val-field val-full">
             <label>Dirección completa *</label>
-            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${_bookingData.address || ''}" oninput="VisualUI.updateBooking('address',this.value)"/>
+            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${escapeAttr(_bookingData.address || '')}" oninput="VisualUI.updateBooking('address',this.value)"/>
           </div>
         </div>
         <div class="val-row">
@@ -288,14 +288,14 @@ const VisualUI = (() => {
             <label>Distrito *</label>
             <select onchange="VisualUI.updateBooking('addressDistrict',this.value)">
               <option value="">Selecciona distrito</option>
-              ${districts.map(d => `<option value="${d}"${(_bookingData.addressDistrict || _bookingData.district) === d ? ' selected' : ''}>${d}</option>`).join('')}
+              ${districts.map(d => `<option value="${escapeAttr(d)}"${(_bookingData.addressDistrict || _bookingData.district) === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
             </select>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Referencia</label>
-            <input type="text" placeholder="Cerca de..., cruce con..." value="${_bookingData.reference || ''}" oninput="VisualUI.updateBooking('reference',this.value)"/>
+            <input type="text" placeholder="Cerca de..., cruce con..." value="${escapeAttr(_bookingData.reference || '')}" oninput="VisualUI.updateBooking('reference',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -309,7 +309,7 @@ const VisualUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Fecha preferida *</label>
-            <input type="date" min="${_getMinDate()}" value="${_bookingData.visitDate || ''}" onchange="VisualUI.updateBooking('visitDate',this.value)"/>
+            <input type="date" min="${_getMinDate()}" value="${escapeAttr(_bookingData.visitDate || '')}" onchange="VisualUI.updateBooking('visitDate',this.value)"/>
           </div>
           <div class="val-field">
             <label>Horario preferido</label>
@@ -323,13 +323,13 @@ const VisualUI = (() => {
         <div class="val-row">
           <div class="val-field val-full">
             <label>Fecha alternativa</label>
-            <input type="date" min="${_getMinDate()}" value="${_bookingData.altDate || ''}" onchange="VisualUI.updateBooking('altDate',this.value)"/>
+            <input type="date" min="${_getMinDate()}" value="${escapeAttr(_bookingData.altDate || '')}" onchange="VisualUI.updateBooking('altDate',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>¿Quién nos recibirá?</label>
-            <input type="text" placeholder="Nombre de quien abrirá" value="${_bookingData.contactAtSite || ''}" oninput="VisualUI.updateBooking('contactAtSite',this.value)"/>
+            <input type="text" placeholder="Nombre de quien abrirá" value="${escapeAttr(_bookingData.contactAtSite || '')}" oninput="VisualUI.updateBooking('contactAtSite',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -345,9 +345,9 @@ const VisualUI = (() => {
             <label>Formato de video *</label>
             <div class="vis-option-grid">
               ${VIDEO_FORMATS.map(f => `
-                <button class="vis-option-card${_bookingData.videoFormat === f.value ? ' active' : ''}" onclick="VisualUI.updateBooking('videoFormat','${f.value}');VisualUI.refresh()">
-                  <strong>${f.label}</strong>
-                  <span>${f.desc}</span>
+                <button class="vis-option-card${_bookingData.videoFormat === f.value ? ' active' : ''}" onclick="VisualUI.updateBooking('videoFormat','${escapeAttr(f.value)}');VisualUI.refresh()">
+                  <strong>${escapeHTML(f.label)}</strong>
+                  <span>${escapeHTML(f.desc)}</span>
                 </button>
               `).join('')}
             </div>
@@ -361,8 +361,8 @@ const VisualUI = (() => {
               <label class="vis-addon-check">
                 <input type="checkbox" ${_bookingData.droneAddon ? 'checked' : ''} onchange="VisualUI.updateBooking('droneAddon',this.checked)"/>
                 <div>
-                  <strong>${a.label}</strong>
-                  <span>${a.desc} · ${a.priceExtra}</span>
+                  <strong>${escapeHTML(a.label)}</strong>
+                  <span>${escapeHTML(a.desc)} · ${escapeHTML(a.priceExtra)}</span>
                 </div>
               </label>
             `).join('')}
@@ -414,9 +414,9 @@ const VisualUI = (() => {
             <label>Estilo de amoblado *</label>
             <div class="vis-option-grid vis-option-grid-3">
               ${STAGING_STYLES.map(s => `
-                <button class="vis-option-card${_bookingData.stagingStyle === s.value ? ' active' : ''}" onclick="VisualUI.updateBooking('stagingStyle','${s.value}');VisualUI.refresh()">
-                  <strong>${s.label}</strong>
-                  <span>${s.desc}</span>
+                <button class="vis-option-card${_bookingData.stagingStyle === s.value ? ' active' : ''}" onclick="VisualUI.updateBooking('stagingStyle','${escapeAttr(s.value)}');VisualUI.refresh()">
+                  <strong>${escapeHTML(s.label)}</strong>
+                  <span>${escapeHTML(s.desc)}</span>
                 </button>
               `).join('')}
             </div>
@@ -428,7 +428,7 @@ const VisualUI = (() => {
             <label>Tipo de ambiente *</label>
             <select onchange="VisualUI.updateBooking('stagingRoom',this.value)">
               <option value="">Selecciona ambiente</option>
-              ${STAGING_ROOMS.map(r => `<option value="${r.value}"${_bookingData.stagingRoom === r.value ? ' selected' : ''}>${r.label}</option>`).join('')}
+              ${STAGING_ROOMS.map(r => `<option value="${escapeAttr(r.value)}"${_bookingData.stagingRoom === r.value ? ' selected' : ''}>${escapeHTML(r.label)}</option>`).join('')}
             </select>
           </div>
           <div class="val-field">
@@ -465,23 +465,23 @@ const VisualUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${_bookingData.contactName || ''}" oninput="VisualUI.updateBooking('contactName',this.value)"/>
+            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="VisualUI.updateBooking('contactName',this.value)"/>
           </div>
           <div class="val-field">
             <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${_bookingData.contactPhone || ''}" oninput="VisualUI.updateBooking('contactPhone',this.value)"/>
+            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="VisualUI.updateBooking('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${_bookingData.contactEmail || ''}" oninput="VisualUI.updateBooking('contactEmail',this.value)"/>
+            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="VisualUI.updateBooking('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Notas adicionales</label>
-            <textarea rows="3" placeholder="Información relevante para el servicio..." oninput="VisualUI.updateBooking('notes',this.value)">${_bookingData.notes || ''}</textarea>
+            <textarea rows="3" placeholder="Información relevante para el servicio..." oninput="VisualUI.updateBooking('notes',this.value)">${escapeHTML(_bookingData.notes || '')}</textarea>
           </div>
         </div>
       </div>`;
@@ -504,26 +504,26 @@ const VisualUI = (() => {
         <div class="val-checkout-summary">
           <div class="val-checkout-row">
             <span>Servicio</span>
-            <strong>${service.name}</strong>
+            <strong>${escapeHTML(service.name)}</strong>
           </div>
           <div class="val-checkout-row">
             <span>Propiedad</span>
-            <strong>${propLabel} · ${_bookingData.area || '—'} m² · ${_bookingData.district || '—'}</strong>
+            <strong>${escapeHTML(propLabel)} · ${escapeHTML(String(_bookingData.area || '—'))} m² · ${escapeHTML(_bookingData.district || '—')}</strong>
           </div>
           ${requiresVisit && _bookingData.visitDate ? `
           <div class="val-checkout-row">
             <span>Fecha</span>
-            <strong>${_bookingData.visitDate}${_bookingData.visitTime ? ' · ' + _getTimeLabel(_bookingData.visitTime) : ''}</strong>
+            <strong>${escapeHTML(_bookingData.visitDate)}${_bookingData.visitTime ? ' · ' + escapeHTML(_getTimeLabel(_bookingData.visitTime)) : ''}</strong>
           </div>` : ''}
           ${serviceType === VISUAL_SERVICE_TYPES.VIDEO && _bookingData.videoFormat ? `
           <div class="val-checkout-row">
             <span>Formato</span>
-            <strong>${VIDEO_FORMATS.find(f => f.value === _bookingData.videoFormat)?.label || _bookingData.videoFormat}</strong>
+            <strong>${escapeHTML(VIDEO_FORMATS.find(f => f.value === _bookingData.videoFormat)?.label || _bookingData.videoFormat)}</strong>
           </div>` : ''}
           ${serviceType === VISUAL_SERVICE_TYPES.STAGING && _bookingData.stagingStyle ? `
           <div class="val-checkout-row">
             <span>Staging</span>
-            <strong>${STAGING_STYLES.find(s => s.value === _bookingData.stagingStyle)?.label || ''} · ${STAGING_ROOMS.find(r => r.value === _bookingData.stagingRoom)?.label || ''} · ${_bookingData.stagingCount || 1} img</strong>
+            <strong>${escapeHTML(STAGING_STYLES.find(s => s.value === _bookingData.stagingStyle)?.label || '')} · ${escapeHTML(STAGING_ROOMS.find(r => r.value === _bookingData.stagingRoom)?.label || '')} · ${escapeHTML(String(_bookingData.stagingCount || 1))} img</strong>
           </div>` : ''}
           ${hasDrone ? `
           <div class="val-checkout-row">
@@ -533,7 +533,7 @@ const VisualUI = (() => {
           <div class="val-checkout-divider"></div>
           <div class="val-checkout-row val-checkout-total">
             <span>Total</span>
-            <strong>${totalDisplay}</strong>
+            <strong>${escapeHTML(totalDisplay)}</strong>
           </div>
         </div>
         <div class="val-checkout-notice">
@@ -581,16 +581,16 @@ const VisualUI = (() => {
         <div style="font-size:48px;margin-bottom:12px">✅</div>
         <h3 class="font-serif" style="font-size:22px;margin-bottom:8px">Solicitud enviada</h3>
         <p style="color:var(--ink-3);font-size:14px;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">
-          Tu solicitud de <strong>${service.name}</strong> ha sido registrada.
+          Tu solicitud de <strong>${escapeHTML(service.name)}</strong> ha sido registrada.
           ${isAI ? 'El procesamiento con IA comenzará una vez confirmado el pago.' : 'Un asesor te contactará para confirmar los detalles.'}
         </p>
 
         <div class="val-order-card">
-          <div class="val-order-row"><span>Orden</span><strong>${_currentOrder.id}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${VISUAL_ORDER_STATUS_LABELS[_currentOrder.status]}</strong></div>
-          <div class="val-order-row"><span>Servicio</span><strong>${service.name}</strong></div>
-          <div class="val-order-row"><span>Precio</span><strong>${service.price.display}</strong></div>
-          ${_currentOrder.aiJobId ? `<div class="val-order-row"><span>Job IA</span><strong style="color:var(--ink-4)">${_currentOrder.aiJobId} (mock)</strong></div>` : ''}
+          <div class="val-order-row"><span>Orden</span><strong>${escapeHTML(_currentOrder.id)}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(VISUAL_ORDER_STATUS_LABELS[_currentOrder.status])}</strong></div>
+          <div class="val-order-row"><span>Servicio</span><strong>${escapeHTML(service.name)}</strong></div>
+          <div class="val-order-row"><span>Precio</span><strong>${escapeHTML(service.price.display)}</strong></div>
+          ${_currentOrder.aiJobId ? `<div class="val-order-row"><span>Job IA</span><strong style="color:var(--ink-4)">${escapeHTML(_currentOrder.aiJobId)} (mock)</strong></div>` : ''}
         </div>
 
         ${isAI ? `
@@ -605,6 +605,48 @@ const VisualUI = (() => {
   // === NAVIGATION ===
   function nextStep() {
     const steps = _getStepsForService(_selectedServiceId);
+    const currentStepName = steps[_step].name;
+    const stepEl = document.querySelector('.val-step');
+    if (stepEl) RecoValidation.clearAllErrors(stepEl);
+
+    if (currentStepName === 'Propiedad') {
+      const r1 = RecoValidation.validateRequired(_bookingData.district, 'Distrito');
+      const r2 = RecoValidation.validateRequired(_bookingData.propertyType, 'Tipo de propiedad');
+      let hasError = false;
+      if (stepEl) {
+        const selects = stepEl.querySelectorAll('select');
+        if (!r1.valid && selects[0]) { RecoValidation.showFieldError(selects[0], r1.error); hasError = true; }
+        if (!r2.valid && selects[1]) { RecoValidation.showFieldError(selects[1], r2.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
+    if (currentStepName === 'Contacto') {
+      const r1 = RecoValidation.validateName(_bookingData.contactName);
+      const r2 = RecoValidation.validatePhone(_bookingData.contactPhone);
+      const r3 = RecoValidation.validateEmail(_bookingData.contactEmail);
+      let hasError = false;
+      if (stepEl) {
+        const nameInput = stepEl.querySelector('input[type="text"]');
+        const phoneInput = stepEl.querySelector('input[type="tel"]');
+        const emailInput = stepEl.querySelector('input[type="email"]');
+        if (!r1.valid && nameInput) { RecoValidation.showFieldError(nameInput, r1.error); hasError = true; }
+        if (!r2.valid && phoneInput) { RecoValidation.showFieldError(phoneInput, r2.error); hasError = true; }
+        if (!r3.valid && emailInput) { RecoValidation.showFieldError(emailInput, r3.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
+    if (currentStepName === 'Dirección') {
+      const r1 = RecoValidation.validateAddress(_bookingData.address);
+      let hasError = false;
+      if (stepEl) {
+        const addrInput = stepEl.querySelector('input[type="text"]');
+        if (!r1.valid && addrInput) { RecoValidation.showFieldError(addrInput, r1.error); hasError = true; }
+      }
+      if (hasError) return;
+    }
+
     if (_step < steps.length - 1) {
       _step++;
       _rerender();
@@ -634,11 +676,10 @@ const VisualUI = (() => {
       RecoApp.setTab(CATEGORIES.TASACIONES);
       return;
     }
-    const d = document.createElement('div');
-    d.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.2)';
-    d.textContent = 'Reco Agent — Próximamente';
-    document.body.appendChild(d);
-    setTimeout(() => d.remove(), 2500);
+    if (type === 'agent') {
+      RecoApp.setTab(CATEGORIES.RECO_AGENT);
+      return;
+    }
   }
 
   function mockAddPhoto() {

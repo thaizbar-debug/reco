@@ -102,11 +102,11 @@ const LegalUI = (() => {
     return `
       <div class="svc-legal-card">
         ${tag}
-        <div class="svc-fin-icon">${service.icon}</div>
-        <div class="svc-fin-title">${service.name}</div>
-        <div class="svc-fin-desc">${service.description}</div>
-        <div class="svc-fin-price">${service.price.display}</div>
-        <button class="svc-fin-cta" onclick="LegalUI.showServiceDetail('${service.id}')">Ver detalles →</button>
+        <div class="svc-fin-icon">${escapeHTML(service.icon)}</div>
+        <div class="svc-fin-title">${escapeHTML(service.name)}</div>
+        <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
+        <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
+        <button class="svc-fin-cta" onclick="LegalUI.showServiceDetail('${escapeAttr(service.id)}')">Ver detalles →</button>
       </div>`;
   }
 
@@ -143,7 +143,7 @@ const LegalUI = (() => {
               <label>Distrito *</label>
               <select onchange="LegalUI.updateCheckField('district',this.value)">
                 <option value="">Selecciona distrito</option>
-                ${districts.map(d => `<option value="${d}"${_checkFormData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+                ${districts.map(d => `<option value="${escapeAttr(d)}"${_checkFormData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
               </select>
             </div>
           </div>
@@ -152,24 +152,24 @@ const LegalUI = (() => {
               <label>Tipo de propiedad *</label>
               <select onchange="LegalUI.updateCheckField('propertyType',this.value)">
                 <option value="">Selecciona tipo</option>
-                ${types.map(t => `<option value="${t.value}"${_checkFormData.propertyType === t.value ? ' selected' : ''}>${t.label}</option>`).join('')}
+                ${types.map(t => `<option value="${escapeAttr(t.value)}"${_checkFormData.propertyType === t.value ? ' selected' : ''}>${escapeHTML(t.label)}</option>`).join('')}
               </select>
             </div>
             <div class="val-field">
               <label>Área (m²)</label>
-              <input type="number" min="10" placeholder="Ej: 120" value="${_checkFormData.area || ''}" oninput="LegalUI.updateCheckField('area',+this.value)"/>
+              <input type="number" min="10" placeholder="Ej: 120" value="${escapeAttr(_checkFormData.area || '')}" oninput="LegalUI.updateCheckField('area',+this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Dirección</label>
-              <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${_checkFormData.address || ''}" oninput="LegalUI.updateCheckField('address',this.value)"/>
+              <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${escapeAttr(_checkFormData.address || '')}" oninput="LegalUI.updateCheckField('address',this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Número de partida registral (opcional)</label>
-              <input type="text" placeholder="Ej: 12345678" value="${_checkFormData.partidaRegistral || ''}" oninput="LegalUI.updateCheckField('partidaRegistral',this.value)"/>
+              <input type="text" placeholder="Ej: 12345678" value="${escapeAttr(_checkFormData.partidaRegistral || '')}" oninput="LegalUI.updateCheckField('partidaRegistral',this.value)"/>
               <small style="color:var(--ink-4);font-size:11px;margin-top:4px;display:block">Si tienes la partida, la verificación será más completa. La encuentras en la copia literal de SUNARP.</small>
             </div>
           </div>
@@ -239,8 +239,8 @@ const LegalUI = (() => {
         <div class="leg-score-hero" style="background:${scoreConfig.bg};border:1.5px solid ${scoreConfig.color}">
           <div class="leg-score-icon">${scoreConfig.icon}</div>
           <div>
-            <div class="leg-score-label" style="color:${scoreConfig.color}">${scoreConfig.label}</div>
-            <div class="leg-score-id">ID: ${r.propertyId} · ${checkDate}</div>
+            <div class="leg-score-label" style="color:${scoreConfig.color}">${escapeHTML(scoreConfig.label)}</div>
+            <div class="leg-score-id">ID: ${escapeHTML(r.propertyId)} · ${escapeHTML(checkDate)}</div>
           </div>
         </div>
 
@@ -278,8 +278,8 @@ const LegalUI = (() => {
               <div class="leg-alert" style="background:${c.bg};border-color:${c.border}">
                 <div class="leg-alert-icon">${c.icon}</div>
                 <div>
-                  <strong style="color:${c.color}">${a.category}: ${a.message}</strong>
-                  <span>${a.detail}</span>
+                  <strong style="color:${c.color}">${escapeHTML(a.category)}: ${escapeHTML(a.message)}</strong>
+                  <span>${escapeHTML(a.detail)}</span>
                 </div>
               </div>`;
           }).join('')}
@@ -293,7 +293,7 @@ const LegalUI = (() => {
         <div class="leg-report-section">
           <h4>📋 Información faltante</h4>
           <ul class="leg-missing-list">
-            ${r.missingInfo.map(m => `<li>${m}</li>`).join('')}
+            ${r.missingInfo.map(m => `<li>${escapeHTML(m)}</li>`).join('')}
           </ul>
         </div>` : ''}
 
@@ -346,10 +346,10 @@ const LegalUI = (() => {
     const service = getServiceById(serviceId);
     if (!service) return '';
     return `
-      <div class="leg-quick-card" onclick="LegalUI.showServiceDetail('${service.id}')">
-        <div style="font-size:24px">${service.icon}</div>
-        <strong>${service.name}</strong>
-        <div style="color:var(--accent);font-weight:700;font-size:14px">${service.price.display}</div>
+      <div class="leg-quick-card" onclick="LegalUI.showServiceDetail('${escapeAttr(service.id)}')">
+        <div style="font-size:24px">${escapeHTML(service.icon)}</div>
+        <strong>${escapeHTML(service.name)}</strong>
+        <div style="color:var(--accent);font-weight:700;font-size:14px">${escapeHTML(service.price.display)}</div>
         <button class="plan-cta outline" style="margin-top:8px;width:100%;padding:8px;font-size:12px">Ver detalles</button>
       </div>`;
   }
@@ -360,11 +360,11 @@ const LegalUI = (() => {
         <h4>${title}</h4>
         ${rows.map(r => `
           <div class="leg-report-row">
-            <span>${r.label}</span>
-            <strong>${r.value}</strong>
+            <span>${escapeHTML(r.label)}</span>
+            <strong>${escapeHTML(r.value)}</strong>
           </div>
         `).join('')}
-        ${source ? `<div class="leg-source-tag">Fuente: ${source}</div>` : ''}
+        ${source ? `<div class="leg-source-tag">Fuente: ${escapeHTML(source)}</div>` : ''}
       </div>`;
   }
 
@@ -396,15 +396,15 @@ const LegalUI = (() => {
             <tbody>
               ${history.transfers.map(t => `
                 <tr>
-                  <td>${t.date}</td>
-                  <td>${t.type}</td>
-                  <td>${t.parties}</td>
+                  <td>${escapeHTML(t.date)}</td>
+                  <td>${escapeHTML(t.type)}</td>
+                  <td>${escapeHTML(t.parties)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
         </div>
-        <div class="leg-source-tag">Fuente: ${history.source}</div>
+        <div class="leg-source-tag">Fuente: ${escapeHTML(history.source)}</div>
       </div>`;
   }
 
@@ -451,29 +451,29 @@ const LegalUI = (() => {
         <button class="val-back" onclick="LegalUI.backToCatalog()">← Volver a servicios legales</button>
 
         <div style="text-align:center;margin-bottom:24px">
-          <div style="font-size:40px;margin-bottom:8px">${service.icon}</div>
-          <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">${service.name}</h2>
-          <div style="color:var(--accent);font-weight:700;font-size:20px;margin-bottom:8px">${service.price.display}</div>
-          <p class="section-sub" style="text-align:center;margin:0 auto 0">${service.description}</p>
+          <div style="font-size:40px;margin-bottom:8px">${escapeHTML(service.icon)}</div>
+          <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">${escapeHTML(service.name)}</h2>
+          <div style="color:var(--accent);font-weight:700;font-size:20px;margin-bottom:8px">${escapeHTML(service.price.display)}</div>
+          <p class="section-sub" style="text-align:center;margin:0 auto 0">${escapeHTML(service.description)}</p>
         </div>
 
         ${details ? `
         <div class="leg-detail-section">
           <h4>✓ Incluye</h4>
           <ul class="leg-detail-list">
-            ${details.highlights.map(h => `<li>✓ ${h}</li>`).join('')}
+            ${details.highlights.map(h => `<li>✓ ${escapeHTML(h)}</li>`).join('')}
           </ul>
         </div>
 
         <div class="leg-detail-section">
           <h4>⏱️ Tiempo de entrega</h4>
-          <div class="leg-detail-timeline">${details.timeline}</div>
+          <div class="leg-detail-timeline">${escapeHTML(details.timeline)}</div>
         </div>
 
         <div class="leg-detail-section">
           <h4>📄 Documentos requeridos</h4>
           <ul class="leg-detail-list leg-detail-docs">
-            ${details.requiredDocs.map(d => `<li>• ${d}</li>`).join('')}
+            ${details.requiredDocs.map(d => `<li>• ${escapeHTML(d)}</li>`).join('')}
           </ul>
         </div>` : ''}
 
@@ -483,23 +483,23 @@ const LegalUI = (() => {
           <div class="leg-provider-grid">
             ${providers.map(p => `
               <div class="leg-provider-card">
-                <div class="leg-provider-name">${p.name}</div>
-                <div class="leg-provider-rating">⭐ ${p.rating} (${p.reviewCount} reseñas)</div>
+                <div class="leg-provider-name">${escapeHTML(p.name)}</div>
+                <div class="leg-provider-rating">⭐ ${escapeHTML(String(p.rating))} (${escapeHTML(String(p.reviewCount))} reseñas)</div>
                 <div class="leg-provider-meta">
-                  <span>📍 ${p.zones.join(', ')}</span>
-                  <span>⏱️ Respuesta: ${p.responseTime}</span>
-                  <span>📅 ${p.yearsExperience} años exp.</span>
+                  <span>📍 ${escapeHTML(p.zones.join(', '))}</span>
+                  <span>⏱️ Respuesta: ${escapeHTML(p.responseTime)}</span>
+                  <span>📅 ${escapeHTML(String(p.yearsExperience))} años exp.</span>
                 </div>
                 <div class="leg-provider-specialties">
-                  ${p.specialties.map(s => `<span class="leg-spec-tag">${s}</span>`).join('')}
+                  ${p.specialties.map(s => `<span class="leg-spec-tag">${escapeHTML(s)}</span>`).join('')}
                 </div>
               </div>
             `).join('')}
           </div>
         </div>
 
-        <button class="plan-cta" style="margin-top:12px" onclick="LegalUI.showBooking('${service.id}')">
-          Solicitar ${service.name} →
+        <button class="plan-cta" style="margin-top:12px" onclick="LegalUI.showBooking('${escapeAttr(service.id)}')">
+          Solicitar ${escapeHTML(service.name)} →
         </button>
       </div>`;
   }
@@ -524,12 +524,12 @@ const LegalUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="LegalUI.showServiceDetail('${_selectedServiceId}')">← Volver a detalles</button>
+        <button class="val-back" onclick="LegalUI.showServiceDetail('${escapeAttr(_selectedServiceId)}')">← Volver a detalles</button>
 
         <div class="val-form-header">
-          <div class="val-form-badge">${service.name} · ${service.price.display}</div>
-          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${service.name}</h2>
-          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${service.description}</p>
+          <div class="val-form-badge">${escapeHTML(service.name)} · ${escapeHTML(service.price.display)}</div>
+          <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar ${escapeHTML(service.name)}</h2>
+          <p class="section-sub" style="text-align:center;margin:0 auto 20px">${escapeHTML(service.description)}</p>
         </div>
 
         <div class="val-progress">
@@ -571,7 +571,7 @@ const LegalUI = (() => {
             <label>Distrito *</label>
             <select onchange="LegalUI.updateBooking('district',this.value)">
               <option value="">Selecciona distrito</option>
-              ${districts.map(d => `<option value="${d}"${_bookingData.district === d ? ' selected' : ''}>${d}</option>`).join('')}
+              ${districts.map(d => `<option value="${escapeAttr(d)}"${_bookingData.district === d ? ' selected' : ''}>${escapeHTML(d)}</option>`).join('')}
             </select>
           </div>
         </div>
@@ -580,24 +580,24 @@ const LegalUI = (() => {
             <label>Tipo de propiedad *</label>
             <select onchange="LegalUI.updateBooking('propertyType',this.value)">
               <option value="">Selecciona tipo</option>
-              ${types.map(t => `<option value="${t.value}"${_bookingData.propertyType === t.value ? ' selected' : ''}>${t.label}</option>`).join('')}
+              ${types.map(t => `<option value="${escapeAttr(t.value)}"${_bookingData.propertyType === t.value ? ' selected' : ''}>${escapeHTML(t.label)}</option>`).join('')}
             </select>
           </div>
           <div class="val-field">
             <label>Área (m²)</label>
-            <input type="number" min="10" placeholder="Ej: 120" value="${_bookingData.area || ''}" oninput="LegalUI.updateBooking('area',+this.value)"/>
+            <input type="number" min="10" placeholder="Ej: 120" value="${escapeAttr(_bookingData.area || '')}" oninput="LegalUI.updateBooking('area',+this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Dirección</label>
-            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${_bookingData.address || ''}" oninput="LegalUI.updateBooking('address',this.value)"/>
+            <input type="text" placeholder="Av. ejemplo 1234, dpto 501" value="${escapeAttr(_bookingData.address || '')}" oninput="LegalUI.updateBooking('address',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Partida registral (si disponible)</label>
-            <input type="text" placeholder="Ej: 12345678" value="${_bookingData.partidaRegistral || ''}" oninput="LegalUI.updateBooking('partidaRegistral',this.value)"/>
+            <input type="text" placeholder="Ej: 12345678" value="${escapeAttr(_bookingData.partidaRegistral || '')}" oninput="LegalUI.updateBooking('partidaRegistral',this.value)"/>
           </div>
         </div>
       </div>`;
@@ -610,23 +610,23 @@ const LegalUI = (() => {
         <div class="val-row">
           <div class="val-field">
             <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${_bookingData.contactName || ''}" oninput="LegalUI.updateBooking('contactName',this.value)"/>
+            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="LegalUI.updateBooking('contactName',this.value)"/>
           </div>
           <div class="val-field">
             <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${_bookingData.contactPhone || ''}" oninput="LegalUI.updateBooking('contactPhone',this.value)"/>
+            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="LegalUI.updateBooking('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${_bookingData.contactEmail || ''}" oninput="LegalUI.updateBooking('contactEmail',this.value)"/>
+            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="LegalUI.updateBooking('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
             <label>Descripción del caso</label>
-            <textarea rows="3" placeholder="Describe brevemente tu situación o necesidad legal..." oninput="LegalUI.updateBooking('notes',this.value)">${_bookingData.notes || ''}</textarea>
+            <textarea rows="3" placeholder="Describe brevemente tu situación o necesidad legal..." oninput="LegalUI.updateBooking('notes',this.value)">${escapeHTML(_bookingData.notes || '')}</textarea>
           </div>
         </div>
       </div>`;
@@ -644,26 +644,26 @@ const LegalUI = (() => {
         <div class="val-checkout-summary">
           <div class="val-checkout-row">
             <span>Servicio</span>
-            <strong>${service.name}</strong>
+            <strong>${escapeHTML(service.name)}</strong>
           </div>
           <div class="val-checkout-row">
             <span>Propiedad</span>
-            <strong>${propLabel} · ${_bookingData.area || '—'} m² · ${_bookingData.district || '—'}</strong>
+            <strong>${escapeHTML(propLabel)} · ${escapeHTML(String(_bookingData.area || '—'))} m² · ${escapeHTML(_bookingData.district || '—')}</strong>
           </div>
           ${details ? `
           <div class="val-checkout-row">
             <span>Entrega</span>
-            <strong>${details.timeline}</strong>
+            <strong>${escapeHTML(details.timeline)}</strong>
           </div>` : ''}
           ${_checkResult ? `
           <div class="val-checkout-row">
             <span>Property Check</span>
-            <strong>${_checkResult.propertyId}</strong>
+            <strong>${escapeHTML(_checkResult.propertyId)}</strong>
           </div>` : ''}
           <div class="val-checkout-divider"></div>
           <div class="val-checkout-row val-checkout-total">
             <span>Total</span>
-            <strong>${service.price.display}</strong>
+            <strong>${escapeHTML(service.price.display)}</strong>
           </div>
         </div>
         <div class="val-checkout-notice">
@@ -704,16 +704,16 @@ const LegalUI = (() => {
         <div style="font-size:48px;margin-bottom:12px">✅</div>
         <h3 class="font-serif" style="font-size:22px;margin-bottom:8px">Solicitud enviada</h3>
         <p style="color:var(--ink-3);font-size:14px;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto">
-          Tu solicitud de <strong>${service.name}</strong> ha sido registrada.
+          Tu solicitud de <strong>${escapeHTML(service.name)}</strong> ha sido registrada.
           Un abogado especializado te contactará para confirmar los detalles y documentación requerida.
         </p>
 
         <div class="val-order-card">
-          <div class="val-order-row"><span>Orden</span><strong>${_currentOrder.id}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${LEGAL_ORDER_STATUS_LABELS[_currentOrder.status]}</strong></div>
-          <div class="val-order-row"><span>Servicio</span><strong>${service.name}</strong></div>
-          <div class="val-order-row"><span>Precio</span><strong>${service.price.display}</strong></div>
-          ${_currentOrder.checkId ? `<div class="val-order-row"><span>Property Check</span><strong style="color:var(--ink-4)">${_currentOrder.checkId}</strong></div>` : ''}
+          <div class="val-order-row"><span>Orden</span><strong>${escapeHTML(_currentOrder.id)}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(LEGAL_ORDER_STATUS_LABELS[_currentOrder.status])}</strong></div>
+          <div class="val-order-row"><span>Servicio</span><strong>${escapeHTML(service.name)}</strong></div>
+          <div class="val-order-row"><span>Precio</span><strong>${escapeHTML(service.price.display)}</strong></div>
+          ${_currentOrder.checkId ? `<div class="val-order-row"><span>Property Check</span><strong style="color:var(--ink-4)">${escapeHTML(_currentOrder.checkId)}</strong></div>` : ''}
         </div>
 
         <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="LegalUI.backToCatalog()">Volver a Legal</button>
@@ -724,6 +724,31 @@ const LegalUI = (() => {
   function nextStep() {
     const service = getServiceById(_selectedServiceId);
     const steps = _getBookingSteps(service);
+
+    // Validate before advancing to confirmation step
+    if (_bookingStep === steps.length - 2) {
+      const container = document.querySelector('.val-form-wrap');
+      if (container) RecoValidation.clearAllErrors(container);
+
+      const nameRes = RecoValidation.validateName(_bookingData.contactName);
+      const emailRes = RecoValidation.validateEmail(_bookingData.contactEmail);
+      const phoneRes = RecoValidation.validatePhone(_bookingData.contactPhone);
+      const districtRes = RecoValidation.validateRequired(_bookingData.district, 'Distrito');
+
+      let hasError = false;
+      if (container) {
+        const inputs = container.querySelectorAll('input, select');
+        for (const inp of inputs) {
+          const oi = inp.getAttribute('oninput') || inp.getAttribute('onchange') || '';
+          if (oi.includes("'contactName'") && !nameRes.valid) { RecoValidation.showFieldError(inp, nameRes.error); hasError = true; }
+          if (oi.includes("'contactEmail'") && !emailRes.valid) { RecoValidation.showFieldError(inp, emailRes.error); hasError = true; }
+          if (oi.includes("'contactPhone'") && !phoneRes.valid) { RecoValidation.showFieldError(inp, phoneRes.error); hasError = true; }
+          if (oi.includes("'district'") && !districtRes.valid) { RecoValidation.showFieldError(inp, districtRes.error); hasError = true; }
+        }
+      }
+      if (hasError) return;
+    }
+
     if (_bookingStep < steps.length - 1) {
       _bookingStep++;
       _rerender();

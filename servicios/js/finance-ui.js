@@ -94,10 +94,10 @@ const FinanceUI = (() => {
       <div class="fin-p2-grid">
         ${Object.values(p2).map(p => `
           <div class="fin-p2-card">
-            <div class="fin-p2-icon">${p.icon}</div>
+            <div class="fin-p2-icon">${escapeHTML(p.icon)}</div>
             <div>
-              <strong>${p.name}</strong>
-              <span>${p.description}</span>
+              <strong>${escapeHTML(p.name)}</strong>
+              <span>${escapeHTML(p.description)}</span>
             </div>
             <div class="fin-p2-badge">P2</div>
           </div>
@@ -128,15 +128,15 @@ const FinanceUI = (() => {
 
   function _insuranceCard(product) {
     return `
-      <div class="fin-insurance-card" onclick="FinanceUI.showInsurance('${product.id}')">
-        <div class="fin-product-icon">${product.icon}</div>
-        <h4 style="font-size:16px;margin:8px 0 4px">${product.name}</h4>
-        <p style="font-size:13px;color:var(--ink-3);line-height:1.5;margin:0 0 12px">${product.description}</p>
+      <div class="fin-insurance-card" onclick="FinanceUI.showInsurance('${escapeAttr(product.id)}')">
+        <div class="fin-product-icon">${escapeHTML(product.icon)}</div>
+        <h4 style="font-size:16px;margin:8px 0 4px">${escapeHTML(product.name)}</h4>
+        <p style="font-size:13px;color:var(--ink-3);line-height:1.5;margin:0 0 12px">${escapeHTML(product.description)}</p>
         <div class="fin-coverage-preview">
-          ${product.coverages.slice(0, 3).map(c => '<span>✓ ' + c + '</span>').join('')}
+          ${product.coverages.slice(0, 3).map(c => '<span>✓ ' + escapeHTML(c) + '</span>').join('')}
           ${product.coverages.length > 3 ? '<span style="color:var(--accent)">+' + (product.coverages.length - 3) + ' más</span>' : ''}
         </div>
-        <button class="svc-fin-cta" style="margin-top:auto" onclick="event.stopPropagation();FinanceUI.showInsurance('${product.id}')">Ver cobertura →</button>
+        <button class="svc-fin-cta" style="margin-top:auto" onclick="event.stopPropagation();FinanceUI.showInsurance('${escapeAttr(product.id)}')">Ver cobertura →</button>
       </div>`;
   }
 
@@ -205,14 +205,14 @@ const FinanceUI = (() => {
             <label>Distrito</label>
             <select onchange="FinanceUI.updateMortgage('district',this.value)">
               <option value="">Selecciona distrito</option>
-              ${districts.map(d => '<option value="' + d + '"' + (_mortgageData.district === d ? ' selected' : '') + '>' + d + '</option>').join('')}
+              ${districts.map(d => '<option value="' + escapeAttr(d) + '"' + (_mortgageData.district === d ? ' selected' : '') + '>' + escapeHTML(d) + '</option>').join('')}
             </select>
           </div>
           <div class="val-field">
             <label>Tipo de propiedad</label>
             <select onchange="FinanceUI.updateMortgage('propertyType',this.value)">
               <option value="">Selecciona tipo</option>
-              ${types.map(t => '<option value="' + t.value + '"' + (_mortgageData.propertyType === t.value ? ' selected' : '') + '>' + t.label + '</option>').join('')}
+              ${types.map(t => '<option value="' + escapeAttr(t.value) + '"' + (_mortgageData.propertyType === t.value ? ' selected' : '') + '>' + escapeHTML(t.label) + '</option>').join('')}
             </select>
           </div>
         </div>
@@ -249,7 +249,7 @@ const FinanceUI = (() => {
           <div class="val-field">
             <label>Plazo (años) *</label>
             <select onchange="FinanceUI.updateMortgage('termYears',+this.value)">
-              ${MortgageSimulator.TERM_OPTIONS.map(t => '<option value="' + t + '"' + (_mortgageData.termYears === t ? ' selected' : '') + '>' + t + ' años</option>').join('')}
+              ${MortgageSimulator.TERM_OPTIONS.map(t => '<option value="' + escapeAttr(t) + '"' + (_mortgageData.termYears === t ? ' selected' : '') + '>' + escapeHTML(t) + ' años</option>').join('')}
             </select>
           </div>
         </div>
@@ -410,23 +410,23 @@ const FinanceUI = (() => {
           <div class="val-row">
             <div class="val-field">
               <label>Nombre completo *</label>
-              <input type="text" placeholder="Tu nombre" value="${_mortgageContactData.name || ''}" oninput="FinanceUI.updateMortgageContact('name',this.value)"/>
+              <input type="text" placeholder="Tu nombre" value="${escapeAttr(_mortgageContactData.name || '')}" oninput="FinanceUI.updateMortgageContact('name',this.value)"/>
             </div>
             <div class="val-field">
               <label>Teléfono *</label>
-              <input type="tel" placeholder="987 654 321" value="${_mortgageContactData.phone || ''}" oninput="FinanceUI.updateMortgageContact('phone',this.value)"/>
+              <input type="tel" placeholder="987 654 321" value="${escapeAttr(_mortgageContactData.phone || '')}" oninput="FinanceUI.updateMortgageContact('phone',this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Email *</label>
-              <input type="email" placeholder="tu@email.com" value="${_mortgageContactData.email || ''}" oninput="FinanceUI.updateMortgageContact('email',this.value)"/>
+              <input type="email" placeholder="tu@email.com" value="${escapeAttr(_mortgageContactData.email || '')}" oninput="FinanceUI.updateMortgageContact('email',this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Ingresos mensuales netos (aproximado)</label>
-              <input type="number" min="0" step="500" placeholder="Ej: 8000" value="${_mortgageContactData.income || ''}" oninput="FinanceUI.updateMortgageContact('income',+this.value)"/>
+              <input type="number" min="0" step="500" placeholder="Ej: 8000" value="${escapeAttr(_mortgageContactData.income || '')}" oninput="FinanceUI.updateMortgageContact('income',+this.value)"/>
               <div style="font-size:11px;color:var(--ink-4);margin-top:4px">Opcional — ayuda a las entidades a evaluar tu solicitud más rápido.</div>
             </div>
           </div>
@@ -446,10 +446,10 @@ const FinanceUI = (() => {
         </p>
 
         <div class="val-order-card">
-          <div class="val-order-row"><span>Solicitud</span><strong>${_mortgageLead.id}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${MORTGAGE_STATUS_LABELS[_mortgageLead.status]}</strong></div>
+          <div class="val-order-row"><span>Solicitud</span><strong>${escapeHTML(_mortgageLead.id)}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(MORTGAGE_STATUS_LABELS[_mortgageLead.status])}</strong></div>
           <div class="val-order-row"><span>Monto solicitado</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.requestedAmount)}</strong></div>
-          <div class="val-order-row"><span>Plazo</span><strong>${_mortgageLead.term} años</strong></div>
+          <div class="val-order-row"><span>Plazo</span><strong>${escapeHTML(String(_mortgageLead.term))} años</strong></div>
           <div class="val-order-row"><span>Cuota inicial</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.downPayment)}</strong></div>
         </div>
 
@@ -464,6 +464,29 @@ const FinanceUI = (() => {
   }
 
   function submitMortgageLead() {
+    const container = document.querySelector('.val-form-wrap');
+    if (container) RecoValidation.clearAllErrors(container);
+
+    const nameRes = RecoValidation.validateName(_mortgageContactData.name);
+    const emailRes = RecoValidation.validateEmail(_mortgageContactData.email);
+    const phoneRes = RecoValidation.validatePhone(_mortgageContactData.phone);
+    const incomeRes = _mortgageContactData.income != null && _mortgageContactData.income !== ''
+      ? RecoValidation.validateNumber(_mortgageContactData.income, { min: 0 })
+      : { valid: true };
+
+    let hasError = false;
+    if (container) {
+      const inputs = container.querySelectorAll('input');
+      for (const inp of inputs) {
+        const oi = inp.getAttribute('oninput') || '';
+        if (oi.includes("'name'") && !nameRes.valid) { RecoValidation.showFieldError(inp, nameRes.error); hasError = true; }
+        if (oi.includes("'email'") && !emailRes.valid) { RecoValidation.showFieldError(inp, emailRes.error); hasError = true; }
+        if (oi.includes("'phone'") && !phoneRes.valid) { RecoValidation.showFieldError(inp, phoneRes.error); hasError = true; }
+        if (oi.includes("'income'") && !incomeRes.valid) { RecoValidation.showFieldError(inp, incomeRes.error); hasError = true; }
+      }
+    }
+    if (hasError) return;
+
     _mortgageLead = FinanceService.createMortgageLead(
       {
         name: _mortgageContactData.name,
@@ -517,21 +540,21 @@ const FinanceUI = (() => {
         <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Producto de seguro simulado. No representa una póliza real.</div>
 
         <div style="text-align:center;margin-bottom:24px">
-          <div style="font-size:48px;margin-bottom:8px">${product.icon}</div>
-          <h2 class="font-serif" style="font-size:22px;margin:0 0 4px">${product.name}</h2>
-          <p style="color:var(--ink-3);font-size:14px;margin:0;max-width:480px;margin:0 auto">${product.description}</p>
+          <div style="font-size:48px;margin-bottom:8px">${escapeHTML(product.icon)}</div>
+          <h2 class="font-serif" style="font-size:22px;margin:0 0 4px">${escapeHTML(product.name)}</h2>
+          <p style="color:var(--ink-3);font-size:14px;margin:0;max-width:480px;margin:0 auto">${escapeHTML(product.description)}</p>
         </div>
 
         <div class="leg-detail-section">
           <h4>🛡️ Coberturas incluidas</h4>
           <ul class="fin-coverage-list">
-            ${product.coverages.map(c => '<li><span class="fin-cov-check">✓</span> ' + c + '</li>').join('')}
+            ${product.coverages.map(c => '<li><span class="fin-cov-check">✓</span> ' + escapeHTML(c) + '</li>').join('')}
           </ul>
         </div>
 
         <div class="leg-detail-section">
           <h4>💰 Precio</h4>
-          <p style="font-size:13px;color:var(--ink-2);line-height:1.5;margin:0">${product.priceNote}</p>
+          <p style="font-size:13px;color:var(--ink-2);line-height:1.5;margin:0">${escapeHTML(product.priceNote)}</p>
         </div>
 
         <div class="leg-detail-section">
@@ -541,7 +564,7 @@ const FinanceUI = (() => {
           </p>
         </div>
 
-        <button class="plan-cta" style="margin-top:16px" onclick="FinanceUI.startInsuranceLead('${product.id}')">
+        <button class="plan-cta" style="margin-top:16px" onclick="FinanceUI.startInsuranceLead('${escapeAttr(product.id)}')">
           Solicitar cotización →
         </button>
 
@@ -588,13 +611,13 @@ const FinanceUI = (() => {
           <div style="font-size:48px;margin-bottom:12px">✅</div>
           <h3 class="font-serif" style="font-size:22px;margin-bottom:8px">Solicitud enviada</h3>
           <p style="color:var(--ink-3);font-size:14px;margin-bottom:20px;max-width:420px;margin-left:auto;margin-right:auto">
-            Tu solicitud de cotización de ${product.name.toLowerCase()} ha sido registrada.
+            Tu solicitud de cotización de ${escapeHTML(product.name.toLowerCase())} ha sido registrada.
             Una aseguradora partner te contactará con opciones personalizadas.
           </p>
 
           <div class="val-order-card">
-            <div class="val-order-row"><span>Solicitud</span><strong>${_insuranceLead.id}</strong></div>
-            <div class="val-order-row"><span>Producto</span><strong>${product.name}</strong></div>
+            <div class="val-order-row"><span>Solicitud</span><strong>${escapeHTML(_insuranceLead.id)}</strong></div>
+            <div class="val-order-row"><span>Producto</span><strong>${escapeHTML(product.name)}</strong></div>
             <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">Enviado</strong></div>
           </div>
 
@@ -606,10 +629,10 @@ const FinanceUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="FinanceUI.showInsurance('${_selectedInsuranceId}')">← Volver a ${product.name}</button>
+        <button class="val-back" onclick="FinanceUI.showInsurance('${escapeAttr(_selectedInsuranceId)}')">← Volver a ${escapeHTML(product.name)}</button>
 
         <div class="val-form-header">
-          <div class="val-form-badge">${product.icon} ${product.name}</div>
+          <div class="val-form-badge">${escapeHTML(product.icon)} ${escapeHTML(product.name)}</div>
           <h2 class="section-title font-serif" style="text-align:center;margin:8px 0 4px">Solicitar cotización</h2>
           <p class="section-sub" style="text-align:center;margin:0 auto 24px">Completa tus datos para recibir una cotización personalizada.</p>
         </div>
@@ -618,17 +641,17 @@ const FinanceUI = (() => {
           <div class="val-row">
             <div class="val-field">
               <label>Nombre completo *</label>
-              <input type="text" placeholder="Tu nombre" value="${_insuranceContactData.name || ''}" oninput="FinanceUI.updateInsuranceContact('name',this.value)"/>
+              <input type="text" placeholder="Tu nombre" value="${escapeAttr(_insuranceContactData.name || '')}" oninput="FinanceUI.updateInsuranceContact('name',this.value)"/>
             </div>
             <div class="val-field">
               <label>Teléfono *</label>
-              <input type="tel" placeholder="987 654 321" value="${_insuranceContactData.phone || ''}" oninput="FinanceUI.updateInsuranceContact('phone',this.value)"/>
+              <input type="tel" placeholder="987 654 321" value="${escapeAttr(_insuranceContactData.phone || '')}" oninput="FinanceUI.updateInsuranceContact('phone',this.value)"/>
             </div>
           </div>
           <div class="val-row">
             <div class="val-field val-full">
               <label>Email *</label>
-              <input type="email" placeholder="tu@email.com" value="${_insuranceContactData.email || ''}" oninput="FinanceUI.updateInsuranceContact('email',this.value)"/>
+              <input type="email" placeholder="tu@email.com" value="${escapeAttr(_insuranceContactData.email || '')}" oninput="FinanceUI.updateInsuranceContact('email',this.value)"/>
             </div>
           </div>
           <div class="val-row">
@@ -636,14 +659,14 @@ const FinanceUI = (() => {
               <label>Distrito de la propiedad</label>
               <select onchange="FinanceUI.updateInsuranceContact('district',this.value)">
                 <option value="">Selecciona</option>
-                ${ValuationService.getAvailableDistricts().map(d => '<option value="' + d + '"' + (_insuranceContactData.district === d ? ' selected' : '') + '>' + d + '</option>').join('')}
+                ${ValuationService.getAvailableDistricts().map(d => '<option value="' + escapeAttr(d) + '"' + (_insuranceContactData.district === d ? ' selected' : '') + '>' + escapeHTML(d) + '</option>').join('')}
               </select>
             </div>
             <div class="val-field">
               <label>Tipo de propiedad</label>
               <select onchange="FinanceUI.updateInsuranceContact('propertyType',this.value)">
                 <option value="">Selecciona</option>
-                ${ValuationService.getPropertyTypes().map(t => '<option value="' + t.value + '"' + (_insuranceContactData.propertyType === t.value ? ' selected' : '') + '>' + t.label + '</option>').join('')}
+                ${ValuationService.getPropertyTypes().map(t => '<option value="' + escapeAttr(t.value) + '"' + (_insuranceContactData.propertyType === t.value ? ' selected' : '') + '>' + escapeHTML(t.label) + '</option>').join('')}
               </select>
             </div>
           </div>
@@ -658,6 +681,25 @@ const FinanceUI = (() => {
   }
 
   function submitInsuranceLead() {
+    const container = document.querySelector('.val-form-wrap');
+    if (container) RecoValidation.clearAllErrors(container);
+
+    const nameRes = RecoValidation.validateName(_insuranceContactData.name);
+    const emailRes = RecoValidation.validateEmail(_insuranceContactData.email);
+    const phoneRes = RecoValidation.validatePhone(_insuranceContactData.phone);
+
+    let hasError = false;
+    if (container) {
+      const inputs = container.querySelectorAll('input');
+      for (const inp of inputs) {
+        const oi = inp.getAttribute('oninput') || '';
+        if (oi.includes("'name'") && !nameRes.valid) { RecoValidation.showFieldError(inp, nameRes.error); hasError = true; }
+        if (oi.includes("'email'") && !emailRes.valid) { RecoValidation.showFieldError(inp, emailRes.error); hasError = true; }
+        if (oi.includes("'phone'") && !phoneRes.valid) { RecoValidation.showFieldError(inp, phoneRes.error); hasError = true; }
+      }
+    }
+    if (hasError) return;
+
     _insuranceLead = FinanceService.createInsuranceLead(
       {
         name: _insuranceContactData.name,

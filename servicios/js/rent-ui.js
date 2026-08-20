@@ -115,21 +115,21 @@ const RentUI = (() => {
       <div class="rent-lease-card">
         <div class="rent-lease-header">
           <div class="rent-lease-address">
-            <strong>${lease.property.address}</strong>
-            <span>${lease.property.district} · ${lease.property.area}m²</span>
+            <strong>${escapeHTML(lease.property.address)}</strong>
+            <span>${escapeHTML(lease.property.district)} · ${escapeHTML(lease.property.area)}m²</span>
           </div>
-          <div class="rent-due-badge" style="background:${isPaid ? 'var(--green-bg)' : dueStatus.bg};color:${isPaid ? 'var(--green)' : dueStatus.color}">
-            ${isPaid ? '✓ Pagado' : dueStatus.label}
+          <div class="rent-due-badge" style="background:${isPaid ? 'var(--green-bg)' : escapeAttr(dueStatus.bg)};color:${isPaid ? 'var(--green)' : escapeAttr(dueStatus.color)}">
+            ${isPaid ? '✓ Pagado' : escapeHTML(dueStatus.label)}
           </div>
         </div>
         <div class="rent-lease-details">
-          <div class="rent-detail-row"><span>Propietario</span><strong>${lease.landlord.name}</strong></div>
+          <div class="rent-detail-row"><span>Propietario</span><strong>${escapeHTML(lease.landlord.name)}</strong></div>
           <div class="rent-detail-row"><span>Monto mensual</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(lease.monthlyRent)}</strong></div>
-          <div class="rent-detail-row"><span>Próximo vencimiento</span><strong>${dueStr}</strong></div>
-          <div class="rent-detail-row"><span>Contrato</span><strong>${lease.startDate} → ${lease.endDate}</strong></div>
+          <div class="rent-detail-row"><span>Próximo vencimiento</span><strong>${escapeHTML(dueStr)}</strong></div>
+          <div class="rent-detail-row"><span>Contrato</span><strong>${escapeHTML(lease.startDate)} → ${escapeHTML(lease.endDate)}</strong></div>
         </div>
         ${!isPaid ? `
-          <button class="plan-cta" style="margin-top:14px" onclick="RentUI.startCheckout('${lease.id}')">💳 Pagar alquiler</button>
+          <button class="plan-cta" style="margin-top:14px" onclick="RentUI.startCheckout('${escapeAttr(lease.id)}')">💳 Pagar alquiler</button>
         ` : `
           <div class="rent-paid-notice"><span>✅</span> Periodo actual pagado</div>
         `}
@@ -175,14 +175,14 @@ const RentUI = (() => {
 
         <div class="rent-checkout-card">
           <h4>📍 Propiedad</h4>
-          <div class="rent-detail-row"><span>Dirección</span><strong>${lease.property.address}</strong></div>
-          <div class="rent-detail-row"><span>Distrito</span><strong>${lease.property.district}</strong></div>
-          <div class="rent-detail-row"><span>Propietario</span><strong>${lease.landlord.name}</strong></div>
+          <div class="rent-detail-row"><span>Dirección</span><strong>${escapeHTML(lease.property.address)}</strong></div>
+          <div class="rent-detail-row"><span>Distrito</span><strong>${escapeHTML(lease.property.district)}</strong></div>
+          <div class="rent-detail-row"><span>Propietario</span><strong>${escapeHTML(lease.landlord.name)}</strong></div>
         </div>
 
         <div class="rent-checkout-card">
           <h4>💰 Detalle del pago</h4>
-          <div class="rent-detail-row"><span>Periodo</span><strong>${periodLabel}</strong></div>
+          <div class="rent-detail-row"><span>Periodo</span><strong>${escapeHTML(periodLabel)}</strong></div>
           <div class="rent-detail-row"><span>Alquiler</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(lease.monthlyRent)}</strong></div>
           <div class="rent-detail-row"><span>Comisión (${feeConfig.transactionFeePercent}%)</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(fee)}</strong></div>
           <div class="rent-detail-row rent-total"><span>Total a pagar</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(total)}</strong></div>
@@ -193,10 +193,10 @@ const RentUI = (() => {
           <div class="rent-methods">
             ${methods.map(m => `
               <div class="rent-method-option">
-                <span class="rent-method-icon">${m.icon}</span>
+                <span class="rent-method-icon">${escapeHTML(m.icon)}</span>
                 <div>
-                  <strong>${m.label}</strong>
-                  <span>${m.description}</span>
+                  <strong>${escapeHTML(m.label)}</strong>
+                  <span>${escapeHTML(m.description)}</span>
                 </div>
               </div>
             `).join('')}
@@ -292,15 +292,15 @@ const RentUI = (() => {
           </p>
 
           <div class="val-order-card">
-            <div class="val-order-row"><span>Comprobante</span><strong>${payment.receiptId}</strong></div>
-            <div class="val-order-row"><span>Pago</span><strong>${payment.id}</strong></div>
-            <div class="val-order-row"><span>Periodo</span><strong>${payment.periodLabel}</strong></div>
+            <div class="val-order-row"><span>Comprobante</span><strong>${escapeHTML(payment.receiptId)}</strong></div>
+            <div class="val-order-row"><span>Pago</span><strong>${escapeHTML(payment.id)}</strong></div>
+            <div class="val-order-row"><span>Periodo</span><strong>${escapeHTML(payment.periodLabel)}</strong></div>
             <div class="val-order-row"><span>Alquiler</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(payment.amount)}</strong></div>
             <div class="val-order-row"><span>Comisión</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(payment.fee)}</strong></div>
             <div class="val-order-row" style="border-top:2px solid var(--paper-3);padding-top:10px"><span>Total</span><strong style="color:var(--green);font-size:16px">${PAYMENT_FEE_CONFIG.formatAmount(payment.total)}</strong></div>
-            <div class="val-order-row"><span>Método</span><strong>${payment.method || '—'}</strong></div>
+            <div class="val-order-row"><span>Método</span><strong>${escapeHTML(payment.method || '—')}</strong></div>
             <div class="val-order-row"><span>Fecha</span><strong>${new Date(payment.paidAt).toLocaleString('es-PE')}</strong></div>
-            ${lease ? '<div class="val-order-row"><span>Propiedad</span><strong>' + lease.property.address + '</strong></div>' : ''}
+            ${lease ? '<div class="val-order-row"><span>Propiedad</span><strong>' + escapeHTML(lease.property.address) + '</strong></div>' : ''}
           </div>
 
           <div class="val-crosssell" style="margin-top:24px">
@@ -338,14 +338,14 @@ const RentUI = (() => {
         </p>
 
         <div class="val-order-card">
-          <div class="val-order-row"><span>Pago</span><strong>${payment.id}</strong></div>
+          <div class="val-order-row"><span>Pago</span><strong>${escapeHTML(payment.id)}</strong></div>
           <div class="val-order-row"><span>Estado</span><strong style="color:var(--red)">Rechazado</strong></div>
-          <div class="val-order-row"><span>Periodo</span><strong>${payment.periodLabel}</strong></div>
+          <div class="val-order-row"><span>Periodo</span><strong>${escapeHTML(payment.periodLabel)}</strong></div>
           <div class="val-order-row"><span>Monto</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(payment.total)}</strong></div>
         </div>
 
         <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap">
-          <button class="plan-cta" style="width:auto;padding:12px 28px" onclick="RentUI.startCheckout('${payment.leaseId}')">Reintentar pago</button>
+          <button class="plan-cta" style="width:auto;padding:12px 28px" onclick="RentUI.startCheckout('${escapeAttr(payment.leaseId)}')">Reintentar pago</button>
           <button class="plan-cta outline" style="width:auto;padding:12px 28px" onclick="RentUI.backToDashboard()">Volver</button>
         </div>
       </div>`;
@@ -378,14 +378,14 @@ const RentUI = (() => {
                 ${payments.map(p => {
                   const sc = PAYMENT_STATUS_COLORS[p.status] || {};
                   return '<tr>' +
-                    '<td><code style="font-size:11px">' + p.id + '</code></td>' +
-                    '<td>' + p.periodLabel + '</td>' +
+                    '<td><code style="font-size:11px">' + escapeHTML(p.id) + '</code></td>' +
+                    '<td>' + escapeHTML(p.periodLabel) + '</td>' +
                     '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.amount) + '</td>' +
                     '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.fee) + '</td>' +
                     '<td><strong>' + PAYMENT_FEE_CONFIG.formatAmount(p.total) + '</strong></td>' +
-                    '<td><span class="rent-status-badge" style="background:' + sc.bg + ';color:' + sc.color + '">' + PAYMENT_STATUS_LABELS[p.status] + '</span></td>' +
+                    '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
                     '<td>' + (p.paidAt ? new Date(p.paidAt).toLocaleDateString('es-PE') : '—') + '</td>' +
-                    '<td>' + (p.receiptId || '—') + '</td>' +
+                    '<td>' + escapeHTML(p.receiptId || '—') + '</td>' +
                     '</tr>';
                 }).join('')}
               </tbody>
@@ -437,10 +437,10 @@ const RentUI = (() => {
                   ${payments.map(p => {
                     const sc = PAYMENT_STATUS_COLORS[p.status] || {};
                     return '<tr>' +
-                      '<td><code style="font-size:11px">' + p.id + '</code></td>' +
-                      '<td>' + p.periodLabel + '</td>' +
+                      '<td><code style="font-size:11px">' + escapeHTML(p.id) + '</code></td>' +
+                      '<td>' + escapeHTML(p.periodLabel) + '</td>' +
                       '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.amount) + '</td>' +
-                      '<td><span class="rent-status-badge" style="background:' + sc.bg + ';color:' + sc.color + '">' + PAYMENT_STATUS_LABELS[p.status] + '</span></td>' +
+                      '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
                       '<td>' + (p.paidAt ? new Date(p.paidAt).toLocaleDateString('es-PE') : '—') + '</td>' +
                       '</tr>';
                   }).join('')}
