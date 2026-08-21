@@ -550,7 +550,7 @@ const PropertyUI = (() => {
       if (el) RecoValidation.showFieldError(el, descResult.error);
       hasError = true;
     }
-    if (hasError) return;
+    if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'maintenance_ticket' }); return; }
 
     const ticket = PropertyService.createTicket(
       _selectedPropertyId,
@@ -648,7 +648,7 @@ const PropertyUI = (() => {
       if (el) RecoValidation.showFieldError(el, nameResult.error);
       hasError = true;
     }
-    if (hasError) return;
+    if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'document_upload' }); return; }
 
     const doc = PropertyService.addDocument(
       _selectedPropertyId,
@@ -698,19 +698,9 @@ const PropertyUI = (() => {
   }
 
   // === HELPERS ===
-  function _fmtPEN(amount) {
-    return 'S/ ' + (amount || 0).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
-
-  function _fmtUSD(amount) {
-    return 'US$ ' + (amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-  }
-
-  function _fmtDate(dateStr) {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  }
+  const _fmtPEN = PAYMENT_FEE_CONFIG.formatPEN;
+  const _fmtUSD = PAYMENT_FEE_CONFIG.formatUSD;
+  const _fmtDate = PAYMENT_FEE_CONFIG.formatDate;
 
   function _monthsBetween(start, end) {
     const s = new Date(start);

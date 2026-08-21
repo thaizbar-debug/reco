@@ -76,6 +76,17 @@ const PAYMENT_FEE_CONFIG = (() => {
     formatAmount(amount) {
       return `${_config.currencySymbol} ${amount.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     },
+    formatPEN(amount) {
+      return 'S/ ' + (amount || 0).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    },
+    formatUSD(amount) {
+      return 'US$ ' + (amount || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '—';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    },
   };
 })();
 

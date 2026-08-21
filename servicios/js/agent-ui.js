@@ -696,7 +696,7 @@ const AgentUI = (() => {
         hasError = true;
       }
 
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'agent_contact' }); return; }
     }
     if (_contactStep < 2) {
       _contactStep++;

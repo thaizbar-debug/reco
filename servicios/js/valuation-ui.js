@@ -758,7 +758,7 @@ const ValuationUI = (() => {
         if (!r1.valid && selects[0]) { RecoValidation.showFieldError(selects[0], r1.error); hasError = true; }
         if (!r2.valid && selects[1]) { RecoValidation.showFieldError(selects[1], r2.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'valuation_request', step: 'property' }); return; }
     }
 
     if (currentStepName === 'Contacto') {
@@ -774,7 +774,7 @@ const ValuationUI = (() => {
         if (!r2.valid && phoneInput) { RecoValidation.showFieldError(phoneInput, r2.error); hasError = true; }
         if (!r3.valid && emailInput) { RecoValidation.showFieldError(emailInput, r3.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'valuation_request', step: 'contact' }); return; }
     }
 
     if (currentStepName === 'Dirección') {
@@ -784,7 +784,7 @@ const ValuationUI = (() => {
         const addrInput = stepEl.querySelector('input[type="text"]');
         if (!r1.valid && addrInput) { RecoValidation.showFieldError(addrInput, r1.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'valuation_request', step: 'address' }); return; }
     }
 
     if (_requestStep < steps.length - 1) {

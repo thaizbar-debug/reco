@@ -401,7 +401,7 @@ const FinanceUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="FinanceUI._backToResult()">← Volver a simulación</button>
+        <button class="val-back" onclick="FinanceUI.backToResult()">← Volver a simulación</button>
 
         <div class="val-form-header">
           <div class="val-form-badge" style="background:#DBEAFE;color:#1E40AF">🏦 Solicitar cotización</div>
@@ -488,7 +488,7 @@ const FinanceUI = (() => {
         if (oi.includes("'income'") && !incomeRes.valid) { RecoValidation.showFieldError(inp, incomeRes.error); hasError = true; }
       }
     }
-    if (hasError) return;
+    if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'mortgage_lead' }); return; }
 
     _mortgageLead = FinanceService.createMortgageLead(
       {
@@ -515,7 +515,7 @@ const FinanceUI = (() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function _backToResult() {
+  function backToResult() {
     _view = 'mortgage_result';
     _rerender();
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -701,7 +701,7 @@ const FinanceUI = (() => {
         if (oi.includes("'phone'") && !phoneRes.valid) { RecoValidation.showFieldError(inp, phoneRes.error); hasError = true; }
       }
     }
-    if (hasError) return;
+    if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'insurance_lead' }); return; }
 
     _insuranceLead = FinanceService.createInsuranceLead(
       {
@@ -771,7 +771,7 @@ const FinanceUI = (() => {
     startMortgageLead,
     updateMortgageContact,
     submitMortgageLead,
-    _backToResult,
+    backToResult,
     showInsurance,
     startInsuranceLead,
     updateInsuranceContact,

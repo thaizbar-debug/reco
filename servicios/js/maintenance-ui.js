@@ -376,7 +376,7 @@ const MaintenanceUI = (() => {
       if (el) RecoValidation.showFieldError(el, dateResult.error);
       hasError = true;
     }
-    if (hasError) return;
+    if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'maintenance_request' }); return; }
 
     _quote = MaintenanceService.simulateQuote(_selectedServiceId, { area: _requestData.area });
     if (!_quote) return;
@@ -440,7 +440,7 @@ const MaintenanceUI = (() => {
 
     return `
       <div class="val-form-wrap">
-        <button class="val-back" onclick="MaintenanceUI._backToQuote()">← Volver a cotización</button>
+        <button class="val-back" onclick="MaintenanceUI.backToQuote()">← Volver a cotización</button>
 
         <div class="val-form-header">
           <div class="val-form-badge">${escapeHTML(svc.icon)} Confirmar servicio</div>
@@ -473,7 +473,7 @@ const MaintenanceUI = (() => {
       </div>`;
   }
 
-  function _backToQuote() {
+  function backToQuote() {
     _view = 'quote';
     _rerender();
   }
@@ -687,6 +687,7 @@ const MaintenanceUI = (() => {
       if (!commentResult.valid) {
         const el = formWrap && formWrap.querySelector('textarea');
         if (el) RecoValidation.showFieldError(el, commentResult.error);
+        RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'provider_rating' });
         return;
       }
     }
@@ -782,7 +783,7 @@ const MaintenanceUI = (() => {
     updateRequest,
     getQuote,
     acceptQuote,
-    _backToQuote,
+    backToQuote,
     confirmOrder,
     showOrders,
     showOrderDetail,

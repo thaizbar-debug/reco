@@ -770,7 +770,7 @@ const LegalUI = (() => {
           if (oi.includes("'district'") && !districtRes.valid) { RecoValidation.showFieldError(inp, districtRes.error); hasError = true; }
         }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'legal_booking' }); return; }
     }
 
     if (_bookingStep < steps.length - 1) {

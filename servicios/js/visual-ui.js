@@ -509,7 +509,7 @@ const VisualUI = (() => {
     const hasDrone = _bookingData.droneAddon && serviceType === VISUAL_SERVICE_TYPES.VIDEO;
     const dronePrice = hasDrone ? 150 : 0;
     const totalValue = service.price.value + dronePrice;
-    const totalDisplay = hasDrone ? 'S/ ' + totalValue.toLocaleString() : service.price.display;
+    const totalDisplay = hasDrone ? PAYMENT_FEE_CONFIG.formatPEN(totalValue) : service.price.display;
     const requiresVisit = VisualService.requiresVisit(_selectedServiceId);
     const propLabel = _bookingData.propertyType
       ? (PROPERTY_TYPES.find(t => t.value === _bookingData.propertyType)?.label || _bookingData.propertyType)
@@ -635,7 +635,7 @@ const VisualUI = (() => {
         if (!r1.valid && selects[0]) { RecoValidation.showFieldError(selects[0], r1.error); hasError = true; }
         if (!r2.valid && selects[1]) { RecoValidation.showFieldError(selects[1], r2.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'visual_booking', step: 'property' }); return; }
     }
 
     if (currentStepName === 'Contacto') {
@@ -651,7 +651,7 @@ const VisualUI = (() => {
         if (!r2.valid && phoneInput) { RecoValidation.showFieldError(phoneInput, r2.error); hasError = true; }
         if (!r3.valid && emailInput) { RecoValidation.showFieldError(emailInput, r3.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'visual_booking', step: 'contact' }); return; }
     }
 
     if (currentStepName === 'Dirección') {
@@ -661,7 +661,7 @@ const VisualUI = (() => {
         const addrInput = stepEl.querySelector('input[type="text"]');
         if (!r1.valid && addrInput) { RecoValidation.showFieldError(addrInput, r1.error); hasError = true; }
       }
-      if (hasError) return;
+      if (hasError) { RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.FORM_VALIDATION_FAILED, { form: 'visual_booking', step: 'address' }); return; }
     }
 
     if (_step < steps.length - 1) {

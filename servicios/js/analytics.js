@@ -67,6 +67,7 @@ const RecoAnalytics = (() => {
     MAINTENANCE_REQUESTED: 'maintenance_requested',
     MAINTENANCE_COMPLETED: 'maintenance_completed',
     PROVIDER_RATED: 'provider_rated',
+    FORM_VALIDATION_FAILED: 'form_validation_failed',
   });
 
   const _queue = [];
