@@ -6,7 +6,7 @@
  * Real implementation will connect to verified agent database.
  */
 
-const LEAD_STATUS = Object.freeze({
+const AGENT_LEAD_STATUS = Object.freeze({
   NEW: 'new',
   CONTACTED: 'contacted',
   MEETING: 'meeting',
@@ -17,25 +17,25 @@ const LEAD_STATUS = Object.freeze({
   LOST: 'lost',
 });
 
-const LEAD_STATUS_LABELS = Object.freeze({
-  [LEAD_STATUS.NEW]: 'Nuevo',
-  [LEAD_STATUS.CONTACTED]: 'Contactado',
-  [LEAD_STATUS.MEETING]: 'En reunión',
-  [LEAD_STATUS.LISTING_CREATED]: 'Propiedad listada',
-  [LEAD_STATUS.OFFER_RECEIVED]: 'Oferta recibida',
-  [LEAD_STATUS.NEGOTIATION]: 'En negociación',
-  [LEAD_STATUS.CLOSED]: 'Cerrado',
-  [LEAD_STATUS.LOST]: 'Perdido',
+const AGENT_LEAD_STATUS_LABELS = Object.freeze({
+  [AGENT_LEAD_STATUS.NEW]: 'Nuevo',
+  [AGENT_LEAD_STATUS.CONTACTED]: 'Contactado',
+  [AGENT_LEAD_STATUS.MEETING]: 'En reunión',
+  [AGENT_LEAD_STATUS.LISTING_CREATED]: 'Propiedad listada',
+  [AGENT_LEAD_STATUS.OFFER_RECEIVED]: 'Oferta recibida',
+  [AGENT_LEAD_STATUS.NEGOTIATION]: 'En negociación',
+  [AGENT_LEAD_STATUS.CLOSED]: 'Cerrado',
+  [AGENT_LEAD_STATUS.LOST]: 'Perdido',
 });
 
-const LEAD_STATUS_ORDER = [
-  LEAD_STATUS.NEW,
-  LEAD_STATUS.CONTACTED,
-  LEAD_STATUS.MEETING,
-  LEAD_STATUS.LISTING_CREATED,
-  LEAD_STATUS.OFFER_RECEIVED,
-  LEAD_STATUS.NEGOTIATION,
-  LEAD_STATUS.CLOSED,
+const AGENT_LEAD_STATUS_ORDER = [
+  AGENT_LEAD_STATUS.NEW,
+  AGENT_LEAD_STATUS.CONTACTED,
+  AGENT_LEAD_STATUS.MEETING,
+  AGENT_LEAD_STATUS.LISTING_CREATED,
+  AGENT_LEAD_STATUS.OFFER_RECEIVED,
+  AGENT_LEAD_STATUS.NEGOTIATION,
+  AGENT_LEAD_STATUS.CLOSED,
 ];
 
 const OPERATION_TYPES = Object.freeze({
@@ -296,13 +296,13 @@ const AgentLeadService = (() => {
       id: 'LEAD-' + Date.now().toString(36).toUpperCase(),
       agentId,
       agentName: agent.name,
-      status: LEAD_STATUS.NEW,
+      status: AGENT_LEAD_STATUS.NEW,
       criteria,
       contactData,
       source: source || 'match',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      statusHistory: [{ status: LEAD_STATUS.NEW, at: new Date().toISOString() }],
+      statusHistory: [{ status: AGENT_LEAD_STATUS.NEW, at: new Date().toISOString() }],
       monetization: null,
     };
 

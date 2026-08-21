@@ -13,7 +13,7 @@
  * Real implementation: register real providers via FinancialProviderRegistry / InsuranceProviderRegistry.
  */
 
-const MORTGAGE_STATUS = Object.freeze({
+const FIN_MORTGAGE_STATUS = Object.freeze({
   STARTED: 'started',
   SUBMITTED: 'submitted',
   CONTACTED: 'contacted',
@@ -23,14 +23,14 @@ const MORTGAGE_STATUS = Object.freeze({
   CLOSED: 'closed',
 });
 
-const MORTGAGE_STATUS_LABELS = Object.freeze({
-  [MORTGAGE_STATUS.STARTED]: 'Iniciado',
-  [MORTGAGE_STATUS.SUBMITTED]: 'Enviado',
-  [MORTGAGE_STATUS.CONTACTED]: 'Contactado',
-  [MORTGAGE_STATUS.PREQUALIFIED]: 'Precalificado',
-  [MORTGAGE_STATUS.APPROVED]: 'Aprobado',
-  [MORTGAGE_STATUS.REJECTED]: 'Rechazado',
-  [MORTGAGE_STATUS.CLOSED]: 'Cerrado',
+const FIN_MORTGAGE_STATUS_LABELS = Object.freeze({
+  [FIN_MORTGAGE_STATUS.STARTED]: 'Iniciado',
+  [FIN_MORTGAGE_STATUS.SUBMITTED]: 'Enviado',
+  [FIN_MORTGAGE_STATUS.CONTACTED]: 'Contactado',
+  [FIN_MORTGAGE_STATUS.PREQUALIFIED]: 'Precalificado',
+  [FIN_MORTGAGE_STATUS.APPROVED]: 'Aprobado',
+  [FIN_MORTGAGE_STATUS.REJECTED]: 'Rechazado',
+  [FIN_MORTGAGE_STATUS.CLOSED]: 'Cerrado',
 });
 
 const INSURANCE_TYPES = Object.freeze({
@@ -65,13 +65,13 @@ const FinancialProviderRegistry = (() => {
     createLead(leadData) {
       return {
         leadId: 'MLEAD-' + Date.now().toString(36).toUpperCase(),
-        status: MORTGAGE_STATUS.STARTED,
+        status: FIN_MORTGAGE_STATUS.STARTED,
         _isMock: true,
       };
     },
 
     getLeadStatus(leadId) {
-      return { leadId, status: MORTGAGE_STATUS.STARTED, _isMock: true };
+      return { leadId, status: FIN_MORTGAGE_STATUS.STARTED, _isMock: true };
     },
   };
 
@@ -210,7 +210,7 @@ const FinanceService = (() => {
   function createMortgageLead(userData, propertyData, simulationData) {
     const lead = {
       id: 'MLEAD-' + Date.now().toString(36).toUpperCase(),
-      status: MORTGAGE_STATUS.STARTED,
+      status: FIN_MORTGAGE_STATUS.STARTED,
       user: { ...userData },
       property: { ...propertyData },
       requestedAmount: simulationData.financedAmount,

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
 <title>Reco — Servicios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -694,6 +695,18 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 
 /* JOB CTA FOOTER */
 .job-cta-footer{display:flex;gap:12px;justify-content:center;margin-top:28px;flex-wrap:wrap}
+
+/* ACCESSIBILITY: Reset button styling for card elements */
+button.job-card, button.job-svc-card, button.job-related-card {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+}
 </style>
 </head>
 <body>
@@ -720,7 +733,7 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
   <div class="trust-item">Soporte por WhatsApp</div>
 </div>
 
-<div class="svc-content" id="svcContent"></div>
+<div class="svc-content" id="svcContent" role="tabpanel"></div>
 
 <footer class="r-footer">
   <div>&copy; 2026 Reco SAC. Todos los derechos reservados.</div>
@@ -736,6 +749,7 @@ button{cursor:pointer;font-family:var(--sans);border:none;background:none}
 <script src="servicios/js/analytics.js"></script>
 <script src="servicios/js/sanitize.js"></script>
 <script src="servicios/js/validation.js"></script>
+<script src="servicios/js/gateway.js"></script>
 <script src="servicios/js/components.js"></script>
 <script src="servicios/js/actions.js"></script>
 <script src="servicios/js/valuation-service.js"></script>

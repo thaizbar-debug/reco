@@ -7,7 +7,7 @@
  * All results are clearly marked as mock/referencial.
  */
 
-const ORDER_STATUS = Object.freeze({
+const VAL_ORDER_STATUS = Object.freeze({
   DRAFT: 'draft',
   SUBMITTED: 'submitted',
   PAYMENT_PENDING: 'payment_pending',
@@ -18,15 +18,15 @@ const ORDER_STATUS = Object.freeze({
   CANCELLED: 'cancelled',
 });
 
-const ORDER_STATUS_LABELS = Object.freeze({
-  [ORDER_STATUS.DRAFT]: 'Borrador',
-  [ORDER_STATUS.SUBMITTED]: 'Enviado',
-  [ORDER_STATUS.PAYMENT_PENDING]: 'Pendiente de pago',
-  [ORDER_STATUS.PAID]: 'Pagado',
-  [ORDER_STATUS.ASSIGNED]: 'Asignado a tasador',
-  [ORDER_STATUS.IN_REVIEW]: 'En revisión',
-  [ORDER_STATUS.COMPLETED]: 'Completado',
-  [ORDER_STATUS.CANCELLED]: 'Cancelado',
+const VAL_ORDER_STATUS_LABELS = Object.freeze({
+  [VAL_ORDER_STATUS.DRAFT]: 'Borrador',
+  [VAL_ORDER_STATUS.SUBMITTED]: 'Enviado',
+  [VAL_ORDER_STATUS.PAYMENT_PENDING]: 'Pendiente de pago',
+  [VAL_ORDER_STATUS.PAID]: 'Pagado',
+  [VAL_ORDER_STATUS.ASSIGNED]: 'Asignado a tasador',
+  [VAL_ORDER_STATUS.IN_REVIEW]: 'En revisión',
+  [VAL_ORDER_STATUS.COMPLETED]: 'Completado',
+  [VAL_ORDER_STATUS.CANCELLED]: 'Cancelado',
 });
 
 const CONFIDENCE_LEVELS = Object.freeze({
@@ -268,12 +268,12 @@ const ValuationService = (() => {
       serviceId,
       serviceName: service.name,
       price: service.price,
-      status: ORDER_STATUS.DRAFT,
+      status: VAL_ORDER_STATUS.DRAFT,
       propertyData,
       contactData,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      statusHistory: [{ status: ORDER_STATUS.DRAFT, at: new Date().toISOString() }],
+      statusHistory: [{ status: VAL_ORDER_STATUS.DRAFT, at: new Date().toISOString() }],
     };
 
     _orders.push(order);
@@ -281,7 +281,7 @@ const ValuationService = (() => {
   }
 
   function submitOrder(orderId) {
-    return _updateOrderStatus(orderId, ORDER_STATUS.SUBMITTED);
+    return _updateOrderStatus(orderId, VAL_ORDER_STATUS.SUBMITTED);
   }
 
   function _updateOrderStatus(orderId, newStatus) {
@@ -311,8 +311,8 @@ const ValuationService = (() => {
     submitOrder,
     getOrder,
     getOrders,
-    ORDER_STATUS,
-    ORDER_STATUS_LABELS,
+    VAL_ORDER_STATUS,
+    VAL_ORDER_STATUS_LABELS,
     CONFIDENCE_LEVELS,
     CONFIDENCE_LABELS,
     VERDICT_TYPES,

@@ -14,7 +14,7 @@
  * Real implementation: swap via PaymentProviderRegistry.setProvider(realAdapter).
  */
 
-const PAYMENT_STATUS = Object.freeze({
+const RENT_PAYMENT_STATUS = Object.freeze({
   PENDING: 'pending',
   PROCESSING: 'processing',
   SUCCESS: 'success',
@@ -23,25 +23,25 @@ const PAYMENT_STATUS = Object.freeze({
   CANCELLED: 'cancelled',
 });
 
-const PAYMENT_STATUS_LABELS = Object.freeze({
-  [PAYMENT_STATUS.PENDING]: 'Pendiente',
-  [PAYMENT_STATUS.PROCESSING]: 'Procesando',
-  [PAYMENT_STATUS.SUCCESS]: 'Pagado',
-  [PAYMENT_STATUS.FAILED]: 'Rechazado',
-  [PAYMENT_STATUS.REFUNDED]: 'Reembolsado',
-  [PAYMENT_STATUS.CANCELLED]: 'Cancelado',
+const RENT_PAYMENT_STATUS_LABELS = Object.freeze({
+  [RENT_PAYMENT_STATUS.PENDING]: 'Pendiente',
+  [RENT_PAYMENT_STATUS.PROCESSING]: 'Procesando',
+  [RENT_PAYMENT_STATUS.SUCCESS]: 'Pagado',
+  [RENT_PAYMENT_STATUS.FAILED]: 'Rechazado',
+  [RENT_PAYMENT_STATUS.REFUNDED]: 'Reembolsado',
+  [RENT_PAYMENT_STATUS.CANCELLED]: 'Cancelado',
 });
 
-const PAYMENT_STATUS_COLORS = Object.freeze({
-  [PAYMENT_STATUS.PENDING]: { color: 'var(--amber)', bg: 'var(--amber-bg)' },
-  [PAYMENT_STATUS.PROCESSING]: { color: 'var(--accent)', bg: 'var(--accent-light)' },
-  [PAYMENT_STATUS.SUCCESS]: { color: 'var(--green)', bg: 'var(--green-bg)' },
-  [PAYMENT_STATUS.FAILED]: { color: 'var(--red)', bg: 'var(--red-bg)' },
-  [PAYMENT_STATUS.REFUNDED]: { color: 'var(--ink-3)', bg: 'var(--paper-2)' },
-  [PAYMENT_STATUS.CANCELLED]: { color: 'var(--ink-3)', bg: 'var(--paper-2)' },
+const RENT_PAYMENT_STATUS_COLORS = Object.freeze({
+  [RENT_PAYMENT_STATUS.PENDING]: { color: 'var(--amber)', bg: 'var(--amber-bg)' },
+  [RENT_PAYMENT_STATUS.PROCESSING]: { color: 'var(--accent)', bg: 'var(--accent-light)' },
+  [RENT_PAYMENT_STATUS.SUCCESS]: { color: 'var(--green)', bg: 'var(--green-bg)' },
+  [RENT_PAYMENT_STATUS.FAILED]: { color: 'var(--red)', bg: 'var(--red-bg)' },
+  [RENT_PAYMENT_STATUS.REFUNDED]: { color: 'var(--ink-3)', bg: 'var(--paper-2)' },
+  [RENT_PAYMENT_STATUS.CANCELLED]: { color: 'var(--ink-3)', bg: 'var(--paper-2)' },
 });
 
-const LEASE_STATUS = Object.freeze({
+const RENT_LEASE_STATUS = Object.freeze({
   ACTIVE: 'active',
   EXPIRED: 'expired',
   TERMINATED: 'terminated',
@@ -103,7 +103,7 @@ const PaymentProviderRegistry = (() => {
     getPaymentStatus(checkoutId) {
       return {
         checkoutId,
-        status: PAYMENT_STATUS.SUCCESS,
+        status: RENT_PAYMENT_STATUS.SUCCESS,
         _isMock: true,
         _note: 'En producción, el status real viene del webhook del PSP, no del frontend.',
       };
@@ -142,7 +142,7 @@ const RentService = (() => {
   const _mockLeases = [
     {
       id: 'lease-mock-1',
-      status: LEASE_STATUS.ACTIVE,
+      status: RENT_LEASE_STATUS.ACTIVE,
       role: 'tenant',
       property: {
         address: 'Av. Pardo 456, Dpto 1201',
@@ -161,7 +161,7 @@ const RentService = (() => {
     },
     {
       id: 'lease-mock-2',
-      status: LEASE_STATUS.ACTIVE,
+      status: RENT_LEASE_STATUS.ACTIVE,
       role: 'tenant',
       property: {
         address: 'Jr. Los Cedros 789',
@@ -187,7 +187,7 @@ const RentService = (() => {
       amount: 3200,
       fee: PAYMENT_FEE_CONFIG.calculateFee(3200),
       total: 3200 + PAYMENT_FEE_CONFIG.calculateFee(3200),
-      status: PAYMENT_STATUS.SUCCESS,
+      status: RENT_PAYMENT_STATUS.SUCCESS,
       period: '2026-07',
       periodLabel: 'Julio 2026',
       method: 'Tarjeta ****4532',
@@ -204,7 +204,7 @@ const RentService = (() => {
       amount: 3200,
       fee: PAYMENT_FEE_CONFIG.calculateFee(3200),
       total: 3200 + PAYMENT_FEE_CONFIG.calculateFee(3200),
-      status: PAYMENT_STATUS.SUCCESS,
+      status: RENT_PAYMENT_STATUS.SUCCESS,
       period: '2026-06',
       periodLabel: 'Junio 2026',
       method: 'Tarjeta ****4532',
@@ -221,7 +221,7 @@ const RentService = (() => {
       amount: 3200,
       fee: PAYMENT_FEE_CONFIG.calculateFee(3200),
       total: 3200 + PAYMENT_FEE_CONFIG.calculateFee(3200),
-      status: PAYMENT_STATUS.FAILED,
+      status: RENT_PAYMENT_STATUS.FAILED,
       period: '2026-05',
       periodLabel: 'Mayo 2026',
       method: 'Tarjeta ****7891',
@@ -264,7 +264,7 @@ const RentService = (() => {
   function isCurrentPeriodPaid(leaseId) {
     const now = new Date();
     const currentPeriod = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return _payments.some(p => p.leaseId === leaseId && p.period === currentPeriod && p.status === PAYMENT_STATUS.SUCCESS);
+    return _payments.some(p => p.leaseId === leaseId && p.period === currentPeriod && p.status === RENT_PAYMENT_STATUS.SUCCESS);
   }
 
   function getPaymentsByLease(leaseId) {
@@ -297,7 +297,7 @@ const RentService = (() => {
       amount: lease.monthlyRent,
       fee,
       total,
-      status: PAYMENT_STATUS.PENDING,
+      status: RENT_PAYMENT_STATUS.PENDING,
       period,
       periodLabel,
       method: null,
@@ -318,12 +318,12 @@ const RentService = (() => {
     if (!payment) return { error: 'Pago no encontrado' };
 
     if (success) {
-      payment.status = PAYMENT_STATUS.SUCCESS;
+      payment.status = RENT_PAYMENT_STATUS.SUCCESS;
       payment.paidAt = new Date().toISOString();
       payment.method = 'Tarjeta (mock checkout)';
       payment.receiptId = 'REC-' + Date.now().toString(36).toUpperCase();
     } else {
-      payment.status = PAYMENT_STATUS.FAILED;
+      payment.status = RENT_PAYMENT_STATUS.FAILED;
     }
     return payment;
   }

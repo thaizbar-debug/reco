@@ -62,7 +62,7 @@ function InfoBanner(title, text) {
 function SearchBox(value, placeholder, onInputExpr) {
   return `
     <div class="svc-search">
-      <input class="svc-search-input" placeholder="${escapeAttr(placeholder)}" value="${escapeAttr(value)}" oninput="${escapeAttr(onInputExpr)}"/>
+      <input class="svc-search-input" placeholder="${escapeAttr(placeholder)}" value="${escapeAttr(value)}" oninput="${escapeAttr(onInputExpr)}" aria-label="Buscar servicios"/>
     </div>`;
 }
 

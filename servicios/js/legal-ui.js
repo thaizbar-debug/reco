@@ -3,6 +3,8 @@
  * Renders: Property Check form/results, legal service details, booking flows.
  * Uses LegalService + PropertyDataRegistry for data, LEGAL_SERVICES from data.js.
  *
+ * @requires AgentUI (agent-ui.js) — prepareFromCheck()
+ *
  * ⚠️ MOCK: Property data and law firms are simulated.
  */
 

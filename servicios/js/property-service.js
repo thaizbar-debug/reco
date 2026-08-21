@@ -10,21 +10,21 @@
  * ⚠️ MOCK: Uses simulated properties for development.
  */
 
-const PROPERTY_STATUS = Object.freeze({
+const PM_PROPERTY_STATUS = Object.freeze({
   OCCUPIED: 'occupied',
   VACANT: 'vacant',
   MAINTENANCE: 'maintenance',
   FOR_SALE: 'for_sale',
 });
 
-const PROPERTY_STATUS_LABELS = Object.freeze({
-  [PROPERTY_STATUS.OCCUPIED]: 'Alquilada',
-  [PROPERTY_STATUS.VACANT]: 'Vacía',
-  [PROPERTY_STATUS.MAINTENANCE]: 'En reparación',
-  [PROPERTY_STATUS.FOR_SALE]: 'En venta',
+const PM_PROPERTY_STATUS_LABELS = Object.freeze({
+  [PM_PROPERTY_STATUS.OCCUPIED]: 'Alquilada',
+  [PM_PROPERTY_STATUS.VACANT]: 'Vacía',
+  [PM_PROPERTY_STATUS.MAINTENANCE]: 'En reparación',
+  [PM_PROPERTY_STATUS.FOR_SALE]: 'En venta',
 });
 
-const TICKET_STATUS = Object.freeze({
+const PM_TICKET_STATUS = Object.freeze({
   CREATED: 'created',
   ASSIGNED: 'assigned',
   IN_PROGRESS: 'in_progress',
@@ -32,12 +32,12 @@ const TICKET_STATUS = Object.freeze({
   CANCELLED: 'cancelled',
 });
 
-const TICKET_STATUS_LABELS = Object.freeze({
-  [TICKET_STATUS.CREATED]: 'Creado',
-  [TICKET_STATUS.ASSIGNED]: 'Asignado',
-  [TICKET_STATUS.IN_PROGRESS]: 'En progreso',
-  [TICKET_STATUS.COMPLETED]: 'Completado',
-  [TICKET_STATUS.CANCELLED]: 'Cancelado',
+const PM_TICKET_STATUS_LABELS = Object.freeze({
+  [PM_TICKET_STATUS.CREATED]: 'Creado',
+  [PM_TICKET_STATUS.ASSIGNED]: 'Asignado',
+  [PM_TICKET_STATUS.IN_PROGRESS]: 'En progreso',
+  [PM_TICKET_STATUS.COMPLETED]: 'Completado',
+  [PM_TICKET_STATUS.CANCELLED]: 'Cancelado',
 });
 
 const TICKET_CATEGORIES = Object.freeze([
@@ -76,7 +76,7 @@ const PropertyService = (() => {
       area: 85,
       rooms: 3,
       bathrooms: 2,
-      status: PROPERTY_STATUS.OCCUPIED,
+      status: PM_PROPERTY_STATUS.OCCUPIED,
       valorEstimado: 680000,
       alquilerMensual: 3200,
       proximoPago: '2026-09-05',
@@ -104,7 +104,7 @@ const PropertyService = (() => {
       area: 220,
       rooms: 5,
       bathrooms: 3,
-      status: PROPERTY_STATUS.OCCUPIED,
+      status: PM_PROPERTY_STATUS.OCCUPIED,
       valorEstimado: 950000,
       alquilerMensual: 5500,
       proximoPago: '2026-09-01',
@@ -132,7 +132,7 @@ const PropertyService = (() => {
       area: 62,
       rooms: 2,
       bathrooms: 1,
-      status: PROPERTY_STATUS.VACANT,
+      status: PM_PROPERTY_STATUS.VACANT,
       valorEstimado: 320000,
       alquilerMensual: null,
       proximoPago: null,
@@ -154,7 +154,7 @@ const PropertyService = (() => {
       area: 45,
       rooms: 1,
       bathrooms: 1,
-      status: PROPERTY_STATUS.FOR_SALE,
+      status: PM_PROPERTY_STATUS.FOR_SALE,
       valorEstimado: 180000,
       alquilerMensual: null,
       proximoPago: null,
@@ -176,7 +176,7 @@ const PropertyService = (() => {
       area: 72,
       rooms: 2,
       bathrooms: 1,
-      status: PROPERTY_STATUS.MAINTENANCE,
+      status: PM_PROPERTY_STATUS.MAINTENANCE,
       valorEstimado: 250000,
       alquilerMensual: 1800,
       proximoPago: null,
@@ -205,7 +205,7 @@ const PropertyService = (() => {
       title: 'Fuga en baño principal',
       description: 'Fuga de agua debajo del lavabo del baño principal. Se necesita revisar la tubería.',
       category: 'Gasfitería',
-      status: TICKET_STATUS.IN_PROGRESS,
+      status: PM_TICKET_STATUS.IN_PROGRESS,
       priority: 'high',
       createdAt: '2026-08-10T14:30:00Z',
       updatedAt: '2026-08-12T09:00:00Z',
@@ -218,7 +218,7 @@ const PropertyService = (() => {
       title: 'Pintura del hall de entrada',
       description: 'La pintura del hall está descascarada y necesita retoque.',
       category: 'Pintura',
-      status: TICKET_STATUS.COMPLETED,
+      status: PM_TICKET_STATUS.COMPLETED,
       priority: 'low',
       createdAt: '2026-07-20T10:00:00Z',
       updatedAt: '2026-08-01T16:00:00Z',
@@ -231,7 +231,7 @@ const PropertyService = (() => {
       title: 'Reparar cerradura puerta principal',
       description: 'La cerradura de la puerta principal está trabada. Inquilina reporta dificultad para abrir.',
       category: 'Cerrajería',
-      status: TICKET_STATUS.CREATED,
+      status: PM_TICKET_STATUS.CREATED,
       priority: 'medium',
       createdAt: '2026-08-15T08:45:00Z',
       updatedAt: '2026-08-15T08:45:00Z',
@@ -244,7 +244,7 @@ const PropertyService = (() => {
       title: 'Revisión eléctrica anual',
       description: 'Revisión preventiva del sistema eléctrico del departamento.',
       category: 'Electricidad',
-      status: TICKET_STATUS.ASSIGNED,
+      status: PM_TICKET_STATUS.ASSIGNED,
       priority: 'medium',
       createdAt: '2026-08-14T11:00:00Z',
       updatedAt: '2026-08-16T09:30:00Z',
@@ -285,8 +285,8 @@ const PropertyService = (() => {
 
   function getPortfolioSummary() {
     const props = _mockProperties;
-    const occupied = props.filter(p => p.status === PROPERTY_STATUS.OCCUPIED || (p.tenant && p.status === PROPERTY_STATUS.MAINTENANCE));
-    const vacant = props.filter(p => p.status === PROPERTY_STATUS.VACANT || p.status === PROPERTY_STATUS.FOR_SALE);
+    const occupied = props.filter(p => p.status === PM_PROPERTY_STATUS.OCCUPIED || (p.tenant && p.status === PM_PROPERTY_STATUS.MAINTENANCE));
+    const vacant = props.filter(p => p.status === PM_PROPERTY_STATUS.VACANT || p.status === PM_PROPERTY_STATUS.FOR_SALE);
     const totalValue = props.reduce((s, p) => s + p.valorEstimado, 0);
     const totalRent = occupied.reduce((s, p) => s + (p.alquilerMensual || 0), 0);
     const totalExpenses = props.reduce((s, p) => {
@@ -357,7 +357,7 @@ const PropertyService = (() => {
       title,
       description,
       category,
-      status: TICKET_STATUS.CREATED,
+      status: PM_TICKET_STATUS.CREATED,
       priority: priority || 'medium',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -395,13 +395,13 @@ const PropertyService = (() => {
     if (yld !== null && yld < 4) {
       suggestions.push({ type: 'analyze', icon: '📊', title: 'Analizar inversión', subtitle: 'Tu yield es bajo. Evalúa opciones de financiamiento.', target: 'finance' });
     }
-    if (prop.status === PROPERTY_STATUS.VACANT) {
+    if (prop.status === PM_PROPERTY_STATUS.VACANT) {
       suggestions.push({ type: 'find_tenant', icon: '🔑', title: 'Encontrar inquilino', subtitle: 'Conecta con un agente para alquilar tu propiedad.', target: 'agent' });
     }
-    if (prop.status === PROPERTY_STATUS.FOR_SALE) {
+    if (prop.status === PM_PROPERTY_STATUS.FOR_SALE) {
       suggestions.push({ type: 'find_agent', icon: '🏠', title: 'Encuentra un agente', subtitle: 'Vende con un agente recomendado por Reco.', target: 'agent' });
     }
-    if (prop.status === PROPERTY_STATUS.MAINTENANCE) {
+    if (prop.status === PM_PROPERTY_STATUS.MAINTENANCE) {
       suggestions.push({ type: 'maintenance', icon: '🔧', title: 'Solicitar mantenimiento', subtitle: 'Encuentra proveedores verificados para tu reparación.', target: 'maintenance' });
     }
 

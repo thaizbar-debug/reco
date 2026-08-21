@@ -3,6 +3,8 @@
  * Renders: matching wizard, agent cards, profiles, contact requests, dashboard MVP.
  * Uses AgentMatch + AgentProfileRegistry + AgentLeadService for data.
  *
+ * @requires ValuationService (valuation-service.js) — getAvailableDistricts(), PROPERTY_TYPES
+ *
  * ⚠️ MOCK: Agent profiles and matching use simulated data.
  */
 
@@ -646,7 +648,7 @@ const AgentUI = (() => {
 
         <div class="val-order-card">
           <div class="val-order-row"><span>Lead</span><strong>${escapeHTML(_currentLead.id)}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(LEAD_STATUS_LABELS[_currentLead.status])}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(AGENT_LEAD_STATUS_LABELS[_currentLead.status])}</strong></div>
           <div class="val-order-row"><span>Agente</span><strong>${escapeHTML(agent.name)}</strong></div>
           <div class="val-order-row"><span>Operación</span><strong>${escapeHTML(OPERATION_LABELS[_contactData.operation] || '—')}</strong></div>
           ${_contactData.district ? `<div class="val-order-row"><span>Zona</span><strong>${escapeHTML(_contactData.district)}</strong></div>` : ''}
@@ -724,7 +726,7 @@ const AgentUI = (() => {
 
     const leads = AgentLeadService.getLeadsByAgent(_dashboardAgentId);
     const byStatus = {};
-    Object.values(LEAD_STATUS).forEach(s => { byStatus[s] = leads.filter(l => l.status === s).length; });
+    Object.values(AGENT_LEAD_STATUS).forEach(s => { byStatus[s] = leads.filter(l => l.status === s).length; });
 
     return `
       <div class="val-form-wrap">
@@ -743,7 +745,7 @@ const AgentUI = (() => {
             <div class="agt-stat-label">Total leads</div>
           </div>
           <div class="agt-stat-card">
-            <div class="agt-stat-value">${byStatus[LEAD_STATUS.NEW] || 0}</div>
+            <div class="agt-stat-value">${byStatus[AGENT_LEAD_STATUS.NEW] || 0}</div>
             <div class="agt-stat-label">Nuevos</div>
           </div>
           <div class="agt-stat-card">
@@ -751,7 +753,7 @@ const AgentUI = (() => {
             <div class="agt-stat-label">Props. activas</div>
           </div>
           <div class="agt-stat-card">
-            <div class="agt-stat-value">${byStatus[LEAD_STATUS.CLOSED] || 0}</div>
+            <div class="agt-stat-value">${byStatus[AGENT_LEAD_STATUS.CLOSED] || 0}</div>
             <div class="agt-stat-label">Cerrados</div>
           </div>
         </div>
@@ -766,7 +768,7 @@ const AgentUI = (() => {
                   ${leads.map(l => `
                     <tr>
                       <td>${escapeHTML(l.id)}</td>
-                      <td><span class="agt-lead-status">${escapeHTML(LEAD_STATUS_LABELS[l.status])}</span></td>
+                      <td><span class="agt-lead-status">${escapeHTML(AGENT_LEAD_STATUS_LABELS[l.status])}</span></td>
                       <td>${escapeHTML(OPERATION_LABELS[l.criteria.operation] || '—')}</td>
                       <td>${escapeHTML(l.criteria.district || '—')}</td>
                       <td>${new Date(l.createdAt).toLocaleDateString('es-PE')}</td>
@@ -781,10 +783,10 @@ const AgentUI = (() => {
         <div class="leg-detail-section">
           <h4>📊 Pipeline</h4>
           <div class="agt-pipeline">
-            ${LEAD_STATUS_ORDER.map(s => `
+            ${AGENT_LEAD_STATUS_ORDER.map(s => `
               <div class="agt-pipeline-stage">
                 <div class="agt-pipeline-count">${byStatus[s] || 0}</div>
-                <div class="agt-pipeline-label">${escapeHTML(LEAD_STATUS_LABELS[s])}</div>
+                <div class="agt-pipeline-label">${escapeHTML(AGENT_LEAD_STATUS_LABELS[s])}</div>
               </div>
             `).join('')}
           </div>

@@ -7,6 +7,15 @@
 
 const JOBS_VIEW = '__jobs__';
 
+/** Focus the main content heading or fallback to the content panel after view transitions. */
+function focusContent() {
+  const el = document.getElementById('svcContent');
+  if (!el) return;
+  const heading = el.querySelector('h2, h3, [tabindex="-1"]');
+  if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus(); }
+  else { el.setAttribute('tabindex', '-1'); el.focus(); }
+}
+
 const RecoApp = (() => {
   let _currentTab = JOBS_VIEW;
   let _searchQuery = '';
@@ -14,6 +23,7 @@ const RecoApp = (() => {
   function init() {
     _renderTabs();
     _render();
+    _initTabKeyboard();
     RecoAnalytics.pageViewed();
   }
 
@@ -21,13 +31,59 @@ const RecoApp = (() => {
     const el = document.getElementById('svcTabs');
     if (!el) return;
 
-    const jobsTab = `<button class="svc-tab${_currentTab === JOBS_VIEW ? ' active' : ''}" data-tab="${JOBS_VIEW}" onclick="RecoApp.setTab('${JOBS_VIEW}')">🏠 Inicio</button>`;
+    el.setAttribute('role', 'tablist');
 
-    const categoryTabs = TABS.map(t =>
-      `<button class="svc-tab${_currentTab === t.id ? ' active' : ''}" data-tab="${t.id}" onclick="RecoApp.setTab('${t.id}')">${t.icon} ${t.label}</button>`
-    ).join('');
+    const allTabs = [{ id: JOBS_VIEW, icon: '🏠', label: 'Inicio' }].concat(
+      TABS.map(t => ({ id: t.id, icon: t.icon, label: t.label }))
+    );
 
-    el.innerHTML = jobsTab + categoryTabs;
+    el.innerHTML = allTabs.map(t => {
+      const isActive = _currentTab === t.id;
+      return `<button class="svc-tab${isActive ? ' active' : ''}" data-tab="${escapeAttr(t.id)}" role="tab" aria-selected="${isActive}" tabindex="${isActive ? '0' : '-1'}" aria-controls="svcContent" onclick="RecoApp.setTab('${escapeAttr(t.id)}')">${escapeHTML(t.icon)} ${escapeHTML(t.label)}</button>`;
+    }).join('');
+  }
+
+  /** Keyboard navigation for the tablist (arrow keys, Home, End, Enter, Space). */
+  function _initTabKeyboard() {
+    const el = document.getElementById('svcTabs');
+    if (!el) return;
+
+    el.addEventListener('keydown', function(e) {
+      const tabs = Array.from(el.querySelectorAll('[role="tab"]'));
+      if (tabs.length === 0) return;
+      const current = document.activeElement;
+      const idx = tabs.indexOf(current);
+      if (idx === -1) return;
+
+      let newIdx = idx;
+      switch (e.key) {
+        case 'ArrowRight':
+          newIdx = (idx + 1) % tabs.length;
+          e.preventDefault();
+          break;
+        case 'ArrowLeft':
+          newIdx = (idx - 1 + tabs.length) % tabs.length;
+          e.preventDefault();
+          break;
+        case 'Home':
+          newIdx = 0;
+          e.preventDefault();
+          break;
+        case 'End':
+          newIdx = tabs.length - 1;
+          e.preventDefault();
+          break;
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          current.click();
+          return;
+        default:
+          return;
+      }
+
+      tabs[newIdx].focus();
+    });
   }
 
   function setTab(id) {
@@ -38,6 +94,7 @@ const RecoApp = (() => {
     _renderTabs();
     RecoAnalytics.tabSwitched(prevTab, id);
     _render();
+    focusContent();
   }
 
   function setSearch(value) {

@@ -2,6 +2,9 @@
  * Reco Servicios — Valuation UI
  * Renders: Reco Estimate form, results, paid tasación request flows.
  * Uses ValuationService for logic, TASACIONES_SERVICES from data.js for pricing.
+ *
+ * @requires AgentUI (agent-ui.js) — prepareFromEstimate()
+ * @requires FinanceUI (finance-ui.js) — prepareFromEstimate()
  */
 
 const ValuationUI = (() => {
@@ -711,7 +714,7 @@ const ValuationUI = (() => {
         </p>
         <div class="val-order-card">
           <div class="val-order-row"><span>Orden</span><strong>${escapeHTML(_currentOrder.id)}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(ORDER_STATUS_LABELS[_currentOrder.status])}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(VAL_ORDER_STATUS_LABELS[_currentOrder.status])}</strong></div>
           <div class="val-order-row"><span>Servicio</span><strong>${escapeHTML(service.name)}</strong></div>
           <div class="val-order-row"><span>Precio</span><strong>${escapeHTML(service.price.display)}</strong></div>
         </div>

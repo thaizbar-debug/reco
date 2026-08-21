@@ -3,6 +3,9 @@
  * Renders: marketplace, mortgage simulator, insurance products, lead flows.
  * Uses FinanceService + MortgageSimulator + provider registries for data.
  *
+ * @requires RentService (rent-service.js) — PAYMENT_FEE_CONFIG
+ * @requires ValuationService (valuation-service.js) — getAvailableDistricts()
+ *
  * IMPORTANT: Reco NO ES una entidad financiera.
  * Simulaciones son REFERENCIALES. No se inventan tasas ni convenios.
  *
@@ -447,7 +450,7 @@ const FinanceUI = (() => {
 
         <div class="val-order-card">
           <div class="val-order-row"><span>Solicitud</span><strong>${escapeHTML(_mortgageLead.id)}</strong></div>
-          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(MORTGAGE_STATUS_LABELS[_mortgageLead.status])}</strong></div>
+          <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">${escapeHTML(FIN_MORTGAGE_STATUS_LABELS[_mortgageLead.status])}</strong></div>
           <div class="val-order-row"><span>Monto solicitado</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.requestedAmount)}</strong></div>
           <div class="val-order-row"><span>Plazo</span><strong>${escapeHTML(String(_mortgageLead.term))} años</strong></div>
           <div class="val-order-row"><span>Cuota inicial</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.downPayment)}</strong></div>

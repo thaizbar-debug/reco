@@ -3,6 +3,8 @@
  * Renders: tenant dashboard, checkout flow, payment history, landlord view.
  * Uses RentService + PaymentProviderRegistry + PAYMENT_FEE_CONFIG for data.
  *
+ * @requires FinanceUI (finance-ui.js) — prepareFromRent()
+ *
  * ⚠️ MOCK: Leases, payments, and checkout use simulated data.
  * Real implementation: swap PaymentProviderRegistry.setProvider(realAdapter).
  */
@@ -278,7 +280,7 @@ const RentUI = (() => {
     if (!_currentPayment) return ErrorState('Pago no encontrado');
 
     const payment = _currentPayment;
-    const isSuccess = payment.status === PAYMENT_STATUS.SUCCESS;
+    const isSuccess = payment.status === RENT_PAYMENT_STATUS.SUCCESS;
     const lease = RentService.getLeaseById(payment.leaseId);
 
     if (isSuccess) {
@@ -376,14 +378,14 @@ const RentUI = (() => {
               </thead>
               <tbody>
                 ${payments.map(p => {
-                  const sc = PAYMENT_STATUS_COLORS[p.status] || {};
+                  const sc = RENT_PAYMENT_STATUS_COLORS[p.status] || {};
                   return '<tr>' +
                     '<td><code style="font-size:11px">' + escapeHTML(p.id) + '</code></td>' +
                     '<td>' + escapeHTML(p.periodLabel) + '</td>' +
                     '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.amount) + '</td>' +
                     '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.fee) + '</td>' +
                     '<td><strong>' + PAYMENT_FEE_CONFIG.formatAmount(p.total) + '</strong></td>' +
-                    '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
+                    '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(RENT_PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
                     '<td>' + (p.paidAt ? new Date(p.paidAt).toLocaleDateString('es-PE') : '—') + '</td>' +
                     '<td>' + escapeHTML(p.receiptId || '—') + '</td>' +
                     '</tr>';
@@ -399,9 +401,9 @@ const RentUI = (() => {
   function _renderLandlordSection() {
     const landlordName = 'María García López';
     const payments = RentService.getLandlordPayments(landlordName);
-    const received = payments.filter(p => p.status === PAYMENT_STATUS.SUCCESS);
-    const pending = payments.filter(p => p.status === PAYMENT_STATUS.PENDING);
-    const failed = payments.filter(p => p.status === PAYMENT_STATUS.FAILED);
+    const received = payments.filter(p => p.status === RENT_PAYMENT_STATUS.SUCCESS);
+    const pending = payments.filter(p => p.status === RENT_PAYMENT_STATUS.PENDING);
+    const failed = payments.filter(p => p.status === RENT_PAYMENT_STATUS.FAILED);
     const totalReceived = received.reduce((sum, p) => sum + p.amount, 0);
 
     return `
@@ -435,12 +437,12 @@ const RentUI = (() => {
                 <thead><tr><th>ID</th><th>Periodo</th><th>Monto</th><th>Estado</th><th>Fecha</th></tr></thead>
                 <tbody>
                   ${payments.map(p => {
-                    const sc = PAYMENT_STATUS_COLORS[p.status] || {};
+                    const sc = RENT_PAYMENT_STATUS_COLORS[p.status] || {};
                     return '<tr>' +
                       '<td><code style="font-size:11px">' + escapeHTML(p.id) + '</code></td>' +
                       '<td>' + escapeHTML(p.periodLabel) + '</td>' +
                       '<td>' + PAYMENT_FEE_CONFIG.formatAmount(p.amount) + '</td>' +
-                      '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
+                      '<td><span class="rent-status-badge" style="background:' + escapeAttr(sc.bg) + ';color:' + escapeAttr(sc.color) + '">' + escapeHTML(RENT_PAYMENT_STATUS_LABELS[p.status]) + '</span></td>' +
                       '<td>' + (p.paidAt ? new Date(p.paidAt).toLocaleDateString('es-PE') : '—') + '</td>' +
                       '</tr>';
                   }).join('')}

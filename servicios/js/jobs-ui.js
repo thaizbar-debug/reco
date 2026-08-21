@@ -42,7 +42,7 @@ const JobsUI = (() => {
     const availableCount = services.filter(s => s.status === SERVICE_STATUS.ACTIVE).length;
 
     return `
-      <div class="job-card ${isPrimary ? 'job-card-primary' : ''}" onclick="JobsUI.showJob('${escapeAttr(job.id)}')">
+      <button type="button" class="job-card ${isPrimary ? 'job-card-primary' : ''}" aria-label="${escapeAttr(job.title)} — ${availableCount} servicio${availableCount !== 1 ? 's' : ''} disponible${availableCount !== 1 ? 's' : ''}" onclick="JobsUI.showJob('${escapeAttr(job.id)}')">
         <div class="job-card-gradient" style="background:${escapeAttr(job.gradient)}">
           <div class="job-card-icon">${escapeHTML(job.icon)}</div>
           <h3 class="job-card-title">${escapeHTML(job.title)}</h3>
@@ -52,7 +52,7 @@ const JobsUI = (() => {
         <div class="job-card-footer">
           <span class="job-card-cta">${escapeHTML(job.ctaPrimary.label)} →</span>
         </div>
-      </div>`;
+      </button>`;
   }
 
   // === JOB DETAIL ===
@@ -62,6 +62,7 @@ const JobsUI = (() => {
     RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.JOB_CLICKED, { job_id: jobId });
     _rerender();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    focusContent();
   }
 
   function _renderJobDetail() {
@@ -76,7 +77,7 @@ const JobsUI = (() => {
     RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.JOB_VIEWED, { job_id: job.id });
 
     return `
-      <button class="val-back" onclick="JobsUI.backToMain()">← ¿Qué necesitas hacer?</button>
+      <button class="val-back" aria-label="Volver a ¿Qué necesitas hacer?" onclick="JobsUI.backToMain()">← ¿Qué necesitas hacer?</button>
 
       <div class="job-detail-header" style="background:${escapeAttr(job.gradient)}">
         <div class="job-detail-icon">${escapeHTML(job.icon)}</div>
@@ -120,7 +121,7 @@ const JobsUI = (() => {
     const comingSoon = svc.status === SERVICE_STATUS.COMING_SOON;
 
     return `
-      <div class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" onclick="${comingSoon ? '' : 'JobsUI.navigateToService(\'' + escapeAttr(svc.id) + '\')'}">
+      <button type="button" class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" aria-label="${escapeAttr(svc.name)}${comingSoon ? ' — Próximamente' : ''}" ${comingSoon ? 'disabled' : `onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')"`}>
         ${tag}
         <div class="job-svc-icon">${escapeHTML(svc.icon)}</div>
         <h4 class="job-svc-name">${escapeHTML(svc.name)}</h4>
@@ -130,19 +131,19 @@ const JobsUI = (() => {
           ? '<span class="job-svc-soon">Próximamente</span>'
           : `<span class="job-svc-cta">${escapeHTML(svc.cta ? svc.cta.label : 'Ver más')} →</span>`
         }
-      </div>`;
+      </button>`;
   }
 
   function _relatedCard(svc) {
     return `
-      <div class="job-related-card" onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')">
+      <button type="button" class="job-related-card" aria-label="${escapeAttr(svc.hook || svc.name)} — ${escapeAttr(svc.name)}" onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')">
         <div class="job-related-icon">${escapeHTML(svc.icon)}</div>
         <div class="job-related-info">
           <strong>${escapeHTML(svc.hook || svc.name)}</strong>
           <span>${escapeHTML(svc.name)}</span>
         </div>
         <span class="val-cross-arrow">→</span>
-      </div>`;
+      </button>`;
   }
 
   // === NAVIGATION ===
@@ -191,6 +192,7 @@ const JobsUI = (() => {
     _selectedJobId = null;
     _rerender();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    focusContent();
   }
 
   function _rerender() {

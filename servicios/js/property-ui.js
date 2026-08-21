@@ -3,6 +3,8 @@
  * Renders: portfolio dashboard, property detail (6 sub-tabs), tickets, documents.
  * Target: propietarios with 1-20 properties.
  *
+ * @requires MaintenanceUI (maintenance-ui.js) — prepareFromProperty()
+ *
  * ⚠️ MOCK: All property data is simulated.
  */
 
@@ -103,10 +105,10 @@ const PropertyUI = (() => {
   function _propertyCard(prop) {
     const yld = PropertyService.getPropertyYield(prop);
     const statusColors = {
-      [PROPERTY_STATUS.OCCUPIED]: 'background:var(--green-bg);color:var(--green)',
-      [PROPERTY_STATUS.VACANT]: 'background:var(--amber-bg);color:var(--amber)',
-      [PROPERTY_STATUS.MAINTENANCE]: 'background:var(--red-bg);color:var(--red)',
-      [PROPERTY_STATUS.FOR_SALE]: 'background:var(--accent-light);color:var(--accent)',
+      [PM_PROPERTY_STATUS.OCCUPIED]: 'background:var(--green-bg);color:var(--green)',
+      [PM_PROPERTY_STATUS.VACANT]: 'background:var(--amber-bg);color:var(--amber)',
+      [PM_PROPERTY_STATUS.MAINTENANCE]: 'background:var(--red-bg);color:var(--red)',
+      [PM_PROPERTY_STATUS.FOR_SALE]: 'background:var(--accent-light);color:var(--accent)',
     };
 
     return `
@@ -117,7 +119,7 @@ const PropertyUI = (() => {
             <strong class="pm-card-address">${escapeHTML(prop.address)}</strong>
             <span class="pm-card-district">${escapeHTML(prop.district)} · ${escapeHTML(prop.area)}m² · ${escapeHTML(prop.rooms)} hab.</span>
           </div>
-          <span class="pm-status-badge" style="${statusColors[prop.status]}">${PROPERTY_STATUS_LABELS[prop.status]}</span>
+          <span class="pm-status-badge" style="${statusColors[prop.status]}">${PM_PROPERTY_STATUS_LABELS[prop.status]}</span>
         </div>
 
         <div class="pm-card-metrics">
@@ -166,10 +168,10 @@ const PropertyUI = (() => {
 
     const yld = PropertyService.getPropertyYield(prop);
     const statusColors = {
-      [PROPERTY_STATUS.OCCUPIED]: 'background:var(--green-bg);color:var(--green)',
-      [PROPERTY_STATUS.VACANT]: 'background:var(--amber-bg);color:var(--amber)',
-      [PROPERTY_STATUS.MAINTENANCE]: 'background:var(--red-bg);color:var(--red)',
-      [PROPERTY_STATUS.FOR_SALE]: 'background:var(--accent-light);color:var(--accent)',
+      [PM_PROPERTY_STATUS.OCCUPIED]: 'background:var(--green-bg);color:var(--green)',
+      [PM_PROPERTY_STATUS.VACANT]: 'background:var(--amber-bg);color:var(--amber)',
+      [PM_PROPERTY_STATUS.MAINTENANCE]: 'background:var(--red-bg);color:var(--red)',
+      [PM_PROPERTY_STATUS.FOR_SALE]: 'background:var(--accent-light);color:var(--accent)',
     };
 
     let tabContent = '';
@@ -190,7 +192,7 @@ const PropertyUI = (() => {
           <h2 class="font-serif" style="font-size:22px;margin:0 0 4px">${escapeHTML(prop.address)}</h2>
           <span style="color:var(--ink-3);font-size:13px">${escapeHTML(prop.district)} · ${escapeHTML(prop.propertyType)} · ${escapeHTML(prop.area)}m² · ${escapeHTML(prop.rooms)} hab. · ${escapeHTML(prop.bathrooms)} baño${prop.bathrooms > 1 ? 's' : ''}</span>
         </div>
-        <span class="pm-status-badge" style="${statusColors[prop.status]}">${PROPERTY_STATUS_LABELS[prop.status]}</span>
+        <span class="pm-status-badge" style="${statusColors[prop.status]}">${PM_PROPERTY_STATUS_LABELS[prop.status]}</span>
       </div>
 
       <div class="pm-detail-summary">
@@ -334,11 +336,11 @@ const PropertyUI = (() => {
     const tickets = PropertyService.getTicketsByProperty(prop.id);
 
     const ticketStatusColors = {
-      [TICKET_STATUS.CREATED]: 'background:var(--accent-light);color:var(--accent)',
-      [TICKET_STATUS.ASSIGNED]: 'background:var(--amber-bg);color:var(--amber)',
-      [TICKET_STATUS.IN_PROGRESS]: 'background:#DBEAFE;color:#1E40AF',
-      [TICKET_STATUS.COMPLETED]: 'background:var(--green-bg);color:var(--green)',
-      [TICKET_STATUS.CANCELLED]: 'background:var(--paper-3);color:var(--ink-4)',
+      [PM_TICKET_STATUS.CREATED]: 'background:var(--accent-light);color:var(--accent)',
+      [PM_TICKET_STATUS.ASSIGNED]: 'background:var(--amber-bg);color:var(--amber)',
+      [PM_TICKET_STATUS.IN_PROGRESS]: 'background:#DBEAFE;color:#1E40AF',
+      [PM_TICKET_STATUS.COMPLETED]: 'background:var(--green-bg);color:var(--green)',
+      [PM_TICKET_STATUS.CANCELLED]: 'background:var(--paper-3);color:var(--ink-4)',
     };
 
     const priorityLabels = { low: 'Baja', medium: 'Media', high: 'Alta' };
@@ -357,7 +359,7 @@ const PropertyUI = (() => {
               <strong>${escapeHTML(t.title)}</strong>
               <span>${escapeHTML(t.category)} · <span style="${priorityColors[t.priority]}">Prioridad: ${priorityLabels[t.priority]}</span></span>
             </div>
-            <span class="pm-status-badge" style="${ticketStatusColors[t.status]}">${TICKET_STATUS_LABELS[t.status]}</span>
+            <span class="pm-status-badge" style="${ticketStatusColors[t.status]}">${PM_TICKET_STATUS_LABELS[t.status]}</span>
           </div>
           <p style="font-size:12px;color:var(--ink-3);margin:8px 0 0;line-height:1.5">${escapeHTML(t.description)}</p>
           ${t.assignedTo ? '<div style="font-size:12px;color:var(--ink-2);margin-top:6px">Asignado: <strong>' + escapeHTML(t.assignedTo) + '</strong></div>' : ''}
