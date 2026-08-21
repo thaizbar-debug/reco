@@ -19,6 +19,7 @@ function focusContent() {
 const RecoApp = (() => {
   let _currentTab = JOBS_VIEW;
   let _searchQuery = '';
+  let _pendingServiceId = null;
 
   function init() {
     _renderTabs();
@@ -86,15 +87,22 @@ const RecoApp = (() => {
     });
   }
 
-  function setTab(id) {
+  function setTab(id, serviceId) {
     const prevTab = _currentTab;
     _currentTab = id;
     _searchQuery = '';
+    _pendingServiceId = serviceId || null;
     if (id === JOBS_VIEW) JobsUI.reset();
     _renderTabs();
     RecoAnalytics.tabSwitched(prevTab, id);
     _render();
     focusContent();
+  }
+
+  function getPendingServiceId() {
+    const id = _pendingServiceId;
+    _pendingServiceId = null;
+    return id;
   }
 
   function setSearch(value) {
@@ -139,6 +147,7 @@ const RecoApp = (() => {
     setSearch,
     getCurrentTab,
     getSearchQuery,
+    getPendingServiceId,
   };
 })();
 

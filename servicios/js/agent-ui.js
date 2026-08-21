@@ -587,18 +587,18 @@ const AgentUI = (() => {
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Datos de contacto</h3>
         <div class="val-row">
           <div class="val-field">
-            <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_contactData.contactName || '')}" oninput="AgentUI.updateContact('contactName',this.value)"/>
+            <label for="agt-contact-name">Nombre completo *</label>
+            <input id="agt-contact-name" type="text" placeholder="Tu nombre" value="${escapeAttr(_contactData.contactName || '')}" oninput="AgentUI.updateContact('contactName',this.value)"/>
           </div>
           <div class="val-field">
-            <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_contactData.contactPhone || '')}" oninput="AgentUI.updateContact('contactPhone',this.value)"/>
+            <label for="agt-contact-phone">Teléfono *</label>
+            <input id="agt-contact-phone" type="tel" placeholder="987 654 321" value="${escapeAttr(_contactData.contactPhone || '')}" oninput="AgentUI.updateContact('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
-            <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_contactData.contactEmail || '')}" oninput="AgentUI.updateContact('contactEmail',this.value)"/>
+            <label for="agt-contact-email">Email *</label>
+            <input id="agt-contact-email" type="email" placeholder="tu@email.com" value="${escapeAttr(_contactData.contactEmail || '')}" oninput="AgentUI.updateContact('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">

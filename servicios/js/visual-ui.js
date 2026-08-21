@@ -23,7 +23,24 @@ const VisualUI = (() => {
     _mockPhotoCount = 0;
   }
 
+  // Registry-to-module service ID mapping for deep navigation
+  const _REGISTRY_MAP = {
+    'video-recorrido': 'foto-video',
+    'tour-virtual-ia': 'foto-tour-ia',
+    'home-staging-ia': 'foto-staging',
+    'pack-reco-visual': 'foto-pack',
+  };
+
   function render() {
+    const pendingSvc = RecoApp.getPendingServiceId();
+    if (pendingSvc) {
+      const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
+      const svc = getServiceById(mapped);
+      if (svc) {
+        showBooking(mapped);
+        return _renderBooking();
+      }
+    }
     if (_view === 'booking') return _renderBooking();
     return _renderCatalog();
   }
@@ -464,18 +481,18 @@ const VisualUI = (() => {
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Datos de contacto</h3>
         <div class="val-row">
           <div class="val-field">
-            <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="VisualUI.updateBooking('contactName',this.value)"/>
+            <label for="vis-contact-name">Nombre completo *</label>
+            <input id="vis-contact-name" type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="VisualUI.updateBooking('contactName',this.value)"/>
           </div>
           <div class="val-field">
-            <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="VisualUI.updateBooking('contactPhone',this.value)"/>
+            <label for="vis-contact-phone">Teléfono *</label>
+            <input id="vis-contact-phone" type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="VisualUI.updateBooking('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
-            <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="VisualUI.updateBooking('contactEmail',this.value)"/>
+            <label for="vis-contact-email">Email *</label>
+            <input id="vis-contact-email" type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="VisualUI.updateBooking('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">

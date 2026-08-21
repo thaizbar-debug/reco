@@ -100,7 +100,13 @@ const PROPERTY_TYPES = [
 const DISTRICTS = Object.keys(DISTRICT_PRICES_USD_M2).sort();
 
 const ValuationService = (() => {
-  const TC_USD_PEN = 3.72;
+  // TODO: TC_USD_PEN should be fetched from an exchange-rate API in production.
+  const _config = { TC_USD_PEN: 3.72 };
+
+  /** Merge caller-supplied overrides into the service config. */
+  function setConfig(overrides) {
+    Object.assign(_config, overrides);
+  }
 
   /**
    * ⚠️ MOCK ENGINE — Generates a plausible valuation from district medians.
@@ -154,7 +160,7 @@ const ValuationService = (() => {
     basePriceM2 = Math.round(basePriceM2);
 
     const estimatedValueUSD = basePriceM2 * area;
-    const estimatedValuePEN = Math.round(estimatedValueUSD * TC_USD_PEN);
+    const estimatedValuePEN = Math.round(estimatedValueUSD * _config.TC_USD_PEN);
 
     const rangeFactorLow = distData.p25 / distData.median;
     const rangeFactorHigh = distData.p75 / distData.median;
@@ -182,7 +188,7 @@ const ValuationService = (() => {
       estimatedValue: estimatedValuePEN,
       minValue: minValuePEN,
       maxValue: maxValuePEN,
-      pricePerM2: Math.round(basePriceM2 * TC_USD_PEN),
+      pricePerM2: Math.round(basePriceM2 * _config.TC_USD_PEN),
       pricePerM2USD: basePriceM2,
       confidence,
       comparablesCount,
@@ -192,7 +198,7 @@ const ValuationService = (() => {
       district,
       propertyType,
       area,
-      tcUsdPen: TC_USD_PEN,
+      tcUsdPen: _config.TC_USD_PEN,
       timestamp: new Date().toISOString(),
     };
   }
@@ -302,6 +308,7 @@ const ValuationService = (() => {
   }
 
   return {
+    setConfig,
     estimate,
     getVerdict,
     getDistrictHistory,

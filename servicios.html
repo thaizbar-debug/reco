@@ -4,6 +4,22 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<meta name="description" content="Reco Servicios — Tasaciones, crédito hipotecario, servicios legales, fotografía profesional, mantenimiento del hogar y más para tu propiedad en Lima, Perú.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.reco.pe/servicios">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="Reco Servicios — Todo para tu propiedad">
+<meta property="og:description" content="Tasaciones, crédito hipotecario, servicios legales, fotografía profesional, mantenimiento y más. Todo en un solo lugar.">
+<meta property="og:url" content="https://www.reco.pe/servicios">
+<meta property="og:site_name" content="Reco">
+<meta property="og:locale" content="es_PE">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Reco Servicios — Todo para tu propiedad">
+<meta name="twitter:description" content="Tasaciones, crédito hipotecario, servicios legales, fotografía profesional, mantenimiento y más.">
 <title>Reco — Servicios</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -707,9 +723,43 @@ button.job-card, button.job-svc-card, button.job-related-card {
   text-align: left;
   width: 100%;
 }
+
+/* SKIP LINK */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent, #2563EB);
+  color: #fff;
+  padding: 8px 16px;
+  z-index: 100;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* VISUALLY HIDDEN (SR-ONLY) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 </style>
 </head>
 <body>
+
+<a href="#svcContent" class="skip-link">Saltar al contenido</a>
 
 <nav class="r-nav">
   <a href="index.html" class="r-logo"><span>Reco</span></a>
@@ -744,32 +794,32 @@ button.job-card, button.job-svc-card, button.job-related-card {
   </div>
 </footer>
 
-<script src="servicios/js/data.js"></script>
-<script src="servicios/js/jobs-data.js"></script>
-<script src="servicios/js/analytics.js"></script>
-<script src="servicios/js/sanitize.js"></script>
-<script src="servicios/js/validation.js"></script>
-<script src="servicios/js/gateway.js"></script>
-<script src="servicios/js/components.js"></script>
-<script src="servicios/js/actions.js"></script>
-<script src="servicios/js/valuation-service.js"></script>
-<script src="servicios/js/valuation-ui.js"></script>
-<script src="servicios/js/visual-service.js"></script>
-<script src="servicios/js/visual-ui.js"></script>
-<script src="servicios/js/legal-service.js"></script>
-<script src="servicios/js/legal-ui.js"></script>
-<script src="servicios/js/rent-service.js"></script>
-<script src="servicios/js/rent-ui.js"></script>
-<script src="servicios/js/finance-service.js"></script>
-<script src="servicios/js/finance-ui.js"></script>
-<script src="servicios/js/agent-service.js"></script>
-<script src="servicios/js/agent-ui.js"></script>
-<script src="servicios/js/property-service.js"></script>
-<script src="servicios/js/property-ui.js"></script>
-<script src="servicios/js/maintenance-service.js"></script>
-<script src="servicios/js/maintenance-ui.js"></script>
-<script src="servicios/js/jobs-ui.js"></script>
-<script src="servicios/js/app.js"></script>
+<script defer src="servicios/js/data.js"></script>
+<script defer src="servicios/js/jobs-data.js"></script>
+<script defer src="servicios/js/analytics.js"></script>
+<script defer src="servicios/js/sanitize.js"></script>
+<script defer src="servicios/js/validation.js"></script>
+<script defer src="servicios/js/gateway.js"></script>
+<script defer src="servicios/js/components.js"></script>
+<script defer src="servicios/js/actions.js"></script>
+<script defer src="servicios/js/valuation-service.js"></script>
+<script defer src="servicios/js/valuation-ui.js"></script>
+<script defer src="servicios/js/visual-service.js"></script>
+<script defer src="servicios/js/visual-ui.js"></script>
+<script defer src="servicios/js/legal-service.js"></script>
+<script defer src="servicios/js/legal-ui.js"></script>
+<script defer src="servicios/js/rent-service.js"></script>
+<script defer src="servicios/js/rent-ui.js"></script>
+<script defer src="servicios/js/finance-service.js"></script>
+<script defer src="servicios/js/finance-ui.js"></script>
+<script defer src="servicios/js/agent-service.js"></script>
+<script defer src="servicios/js/agent-ui.js"></script>
+<script defer src="servicios/js/property-service.js"></script>
+<script defer src="servicios/js/property-ui.js"></script>
+<script defer src="servicios/js/maintenance-service.js"></script>
+<script defer src="servicios/js/maintenance-ui.js"></script>
+<script defer src="servicios/js/jobs-ui.js"></script>
+<script defer src="servicios/js/app.js"></script>
 
 </body>
 </html>

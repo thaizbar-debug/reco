@@ -26,10 +26,34 @@ const MaintenanceUI = (() => {
     _tracked = false;
   }
 
+  // Registry-to-module service ID mapping for deep navigation
+  const _REGISTRY_MAP = {
+    'limpieza': 'svc-limpieza',
+    'gasfiteria': 'svc-gasfiteria',
+    'electricista': 'svc-electricista',
+    'pintura': 'svc-pintura',
+    'mudanza': 'svc-mudanza',
+    'remodelacion': 'svc-remodelacion',
+    'aire-acondicionado': 'svc-aire-acondicionado',
+    'carpinteria': 'svc-carpinteria',
+    'camaras': 'svc-camaras',
+    'jardineria': 'svc-jardineria',
+    'impermeabilizacion': 'svc-impermeabilizacion',
+  };
+
   function render() {
     if (!_tracked) {
       RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.MAINTENANCE_VIEWED, {});
       _tracked = true;
+    }
+    const pendingSvc = RecoApp.getPendingServiceId();
+    if (pendingSvc) {
+      const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
+      const svc = MaintenanceService.getServiceById(mapped);
+      if (svc) {
+        showDetail(mapped);
+        return _renderDetail();
+      }
     }
     if (_view === 'detail') return _renderDetail();
     if (_view === 'providers') return _renderProviders();

@@ -27,7 +27,29 @@ const LegalUI = (() => {
     _currentOrder = null;
   }
 
+  // Registry-to-module service ID mapping for deep navigation
+  const _REGISTRY_MAP = {
+    'estudio-titulos': 'legal-estudio-titulos',
+    'due-diligence': 'legal-due-diligence',
+    'asesoria-legal': 'legal-asesoria',
+    'minuta': 'legal-minuta',
+    'revision-registral': 'legal-revision-contrato',
+  };
+
   function render() {
+    const pendingSvc = RecoApp.getPendingServiceId();
+    if (pendingSvc) {
+      if (pendingSvc === 'property-check') {
+        showPropertyCheck();
+        return _renderCheckForm();
+      }
+      const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
+      const svc = getServiceById(mapped);
+      if (svc) {
+        showServiceDetail(mapped);
+        return _renderServiceDetail();
+      }
+    }
     if (_view === 'check-form') return _renderCheckForm();
     if (_view === 'check-results') return _renderCheckResults();
     if (_view === 'service-detail') return _renderServiceDetail();
@@ -611,18 +633,18 @@ const LegalUI = (() => {
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Datos de contacto</h3>
         <div class="val-row">
           <div class="val-field">
-            <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="LegalUI.updateBooking('contactName',this.value)"/>
+            <label for="leg-contact-name">Nombre completo *</label>
+            <input id="leg-contact-name" type="text" placeholder="Tu nombre" value="${escapeAttr(_bookingData.contactName || '')}" oninput="LegalUI.updateBooking('contactName',this.value)"/>
           </div>
           <div class="val-field">
-            <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="LegalUI.updateBooking('contactPhone',this.value)"/>
+            <label for="leg-contact-phone">Teléfono *</label>
+            <input id="leg-contact-phone" type="tel" placeholder="987 654 321" value="${escapeAttr(_bookingData.contactPhone || '')}" oninput="LegalUI.updateBooking('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
-            <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="LegalUI.updateBooking('contactEmail',this.value)"/>
+            <label for="leg-contact-email">Email *</label>
+            <input id="leg-contact-email" type="email" placeholder="tu@email.com" value="${escapeAttr(_bookingData.contactEmail || '')}" oninput="LegalUI.updateBooking('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">

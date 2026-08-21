@@ -30,8 +30,29 @@ const ValuationUI = (() => {
 
   function getView() { return _view; }
 
+  // Registry-to-module service ID mapping for deep navigation
+  const _REGISTRY_MAP = {
+    'reco-estimate': 'tas-estimate',
+    'tasacion-express': 'tas-express',
+    'tasacion-virtual': 'tas-virtual',
+    'tasacion-presencial': 'tas-presencial',
+  };
+
   // --- Main renderer (replaces CategoryTasaciones when active) ---
   function render() {
+    const pendingSvc = RecoApp.getPendingServiceId();
+    if (pendingSvc) {
+      const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
+      if (mapped === 'tas-estimate') {
+        showEstimateForm();
+        return _renderEstimateForm();
+      }
+      const svc = getServiceById(mapped);
+      if (svc) {
+        showRequestFlow(mapped);
+        return _renderRequestFlow();
+      }
+    }
     if (_view === 'estimate-form') return _renderEstimateForm();
     if (_view === 'estimate-result') return _renderEstimateResult();
     if (_view === 'request-flow') return _renderRequestFlow();
@@ -585,18 +606,18 @@ const ValuationUI = (() => {
         <h3 style="font-size:15px;font-weight:700;margin-bottom:14px">Datos de contacto</h3>
         <div class="val-row">
           <div class="val-field">
-            <label>Nombre completo *</label>
-            <input type="text" placeholder="Tu nombre" value="${escapeAttr(_requestData.contactName || '')}" oninput="ValuationUI.updateRequest('contactName',this.value)"/>
+            <label for="val-contact-name">Nombre completo *</label>
+            <input id="val-contact-name" type="text" placeholder="Tu nombre" value="${escapeAttr(_requestData.contactName || '')}" oninput="ValuationUI.updateRequest('contactName',this.value)"/>
           </div>
           <div class="val-field">
-            <label>Teléfono *</label>
-            <input type="tel" placeholder="987 654 321" value="${escapeAttr(_requestData.contactPhone || '')}" oninput="ValuationUI.updateRequest('contactPhone',this.value)"/>
+            <label for="val-contact-phone">Teléfono *</label>
+            <input id="val-contact-phone" type="tel" placeholder="987 654 321" value="${escapeAttr(_requestData.contactPhone || '')}" oninput="ValuationUI.updateRequest('contactPhone',this.value)"/>
           </div>
         </div>
         <div class="val-row">
           <div class="val-field val-full">
-            <label>Email *</label>
-            <input type="email" placeholder="tu@email.com" value="${escapeAttr(_requestData.contactEmail || '')}" oninput="ValuationUI.updateRequest('contactEmail',this.value)"/>
+            <label for="val-contact-email">Email *</label>
+            <input id="val-contact-email" type="email" placeholder="tu@email.com" value="${escapeAttr(_requestData.contactEmail || '')}" oninput="ValuationUI.updateRequest('contactEmail',this.value)"/>
           </div>
         </div>
         <div class="val-row">

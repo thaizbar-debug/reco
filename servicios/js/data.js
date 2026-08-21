@@ -268,12 +268,6 @@ const LEGAL_SERVICES = [
   { id: 'legal-due-diligence', category: CATEGORIES.LEGAL, subcategory: 'due_diligence', name: 'Due diligence documental', shortDescription: 'Auditoría completa: títulos, municipalidad, SUNARP, deudas.', description: 'Auditoría completa: títulos, municipalidad, SUNARP, deudas tributarias, conformidad de obra, habilitación urbana y declaratoria de fábrica. Informe ejecutivo en 5 días hábiles.', icon: '📑', price: { display: 'S/ 350 – 800', value: 350 }, priceType: 'range', tags: [], status: SERVICE_STATUS.ACTIVE, featured: false, monetizationModel: MONETIZATION_MODELS.FIXED_PRICE, cta: { label: 'Solicitar', action: 'legal_solicitar' }, availability: 'Nacional', providerType: 'professional' },
 ];
 
-// --- RECO AGENT (prepared, no products yet) ---
-const RECO_AGENT_SERVICES = [];
-
-// --- PROPERTY MANAGEMENT (prepared, no products yet) ---
-const PROPERTY_MANAGEMENT_SERVICES = [];
-
 // --- Aggregated catalog ---
 const SERVICE_CATALOG = {
   [CATEGORIES.PAGOS]: PAGOS_SERVICES,
@@ -282,8 +276,8 @@ const SERVICE_CATALOG = {
   [CATEGORIES.FINANZAS]: FINANZAS_SERVICES,
   [CATEGORIES.FOTOGRAFIA]: FOTOGRAFIA_SERVICES,
   [CATEGORIES.LEGAL]: LEGAL_SERVICES,
-  [CATEGORIES.RECO_AGENT]: RECO_AGENT_SERVICES,
-  [CATEGORIES.PROPERTY_MANAGEMENT]: PROPERTY_MANAGEMENT_SERVICES,
+  [CATEGORIES.RECO_AGENT]: [],
+  [CATEGORIES.PROPERTY_MANAGEMENT]: [],
 };
 
 // --- ID Mapping: SERVICE_CATALOG ↔ SERVICE_REGISTRY ---

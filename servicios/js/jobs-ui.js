@@ -158,7 +158,7 @@ const JobsUI = (() => {
     });
 
     if (svc.navigateTo) {
-      RecoApp.setTab(svc.navigateTo);
+      RecoApp.setTab(svc.navigateTo, svc.id);
     }
   }
 

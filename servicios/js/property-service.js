@@ -67,6 +67,19 @@ const DOCUMENT_TYPE_LABELS = Object.freeze({
 });
 
 const PropertyService = (() => {
+  /**
+   * Property entity mapping — Reco Core <-> Servicios
+   * When integrating with the real API, map these local fields to the core entity:
+   *   id         -> property.id (from Reco core)
+   *   address    -> property.address
+   *   district   -> property.location.district
+   *   area       -> property.details.area_m2
+   *   rooms      -> property.details.rooms
+   *   bathrooms  -> property.details.bathrooms
+   *   propertyType -> property.type
+   *   status     -> derive from property.status + lease status
+   * DO NOT create a separate Property table — consume from Reco core API.
+   */
   const _mockProperties = [
     {
       id: 'prop-mock-1',

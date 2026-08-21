@@ -15,39 +15,39 @@ const RecoActions = (() => {
 
   const _handlers = {
     // Pagos
-    pagos_alquiler() { _toast('Próximamente disponible'); },
+    pagos_alquiler() { RecoApp.setTab(CATEGORIES.PAGOS); },
 
     // Mantenimiento
     mant_contact(serviceId) {
       const svc = getServiceById(serviceId);
-      _toast(`Contactando proveedor de ${svc ? svc.name : 'servicio'}…`);
       if (svc) RecoAnalytics.ctaClicked(svc, 'contact');
+      RecoApp.setTab(CATEGORIES.MANTENIMIENTO);
     },
 
     // Tasaciones
-    tas_estimate() { _toast('Abriendo Reco Estimate…'); },
-    tas_express() { _toast('Solicitando Tasación Express…'); },
-    tas_virtual() { _toast('Agendando Tasación Virtual…'); },
-    tas_presencial() { _toast('Reservando visita…'); },
+    tas_estimate() { RecoApp.setTab(CATEGORIES.TASACIONES, 'reco-estimate'); },
+    tas_express() { RecoApp.setTab(CATEGORIES.TASACIONES, 'tasacion-express'); },
+    tas_virtual() { RecoApp.setTab(CATEGORIES.TASACIONES, 'tasacion-virtual'); },
+    tas_presencial() { RecoApp.setTab(CATEGORIES.TASACIONES, 'tasacion-presencial'); },
 
     // Finanzas
     coming_soon() { _toast('Próximamente'); },
-    fin_hipotecario() { _toast('Cotizando Crédito Hipotecario…'); },
-    fin_prestamo() { _toast('Cotizando Préstamo Personal…'); },
+    fin_hipotecario() { RecoApp.setTab(CATEGORIES.FINANZAS); },
+    fin_prestamo() { RecoApp.setTab(CATEGORIES.FINANZAS); },
     fin_bnpl() { _toast('Próximamente'); },
-    fin_adelanto() { _toast('Solicitando…'); },
-    fin_seguro() { _toast('Cotizando…'); },
+    fin_adelanto() { RecoApp.setTab(CATEGORIES.FINANZAS); },
+    fin_seguro() { RecoApp.setTab(CATEGORIES.FINANZAS); },
 
     // Fotografía
-    foto_agendar() { _toast('Agendando sesión…'); },
-    foto_tour_ia() { _toast('Generando tour…'); },
-    foto_staging() { _toast('Subiendo fotos…'); },
-    foto_pack() { _toast('Cotizando pack…'); },
+    foto_agendar() { RecoApp.setTab(CATEGORIES.FOTOGRAFIA); },
+    foto_tour_ia() { RecoApp.setTab(CATEGORIES.FOTOGRAFIA, 'tour-virtual-ia'); },
+    foto_staging() { RecoApp.setTab(CATEGORIES.FOTOGRAFIA, 'home-staging-ia'); },
+    foto_pack() { RecoApp.setTab(CATEGORIES.FOTOGRAFIA, 'pack-reco-visual'); },
 
     // Legal
-    legal_solicitar() { _toast('Solicitando…'); },
-    legal_detalles() { _toast('Solicitando…'); },
-    legal_agendar() { _toast('Agendando sesión…'); },
+    legal_solicitar() { RecoApp.setTab(CATEGORIES.LEGAL); },
+    legal_detalles() { RecoApp.setTab(CATEGORIES.LEGAL); },
+    legal_agendar() { RecoApp.setTab(CATEGORIES.LEGAL); },
 
     // Fallback
     noop() {},
