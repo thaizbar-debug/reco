@@ -16,7 +16,7 @@
 :root{
   --blue:#0891b2;--blue2:#06b6d4;--blue-dark:#0e7490;
   --amber:#f59e0b;--amber2:#d97706;--green:#10b981;--green-dark:#065f46;
-  --red:#ef4444;--red-dark:#991b1b;
+  --red:#ef4444;--red-dark:#991b1b;--purple:#8b5cf6;--purple-dark:#5b21b6;
   --bg:#f1f5f9;--bg-card:#ffffff;--bg-sidebar:#0f172a;--bg-hover:#f8fafc;
   --txt:#0f172a;--txt-muted:#64748b;--txt-sidebar:#94a3b8;--txt-sidebar-active:#ffffff;
   --border:#e2e8f0;--border-cyan:#cffafe;
@@ -100,11 +100,13 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .kpi-card.accent-green::before{background:var(--green)}
 .kpi-card.accent-amber::before{background:var(--amber)}
 .kpi-card.accent-red::before{background:var(--red)}
+.kpi-card.accent-purple::before{background:var(--purple)}
 .kpi-card .kpi-icon{position:absolute;top:16px;right:18px;width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;opacity:.9}
 .kpi-card.accent-blue .kpi-icon{background:var(--primary-light);color:var(--blue)}
 .kpi-card.accent-green .kpi-icon{background:var(--success-light);color:var(--green)}
 .kpi-card.accent-amber .kpi-icon{background:var(--warning-light);color:var(--amber)}
 .kpi-card.accent-red .kpi-icon{background:var(--error-light);color:var(--red)}
+.kpi-card.accent-purple .kpi-icon{background:#f3e8ff;color:var(--purple)}
 .kpi-card .kpi-icon svg{width:20px;height:20px}
 .kpi-label{font-size:.72rem;color:var(--txt-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px}
 .kpi-value{font-size:1.8rem;font-weight:800;color:var(--txt);line-height:1}
@@ -138,6 +140,7 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .badge-info{background:var(--primary-light);color:var(--blue-dark)}
 .badge-system{background:#f3e8ff;color:#6b21a8}
 .badge-admin{background:linear-gradient(135deg,var(--primary-light),#e0f2fe);color:var(--blue-dark);border:1px solid var(--border-cyan)}
+.badge-historico{background:#fef3c7;color:#92400e}
 
 /* ── Buttons ── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:.82rem;font-weight:600;border:none;transition:all .15s}
@@ -214,6 +217,19 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .lightbox.open{opacity:1;pointer-events:auto}
 .lightbox img{max-width:92vw;max-height:88vh;border-radius:8px;object-fit:contain}
 
+/* ── Photo manager ── */
+.photo-manager{border:2px dashed var(--border);border-radius:var(--r);padding:16px;margin-top:8px}
+.photo-manager .pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-bottom:12px}
+.photo-manager .pm-item{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--border);aspect-ratio:4/3}
+.photo-manager .pm-item img{width:100%;height:100%;object-fit:cover}
+.photo-manager .pm-item .pm-actions{position:absolute;top:4px;right:4px;display:flex;gap:3px}
+.photo-manager .pm-item .pm-btn{width:24px;height:24px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.65rem;color:#fff}
+.photo-manager .pm-item .pm-del{background:var(--red)}
+.photo-manager .pm-item .pm-left,.photo-manager .pm-item .pm-right{background:rgba(0,0,0,.6)}
+.photo-manager .pm-item .pm-order{position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:.6rem;padding:2px 6px;border-radius:4px}
+.photo-manager .pm-upload{display:flex;align-items:center;gap:8px}
+.photo-manager .pm-upload input[type=file]{font-size:.78rem}
+
 /* ── Charts ── */
 .chart-bars{display:flex;align-items:flex-end;gap:4px;height:160px;padding:0 4px}
 .chart-bar{flex:1;background:linear-gradient(180deg,var(--blue),var(--blue2));border-radius:4px 4px 0 0;min-width:10px;position:relative;transition:opacity .15s}
@@ -222,6 +238,12 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .chart-bar:hover .bar-tip{opacity:1}
 .chart-labels{display:flex;gap:4px;padding:6px 4px 0;font-size:.6rem;color:var(--txt-muted)}
 .chart-labels span{flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── Pie chart ── */
+.pie-container{display:flex;align-items:center;gap:20px;justify-content:center}
+.pie-legend{display:flex;flex-direction:column;gap:6px}
+.pie-legend-item{display:flex;align-items:center;gap:8px;font-size:.78rem}
+.pie-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 
 /* ── Stat list ── */
 .stat-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.82rem}
@@ -271,6 +293,26 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 /* ── Check / toggle ── */
 input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
 
+/* ── Full detail view (platform-like) ── */
+.full-detail{max-width:900px;margin:0 auto}
+.full-detail .fd-hero{position:relative;height:320px;border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#ecfeff,#f0f9ff)}
+.full-detail .fd-hero img{width:100%;height:100%;object-fit:cover}
+.full-detail .fd-hero-overlay{position:absolute;bottom:0;left:0;right:0;padding:20px 24px;background:linear-gradient(transparent,rgba(0,0,0,.7));color:#fff}
+.full-detail .fd-hero-title{font-size:1.2rem;font-weight:800}
+.full-detail .fd-hero-sub{font-size:.85rem;opacity:.85;margin-top:2px}
+.full-detail .fd-price-row{display:flex;align-items:baseline;gap:16px;margin-bottom:20px;padding:16px 20px;background:var(--bg-card);border-radius:var(--r-lg);border:1px solid var(--border);box-shadow:var(--sh)}
+.full-detail .fd-price{font-size:1.8rem;font-weight:800;color:var(--txt)}
+.full-detail .fd-price-sqm{font-size:.88rem;color:var(--txt-muted)}
+.full-detail .fd-specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px}
+.full-detail .fd-spec{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;box-shadow:var(--sh)}
+.full-detail .fd-spec .sv{font-size:1.2rem;font-weight:800;color:var(--txt)}
+.full-detail .fd-spec .sk{font-size:.7rem;color:var(--txt-muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+
+/* ── PDF list ── */
+.pdf-list{display:flex;flex-direction:column;gap:6px}
+.pdf-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border-radius:var(--r);font-size:.82rem}
+.pdf-item a{color:var(--primary);font-weight:600}
+
 /* ── Scrollbar ── */
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -304,7 +346,7 @@ input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
       <input type="password" id="loginPassword" placeholder="Tu contrase&ntilde;a" autocomplete="current-password" onkeydown="if(event.key==='Enter')signInWithEmail()"/>
       <button class="submit-btn" id="loginSubmitBtn" onclick="signInWithEmail()">Iniciar sesi&oacute;n</button>
       <div style="text-align:center;margin-top:10px">
-        <a href="#" onclick="resetPassword();return false" style="font-size:.78rem;color:var(--txt-muted)">¿Olvidaste tu contrase&ntilde;a?</a>
+        <a href="#" onclick="resetPassword();return false" style="font-size:.78rem;color:var(--txt-muted)">&iquest;Olvidaste tu contrase&ntilde;a?</a>
       </div>
     </div>
     <div class="login-divider">o</div>
@@ -336,6 +378,11 @@ input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
         Propiedades
         <span class="badge" id="pendingBadge" style="display:none">0</span>
       </button>
+      <button class="nav-item" onclick="navigateTo('historicos')" data-nav="historicos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Hist&oacute;ricos
+        <span class="badge" id="histBadge" style="display:none">0</span>
+      </button>
       <button class="nav-item" onclick="navigateTo('contacts')" data-nav="contacts">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
         Solicitudes
@@ -351,7 +398,7 @@ input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
       </button>
       <div class="nav-section">Datos</div>
       <button class="nav-item" onclick="navigateTo('market')" data-nav="market">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Datos de Mercado
       </button>
       <button class="nav-item" onclick="navigateTo('audit')" data-nav="audit">
@@ -492,14 +539,14 @@ function navigateTo(view){
 }
 function renderView(){
   const c=document.getElementById('mainContent');
-  const views={dashboard:renderDashboard,publications:renderPublications,contacts:renderContacts,users:renderUsers,admins:renderAdmins,market:renderMarket,audit:renderAudit};
+  const views={dashboard:renderDashboard,publications:renderPublications,historicos:renderHistoricos,contacts:renderContacts,users:renderUsers,admins:renderAdmins,market:renderMarket,audit:renderAudit};
   (views[_currentView]||renderDashboard)(c);
 }
 
 // ═══════════════════════════════════════════════════════════════
 // Data Cache
 // ═══════════════════════════════════════════════════════════════
-let _pubs=[],_contacts=[],_auditLog=[],_dataLoaded=false,_marketData={},_usersList=null,_usersPageToken=null;
+let _pubs=[],_historicos=[],_contacts=[],_auditLog=[],_dataLoaded=false,_marketData={},_usersList=null,_usersPageToken=null;
 
 async function loadAllData(){
   const mc=document.getElementById('mainContent');
@@ -510,7 +557,9 @@ async function loadAllData(){
       db.collection('contactRequests').get(),
       db.collection('adminAuditLog').orderBy('createdAt','desc').limit(200).get()
     ]);
-    _pubs=pubSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const allPubs=pubSnap.docs.map(d=>({id:d.id,...d.data()}));
+    _pubs=allPubs.filter(p=>p.op!=='Histórico');
+    _historicos=allPubs.filter(p=>p.op==='Histórico');
     _contacts=contactSnap.docs.map(d=>({id:d.id,...d.data()}));
     _auditLog=auditSnap.docs.map(d=>({id:d.id,...d.data()}));
     _dataLoaded=true;
@@ -526,9 +575,10 @@ async function loadAllData(){
 function updateBadges(){
   const pending=_pubs.filter(p=>p.status==='pending').length;
   const newC=_contacts.filter(c=>c.status==='new').length;
-  const pb=document.getElementById('pendingBadge'),cb=document.getElementById('contactsBadge');
+  const pb=document.getElementById('pendingBadge'),cb=document.getElementById('contactsBadge'),hb=document.getElementById('histBadge');
   if(pending>0){pb.textContent=pending;pb.style.display='inline';}else pb.style.display='none';
   if(newC>0){cb.textContent=newC;cb.style.display='inline';}else cb.style.display='none';
+  if(hb){hb.textContent=fmtNum(_historicos.length);hb.style.display=_historicos.length>0?'inline':'none';}
 }
 
 async function loadMarketData(){
@@ -544,7 +594,7 @@ async function loadMarketData(){
 }
 
 async function refreshPubs(){
-  try{const snap=await db.collection('publications').get();_pubs=snap.docs.map(d=>({id:d.id,...d.data()}));updateBadges();}catch(e){console.error('refreshPubs:',e);}
+  try{const snap=await db.collection('publications').get();const all=snap.docs.map(d=>({id:d.id,...d.data()}));_pubs=all.filter(p=>p.op!=='Histórico');_historicos=all.filter(p=>p.op==='Histórico');updateBadges();}catch(e){console.error('refreshPubs:',e);}
 }
 async function refreshContacts(){
   try{const snap=await db.collection('contactRequests').get();_contacts=snap.docs.map(d=>({id:d.id,...d.data()}));updateBadges();}catch(e){console.error('refreshContacts:',e);}
@@ -577,6 +627,9 @@ const IC={
   search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   trendUp:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
   clock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  file:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  upload:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>',
+  history:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -595,16 +648,38 @@ function renderBarChart(entries,color){
   return`<div class="chart-bars">${bars}</div><div class="chart-labels">${labels}</div>`;
 }
 
-function renderHorizBars(entries,maxVal){
+function renderHorizBars(entries,maxVal,color){
   if(!entries.length)return'';
   const mx=maxVal||Math.max(...entries.map(e=>e[1]),1);
-  return entries.map(([label,val])=>`<div class="stat-row"><div class="stat-label">${esc(truncate(label,18))}</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.max(2,Math.round((val/mx)*100))}%"></div></div><div class="stat-val">${fmtNum(val)}</div></div>`).join('');
+  const bg=color||'linear-gradient(90deg,var(--blue),var(--blue2))';
+  return entries.map(([label,val])=>`<div class="stat-row"><div class="stat-label">${esc(truncate(label,18))}</div><div class="stat-bar-track"><div class="stat-bar-fill" style="width:${Math.max(2,Math.round((val/mx)*100))}%;background:${bg}"></div></div><div class="stat-val">${fmtNum(val)}</div></div>`).join('');
+}
+
+function renderPieChart(entries,size){
+  if(!entries.length)return'<p style="color:var(--txt-muted);font-size:.82rem">Sin datos</p>';
+  const total=entries.reduce((s,e)=>s+e[1],0);
+  if(total===0)return'<p style="color:var(--txt-muted);font-size:.82rem">Sin datos</p>';
+  const colors=['#0891b2','#f59e0b','#10b981','#ef4444','#8b5cf6','#ec4899','#06b6d4','#84cc16'];
+  const sz=size||140;
+  let angle=0;
+  const segments=entries.map((e,i)=>{
+    const pct=e[1]/total;
+    const start=angle;
+    angle+=pct*360;
+    return{label:e[0],val:e[1],pct,start,end:angle,color:colors[i%colors.length]};
+  });
+  let gradParts=[];
+  segments.forEach(s=>{gradParts.push(`${s.color} ${s.start}deg ${s.end}deg`);});
+  const pieStyle=`width:${sz}px;height:${sz}px;border-radius:50%;background:conic-gradient(${gradParts.join(',')})`;
+  const legend=segments.map(s=>`<div class="pie-legend-item"><div class="pie-legend-dot" style="background:${s.color}"></div><span>${esc(s.label)}: <strong>${fmtNum(s.val)}</strong> (${Math.round(s.pct*100)}%)</span></div>`).join('');
+  return`<div class="pie-container"><div style="${pieStyle}"></div><div class="pie-legend">${legend}</div></div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 function renderDashboard(el){
+  const allProps=[..._pubs,..._historicos];
   const pending=_pubs.filter(p=>p.status==='pending');
   const approved=_pubs.filter(p=>p.status==='approved');
   const rejected=_pubs.filter(p=>p.status==='rejected');
@@ -617,26 +692,43 @@ function renderDashboard(el){
   const recentPubs=_pubs.filter(p=>tsMs(p.createdAt)>week).length;
   const monthPubs=_pubs.filter(p=>tsMs(p.createdAt)>month).length;
   const recentContacts=_contacts.filter(c=>tsMs(c.createdAt)>week).length;
-  const monthContacts=_contacts.filter(c=>tsMs(c.createdAt)>month).length;
 
+  // User KPIs
+  const uniquePublishers=new Set(allProps.map(p=>p.userId||p.userEmail).filter(Boolean)).size;
+  const uniqueEmails=new Set(allProps.map(p=>p.userEmail).filter(Boolean));
+  const monthUsers=new Set(allProps.filter(p=>tsMs(p.createdAt)>month).map(p=>p.userId||p.userEmail).filter(Boolean)).size;
+
+  // Avg rental price
+  const alqPricesUSD=alquileres.filter(p=>p.currency==='USD'&&p.price>0).map(p=>p.price);
+  const alqPricesPEN=alquileres.filter(p=>p.currency==='PEN'&&p.price>0).map(p=>p.price);
+  const avgAlqUSD=alqPricesUSD.length?Math.round(alqPricesUSD.reduce((a,b)=>a+b,0)/alqPricesUSD.length):0;
+  const avgAlqPEN=alqPricesPEN.length?Math.round(alqPricesPEN.reduce((a,b)=>a+b,0)/alqPricesPEN.length):0;
+
+  // Avg sale price
+  const ventaPricesUSD=ventas.filter(p=>p.currency==='USD'&&p.price>0).map(p=>p.price);
+  const avgVentaUSD=ventaPricesUSD.length?Math.round(ventaPricesUSD.reduce((a,b)=>a+b,0)/ventaPricesUSD.length):0;
+
+  // USD/m2
+  const ppm2=_pubs.filter(p=>p.currency==='USD'&&p.price>0&&p.area>0).map(p=>Math.round(p.price/p.area));
+  const avgPPM2=ppm2.length?Math.round(ppm2.reduce((a,b)=>a+b,0)/ppm2.length):0;
+
+  // District maps for properties
   const districtMap={};
   _pubs.forEach(p=>{const d=p.district||'Sin distrito';districtMap[d]=(districtMap[d]||0)+1;});
   const topDistricts=Object.entries(districtMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
 
+  // District avg price
+  const districtPriceMap={};
+  _pubs.filter(p=>p.currency==='USD'&&p.price>0).forEach(p=>{
+    const d=p.district||'Sin distrito';
+    if(!districtPriceMap[d])districtPriceMap[d]={sum:0,count:0};
+    districtPriceMap[d].sum+=p.price;districtPriceMap[d].count++;
+  });
+  const topDistrictPrices=Object.entries(districtPriceMap).map(([d,v])=>[d,Math.round(v.sum/v.count)]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+
   const typeMap={};
   _pubs.forEach(p=>{const t=p.type||'Otros';typeMap[t]=(typeMap[t]||0)+1;});
   const typeEntries=Object.entries(typeMap).sort((a,b)=>b[1]-a[1]);
-
-  const pricesUSD=_pubs.filter(p=>p.currency==='USD'&&p.price>0).map(p=>p.price);
-  const avgPriceUSD=pricesUSD.length?Math.round(pricesUSD.reduce((a,b)=>a+b,0)/pricesUSD.length):0;
-  const ppm2=_pubs.filter(p=>p.currency==='USD'&&p.price>0&&p.area>0).map(p=>Math.round(p.price/p.area));
-  const avgPPM2=ppm2.length?Math.round(ppm2.reduce((a,b)=>a+b,0)/ppm2.length):0;
-  const areas=_pubs.filter(p=>p.area>0).map(p=>p.area);
-  const avgArea=areas.length?Math.round(areas.reduce((a,b)=>a+b,0)/areas.length):0;
-
-  const opEntries=[['Venta',ventas.length],['Alquiler',alquileres.length]];
-
-  const uniquePublishers=new Set(_pubs.map(p=>p.userId||p.userEmail).filter(Boolean)).size;
 
   // recent audit activity
   const recentAudit=_auditLog.slice(0,8);
@@ -653,6 +745,26 @@ function renderDashboard(el){
   const monthLabels=monthKeys.map(k=>{const[y,m]=k.split('-');const mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return mn[parseInt(m)-1]+' '+y.slice(2);});
   const monthVals=monthKeys.map(k=>monthlyPubs[k]);
   const monthEntries=monthLabels.map((l,i)=>[l,monthVals[i]]);
+
+  // Key economy KPIs from user profiles
+  const keyBuysByMonth={};
+  const keyPackageTypes={};
+  _auditLog.forEach(e=>{
+    if(!e.action)return;
+    if(e.action==='keys.add'||e.action==='publication.keys_added'||e.action.includes('key')&&e.action.includes('add')){
+      const t=tsMs(e.createdAt);if(!t)return;
+      const d=new Date(t);
+      const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const qty=(e.extras&&e.extras.amount)?Math.abs(e.extras.amount):0;
+      keyBuysByMonth[mk]=(keyBuysByMonth[mk]||0)+qty;
+      const pkg=(e.extras&&e.extras.package)?e.extras.package:'Manual';
+      keyPackageTypes[pkg]=(keyPackageTypes[pkg]||0)+qty;
+    }
+  });
+  const keyMonthKeys=Object.keys(keyBuysByMonth).sort().slice(-6);
+  const keyMonthLabels=keyMonthKeys.map(k=>{const[y,m]=k.split('-');const mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return mn[parseInt(m)-1]+' '+y.slice(2);});
+  const keyMonthEntries=keyMonthLabels.map((l,i)=>[l,keyBuysByMonth[keyMonthKeys[i]]]);
+  const keyPkgEntries=Object.entries(keyPackageTypes).sort((a,b)=>b[1]-a[1]);
 
   el.innerHTML=`
     <div class="main-header">
@@ -695,28 +807,28 @@ function renderDashboard(el){
 
       <div class="kpi-grid">
         <div class="kpi-card accent-blue">
+          <div class="kpi-icon">${IC.users}</div>
+          <div class="kpi-label">Usuarios Activos</div>
+          <div class="kpi-value">${uniquePublishers}</div>
+          <div class="kpi-sub">${monthUsers} activos este mes</div>
+        </div>
+        <div class="kpi-card accent-green">
           <div class="kpi-icon">${IC.chart}</div>
-          <div class="kpi-label">Precio Prom. USD</div>
-          <div class="kpi-value">${avgPriceUSD>0?'$'+fmtNum(avgPriceUSD):'—'}</div>
-          <div class="kpi-sub">${pricesUSD.length} en USD</div>
+          <div class="kpi-label">Precio Prom. Alquiler</div>
+          <div class="kpi-value">${avgAlqUSD>0?'$'+fmtNum(avgAlqUSD):(avgAlqPEN>0?'S/'+fmtNum(avgAlqPEN):'—')}</div>
+          <div class="kpi-sub">${alquileres.length} alquileres${avgAlqPEN>0&&avgAlqUSD>0?' &middot; S/'+fmtNum(avgAlqPEN)+' PEN':''}</div>
         </div>
         <div class="kpi-card accent-blue">
           <div class="kpi-icon">${IC.home}</div>
-          <div class="kpi-label">USD/m² Promedio</div>
-          <div class="kpi-value">${avgPPM2>0?'$'+fmtNum(avgPPM2):'—'}</div>
-          <div class="kpi-sub">${ppm2.length} calculadas</div>
+          <div class="kpi-label">Precio Prom. Venta</div>
+          <div class="kpi-value">${avgVentaUSD>0?'$'+fmtNum(avgVentaUSD):'—'}</div>
+          <div class="kpi-sub">${ventas.length} ventas &middot; ${avgPPM2>0?'$'+fmtNum(avgPPM2)+'/m²':''}</div>
         </div>
-        <div class="kpi-card accent-green">
-          <div class="kpi-icon">${IC.users}</div>
-          <div class="kpi-label">Publicadores</div>
-          <div class="kpi-value">${uniquePublishers}</div>
-          <div class="kpi-sub">usuarios &uacute;nicos</div>
-        </div>
-        <div class="kpi-card accent-amber">
-          <div class="kpi-icon">${IC.key}</div>
-          <div class="kpi-label">Venta / Alquiler</div>
-          <div class="kpi-value">${ventas.length} / ${alquileres.length}</div>
-          <div class="kpi-sub">&aacute;rea prom. ${avgArea>0?fmtNum(avgArea)+' m²':'—'}</div>
+        <div class="kpi-card accent-purple">
+          <div class="kpi-icon">${IC.history}</div>
+          <div class="kpi-label">Hist&oacute;ricos</div>
+          <div class="kpi-value">${fmtNum(_historicos.length)}</div>
+          <div class="kpi-sub">transacciones SUNARP</div>
         </div>
       </div>
 
@@ -733,9 +845,27 @@ function renderDashboard(el){
 
       <div class="grid-2">
         <div class="section-card">
-          <div class="card-header"><h3>${IC.search} Top Distritos</h3></div>
+          <div class="card-header"><h3>${IC.search} Top Distritos (cantidad)</h3></div>
           <div class="card-body">${topDistricts.length?renderHorizBars(topDistricts):'<div class="empty-state"><p>Sin datos</p></div>'}</div>
         </div>
+        <div class="section-card">
+          <div class="card-header"><h3>${IC.chart} Precio Prom. por Distrito (USD)</h3></div>
+          <div class="card-body">${topDistrictPrices.length?renderHorizBars(topDistrictPrices,null,'linear-gradient(90deg,var(--green),#34d399)'):'<div class="empty-state"><p>Sin datos</p></div>'}</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="section-card">
+          <div class="card-header"><h3>${IC.key} Llaves Otorgadas por Mes</h3></div>
+          <div class="card-body">${keyMonthEntries.length?renderBarChart(keyMonthEntries,'linear-gradient(180deg,var(--amber),var(--amber2))'):'<div class="empty-state"><p>Sin datos de llaves en el audit log. Las m&eacute;tricas de llaves se poblar&aacute;n a medida que se registren operaciones.</p></div>'}</div>
+        </div>
+        <div class="section-card">
+          <div class="card-header"><h3>${IC.key} Distribuci&oacute;n por Paquete</h3></div>
+          <div class="card-body">${keyPkgEntries.length?renderPieChart(keyPkgEntries):'<div class="empty-state"><p>Sin datos de paquetes. Se actualizar&aacute; con las operaciones de llaves.</p></div>'}</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
         <div class="section-card">
           <div class="card-header"><h3>${IC.clock} Actividad Reciente</h3></div>
           <div class="card-body" style="padding:0">
@@ -750,46 +880,26 @@ function renderDashboard(el){
             </div>
           </div>
         </div>
+
+        ${pending.length>0?`<div class="section-card">
+          <div class="card-header"><h3>${IC.clock} Pendientes de Moderaci&oacute;n</h3><button class="btn btn-primary btn-sm" onclick="navigateTo('publications')">Ver todas</button></div>
+          <div class="card-body no-pad" style="overflow-x:auto">
+            <table class="data-table"><thead><tr><th>Propiedad</th><th>Distrito</th><th>Precio</th><th>Acciones</th></tr></thead><tbody>
+              ${pending.sort((a,b)=>tsMs(b.createdAt)-tsMs(a.createdAt)).slice(0,5).map(p=>`<tr>
+                <td><strong style="cursor:pointer;color:var(--primary)" onclick="showPubDetail('${esc(p.id)}')">${esc(truncate(p.address||p.title||'—',30))}</strong></td>
+                <td>${esc(p.district||'—')}</td>
+                <td style="white-space:nowrap">${fmtPrice(p.price,p.currency)}</td>
+                <td style="white-space:nowrap"><button class="btn btn-success btn-xs" onclick="approvePub('${esc(p.id)}')">${IC.check}</button> <button class="btn btn-error btn-xs" onclick="rejectPub('${esc(p.id)}')">${IC.x}</button></td>
+              </tr>`).join('')}
+            </tbody></table>
+          </div>
+        </div>`:`<div class="section-card"><div class="card-header"><h3>${IC.check} Estado</h3></div><div class="card-body"><div class="empty-state" style="padding:24px"><p>No hay propiedades pendientes de moderaci&oacute;n</p></div></div></div>`}
       </div>
-
-      ${pending.length>0?`
-      <div class="section-card">
-        <div class="card-header"><h3>${IC.clock} Pendientes de Moderaci&oacute;n</h3><button class="btn btn-primary btn-sm" onclick="navigateTo('publications')">Ver todas</button></div>
-        <div class="card-body no-pad" style="overflow-x:auto">
-          <table class="data-table"><thead><tr><th>Propiedad</th><th>Distrito</th><th>Tipo</th><th>Precio</th><th>Usuario</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>
-            ${pending.sort((a,b)=>tsMs(b.createdAt)-tsMs(a.createdAt)).slice(0,5).map(p=>`<tr>
-              <td><strong style="cursor:pointer;color:var(--primary)" onclick="showPubDetail('${esc(p.id)}')">${esc(truncate(p.address||p.title||'—',35))}</strong></td>
-              <td>${esc(p.district||'—')}</td>
-              <td><span class="badge badge-info">${esc(p.type||'—')}</span></td>
-              <td style="white-space:nowrap">${fmtPrice(p.price,p.currency)}</td>
-              <td style="font-size:.75rem;color:var(--txt-muted)" title="${esc(p.userEmail||'')}">${esc(truncate(p.userEmail||p.userName||'—',20))}</td>
-              <td style="white-space:nowrap;font-size:.75rem">${fmtDate(p.createdAt)}</td>
-              <td style="white-space:nowrap"><button class="btn btn-success btn-sm" onclick="approvePub('${esc(p.id)}')">Aprobar</button> <button class="btn btn-error btn-sm" onclick="rejectPub('${esc(p.id)}')">Rechazar</button></td>
-            </tr>`).join('')}
-          </tbody></table>
-        </div>
-      </div>`:''}
-
-      ${newC.length>0?`
-      <div class="section-card">
-        <div class="card-header"><h3>${IC.mail} Solicitudes Nuevas</h3><button class="btn btn-primary btn-sm" onclick="navigateTo('contacts')">Ver todas</button></div>
-        <div class="card-body no-pad" style="overflow-x:auto">
-          <table class="data-table"><thead><tr><th>De</th><th>Propiedad</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th></tr></thead><tbody>
-            ${newC.sort((a,b)=>tsMs(b.createdAt)-tsMs(a.createdAt)).slice(0,5).map(c=>`<tr>
-              <td><strong>${esc(c.fromName||'—')}</strong><br><span style="font-size:.7rem;color:var(--txt-muted)">${esc(c.fromEmail||'')}</span></td>
-              <td>${esc(truncate(c.propertyAddress||'—',30))}</td>
-              <td><span class="badge badge-new">${esc(kindLabel(c.kind))}</span></td>
-              <td style="max-width:180px;cursor:pointer" title="${esc(c.message||'')}" onclick="showContactDetail('${esc(c.id)}')">${esc(truncate(c.message||'',40))}</td>
-              <td style="white-space:nowrap;font-size:.75rem">${fmtDate(c.createdAt)}</td>
-            </tr>`).join('')}
-          </tbody></table>
-        </div>
-      </div>`:''}
     </div>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PUBLICATIONS
+// PUBLICATIONS (Venta/Alquiler only)
 // ═══════════════════════════════════════════════════════════════
 let _pubFilter={status:'all',search:'',type:'all',op:'all'};
 let _pubSort={key:'createdAt',dir:'desc'};
@@ -829,7 +939,7 @@ function renderPublications(el){
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Gesti&oacute;n de Propiedades</h1><div class="subtitle">${_pubs.length} total &mdash; ${pending} pendientes, ${approved} aprobadas, ${rejected} rechazadas</div></div>
+      <div><h1>Gesti&oacute;n de Propiedades</h1><div class="subtitle">${_pubs.length} total — ${pending} pendientes, ${approved} aprobadas, ${rejected} rechazadas</div></div>
       <div class="header-actions">
         <button class="btn btn-outline" onclick="exportPubs()">Exportar CSV</button>
         <button class="btn btn-outline" onclick="refreshPubs().then(()=>renderPublications(document.getElementById('mainContent')))">${IC.refresh} Actualizar</button>
@@ -887,10 +997,9 @@ function renderPublications(el){
                 <td style="max-width:130px;font-size:.72rem;color:var(--txt-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.userEmail||'')}">${esc(p.userName||p.userEmail||'—')}</td>
                 <td style="white-space:nowrap;font-size:.72rem">${fmtShortDate(p.createdAt)}</td>
                 <td style="white-space:nowrap">
-                  ${p.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePub('${esc(p.id)}')">${IC.check} Aprobar</button> <button class="btn btn-error btn-xs" onclick="rejectPub('${esc(p.id)}')">${IC.x} Rechazar</button>`:
+                  ${p.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePub('${esc(p.id)}')">${IC.check}</button> <button class="btn btn-error btn-xs" onclick="rejectPub('${esc(p.id)}')">${IC.x}</button>`:
                    p.status==='approved'?`<button class="btn btn-outline btn-xs" onclick="unapprovePub('${esc(p.id)}')">Despublicar</button>`:
                    `<button class="btn btn-outline btn-xs" onclick="unapprovePub('${esc(p.id)}')">Re-evaluar</button>`}
-                  <button class="btn-icon" onclick="showPubDetail('${esc(p.id)}')" title="Ver detalle">${IC.eye}</button>
                   <button class="btn-icon" onclick="showEditPub('${esc(p.id)}')" title="Editar">${IC.edit}</button>
                   <button class="btn-icon" onclick="deletePub('${esc(p.id)}')" title="Eliminar" style="color:var(--red)">${IC.trash}</button>
                 </td>
@@ -902,7 +1011,7 @@ function renderPublications(el){
       ${totalPages>1?`<div class="pagination">
         <button class="btn btn-outline btn-sm" onclick="_pubPage=0;renderPublications(document.getElementById('mainContent'))" ${_pubPage===0?'disabled':''}>«</button>
         <button class="btn btn-outline btn-sm" onclick="_pubPage=Math.max(0,_pubPage-1);renderPublications(document.getElementById('mainContent'))" ${_pubPage===0?'disabled':''}>‹</button>
-        <span class="page-info">P&aacute;gina ${_pubPage+1} de ${totalPages} (${filtered.length} resultados)</span>
+        <span class="page-info">Página ${_pubPage+1} de ${totalPages} (${filtered.length} resultados)</span>
         <button class="btn btn-outline btn-sm" onclick="_pubPage=Math.min(${totalPages-1},_pubPage+1);renderPublications(document.getElementById('mainContent'))" ${_pubPage>=totalPages-1?'disabled':''}>›</button>
         <button class="btn btn-outline btn-sm" onclick="_pubPage=${totalPages-1};renderPublications(document.getElementById('mainContent'))" ${_pubPage>=totalPages-1?'disabled':''}>»</button>
       </div>`:''}`}
@@ -916,93 +1025,179 @@ function togglePubSort(key){
 }
 
 function showPubDetail(id){
-  const p=_pubs.find(x=>x.id===id);if(!p)return;
+  const p=[..._pubs,..._historicos].find(x=>x.id===id);if(!p)return;
   adminAudit('publication.view','publication',id);
-  const photos=(p.photoUrls||[]).map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openLightbox('${esc(u)}')" loading="lazy"/>`).join('');
+  const photos=(p.photoUrls||[]);
   const pm2=(p.currency==='USD'&&p.price>0&&p.area>0)?'$'+fmtNum(Math.round(p.price/p.area)):null;
+  const isHist=p.op==='Histórico';
+
+  const heroImg=photos.length?`<div class="fd-hero"><img src="${esc(photos[0])}" onclick="openLightbox('${esc(photos[0])}')" style="cursor:zoom-in"/><div class="fd-hero-overlay"><div class="fd-hero-title">${esc(p.address||p.title||'—')}</div><div class="fd-hero-sub">${esc(p.type||'')} · ${esc(p.op||'')} · ${esc(p.district||'')}</div></div></div>`:
+    `<div class="fd-hero" style="display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#ecfeff,#f0f9ff)"><div style="text-align:center"><div style="font-size:3rem;margin-bottom:8px">${isHist?'📜':'🏠'}</div><div style="font-size:1.2rem;font-weight:800">${esc(p.address||p.title||'—')}</div><div style="font-size:.85rem;color:var(--txt-muted)">${esc(p.type||'')} · ${esc(p.op||'')} · ${esc(p.district||'')}</div></div></div>`;
+
   openModal(`
-    <h3>Detalle de Propiedad</h3>
-    ${photos?`<div class="photo-grid">${photos}</div>`:''}
-    <div class="detail-pane">
-      <div class="detail-row"><div class="dlabel">ID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(p.id)}</div></div>
-      <div class="detail-row"><div class="dlabel">Estado</div><div class="dvalue"><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></div></div>
-      <div class="detail-row"><div class="dlabel">T&iacute;tulo</div><div class="dvalue">${esc(p.title||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Direcci&oacute;n</div><div class="dvalue">${esc(p.address||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Distrito</div><div class="dvalue">${esc(p.district||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Tipo / Op</div><div class="dvalue">${esc(p.type||'—')} — ${esc(p.op||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Precio</div><div class="dvalue">${fmtPrice(p.price,p.currency)}${pm2?' <span style="color:var(--txt-muted);font-size:.78rem">('+pm2+'/m²)</span>':''}</div></div>
-      <div class="detail-row"><div class="dlabel">&Aacute;rea construida</div><div class="dvalue">${p.area?fmtNum(p.area)+' m²':'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">&Aacute;rea terreno</div><div class="dvalue">${p.areaTerr?fmtNum(p.areaTerr)+' m²':'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Dormitorios</div><div class="dvalue">${p.beds||0}</div></div>
-      <div class="detail-row"><div class="dlabel">Ba&ntilde;os</div><div class="dvalue">${p.baths||0}</div></div>
-      <div class="detail-row"><div class="dlabel">Estacionamientos</div><div class="dvalue">${p.parking||0}</div></div>
-      <div class="detail-row"><div class="dlabel">Piso / Total pisos</div><div class="dvalue">${p.floor||'—'} / ${p.floors||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Antig&uuml;edad</div><div class="dvalue">${p.age?p.age+' años':'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Estado construcci&oacute;n</div><div class="dvalue">${esc(p.estado||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Caracter&iacute;sticas</div><div class="dvalue">${[p.ascensor?'Ascensor':null,p.amoblado?'Amoblado':null,p.petFriendly?'Pet Friendly':null].filter(Boolean).join(', ')||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Features</div><div class="dvalue">${(p.features||[]).map(f=>esc(f)).join(', ')||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Coordenadas</div><div class="dvalue">${p.lat!=null?p.lat.toFixed(6)+', '+p.lng.toFixed(6):'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Fuente</div><div class="dvalue">${esc(p.source||'single')}</div></div>
-      <div class="detail-row"><div class="dlabel">Usuario</div><div class="dvalue">${esc(p.userName||'—')}<br><span style="font-size:.72rem;color:var(--txt-muted)">${esc(p.userEmail||'')} &middot; ${esc(p.userId||'')}</span></div></div>
-      <div class="detail-row"><div class="dlabel">Creada</div><div class="dvalue">${fmtDate(p.createdAt)}</div></div>
-      ${p.moderatedAt?`<div class="detail-row"><div class="dlabel">Moderada</div><div class="dvalue">${fmtDate(p.moderatedAt)} por ${esc(p.moderatedBy||'—')}</div></div>`:''}
-      ${p.rejectionReason?`<div class="detail-row"><div class="dlabel">Raz&oacute;n rechazo</div><div class="dvalue" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
+    <div class="full-detail">
+      ${heroImg}
+      ${photos.length>1?`<div class="photo-grid" style="margin-bottom:16px">${photos.map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openLightbox('${esc(u)}')" loading="lazy"/>`).join('')}</div>`:''}
+      <div class="fd-price-row">
+        <div>
+          <div class="fd-price">${fmtPrice(isHist?(p.priceTotal||p.price):p.price,p.currency)}</div>
+          <div style="font-size:.82rem;color:var(--txt-muted)">${isHist?'Valor total de la transacción':p.op==='Alquiler'?'por mes':'precio solicitado'}</div>
+          ${isHist&&p.priceProp&&p.priceProp!==p.priceTotal?`<div style="font-size:.82rem;color:var(--txt-muted);margin-top:4px">Precio propiedad: <strong>${fmtPrice(p.priceProp,p.currency)}</strong></div>`:''}
+        </div>
+        ${pm2?`<div class="fd-price-sqm">${pm2}/m²</div>`:''}
+      </div>
+      <div class="fd-specs">
+        <div class="fd-spec"><div class="sv">${p.area?fmtNum(p.area)+' m²':'—'}</div><div class="sk">Área</div></div>
+        <div class="fd-spec"><div class="sv">${p.beds>0?p.beds:'—'}</div><div class="sk">Dormitorios</div></div>
+        <div class="fd-spec"><div class="sv">${p.baths>0?p.baths:'—'}</div><div class="sk">Baños</div></div>
+        <div class="fd-spec"><div class="sv">${p.parking>0?p.parking:'—'}</div><div class="sk">Parking</div></div>
+        <div class="fd-spec"><div class="sv">${p.age||'—'}</div><div class="sk">Años</div></div>
+        ${p.floor?`<div class="fd-spec"><div class="sv">${p.floor}/${p.floors||'—'}</div><div class="sk">Piso</div></div>`:''}
+      </div>
+      <div class="detail-pane">
+        <div class="detail-row"><div class="dlabel">ID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(p.id)}</div></div>
+        <div class="detail-row"><div class="dlabel">Estado</div><div class="dvalue"><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></div></div>
+        ${isHist?`<div class="detail-row"><div class="dlabel">Transacción</div><div class="dvalue">${p.transactedAt?fmtDate(p.transactedAt):p.txKey?'Key: '+p.txKey:'—'}</div></div>`:''}
+        <div class="detail-row"><div class="dlabel">Área terreno</div><div class="dvalue">${p.areaTerr?fmtNum(p.areaTerr)+' m²':'—'}</div></div>
+        ${isHist&&p.areaTech?`<div class="detail-row"><div class="dlabel">Área técnica</div><div class="dvalue">${fmtNum(p.areaTech)} m²</div></div>`:''}
+        ${isHist&&p.areaOcup?`<div class="detail-row"><div class="dlabel">Área ocupada</div><div class="dvalue">${fmtNum(p.areaOcup)} m²</div></div>`:''}
+        <div class="detail-row"><div class="dlabel">Características</div><div class="dvalue">${[p.ascensor?'Ascensor':null,p.amoblado?'Amoblado':null,p.petFriendly?'Pet Friendly':null].filter(Boolean).join(', ')||'—'}</div></div>
+        <div class="detail-row"><div class="dlabel">Features</div><div class="dvalue">${(p.features||[]).map(f=>esc(f)).join(', ')||'—'}</div></div>
+        <div class="detail-row"><div class="dlabel">Coordenadas</div><div class="dvalue">${p.lat!=null?p.lat.toFixed(6)+', '+p.lng.toFixed(6):'—'}</div></div>
+        <div class="detail-row"><div class="dlabel">Fuente</div><div class="dvalue">${esc(p.source||'single')}</div></div>
+        <div class="detail-row"><div class="dlabel">Usuario</div><div class="dvalue">${esc(p.userName||'—')}<br><span style="font-size:.72rem;color:var(--txt-muted)">${esc(p.userEmail||'')} · ${esc(p.userId||'')}</span></div></div>
+        <div class="detail-row"><div class="dlabel">Creada</div><div class="dvalue">${fmtDate(p.createdAt)}</div></div>
+        ${p.moderatedAt?`<div class="detail-row"><div class="dlabel">Moderada</div><div class="dvalue">${fmtDate(p.moderatedAt)} por ${esc(p.moderatedBy||'—')}</div></div>`:''}
+        ${p.rejectionReason?`<div class="detail-row"><div class="dlabel">Razón rechazo</div><div class="dvalue" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
+      </div>
+      ${p.desc?`<div style="margin-top:12px"><strong style="font-size:.82rem">Descripción:</strong><div style="font-size:.82rem;white-space:pre-wrap;margin-top:6px;padding:12px;background:var(--bg);border-radius:var(--r);max-height:200px;overflow-y:auto">${esc(p.desc)}</div></div>`:''}
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(p.id)}')">${IC.edit} Editar</button>
+        ${p.status==='pending'?`<button class="btn btn-success" onclick="closeModal();approvePub('${esc(p.id)}')">${IC.check} Aprobar</button><button class="btn btn-error" onclick="closeModal();rejectPub('${esc(p.id)}')">${IC.x} Rechazar</button>`:''}
+        <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
+      </div>
     </div>
-    ${p.desc?`<div style="margin-top:12px"><strong style="font-size:.82rem">Descripci&oacute;n:</strong><div style="font-size:.82rem;white-space:pre-wrap;margin-top:6px;padding:12px;background:var(--bg);border-radius:var(--r);max-height:200px;overflow-y:auto">${esc(p.desc)}</div></div>`:''}
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(p.id)}')">${IC.edit} Editar</button>
-      ${p.status==='pending'?`<button class="btn btn-success" onclick="closeModal();approvePub('${esc(p.id)}')">${IC.check} Aprobar</button><button class="btn btn-error" onclick="closeModal();rejectPub('${esc(p.id)}')">${IC.x} Rechazar</button>`:''}
-      ${p.status==='approved'?`<button class="btn btn-outline" onclick="closeModal();unapprovePub('${esc(p.id)}')">Despublicar</button>`:''}
-      ${p.status==='rejected'?`<button class="btn btn-outline" onclick="closeModal();unapprovePub('${esc(p.id)}')">Re-evaluar</button>`:''}
-      <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
-    </div>
-  `,'modal-lg');
+  `,'modal-xl');
+}
+
+// ── Photo manager for edit modals ──
+let _editPhotos=[];
+function buildPhotoManager(photos,prefix){
+  _editPhotos=(photos||[]).slice();
+  const id=prefix||'pm';
+  let html=`<label>Fotos (${_editPhotos.length})</label><div class="photo-manager"><div class="pm-grid" id="${id}_grid">`;
+  _editPhotos.forEach((url,i)=>{
+    html+=`<div class="pm-item"><img src="${esc(url)}"/><div class="pm-actions">
+      ${i>0?`<button class="pm-btn pm-left" onclick="pmMove(${i},-1,'${id}')" title="Mover izq">◀</button>`:''}
+      ${i<_editPhotos.length-1?`<button class="pm-btn pm-right" onclick="pmMove(${i},1,'${id}')" title="Mover der">▶</button>`:''}
+      <button class="pm-btn pm-del" onclick="pmRemove(${i},'${id}')" title="Eliminar">✕</button>
+    </div><div class="pm-order">#${i+1}</div></div>`;
+  });
+  html+=`</div><div class="pm-upload"><input type="file" id="${id}_file" accept="image/*" multiple/><button class="btn btn-outline btn-sm" onclick="pmUpload('${id}')">Subir fotos</button></div></div>`;
+  return html;
+}
+function pmMove(idx,dir,prefix){
+  const newIdx=idx+dir;
+  if(newIdx<0||newIdx>=_editPhotos.length)return;
+  const tmp=_editPhotos[idx];_editPhotos[idx]=_editPhotos[newIdx];_editPhotos[newIdx]=tmp;
+  document.getElementById(prefix+'_grid').innerHTML=buildPhotoGridInner(prefix);
+}
+function pmRemove(idx,prefix){
+  if(!confirm('¿Eliminar esta foto?'))return;
+  _editPhotos.splice(idx,1);
+  document.getElementById(prefix+'_grid').innerHTML=buildPhotoGridInner(prefix);
+}
+function buildPhotoGridInner(prefix){
+  let html='';
+  _editPhotos.forEach((url,i)=>{
+    html+=`<div class="pm-item"><img src="${esc(url)}"/><div class="pm-actions">
+      ${i>0?`<button class="pm-btn pm-left" onclick="pmMove(${i},-1,'${prefix}')" title="Mover izq">◀</button>`:''}
+      ${i<_editPhotos.length-1?`<button class="pm-btn pm-right" onclick="pmMove(${i},1,'${prefix}')" title="Mover der">▶</button>`:''}
+      <button class="pm-btn pm-del" onclick="pmRemove(${i},'${prefix}')" title="Eliminar">✕</button>
+    </div><div class="pm-order">#${i+1}</div></div>`;
+  });
+  return html;
+}
+async function pmUpload(prefix){
+  const input=document.getElementById(prefix+'_file');
+  if(!input||!input.files||!input.files.length)return;
+  const files=Array.from(input.files);
+  toast('Subiendo '+files.length+' foto(s)...');
+  for(const file of files){
+    try{
+      const path='admin_uploads/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+file.name.split('.').pop();
+      const ref=storage.ref(path);
+      await ref.put(file);
+      const url=await ref.getDownloadURL();
+      _editPhotos.push(url);
+    }catch(e){toast('Error subiendo: '+e.message);}
+  }
+  document.getElementById(prefix+'_grid').innerHTML=buildPhotoGridInner(prefix);
+  input.value='';
+  toast('Fotos subidas');
 }
 
 function showEditPub(id){
-  const p=_pubs.find(x=>x.id===id);if(!p)return;
+  const p=[..._pubs,..._historicos].find(x=>x.id===id);if(!p)return;
+  const isHist=p.op==='Histórico';
   openModal(`
-    <h3>${IC.edit} Editar Propiedad</h3>
+    <h3>${IC.edit} Editar ${isHist?'Histórico':'Propiedad'}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-      <div><label>T&iacute;tulo</label><input id="ep_title" value="${esc(p.title||'')}"/></div>
-      <div><label>Direcci&oacute;n</label><input id="ep_address" value="${esc(p.address||'')}"/></div>
+      <div><label>Título</label><input id="ep_title" value="${esc(p.title||'')}"/></div>
+      <div><label>Dirección</label><input id="ep_address" value="${esc(p.address||'')}"/></div>
       <div><label>Distrito</label><input id="ep_district" value="${esc(p.district||'')}"/></div>
       <div><label>Tipo</label><select id="ep_type"><option value="Departamento"${p.type==='Departamento'?' selected':''}>Departamento</option><option value="Casa"${p.type==='Casa'?' selected':''}>Casa</option><option value="Oficina"${p.type==='Oficina'?' selected':''}>Oficina</option><option value="Local comercial"${p.type==='Local comercial'?' selected':''}>Local comercial</option><option value="Terreno"${p.type==='Terreno'?' selected':''}>Terreno</option><option value="Otros"${p.type==='Otros'?' selected':''}>Otros</option></select></div>
-      <div><label>Operaci&oacute;n</label><select id="ep_op"><option value="Venta"${p.op==='Venta'?' selected':''}>Venta</option><option value="Alquiler"${p.op==='Alquiler'?' selected':''}>Alquiler</option></select></div>
+      ${!isHist?`<div><label>Operación</label><select id="ep_op"><option value="Venta"${p.op==='Venta'?' selected':''}>Venta</option><option value="Alquiler"${p.op==='Alquiler'?' selected':''}>Alquiler</option></select></div>`:''}
       <div><label>Precio</label><input id="ep_price" type="number" value="${p.price||0}"/></div>
       <div><label>Moneda</label><select id="ep_currency"><option value="USD"${p.currency==='USD'?' selected':''}>USD</option><option value="PEN"${p.currency==='PEN'?' selected':''}>PEN</option></select></div>
-      <div><label>&Aacute;rea (m²)</label><input id="ep_area" type="number" value="${p.area||0}"/></div>
-      <div><label>Dormitorios</label><input id="ep_beds" type="number" value="${p.beds||0}"/></div>
-      <div><label>Ba&ntilde;os</label><input id="ep_baths" type="number" value="${p.baths||0}"/></div>
-      <div><label>Estacionamientos</label><input id="ep_parking" type="number" value="${p.parking||0}"/></div>
-      <div><label>Antig&uuml;edad (a&ntilde;os)</label><input id="ep_age" type="number" value="${p.age||0}"/></div>
+      <div><label>Área (m²)</label><input id="ep_area" type="number" value="${p.area||0}"/></div>
+      ${isHist?`
+        <div><label>Precio Total</label><input id="ep_priceTotal" type="number" value="${p.priceTotal||0}"/></div>
+        <div><label>Precio Propiedad</label><input id="ep_priceProp" type="number" value="${p.priceProp||0}"/></div>
+        <div><label>Área Técnica</label><input id="ep_areaTech" type="number" value="${p.areaTech||0}"/></div>
+        <div><label>Área Ocupada</label><input id="ep_areaOcup" type="number" value="${p.areaOcup||0}"/></div>
+      `:`
+        <div><label>Dormitorios</label><input id="ep_beds" type="number" value="${p.beds||0}"/></div>
+        <div><label>Baños</label><input id="ep_baths" type="number" value="${p.baths||0}"/></div>
+        <div><label>Estacionamientos</label><input id="ep_parking" type="number" value="${p.parking||0}"/></div>
+        <div><label>Antigüedad (años)</label><input id="ep_age" type="number" value="${p.age||0}"/></div>
+      `}
     </div>
-    <label>Descripci&oacute;n</label>
+    <label>Descripción</label>
     <textarea id="ep_desc" rows="4">${esc(p.desc||'')}</textarea>
+    ${buildPhotoManager(p.photoUrls,'epm')}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveEditPub('${esc(p.id)}')">Guardar Cambios</button>
+      <button class="btn btn-primary" onclick="saveEditPub('${esc(p.id)}',${isHist})">Guardar Cambios</button>
     </div>
-  `,'modal-lg');
+  `,'modal-xl');
 }
 
-async function saveEditPub(id){
+async function saveEditPub(id,isHist){
   try{
     const data={
       title:document.getElementById('ep_title').value.trim(),
       address:document.getElementById('ep_address').value.trim(),
       district:document.getElementById('ep_district').value.trim(),
       type:document.getElementById('ep_type').value,
-      op:document.getElementById('ep_op').value,
       price:Number(document.getElementById('ep_price').value)||0,
       currency:document.getElementById('ep_currency').value,
       area:Number(document.getElementById('ep_area').value)||0,
-      beds:Number(document.getElementById('ep_beds').value)||0,
-      baths:Number(document.getElementById('ep_baths').value)||0,
-      parking:Number(document.getElementById('ep_parking').value)||0,
-      age:Number(document.getElementById('ep_age').value)||0,
       desc:document.getElementById('ep_desc').value.trim(),
+      photoUrls:_editPhotos.slice(),
     };
+    if(isHist){
+      data.priceTotal=Number(document.getElementById('ep_priceTotal').value)||0;
+      data.priceProp=Number(document.getElementById('ep_priceProp').value)||0;
+      data.areaTech=Number(document.getElementById('ep_areaTech').value)||0;
+      data.areaOcup=Number(document.getElementById('ep_areaOcup').value)||0;
+    }else{
+      data.op=document.getElementById('ep_op').value;
+      data.beds=Number(document.getElementById('ep_beds').value)||0;
+      data.baths=Number(document.getElementById('ep_baths').value)||0;
+      data.parking=Number(document.getElementById('ep_parking').value)||0;
+      data.age=Number(document.getElementById('ep_age').value)||0;
+    }
     await db.collection('publications').doc(id).update(data);
     adminAudit('publication.edit','publication',id,{fields:Object.keys(data)});
     closeModal();toast('Propiedad actualizada');
@@ -1078,6 +1273,196 @@ function queueModerationEmail(pub,kind,reason){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// HISTÓRICOS
+// ═══════════════════════════════════════════════════════════════
+let _histFilter={search:'',type:'all',district:'all'};
+let _histSort={key:'createdAt',dir:'desc'};
+let _histPage=0;
+const HIST_PAGE_SIZE=25;
+
+function renderHistoricos(el){
+  let filtered=_historicos.slice();
+  if(_histFilter.type!=='all')filtered=filtered.filter(p=>p.type===_histFilter.type);
+  if(_histFilter.district!=='all')filtered=filtered.filter(p=>p.district===_histFilter.district);
+  if(_histFilter.search){
+    const q=_histFilter.search.toLowerCase();
+    filtered=filtered.filter(p=>(p.address||'').toLowerCase().includes(q)||(p.district||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q));
+  }
+
+  filtered.sort((a,b)=>{
+    let va,vb;
+    switch(_histSort.key){
+      case 'price':va=a.priceTotal||a.price||0;vb=b.priceTotal||b.price||0;break;
+      case 'area':va=a.area||0;vb=b.area||0;break;
+      case 'district':va=(a.district||'').toLowerCase();vb=(b.district||'').toLowerCase();return _histSort.dir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+      default:va=tsMs(a.createdAt);vb=tsMs(b.createdAt);
+    }
+    return _histSort.dir==='asc'?va-vb:vb-va;
+  });
+
+  const totalPages=Math.ceil(filtered.length/HIST_PAGE_SIZE);
+  if(_histPage>=totalPages)_histPage=Math.max(0,totalPages-1);
+  const paged=filtered.slice(_histPage*HIST_PAGE_SIZE,(_histPage+1)*HIST_PAGE_SIZE);
+
+  const districts=[...new Set(_historicos.map(p=>p.district).filter(Boolean))].sort();
+
+  function sortIcon(key){return _histSort.key===key?(_histSort.dir==='asc'?' ↑':' ↓'):'';}
+
+  el.innerHTML=`
+    <div class="main-header">
+      <div><h1>Gestión de Históricos</h1><div class="subtitle">${fmtNum(_historicos.length)} transacciones históricas (SUNARP)</div></div>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="exportHistoricos()">Exportar CSV</button>
+        <button class="btn btn-outline" onclick="refreshPubs().then(()=>renderHistoricos(document.getElementById('mainContent')))">${IC.refresh} Actualizar</button>
+      </div>
+    </div>
+    <div class="main-body">
+      <div class="filter-bar">
+        <div class="search-input">${IC.search}<input placeholder="Buscar dirección, distrito..." value="${esc(_histFilter.search)}" oninput="_histFilter.search=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))"/></div>
+        <select onchange="_histFilter.type=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))">
+          <option value="all"${_histFilter.type==='all'?' selected':''}>Todos los tipos</option>
+          <option value="Departamento">Departamento</option><option value="Casa">Casa</option><option value="Oficina">Oficina</option>
+          <option value="Local comercial">Local comercial</option><option value="Terreno">Terreno</option><option value="Otros">Otros</option>
+        </select>
+        <select onchange="_histFilter.district=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))">
+          <option value="all"${_histFilter.district==='all'?' selected':''}>Todos los distritos (${districts.length})</option>
+          ${districts.map(d=>`<option value="${esc(d)}"${_histFilter.district===d?' selected':''}>${esc(d)}</option>`).join('')}
+        </select>
+      </div>
+
+      ${paged.length===0?'<div class="section-card"><div class="card-body"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>No hay históricos que coincidan.</p></div></div></div>':
+      `<div class="section-card">
+        <div class="card-body no-pad" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>Dirección</th>
+              <th class="sortable" onclick="toggleHistSort('district')">Distrito${sortIcon('district')}</th>
+              <th>Tipo</th>
+              <th class="sortable" onclick="toggleHistSort('price')">Valor Total${sortIcon('price')}</th>
+              <th class="sortable" onclick="toggleHistSort('area')">Área${sortIcon('area')}</th>
+              <th>$/m²</th>
+              <th>Fotos</th>
+              <th class="sortable" onclick="toggleHistSort('createdAt')">Fecha${sortIcon('createdAt')}</th>
+              <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+              ${paged.map(p=>{
+                const total=p.priceTotal||p.price||0;
+                const pm2=(p.currency==='USD'&&total>0&&p.area>0)?Math.round(total/p.area):0;
+                const photoCount=(p.photoUrls||[]).length;
+                return`<tr>
+                <td style="max-width:200px"><strong style="cursor:pointer;color:var(--primary)" onclick="showPubDetail('${esc(p.id)}')">${esc(truncate(p.address||p.title||'—',32))}</strong></td>
+                <td>${esc(p.district||'—')}</td>
+                <td><span class="badge badge-historico">${esc(p.type||'—')}</span></td>
+                <td style="white-space:nowrap">${fmtPrice(total,p.currency)}</td>
+                <td>${p.area?fmtNum(p.area)+' m²':'—'}</td>
+                <td>${pm2?'$'+fmtNum(pm2):'—'}</td>
+                <td style="text-align:center">${photoCount>0?'<span style="color:var(--green)">'+photoCount+'</span>':'—'}</td>
+                <td style="white-space:nowrap;font-size:.72rem">${fmtShortDate(p.createdAt)}</td>
+                <td style="white-space:nowrap">
+                  <button class="btn-icon" onclick="showEditPub('${esc(p.id)}')" title="Editar">${IC.edit}</button>
+                  <button class="btn-icon" onclick="showHistPdfs('${esc(p.id)}')" title="PDFs" style="color:var(--amber)">${IC.file}</button>
+                  <button class="btn-icon" onclick="deletePub('${esc(p.id)}')" title="Eliminar" style="color:var(--red)">${IC.trash}</button>
+                </td>
+              </tr>`;}).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      ${totalPages>1?`<div class="pagination">
+        <button class="btn btn-outline btn-sm" onclick="_histPage=0;renderHistoricos(document.getElementById('mainContent'))" ${_histPage===0?'disabled':''}>«</button>
+        <button class="btn btn-outline btn-sm" onclick="_histPage=Math.max(0,_histPage-1);renderHistoricos(document.getElementById('mainContent'))" ${_histPage===0?'disabled':''}>‹</button>
+        <span class="page-info">Página ${_histPage+1} de ${totalPages} (${filtered.length} resultados)</span>
+        <button class="btn btn-outline btn-sm" onclick="_histPage=Math.min(${totalPages-1},_histPage+1);renderHistoricos(document.getElementById('mainContent'))" ${_histPage>=totalPages-1?'disabled':''}>›</button>
+        <button class="btn btn-outline btn-sm" onclick="_histPage=${totalPages-1};renderHistoricos(document.getElementById('mainContent'))" ${_histPage>=totalPages-1?'disabled':''}>»</button>
+      </div>`:''}`}
+    </div>`;
+}
+
+function toggleHistSort(key){
+  if(_histSort.key===key)_histSort.dir=_histSort.dir==='asc'?'desc':'asc';
+  else{_histSort.key=key;_histSort.dir='desc';}
+  renderHistoricos(document.getElementById('mainContent'));
+}
+
+function showHistPdfs(id){
+  const p=_historicos.find(x=>x.id===id);if(!p)return;
+  const pdfs=p.pdfUrls||p.pdfs||[];
+  const photos=p.photoUrls||[];
+  openModal(`
+    <h3>${IC.file} Archivos del Histórico</h3>
+    <div class="detail-pane">
+      <div class="detail-row"><div class="dlabel">Dirección</div><div class="dvalue">${esc(p.address||'—')}, ${esc(p.district||'')}</div></div>
+      <div class="detail-row"><div class="dlabel">Valor</div><div class="dvalue">${fmtPrice(p.priceTotal||p.price,p.currency)}</div></div>
+    </div>
+    <label>Fotos (${photos.length})</label>
+    ${photos.length?`<div class="photo-grid">${photos.map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openLightbox('${esc(u)}')" loading="lazy"/>`).join('')}</div>`:'<p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:12px">Sin fotos</p>'}
+    <label>PDFs de Transacción (${pdfs.length})</label>
+    ${pdfs.length?`<div class="pdf-list">${pdfs.map((url,i)=>{
+      const label=typeof url==='object'?(url.label||'Partida '+(i+1)):'Documento '+(i+1);
+      const href=typeof url==='object'?url.url:url;
+      return`<div class="pdf-item">${IC.file} <a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a><button class="btn-icon" onclick="pmRemovePdf('${esc(id)}',${i})" title="Eliminar" style="color:var(--red);margin-left:auto">${IC.trash}</button></div>`;
+    }).join('')}</div>`:'<p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:12px">Sin PDFs</p>'}
+    <div style="margin-top:16px;padding:14px;border:2px dashed var(--border);border-radius:var(--r)">
+      <label style="margin-top:0">Subir PDF</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="file" id="hist_pdf_file" accept=".pdf"/>
+        <button class="btn btn-outline btn-sm" onclick="uploadHistPdf('${esc(id)}')">${IC.upload} Subir</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(id)}')">${IC.edit} Editar</button>
+      <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
+    </div>
+  `,'modal-lg');
+}
+
+async function uploadHistPdf(id){
+  const input=document.getElementById('hist_pdf_file');
+  if(!input||!input.files||!input.files.length){toast('Selecciona un PDF');return;}
+  const file=input.files[0];
+  toast('Subiendo PDF...');
+  try{
+    const path='admin_uploads/pdfs/'+Date.now()+'_'+file.name;
+    const ref=storage.ref(path);
+    await ref.put(file);
+    const url=await ref.getDownloadURL();
+    const p=_historicos.find(x=>x.id===id);
+    const current=p?(p.pdfUrls||p.pdfs||[]):[];
+    const updated=[...current,{url,label:file.name}];
+    await db.collection('publications').doc(id).update({pdfUrls:updated});
+    adminAudit('historico.pdf_upload','publication',id,{fileName:file.name});
+    toast('PDF subido');
+    await refreshPubs();
+    showHistPdfs(id);
+  }catch(e){toast('Error: '+e.message);}
+}
+
+async function pmRemovePdf(id,idx){
+  if(!confirm('¿Eliminar este PDF?'))return;
+  try{
+    const p=_historicos.find(x=>x.id===id);
+    const current=p?(p.pdfUrls||p.pdfs||[]):[];
+    const updated=current.filter((_,i)=>i!==idx);
+    await db.collection('publications').doc(id).update({pdfUrls:updated});
+    adminAudit('historico.pdf_delete','publication',id);
+    toast('PDF eliminado');
+    await refreshPubs();
+    showHistPdfs(id);
+  }catch(e){toast('Error: '+e.message);}
+}
+
+function exportHistoricos(){
+  const headers=['ID','Dirección','Distrito','Tipo','Valor Total','Precio Propiedad','Moneda','Área m²','Área Técnica','Área Ocupada','Fotos','PDFs','Fecha'];
+  const rows=_historicos.map(p=>[p.id,p.address||'',p.district||'',p.type||'',p.priceTotal||p.price||0,p.priceProp||0,p.currency||'',p.area||0,p.areaTech||0,p.areaOcup||0,(p.photoUrls||[]).length,(p.pdfUrls||p.pdfs||[]).length,p.createdAt?new Date(tsMs(p.createdAt)).toISOString():'']);
+  const csv=[headers.join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='reco_historicos_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+  toast('Históricos exportados');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // CONTACTS
 // ═══════════════════════════════════════════════════════════════
 let _contactFilter={status:'all',search:'',kind:'all'};
@@ -1094,7 +1479,7 @@ function renderContacts(el){
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Solicitudes de Contacto</h1><div class="subtitle">${_contacts.length} total &mdash; ${newCount} nuevas, ${handledCount} atendidas</div></div>
+      <div><h1>Solicitudes de Contacto</h1><div class="subtitle">${_contacts.length} total — ${newCount} nuevas, ${handledCount} atendidas</div></div>
       <div class="header-actions"><button class="btn btn-outline" onclick="refreshContacts().then(()=>renderContacts(document.getElementById('mainContent')))">${IC.refresh} Actualizar</button></div>
     </div>
     <div class="main-body">
@@ -1107,12 +1492,12 @@ function renderContacts(el){
         </select>
         <select onchange="_contactFilter.kind=this.value;renderContacts(document.getElementById('mainContent'))">
           <option value="all"${_contactFilter.kind==='all'?' selected':''}>Todos los tipos</option>
-          <option value="vendedor">Compra</option><option value="arrendador">Alquiler</option><option value="asesor_reco">Asesor&iacute;a</option>
+          <option value="vendedor">Compra</option><option value="arrendador">Alquiler</option><option value="asesor_reco">Asesoría</option>
         </select>
       </div>
       ${filtered.length===0?'<div class="section-card"><div class="card-body"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg><p>No hay solicitudes que coincidan.</p></div></div></div>':
       `<div class="section-card"><div class="card-body no-pad" style="overflow-x:auto">
-        <table class="data-table"><thead><tr><th>Estado</th><th>De</th><th>Email</th><th>Tel&eacute;fono</th><th>Propiedad</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>
+        <table class="data-table"><thead><tr><th>Estado</th><th>De</th><th>Email</th><th>Teléfono</th><th>Propiedad</th><th>Tipo</th><th>Mensaje</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>
           ${filtered.map(c=>`<tr>
             <td><span class="badge badge-${c.status||'new'}">${c.status==='handled'?'Atendida':'Nueva'}</span></td>
             <td><strong>${esc(c.fromName||'—')}</strong></td>
@@ -1123,7 +1508,7 @@ function renderContacts(el){
             <td style="max-width:180px;cursor:pointer" title="${esc(c.message||'')}" onclick="showContactDetail('${esc(c.id)}')">${esc(truncate(c.message||'',40))}</td>
             <td style="white-space:nowrap;font-size:.72rem">${fmtShortDate(c.createdAt)}</td>
             <td style="white-space:nowrap">
-              ${c.status!=='handled'?`<button class="btn btn-success btn-xs" onclick="markContactHandled('${esc(c.id)}')">${IC.check} Atender</button>`:''}
+              ${c.status!=='handled'?`<button class="btn btn-success btn-xs" onclick="markContactHandled('${esc(c.id)}')">${IC.check}</button>`:''}
               <button class="btn-icon" onclick="showContactDetail('${esc(c.id)}')" title="Ver">${IC.eye}</button>
               <button class="btn-icon" onclick="deleteContact('${esc(c.id)}')" title="Eliminar" style="color:var(--red)">${IC.trash}</button>
             </td>
@@ -1144,12 +1529,9 @@ function showContactDetail(id){
       <div class="detail-row"><div class="dlabel">Tipo</div><div class="dvalue">${esc(kindLabel(c.kind))}</div></div>
       <div class="detail-row"><div class="dlabel">Nombre</div><div class="dvalue">${esc(c.fromName||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Email</div><div class="dvalue"><a href="mailto:${esc(c.fromEmail)}">${esc(c.fromEmail||'—')}</a></div></div>
-      <div class="detail-row"><div class="dlabel">Tel&eacute;fono</div><div class="dvalue">${c.fromPhone?`<a href="tel:${esc(c.fromPhone)}">${esc(c.fromPhone)}</a>`:'—'}</div></div>
+      <div class="detail-row"><div class="dlabel">Teléfono</div><div class="dvalue">${c.fromPhone?`<a href="tel:${esc(c.fromPhone)}">${esc(c.fromPhone)}</a>`:'—'}</div></div>
       <div class="detail-row"><div class="dlabel">Propiedad</div><div class="dvalue">${esc(c.propertyAddress||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Distrito</div><div class="dvalue">${esc(c.propertyDistrict||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Operaci&oacute;n</div><div class="dvalue">${esc(c.propertyOp||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Precio</div><div class="dvalue">${c.propertyPrice?fmtPrice(c.propertyPrice,c.propertyCurrency):'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Propietario pub.</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(c.publicationOwnerId||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Fecha</div><div class="dvalue">${fmtDate(c.createdAt)}</div></div>
     </div>
     <div style="margin-top:12px"><strong style="font-size:.82rem">Mensaje:</strong><div style="font-size:.85rem;white-space:pre-wrap;margin-top:6px;padding:14px;background:var(--bg);border-radius:var(--r)">${esc(c.message||'—')}</div></div>
@@ -1179,7 +1561,7 @@ let _usersSearch='';
 function renderUsers(el){
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Gesti&oacute;n de Usuarios</h1><div class="subtitle">Usuarios, llaves y actividad de la plataforma</div></div>
+      <div><h1>Gestión de Usuarios</h1><div class="subtitle">Usuarios, llaves y actividad de la plataforma</div></div>
       <div class="header-actions"><button class="btn btn-primary" onclick="showAddKeysModal()">${IC.key} Gestionar Llaves</button></div>
     </div>
     <div class="main-body">
@@ -1187,15 +1569,14 @@ function renderUsers(el){
         <div class="section-card">
           <div class="card-header"><h3>${IC.users} Lista de Usuarios</h3><button class="btn btn-outline btn-sm" onclick="loadUsersList()">Cargar usuarios</button></div>
           <div class="card-body" id="usersListContainer">
-            <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:12px">Carga la lista de usuarios registrados desde Firebase Auth. Incluye balance de llaves y actividad.</p>
+            <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:12px">Carga la lista de usuarios registrados desde Firebase Auth.</p>
             <button class="btn btn-primary" onclick="loadUsersList()">Cargar Lista de Usuarios</button>
           </div>
         </div>
-
         <div class="section-card">
           <div class="card-header"><h3>${IC.key} Administrar Llaves</h3></div>
           <div class="card-body">
-            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Agrega o quita llaves de un usuario espec&iacute;fico.</p>
+            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Agrega o quita llaves de un usuario específico.</p>
             <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
               <div style="flex:1;min-width:200px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email</label><input id="keysEmail" type="email" placeholder="usuario@ejemplo.com" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
               <div style="width:100px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Cantidad</label><input id="keysAmount" type="number" min="-100" max="100" value="5" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
@@ -1206,7 +1587,6 @@ function renderUsers(el){
           </div>
         </div>
       </div>
-
       <div class="section-card">
         <div class="card-header"><h3>${IC.chart} Actividad por Usuario</h3></div>
         <div class="card-body">${renderUserActivityTable()}</div>
@@ -1228,7 +1608,7 @@ function renderUserActivityTable(){
   const sorted=Object.entries(userPubs).sort((a,b)=>b[1].count-a[1].count).slice(0,30);
   if(!sorted.length)return'<div class="empty-state"><p>Sin publicaciones registradas</p></div>';
   return`<div style="overflow-x:auto"><table class="data-table">
-    <thead><tr><th>Usuario</th><th>Email</th><th>Total Pubs</th><th>Aprobadas</th><th>Pendientes</th><th>Rechazadas</th><th>&Uacute;ltima Actividad</th></tr></thead>
+    <thead><tr><th>Usuario</th><th>Email</th><th>Total</th><th>Aprob.</th><th>Pend.</th><th>Rech.</th><th>Última</th></tr></thead>
     <tbody>${sorted.map(([key,u])=>`<tr>
       <td><strong>${esc(u.name||'—')}</strong></td>
       <td style="font-size:.78rem">${esc(u.email||key)}</td>
@@ -1252,7 +1632,7 @@ async function loadUsersList(){
     renderUsersList(container);
   }catch(e){
     if(e.code==='not-found'||(e.message&&e.message.includes('not found'))){
-      container.innerHTML='<div style="padding:16px;background:var(--warning-light);border-radius:var(--r);color:var(--warning-dark);font-size:.85rem">El Cloud Function <code>adminListUsers</code> a&uacute;n no est&aacute; desplegado. Se habilitar&aacute; en la fase de integraci&oacute;n.<br><br>Mientras tanto, usa los datos de actividad de publicaciones para ver los usuarios activos.</div>';
+      container.innerHTML='<div style="padding:16px;background:var(--warning-light);border-radius:var(--r);color:var(--warning-dark);font-size:.85rem">El Cloud Function <code>adminListUsers</code> aún no está desplegado. Se habilitará en la fase de integración.</div>';
     }else{
       container.innerHTML='<div style="color:var(--red);font-size:.85rem">Error: '+esc(e.message)+'</div>';
     }
@@ -1266,7 +1646,7 @@ function renderUsersList(container){
   if(_usersSearch){const q=_usersSearch.toLowerCase();users=users.filter(u=>(u.email||'').toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q));}
   html+=`<div style="max-height:400px;overflow-y:auto">`;
   users.forEach(u=>{
-    html+=`<div class="user-row" onclick="showUserDetail(${esc(JSON.stringify(u).replace(/'/g,'\\\''))})">
+    html+=`<div class="user-row" onclick='showUserDetail(${JSON.stringify(u).replace(/'/g,"&#39;")})'>
       <div class="u-avatar">${initials(u.displayName||u.email)}</div>
       <div class="u-info"><div class="u-name">${esc(u.displayName||'Sin nombre')}${u.isAdmin?' <span class="badge badge-admin">Admin</span>':''}</div><div class="u-email">${esc(u.email||'—')}</div></div>
       <div class="u-meta">
@@ -1276,7 +1656,7 @@ function renderUsersList(container){
     </div>`;
   });
   html+=`</div>`;
-  if(_usersPageToken)html+=`<div style="text-align:center;margin-top:12px"><button class="btn btn-outline btn-sm" onclick="loadMoreUsers()">Cargar m&aacute;s usuarios</button></div>`;
+  if(_usersPageToken)html+=`<div style="text-align:center;margin-top:12px"><button class="btn btn-outline btn-sm" onclick="loadMoreUsers()">Cargar más</button></div>`;
   container.innerHTML=html;
 }
 
@@ -1287,14 +1667,12 @@ function showUserDetail(u){
       <div class="detail-row"><div class="dlabel">UID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(u.uid)}</div></div>
       <div class="detail-row"><div class="dlabel">Nombre</div><div class="dvalue">${esc(u.displayName||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Email</div><div class="dvalue">${esc(u.email||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Email verificado</div><div class="dvalue">${u.emailVerified?'<span style="color:var(--green)">Sí</span>':'<span style="color:var(--red)">No</span>'}</div></div>
+      <div class="detail-row"><div class="dlabel">Verificado</div><div class="dvalue">${u.emailVerified?'<span style="color:var(--green)">Sí</span>':'<span style="color:var(--red)">No</span>'}</div></div>
       <div class="detail-row"><div class="dlabel">Admin</div><div class="dvalue">${u.isAdmin?'<span class="badge badge-admin">Admin</span>':'No'}</div></div>
       <div class="detail-row"><div class="dlabel">Llaves</div><div class="dvalue"><strong>${u.keysLeft||0}</strong></div></div>
       <div class="detail-row"><div class="dlabel">Favoritos</div><div class="dvalue">${u.favoritesCount||0}</div></div>
-      <div class="detail-row"><div class="dlabel">Historial llaves</div><div class="dvalue">${u.keyHistoryCount||0} entradas</div></div>
       <div class="detail-row"><div class="dlabel">Creado</div><div class="dvalue">${u.createdAt||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">&Uacute;ltimo login</div><div class="dvalue">${u.lastSignIn||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Deshabilitado</div><div class="dvalue">${u.disabled?'<span style="color:var(--red)">Sí</span>':'No'}</div></div>
+      <div class="detail-row"><div class="dlabel">Último login</div><div class="dvalue">${u.lastSignIn||'—'}</div></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary" onclick="closeModal();document.getElementById('keysEmail').value='${esc(u.email)}';navigateTo('users')">Gestionar llaves</button>
@@ -1305,13 +1683,12 @@ function showUserDetail(u){
 
 async function loadMoreUsers(){
   if(!_usersPageToken)return;
-  const container=document.getElementById('usersListContainer');
   try{
     const fn=fns.httpsCallable('adminListUsers');
     const res=await fn({limit:100,pageToken:_usersPageToken});
     _usersData=_usersData.concat(res.data.users||[]);
     _usersPageToken=res.data.nextPageToken||null;
-    renderUsersList(container);
+    renderUsersList(document.getElementById('usersListContainer'));
   }catch(e){toast('Error: '+e.message);}
 }
 
@@ -1345,7 +1722,7 @@ async function modalAddKeys(){
     toast(Math.abs(amount)+' llaves '+(amount>0?'agregadas':'quitadas'));
   }catch(e){
     if(e.code==='not-found'||(e.message&&e.message.includes('not found'))){
-      result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminUpdateUserKeys</code> no desplegado a&uacute;n.</span>';
+      result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminUpdateUserKeys</code> no desplegado aún.</span>';
     }else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
   }
 }
@@ -1363,7 +1740,7 @@ async function addUserKeys(){
     result.innerHTML=`<span style="color:var(--green)">+${amount} llaves para ${esc(email)}. Balance: ${res.data.previousBalance} → ${res.data.newBalance}</span>`;
     toast(amount+' llaves agregadas');
   }catch(e){
-    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado a&uacute;n.</span>';
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado aún.</span>';
     else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
   }
 }
@@ -1381,7 +1758,7 @@ async function removeUserKeys(){
     result.innerHTML=`<span style="color:var(--green)">${amount} llaves para ${esc(email)}. Balance: ${res.data.previousBalance} → ${res.data.newBalance}</span>`;
     toast(Math.abs(amount)+' llaves removidas');
   }catch(e){
-    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado a&uacute;n.</span>';
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado aún.</span>';
     else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
   }
 }
@@ -1402,27 +1779,25 @@ function renderAdmins(el){
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Administradores</h1><div class="subtitle">Gesti&oacute;n del equipo admin de Reco</div></div>
+      <div><h1>Administradores</h1><div class="subtitle">Gestión del equipo admin de Reco</div></div>
     </div>
     <div class="main-body">
       <div class="grid-2">
         <div class="section-card">
           <div class="card-header"><h3>${IC.shield} Gestionar Admin Claims</h3></div>
           <div class="card-body">
-            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Otorga o revoca permisos de administrador. Los emails semilla siempre tienen acceso: ${ADMIN_EMAILS.map(e=>'<code>'+esc(e)+'</code>').join(', ')}</p>
+            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Otorga o revoca permisos de administrador. Emails semilla: ${ADMIN_EMAILS.map(e=>'<code>'+esc(e)+'</code>').join(', ')}</p>
             <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
               <div style="flex:1;min-width:200px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email</label><input id="adminClaimEmail" type="email" placeholder="usuario@ejemplo.com" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
-              <button class="btn btn-success" onclick="setAdminClaim(true)">${IC.check} Otorgar</button>
-              <button class="btn btn-error" onclick="setAdminClaim(false)">${IC.x} Revocar</button>
+              <button class="btn btn-success" onclick="setAdminClaimFn(true)">${IC.check} Otorgar</button>
+              <button class="btn btn-error" onclick="setAdminClaimFn(false)">${IC.x} Revocar</button>
             </div>
             <div id="adminClaimResult" style="margin-top:12px;font-size:.85rem"></div>
           </div>
         </div>
-
         <div class="section-card">
           <div class="card-header"><h3>${IC.shield} Admins Semilla</h3></div>
           <div class="card-body">
-            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:12px">Emails con acceso permanente al panel (definidos en el c&oacute;digo):</p>
             ${ADMIN_EMAILS.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r);margin-bottom:8px">
               <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem">${initials(e.split('@')[0])}</div>
               <div style="flex:1"><strong style="font-size:.84rem">${esc(e)}</strong><br><span style="font-size:.7rem;color:var(--txt-muted)">Admin permanente</span></div>
@@ -1431,12 +1806,11 @@ function renderAdmins(el){
           </div>
         </div>
       </div>
-
       <div class="section-card" style="margin-top:20px">
         <div class="card-header"><h3>${IC.chart} Actividad de Administradores</h3></div>
         <div class="card-body">
           ${adminList.length?`<div style="overflow-x:auto"><table class="data-table">
-            <thead><tr><th>Admin</th><th>Total Acciones</th><th>&Uacute;ltima Acci&oacute;n</th><th>Fecha</th></tr></thead>
+            <thead><tr><th>Admin</th><th>Total</th><th>Última Acción</th><th>Fecha</th></tr></thead>
             <tbody>${adminList.map(([email,data])=>`<tr>
               <td><strong>${esc(email)}</strong></td>
               <td>${data.count}</td>
@@ -1449,7 +1823,7 @@ function renderAdmins(el){
     </div>`;
 }
 
-async function setAdminClaim(grant){
+async function setAdminClaimFn(grant){
   const email=document.getElementById('adminClaimEmail').value.trim();
   if(!email){toast('Ingresa un email');return;}
   if(!confirm(`¿${grant?'Otorgar':'Revocar'} admin para ${email}?`))return;
@@ -1471,14 +1845,14 @@ let _marketTab='bcrp';
 function renderMarket(el){
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Datos de Mercado</h1><div class="subtitle">Precios, valores arancelarios y zonificaci&oacute;n de Lima</div></div>
+      <div><h1>Datos de Mercado</h1><div class="subtitle">Precios, valores arancelarios y zonificación de Lima</div></div>
     </div>
     <div class="main-body">
       <div class="tab-bar">
         <button class="tab-btn${_marketTab==='bcrp'?' active':''}" onclick="_marketTab='bcrp';renderMarket(document.getElementById('mainContent'))">BCRP Precios</button>
         <button class="tab-btn${_marketTab==='tasaciones'?' active':''}" onclick="_marketTab='tasaciones';renderMarket(document.getElementById('mainContent'))">Tasaciones</button>
         <button class="tab-btn${_marketTab==='mef'?' active':''}" onclick="_marketTab='mef';renderMarket(document.getElementById('mainContent'))">Valores MEF</button>
-        <button class="tab-btn${_marketTab==='zoni'?' active':''}" onclick="_marketTab='zoni';renderMarket(document.getElementById('mainContent'))">Zonificaci&oacute;n</button>
+        <button class="tab-btn${_marketTab==='zoni'?' active':''}" onclick="_marketTab='zoni';renderMarket(document.getElementById('mainContent'))">Zonificación</button>
       </div>
       ${renderMarketTab()}
     </div>`;
@@ -1499,14 +1873,14 @@ function renderMarketTab(){
           <div class="card-body">${priceEntries.length?renderBarChart(priceEntries):'Sin datos'}</div>
         </div>
         <div class="section-card">
-          <div class="card-header"><h3>${IC.trendUp} &Iacute;ndice BCRP</h3></div>
+          <div class="card-header"><h3>${IC.trendUp} Índice BCRP</h3></div>
           <div class="card-body">${indexEntries.length?renderBarChart(indexEntries,'var(--green)'):'Sin datos'}</div>
         </div>
       </div>
       <div class="section-card" style="margin-top:20px">
-        <div class="card-header"><h3>Serie Anual Completa</h3><span style="font-size:.72rem;color:var(--txt-muted)">${esc(d.bcrp.metadata?.fuente||'')} &mdash; Base: ${esc(d.bcrp.metadata?.base||'')}</span></div>
+        <div class="card-header"><h3>Serie Anual Completa</h3><span style="font-size:.72rem;color:var(--txt-muted)">${esc(d.bcrp.metadata?.fuente||'')} — Base: ${esc(d.bcrp.metadata?.base||'')}</span></div>
         <div class="card-body no-pad" style="overflow-x:auto">
-          <table class="data-table"><thead><tr><th>A&ntilde;o</th><th>&Iacute;ndice</th><th>Precio USD/m²</th><th>Var. Anual</th></tr></thead><tbody>
+          <table class="data-table"><thead><tr><th>Año</th><th>Índice</th><th>Precio USD/m²</th><th>Var. Anual</th></tr></thead><tbody>
             ${years.map(y=>{const v=anual[y];const vc=(v.variacion_anual_pct||0)>=0?'var(--green)':'var(--red)';return`<tr><td><strong>${y}</strong></td><td>${v.indice||'—'}</td><td>$${fmtNum(v.precio_promedio_usd_m2||0)}</td><td style="color:${vc};font-weight:600">${(v.variacion_anual_pct||0)>=0?'+':''}${v.variacion_anual_pct||0}%</td></tr>`;}).join('')}
           </tbody></table>
         </div>
@@ -1517,9 +1891,9 @@ function renderMarketTab(){
     const distritos=d.tasaciones.distritos||{};
     const names=Object.keys(distritos).sort();
     const summary=names.map(name=>{
-      const dist=distritos[name];const yrs=Object.keys(dist.años||{}).sort();
-      const latest=yrs.length?(dist.años)[yrs[yrs.length-1]]:null;
-      return{name,total:dist.total_tasaciones||0,dept:dist.departamento||'',latest,latestYear:yrs[yrs.length-1]||''};
+      const dist=distritos[name];const yrs=Object.keys(dist.años||dist.anos||{}).sort();
+      const latest=yrs.length?(dist.años||dist.anos)[yrs[yrs.length-1]]:null;
+      return{name,total:dist.total_tasaciones||0,latest,latestYear:yrs[yrs.length-1]||''};
     }).sort((a,b)=>b.total-a.total);
     const topByPrice=summary.filter(s=>s.latest&&s.latest.mediana_usd_m2).sort((a,b)=>(b.latest.mediana_usd_m2||0)-(a.latest.mediana_usd_m2||0)).slice(0,15);
     return`
@@ -1528,9 +1902,9 @@ function renderMarketTab(){
         <div class="card-body">${topByPrice.length?renderHorizBars(topByPrice.map(s=>[s.name,s.latest.mediana_usd_m2||0])):'Sin datos'}</div>
       </div>
       <div class="section-card">
-        <div class="card-header"><h3>Tasaciones por Distrito</h3><span style="font-size:.72rem;color:var(--txt-muted)">${fmtNum(d.tasaciones.metadata?.total_registros||0)} registros &mdash; ${fmtNum(d.tasaciones.metadata?.total_distritos||0)} distritos</span></div>
+        <div class="card-header"><h3>Tasaciones por Distrito</h3><span style="font-size:.72rem;color:var(--txt-muted)">${fmtNum(d.tasaciones.metadata?.total_registros||0)} registros</span></div>
         <div class="card-body no-pad" style="overflow-x:auto;max-height:500px">
-          <table class="data-table"><thead><tr><th>Distrito</th><th>Total</th><th>&Uacute;lt. A&ntilde;o</th><th>Mediana USD/m²</th><th>Promedio</th><th>Min</th><th>Max</th><th>N</th></tr></thead><tbody>
+          <table class="data-table"><thead><tr><th>Distrito</th><th>Total</th><th>Año</th><th>Mediana</th><th>Promedio</th><th>Min</th><th>Max</th></tr></thead><tbody>
             ${summary.slice(0,60).map(s=>`<tr>
               <td><strong>${esc(s.name)}</strong></td>
               <td>${fmtNum(s.total)}</td>
@@ -1539,7 +1913,6 @@ function renderMarketTab(){
               <td>${s.latest?'$'+fmtNum(Math.round(s.latest.promedio_usd_m2||0)):'—'}</td>
               <td>${s.latest?'$'+fmtNum(s.latest.min||0):'—'}</td>
               <td>${s.latest?'$'+fmtNum(s.latest.max||0):'—'}</td>
-              <td>${s.latest?fmtNum(s.latest.n_tasaciones||0):'—'}</td>
             </tr>`).join('')}
           </tbody></table>
         </div>
@@ -1549,39 +1922,37 @@ function renderMarketTab(){
     if(!d.mef)return'<div class="empty-state"><p>Datos MEF no disponibles</p></div>';
     const zonas=d.mef.lima_zonas||{};
     const entries=Object.entries(zonas).sort((a,b)=>(b[1].valor_usd_m2||0)-(a[1].valor_usd_m2||0));
-    return`
-      <div class="section-card">
-        <div class="card-header"><h3>${IC.home} Valores Arancelarios MEF &mdash; Lima</h3><span style="font-size:.72rem;color:var(--txt-muted)">${esc(d.mef.metadata?.resolucion||'')} &mdash; TC: ${d.mef.metadata?.tipo_cambio_ref||''}</span></div>
-        <div class="card-body no-pad" style="overflow-x:auto">
-          <table class="data-table"><thead><tr><th>Zona</th><th>Distrito</th><th>Uso</th><th>Zona Arancel</th><th>Valor USD/m²</th></tr></thead><tbody>
-            ${entries.map(([key,z])=>`<tr><td><strong>${esc(key.replace(/_/g,' '))}</strong></td><td>${esc(z.distrito||'—')}</td><td>${esc(z.uso||'—')}</td><td><span class="badge badge-info">${esc(z.zona_arancel||'—')}</span></td><td><strong>$${fmtNum(z.valor_usd_m2||0)}</strong></td></tr>`).join('')}
-          </tbody></table>
-        </div>
-      </div>`;
+    return`<div class="section-card">
+      <div class="card-header"><h3>${IC.home} Valores Arancelarios MEF</h3><span style="font-size:.72rem;color:var(--txt-muted)">${esc(d.mef.metadata?.resolucion||'')}</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Zona</th><th>Distrito</th><th>Uso</th><th>Zona Arancel</th><th>USD/m²</th></tr></thead><tbody>
+          ${entries.map(([key,z])=>`<tr><td><strong>${esc(key.replace(/_/g,' '))}</strong></td><td>${esc(z.distrito||'—')}</td><td>${esc(z.uso||'—')}</td><td><span class="badge badge-info">${esc(z.zona_arancel||'—')}</span></td><td><strong>$${fmtNum(z.valor_usd_m2||0)}</strong></td></tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
   }
   if(_marketTab==='zoni'){
     if(!d.zoni)return'<div class="empty-state"><p>Datos de zonificación no disponibles</p></div>';
     const tipos=d.zoni.tipos_zonificacion||{};
     const entries=Object.entries(tipos);
-    return`
-      <div class="section-card">
-        <div class="card-header"><h3>${IC.home} Zonificaci&oacute;n Lima Metropolitana (IMP)</h3><span style="font-size:.72rem;color:var(--txt-muted)">${esc(d.zoni.metadata?.instrumento||'')}</span></div>
-        <div class="card-body no-pad" style="overflow-x:auto">
-          <table class="data-table"><thead><tr><th>C&oacute;digo</th><th>Nombre</th><th>Densidad</th><th>Lote m&iacute;n</th><th>Frente</th><th>Altura</th><th>Coef.</th><th>&Aacute;rea Libre</th><th>Distritos</th></tr></thead><tbody>
-            ${entries.map(([code,z])=>`<tr>
-              <td><strong>${esc(code)}</strong></td>
-              <td>${esc(z.nombre||'—')}</td>
-              <td>${fmtNum(z.densidad_neta_hab_ha||0)} hab/ha</td>
-              <td>${fmtNum(z.area_lote_min_m2||0)} m²</td>
-              <td>${z.frente_min_m||'—'} m</td>
-              <td>${z.altura_max_pisos||'—'} pisos</td>
-              <td>${z.coeficiente_edificacion||'—'}</td>
-              <td>${z.porcentaje_area_libre||'—'}%</td>
-              <td style="max-width:200px;font-size:.72rem">${(z.distritos_tipicos||[]).map(d=>esc(d)).join(', ')}</td>
-            </tr>`).join('')}
-          </tbody></table>
-        </div>
-      </div>`;
+    return`<div class="section-card">
+      <div class="card-header"><h3>${IC.home} Zonificación Lima (IMP)</h3></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Código</th><th>Nombre</th><th>Densidad</th><th>Lote mín</th><th>Frente</th><th>Altura</th><th>Coef.</th><th>Área Libre</th><th>Distritos</th></tr></thead><tbody>
+          ${entries.map(([code,z])=>`<tr>
+            <td><strong>${esc(code)}</strong></td>
+            <td>${esc(z.nombre||'—')}</td>
+            <td>${fmtNum(z.densidad_neta_hab_ha||0)} hab/ha</td>
+            <td>${fmtNum(z.area_lote_min_m2||0)} m²</td>
+            <td>${z.frente_min_m||'—'} m</td>
+            <td>${z.altura_max_pisos||'—'} pisos</td>
+            <td>${z.coeficiente_edificacion||'—'}</td>
+            <td>${z.porcentaje_area_libre||'—'}%</td>
+            <td style="max-width:200px;font-size:.72rem">${(z.distritos_tipicos||[]).map(d=>esc(d)).join(', ')}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`;
   }
   return'';
 }
@@ -1603,7 +1974,7 @@ function renderAudit(el){
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Audit Log</h1><div class="subtitle">${_auditLog.length} entradas (m&aacute;x 200)</div></div>
+      <div><h1>Audit Log</h1><div class="subtitle">${_auditLog.length} entradas (máx 200)</div></div>
       <div class="header-actions">
         <button class="btn btn-outline" onclick="exportAudit()">Exportar</button>
         <button class="btn btn-outline" onclick="refreshAudit()">${IC.refresh} Actualizar</button>
@@ -1611,11 +1982,11 @@ function renderAudit(el){
     </div>
     <div class="main-body">
       <div class="filter-bar">
-        <div class="search-input">${IC.search}<input placeholder="Filtrar por acci&oacute;n, email, target..." value="${esc(_auditFilter)}" oninput="_auditFilter=this.value;_auditPage=0;renderAudit(document.getElementById('mainContent'))"/></div>
+        <div class="search-input">${IC.search}<input placeholder="Filtrar por acción, email, target..." value="${esc(_auditFilter)}" oninput="_auditFilter=this.value;_auditPage=0;renderAudit(document.getElementById('mainContent'))"/></div>
       </div>
       ${paged.length===0?'<div class="section-card"><div class="card-body"><div class="empty-state"><p>Sin entradas que coincidan.</p></div></div></div>':
       `<div class="section-card"><div class="card-body no-pad" style="overflow-x:auto">
-        <table class="data-table"><thead><tr><th>Fecha</th><th>Acci&oacute;n</th><th>Admin</th><th>Target</th><th></th></tr></thead><tbody>
+        <table class="data-table"><thead><tr><th>Fecha</th><th>Acción</th><th>Admin</th><th>Target</th><th></th></tr></thead><tbody>
           ${paged.map(e=>{
             const ts=e.createdAt&&e.createdAt.toMillis?new Date(e.createdAt.toMillis()).toLocaleString('es-PE',{dateStyle:'short',timeStyle:'short'}):'—';
             const isSystem=e.adminUid==='system';
@@ -1647,7 +2018,7 @@ function showAuditDetail(id){
     <h3>Detalle de Audit Log</h3>
     <div class="detail-pane">
       <div class="detail-row"><div class="dlabel">ID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(e.id)}</div></div>
-      <div class="detail-row"><div class="dlabel">Acci&oacute;n</div><div class="dvalue">${esc(e.action||'—')}</div></div>
+      <div class="detail-row"><div class="dlabel">Acción</div><div class="dvalue">${esc(e.action||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Admin UID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(e.adminUid||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Admin Email</div><div class="dvalue">${esc(e.adminEmail||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Target</div><div class="dvalue">${esc(e.targetType||'—')} / <span style="font-family:var(--mono);font-size:.72rem">${esc(e.targetId||'—')}</span></div></div>
