@@ -1101,8 +1101,10 @@ function showPubDetail(id){
         ${p.rejectionReason?`<div class="detail-row"><div class="dlabel">Razón rechazo</div><div class="dvalue" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
       </div>
       ${p.desc?`<div style="margin-top:12px"><strong style="font-size:.82rem">Descripción:</strong><div style="font-size:.82rem;white-space:pre-wrap;margin-top:6px;padding:12px;background:var(--bg);border-radius:var(--r);max-height:200px;overflow-y:auto">${esc(p.desc)}</div></div>`:''}
+      ${isHist&&(p.pdfUrls||p.pdfs||[]).length?`<div style="margin-top:12px"><strong style="font-size:.82rem">PDFs de Transacción (${(p.pdfUrls||p.pdfs||[]).length}):</strong><div class="pdf-list" style="margin-top:6px">${(p.pdfUrls||p.pdfs||[]).map((url,i)=>{const label=typeof url==='object'?(url.label||'Documento '+(i+1)):'Documento '+(i+1);const href=typeof url==='object'?url.url:url;return`<div class="pdf-item">${IC.file} <a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a></div>`;}).join('')}</div></div>`:''}
       <div class="modal-actions">
         <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(p.id)}')">${IC.edit} Editar</button>
+        ${isHist?`<button class="btn btn-outline" onclick="closeModal();showHistPdfs('${esc(p.id)}')">${IC.file} Archivos</button>`:''}
         ${p.status==='pending'?`<button class="btn btn-success" onclick="closeModal();approvePub('${esc(p.id)}')">${IC.check} Aprobar</button><button class="btn btn-error" onclick="closeModal();rejectPub('${esc(p.id)}')">${IC.x} Rechazar</button>`:''}
         <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
       </div>
@@ -1455,6 +1457,12 @@ function toggleHistSort(key){
   renderHistoricos(document.getElementById('mainContent'));
 }
 
+function buildHistPhotoGrid(id){
+  const photos=(_historicos.find(x=>x.id===id)||{}).photoUrls||[];
+  if(!photos.length)return'<p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:12px">Sin fotos</p>';
+  return`<div class="photo-grid">${photos.map((u,i)=>`<div style="position:relative;display:inline-block"><img src="${esc(u)}" onclick="event.stopPropagation();openLightbox('${esc(u)}')" loading="lazy" style="cursor:zoom-in"/><button class="btn-icon" onclick="histPhotoRemove('${esc(id)}',${i})" title="Eliminar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border-radius:50%;width:24px;height:24px;font-size:.7rem;display:flex;align-items:center;justify-content:center">${IC.trash}</button></div>`).join('')}</div>`;
+}
+
 function showHistPdfs(id){
   const p=_historicos.find(x=>x.id===id);if(!p)return;
   const pdfs=p.pdfUrls||p.pdfs||[];
@@ -1466,8 +1474,12 @@ function showHistPdfs(id){
       <div class="detail-row"><div class="dlabel">Valor</div><div class="dvalue">${fmtPrice(p.priceTotal||p.price,p.currency)}</div></div>
     </div>
     <label>Fotos (${photos.length})</label>
-    ${photos.length?`<div class="photo-grid">${photos.map(u=>`<img src="${esc(u)}" onclick="event.stopPropagation();openLightbox('${esc(u)}')" loading="lazy"/>`).join('')}</div>`:'<p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:12px">Sin fotos</p>'}
-    <label>PDFs de Transacción (${pdfs.length})</label>
+    <div id="hist_photos_grid">${buildHistPhotoGrid(id)}</div>
+    <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+      <input type="file" id="hist_photo_file" accept="image/*" multiple/>
+      <button class="btn btn-outline btn-sm" onclick="histPhotoUpload('${esc(id)}')">${IC.upload} Subir fotos</button>
+    </div>
+    <label style="margin-top:16px">PDFs de Transacción (${pdfs.length})</label>
     ${pdfs.length?`<div class="pdf-list">${pdfs.map((url,i)=>{
       const label=typeof url==='object'?(url.label||'Partida '+(i+1)):'Documento '+(i+1);
       const href=typeof url==='object'?url.url:url;
@@ -1481,10 +1493,48 @@ function showHistPdfs(id){
       </div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(id)}')">${IC.edit} Editar</button>
+      <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(id)}')">${IC.edit} Editar todo</button>
       <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
     </div>
   `,'modal-lg');
+}
+
+async function histPhotoUpload(id){
+  const input=document.getElementById('hist_photo_file');
+  if(!input||!input.files||!input.files.length)return;
+  const files=Array.from(input.files);
+  toast('Subiendo '+files.length+' foto(s)...');
+  const p=_historicos.find(x=>x.id===id);
+  const current=(p?p.photoUrls:[])||[];
+  const updated=current.slice();
+  for(const file of files){
+    try{
+      const path='admin_uploads/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+file.name.split('.').pop();
+      const ref=storage.ref(path);
+      await ref.put(file);
+      const url=await ref.getDownloadURL();
+      updated.push(url);
+    }catch(e){toast('Error subiendo: '+e.message);}
+  }
+  await db.collection('publications').doc(id).update({photoUrls:updated});
+  adminAudit('historico.photo_upload','publication',id,{count:files.length});
+  toast('Fotos subidas');
+  await refreshPubs();
+  showHistPdfs(id);
+}
+
+async function histPhotoRemove(id,idx){
+  if(!confirm('¿Eliminar esta foto?'))return;
+  try{
+    const p=_historicos.find(x=>x.id===id);
+    const current=(p?p.photoUrls:[])||[];
+    const updated=current.filter((_,i)=>i!==idx);
+    await db.collection('publications').doc(id).update({photoUrls:updated});
+    adminAudit('historico.photo_delete','publication',id);
+    toast('Foto eliminada');
+    await refreshPubs();
+    showHistPdfs(id);
+  }catch(e){toast('Error: '+e.message);}
 }
 
 async function uploadHistPdf(id){
