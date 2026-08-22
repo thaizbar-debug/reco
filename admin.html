@@ -293,6 +293,12 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 /* ── Check / toggle ── */
 input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
 
+/* ── Feature tags grid ── */
+.feat-section-title{font-size:.78rem;font-weight:700;color:var(--txt-muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.04em}
+.feat-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.feat-grid label{display:flex;align-items:center;gap:5px;font-size:.78rem;padding:4px 10px;background:var(--bg);border-radius:var(--r);cursor:pointer;border:1px solid var(--border);transition:all .12s;user-select:none}
+.feat-grid label:hover{background:var(--primary-light);border-color:var(--primary)}
+
 /* ── Full detail view (platform-like) ── */
 .full-detail{max-width:900px;margin:0 auto}
 .full-detail .fd-hero{position:relative;height:320px;border-radius:var(--r-lg);overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#ecfeff,#f0f9ff)}
@@ -633,6 +639,26 @@ const IC={
 };
 
 // ═══════════════════════════════════════════════════════════════
+// Publication constants (must match index.html exactly)
+// ═══════════════════════════════════════════════════════════════
+const PUB_TYPES=['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
+const PUB_OPS=['Venta','Alquiler'];
+const PUB_CURRENCIES=['USD','PEN'];
+const PUB_ESTADOS=['En proyecto','En construcción','Construido'];
+const PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
+  'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
+  'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
+  'Propiedad Eco-amigable o Sostenible','Propiedad de Playa'];
+const PUB_FEATS_AMB=['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje',
+  'Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
+  'Piscina (edificio)','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
+  'Canchas deportivas','Gimnasio','Juegos infantiles',
+  'Acceso para personas con movilidad reducida','Estacionamiento para visitas'];
+const PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje'];
+const PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón'];
+const PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
+
+// ═══════════════════════════════════════════════════════════════
 // CHART helpers
 // ═══════════════════════════════════════════════════════════════
 function renderBarChart(entries,color){
@@ -961,8 +987,7 @@ function renderPublications(el){
         </select>
         <select onchange="_pubFilter.type=this.value;_pubPage=0;renderPublications(document.getElementById('mainContent'))">
           <option value="all"${_pubFilter.type==='all'?' selected':''}>Todos los tipos</option>
-          <option value="Departamento">Departamento</option><option value="Casa">Casa</option><option value="Oficina">Oficina</option>
-          <option value="Local comercial">Local comercial</option><option value="Terreno">Terreno</option><option value="Otros">Otros</option>
+          ${PUB_TYPES.map(t=>`<option value="${t}"${_pubFilter.type===t?' selected':''}>${t}</option>`).join('')}
         </select>
       </div>
 
@@ -1047,26 +1072,31 @@ function showPubDetail(id){
         ${pm2?`<div class="fd-price-sqm">${pm2}/m²</div>`:''}
       </div>
       <div class="fd-specs">
-        <div class="fd-spec"><div class="sv">${p.area?fmtNum(p.area)+' m²':'—'}</div><div class="sk">Área</div></div>
+        <div class="fd-spec"><div class="sv">${p.area?fmtNum(p.area)+' m²':'—'}</div><div class="sk">Área techada</div></div>
+        ${p.areaTerr?`<div class="fd-spec"><div class="sv">${fmtNum(p.areaTerr)} m²</div><div class="sk">Área terreno</div></div>`:''}
         <div class="fd-spec"><div class="sv">${p.beds>0?p.beds:'—'}</div><div class="sk">Dormitorios</div></div>
         <div class="fd-spec"><div class="sv">${p.baths>0?p.baths:'—'}</div><div class="sk">Baños</div></div>
-        <div class="fd-spec"><div class="sv">${p.parking>0?p.parking:'—'}</div><div class="sk">Parking</div></div>
-        <div class="fd-spec"><div class="sv">${p.age||'—'}</div><div class="sk">Años</div></div>
-        ${p.floor?`<div class="fd-spec"><div class="sv">${p.floor}/${p.floors||'—'}</div><div class="sk">Piso</div></div>`:''}
+        <div class="fd-spec"><div class="sv">${p.parking>0?p.parking:'—'}</div><div class="sk">Estacionamientos</div></div>
+        <div class="fd-spec"><div class="sv">${p.age!=null&&p.age!==''?p.age:'—'}</div><div class="sk">Antigüedad</div></div>
+        ${p.floor||p.floors?`<div class="fd-spec"><div class="sv">${p.floor||'—'}/${p.floors||'—'}</div><div class="sk">Piso/Total</div></div>`:''}
+        ${isHist&&p.areaTech?`<div class="fd-spec"><div class="sv">${fmtNum(p.areaTech)} m²</div><div class="sk">Área técnica</div></div>`:''}
+        ${isHist&&p.areaOcup?`<div class="fd-spec"><div class="sv">${fmtNum(p.areaOcup)} m²</div><div class="sk">Área ocupada</div></div>`:''}
       </div>
       <div class="detail-pane">
         <div class="detail-row"><div class="dlabel">ID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(p.id)}</div></div>
-        <div class="detail-row"><div class="dlabel">Estado</div><div class="dvalue"><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></div></div>
+        <div class="detail-row"><div class="dlabel">Moderación</div><div class="dvalue"><span class="badge badge-${p.status||'pending'}">${p.status==='approved'?'Aprobada':p.status==='rejected'?'Rechazada':'Pendiente'}</span></div></div>
+        <div class="detail-row"><div class="dlabel">Estado</div><div class="dvalue">${esc(p.estado||'—')}</div></div>
         ${isHist?`<div class="detail-row"><div class="dlabel">Transacción</div><div class="dvalue">${p.transactedAt?fmtDate(p.transactedAt):p.txKey?'Key: '+p.txKey:'—'}</div></div>`:''}
-        <div class="detail-row"><div class="dlabel">Área terreno</div><div class="dvalue">${p.areaTerr?fmtNum(p.areaTerr)+' m²':'—'}</div></div>
-        ${isHist&&p.areaTech?`<div class="detail-row"><div class="dlabel">Área técnica</div><div class="dvalue">${fmtNum(p.areaTech)} m²</div></div>`:''}
-        ${isHist&&p.areaOcup?`<div class="detail-row"><div class="dlabel">Área ocupada</div><div class="dvalue">${fmtNum(p.areaOcup)} m²</div></div>`:''}
-        <div class="detail-row"><div class="dlabel">Características</div><div class="dvalue">${[p.ascensor?'Ascensor':null,p.amoblado?'Amoblado':null,p.petFriendly?'Pet Friendly':null].filter(Boolean).join(', ')||'—'}</div></div>
-        <div class="detail-row"><div class="dlabel">Features</div><div class="dvalue">${(p.features||[]).map(f=>esc(f)).join(', ')||'—'}</div></div>
-        <div class="detail-row"><div class="dlabel">Coordenadas</div><div class="dvalue">${p.lat!=null?p.lat.toFixed(6)+', '+p.lng.toFixed(6):'—'}</div></div>
+        <div class="detail-row"><div class="dlabel">Ascensor</div><div class="dvalue">${p.ascensor?'<span style="color:var(--green)">Sí</span>':'No'}</div></div>
+        <div class="detail-row"><div class="dlabel">Amoblado</div><div class="dvalue">${p.amoblado?'<span style="color:var(--green)">Sí</span>':'No'}</div></div>
+        <div class="detail-row"><div class="dlabel">Pet Friendly</div><div class="dvalue">${p.petFriendly?'<span style="color:var(--green)">Sí</span>':'No'}</div></div>
+        ${p.hideExact?`<div class="detail-row"><div class="dlabel">Dirección oculta</div><div class="dvalue"><span style="color:var(--amber)">Sí</span></div></div>`:''}
+        <div class="detail-row"><div class="dlabel">Etiquetas</div><div class="dvalue">${(p.features||[]).length>0?(p.features||[]).map(f=>'<span class="badge badge-info" style="margin:2px">'+esc(f)+'</span>').join(' '):'—'}</div></div>
+        <div class="detail-row"><div class="dlabel">Coordenadas</div><div class="dvalue">${p.lat!=null&&p.lng!=null?Number(p.lat).toFixed(6)+', '+Number(p.lng).toFixed(6):'—'}</div></div>
         <div class="detail-row"><div class="dlabel">Fuente</div><div class="dvalue">${esc(p.source||'single')}</div></div>
         <div class="detail-row"><div class="dlabel">Usuario</div><div class="dvalue">${esc(p.userName||'—')}<br><span style="font-size:.72rem;color:var(--txt-muted)">${esc(p.userEmail||'')} · ${esc(p.userId||'')}</span></div></div>
         <div class="detail-row"><div class="dlabel">Creada</div><div class="dvalue">${fmtDate(p.createdAt)}</div></div>
+        ${p.listedAt?`<div class="detail-row"><div class="dlabel">Listada</div><div class="dvalue">${fmtDate(p.listedAt)}</div></div>`:''}
         ${p.moderatedAt?`<div class="detail-row"><div class="dlabel">Moderada</div><div class="dvalue">${fmtDate(p.moderatedAt)} por ${esc(p.moderatedBy||'—')}</div></div>`:''}
         ${p.rejectionReason?`<div class="detail-row"><div class="dlabel">Razón rechazo</div><div class="dvalue" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
       </div>
@@ -1137,31 +1167,57 @@ async function pmUpload(prefix){
   toast('Fotos subidas');
 }
 
+let _editFeatures=[];
+function _epFeat(f,checked){if(checked){if(!_editFeatures.includes(f))_editFeatures.push(f);}else{_editFeatures=_editFeatures.filter(x=>x!==f);}}
+function buildFeatSection(title,arr){
+  return`<div class="feat-section-title">${title}</div><div class="feat-grid">${arr.map(f=>`<label><input type="checkbox" ${_editFeatures.includes(f)?'checked':''} onchange="_epFeat('${f.replace(/'/g,"\\'")}',this.checked)"> ${esc(f)}</label>`).join('')}</div>`;
+}
+
 function showEditPub(id){
   const p=[..._pubs,..._historicos].find(x=>x.id===id);if(!p)return;
   const isHist=p.op==='Histórico';
+  _editFeatures=(p.features||[]).slice();
   openModal(`
     <h3>${IC.edit} Editar ${isHist?'Histórico':'Propiedad'}</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div><label>Título</label><input id="ep_title" value="${esc(p.title||'')}"/></div>
       <div><label>Dirección</label><input id="ep_address" value="${esc(p.address||'')}"/></div>
       <div><label>Distrito</label><input id="ep_district" value="${esc(p.district||'')}"/></div>
-      <div><label>Tipo</label><select id="ep_type"><option value="Departamento"${p.type==='Departamento'?' selected':''}>Departamento</option><option value="Casa"${p.type==='Casa'?' selected':''}>Casa</option><option value="Oficina"${p.type==='Oficina'?' selected':''}>Oficina</option><option value="Local comercial"${p.type==='Local comercial'?' selected':''}>Local comercial</option><option value="Terreno"${p.type==='Terreno'?' selected':''}>Terreno</option><option value="Otros"${p.type==='Otros'?' selected':''}>Otros</option></select></div>
-      ${!isHist?`<div><label>Operación</label><select id="ep_op"><option value="Venta"${p.op==='Venta'?' selected':''}>Venta</option><option value="Alquiler"${p.op==='Alquiler'?' selected':''}>Alquiler</option></select></div>`:''}
+      <div><label>Tipo</label><select id="ep_type">${PUB_TYPES.map(t=>`<option value="${t}"${p.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      ${!isHist?`<div><label>Operación</label><select id="ep_op">${PUB_OPS.map(o=>`<option value="${o}"${p.op===o?' selected':''}>${o}</option>`).join('')}</select></div>`:''}
       <div><label>Precio</label><input id="ep_price" type="number" value="${p.price||0}"/></div>
-      <div><label>Moneda</label><select id="ep_currency"><option value="USD"${p.currency==='USD'?' selected':''}>USD</option><option value="PEN"${p.currency==='PEN'?' selected':''}>PEN</option></select></div>
-      <div><label>Área (m²)</label><input id="ep_area" type="number" value="${p.area||0}"/></div>
+      <div><label>Moneda</label><select id="ep_currency">${PUB_CURRENCIES.map(c=>`<option value="${c}"${p.currency===c?' selected':''}>${c}</option>`).join('')}</select></div>
+      <div><label>Área techada (m²)</label><input id="ep_area" type="number" value="${p.area||0}"/></div>
+      <div><label>Área terreno (m²)</label><input id="ep_areaTerr" type="number" value="${p.areaTerr||0}"/></div>
       ${isHist?`
         <div><label>Precio Total</label><input id="ep_priceTotal" type="number" value="${p.priceTotal||0}"/></div>
         <div><label>Precio Propiedad</label><input id="ep_priceProp" type="number" value="${p.priceProp||0}"/></div>
-        <div><label>Área Técnica</label><input id="ep_areaTech" type="number" value="${p.areaTech||0}"/></div>
-        <div><label>Área Ocupada</label><input id="ep_areaOcup" type="number" value="${p.areaOcup||0}"/></div>
-      `:`
-        <div><label>Dormitorios</label><input id="ep_beds" type="number" value="${p.beds||0}"/></div>
-        <div><label>Baños</label><input id="ep_baths" type="number" value="${p.baths||0}"/></div>
-        <div><label>Estacionamientos</label><input id="ep_parking" type="number" value="${p.parking||0}"/></div>
-        <div><label>Antigüedad (años)</label><input id="ep_age" type="number" value="${p.age||0}"/></div>
-      `}
+        <div><label>Área Técnica (m²)</label><input id="ep_areaTech" type="number" value="${p.areaTech||0}"/></div>
+        <div><label>Área Ocupada (m²)</label><input id="ep_areaOcup" type="number" value="${p.areaOcup||0}"/></div>
+      `:''}
+      <div><label>Dormitorios</label><input id="ep_beds" type="number" value="${p.beds||0}"/></div>
+      <div><label>Baños</label><input id="ep_baths" type="number" value="${p.baths||0}"/></div>
+      <div><label>Estacionamientos</label><input id="ep_parking" type="number" value="${p.parking||0}"/></div>
+      <div><label>Antigüedad (años, 0 = a estrenar)</label><input id="ep_age" type="number" value="${p.age||0}"/></div>
+      <div><label>Piso del inmueble</label><input id="ep_floor" type="number" value="${p.floor||0}"/></div>
+      <div><label>Nro pisos del edificio</label><input id="ep_floors" type="number" value="${p.floors||0}"/></div>
+      <div><label>Estado</label><select id="ep_estado">${PUB_ESTADOS.map(e=>`<option value="${e}"${p.estado===e?' selected':''}>${e}</option>`).join('')}</select></div>
+      <div><label>Lat</label><input id="ep_lat" type="number" step="any" value="${p.lat||''}"/></div>
+      <div><label>Lng</label><input id="ep_lng" type="number" step="any" value="${p.lng||''}"/></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px">
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem"><input type="checkbox" id="ep_ascensor" ${p.ascensor?'checked':''}> Ascensor</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem"><input type="checkbox" id="ep_amoblado" ${p.amoblado?'checked':''}> Amoblado</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem"><input type="checkbox" id="ep_petFriendly" ${p.petFriendly?'checked':''}> Pet Friendly</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:.82rem"><input type="checkbox" id="ep_hideExact" ${p.hideExact?'checked':''}> Ocultar dirección exacta</label>
+    </div>
+    <div style="margin-top:16px;border:1px solid var(--border);border-radius:var(--r);padding:14px;background:var(--bg)">
+      <strong style="font-size:.85rem">Etiquetas</strong>
+      ${buildFeatSection('Generales',PUB_FEATS_GEN)}
+      ${buildFeatSection('Ambientes',PUB_FEATS_AMB)}
+      ${buildFeatSection('Vistas',PUB_FEATS_VISTA)}
+      ${buildFeatSection('Accesos',PUB_FEATS_ACCESO)}
+      ${buildFeatSection('Zona',PUB_FEATS_ZONA)}
     </div>
     <label>Descripción</label>
     <textarea id="ep_desc" rows="4">${esc(p.desc||'')}</textarea>
@@ -1175,28 +1231,43 @@ function showEditPub(id){
 
 async function saveEditPub(id,isHist){
   try{
+    const val=s=>document.getElementById(s)?document.getElementById(s).value:'';
+    const num=s=>{const el=document.getElementById(s);return el?Number(el.value)||0:0;};
+    const chk=s=>{const el=document.getElementById(s);return el?el.checked:false;};
+    const latVal=val('ep_lat');
+    const lngVal=val('ep_lng');
     const data={
-      title:document.getElementById('ep_title').value.trim(),
-      address:document.getElementById('ep_address').value.trim(),
-      district:document.getElementById('ep_district').value.trim(),
-      type:document.getElementById('ep_type').value,
-      price:Number(document.getElementById('ep_price').value)||0,
-      currency:document.getElementById('ep_currency').value,
-      area:Number(document.getElementById('ep_area').value)||0,
-      desc:document.getElementById('ep_desc').value.trim(),
+      title:val('ep_title').trim(),
+      address:val('ep_address').trim(),
+      district:val('ep_district').trim(),
+      type:val('ep_type'),
+      price:num('ep_price'),
+      currency:val('ep_currency'),
+      area:num('ep_area'),
+      areaTerr:num('ep_areaTerr'),
+      beds:num('ep_beds'),
+      baths:num('ep_baths'),
+      parking:num('ep_parking'),
+      age:num('ep_age'),
+      floor:num('ep_floor'),
+      floors:num('ep_floors'),
+      estado:val('ep_estado'),
+      ascensor:chk('ep_ascensor'),
+      amoblado:chk('ep_amoblado'),
+      petFriendly:chk('ep_petFriendly'),
+      hideExact:chk('ep_hideExact'),
+      features:_editFeatures.slice(),
+      desc:val('ep_desc').trim(),
       photoUrls:_editPhotos.slice(),
     };
+    if(latVal)data.lat=parseFloat(latVal);
+    if(lngVal)data.lng=parseFloat(lngVal);
+    if(!isHist)data.op=val('ep_op');
     if(isHist){
-      data.priceTotal=Number(document.getElementById('ep_priceTotal').value)||0;
-      data.priceProp=Number(document.getElementById('ep_priceProp').value)||0;
-      data.areaTech=Number(document.getElementById('ep_areaTech').value)||0;
-      data.areaOcup=Number(document.getElementById('ep_areaOcup').value)||0;
-    }else{
-      data.op=document.getElementById('ep_op').value;
-      data.beds=Number(document.getElementById('ep_beds').value)||0;
-      data.baths=Number(document.getElementById('ep_baths').value)||0;
-      data.parking=Number(document.getElementById('ep_parking').value)||0;
-      data.age=Number(document.getElementById('ep_age').value)||0;
+      data.priceTotal=num('ep_priceTotal');
+      data.priceProp=num('ep_priceProp');
+      data.areaTech=num('ep_areaTech');
+      data.areaOcup=num('ep_areaOcup');
     }
     await db.collection('publications').doc(id).update(data);
     adminAudit('publication.edit','publication',id,{fields:Object.keys(data)});
@@ -1250,8 +1321,8 @@ async function deletePub(id){
 }
 
 function exportPubs(){
-  const headers=['ID','Estado','Título','Dirección','Distrito','Tipo','Operación','Precio','Moneda','Área m²','Dormitorios','Baños','Parking','Usuario','Email','Fecha'];
-  const rows=_pubs.map(p=>[p.id,p.status||'',p.title||'',p.address||'',p.district||'',p.type||'',p.op||'',p.price||0,p.currency||'',p.area||0,p.beds||0,p.baths||0,p.parking||0,p.userName||'',p.userEmail||'',p.createdAt?new Date(tsMs(p.createdAt)).toISOString():'']);
+  const headers=['ID','Estado','Título','Dirección','Distrito','Tipo','Operación','Precio','Moneda','Área m²','Área terreno','Dormitorios','Baños','Estacionamientos','Piso','Pisos edificio','Antigüedad','Estado inmueble','Ascensor','Amoblado','Pet Friendly','Etiquetas','Usuario','Email','Fecha'];
+  const rows=_pubs.map(p=>[p.id,p.status||'',p.title||'',p.address||'',p.district||'',p.type||'',p.op||'',p.price||0,p.currency||'',p.area||0,p.areaTerr||0,p.beds||0,p.baths||0,p.parking||0,p.floor||0,p.floors||0,p.age||0,p.estado||'',p.ascensor?'Sí':'No',p.amoblado?'Sí':'No',p.petFriendly?'Sí':'No',(p.features||[]).join('; '),p.userName||'',p.userEmail||'',p.createdAt?new Date(tsMs(p.createdAt)).toISOString():'']);
   const csv=[headers.join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
@@ -1321,8 +1392,7 @@ function renderHistoricos(el){
         <div class="search-input">${IC.search}<input placeholder="Buscar dirección, distrito..." value="${esc(_histFilter.search)}" oninput="_histFilter.search=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))"/></div>
         <select onchange="_histFilter.type=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))">
           <option value="all"${_histFilter.type==='all'?' selected':''}>Todos los tipos</option>
-          <option value="Departamento">Departamento</option><option value="Casa">Casa</option><option value="Oficina">Oficina</option>
-          <option value="Local comercial">Local comercial</option><option value="Terreno">Terreno</option><option value="Otros">Otros</option>
+          ${PUB_TYPES.map(t=>`<option value="${t}"${_histFilter.type===t?' selected':''}>${t}</option>`).join('')}
         </select>
         <select onchange="_histFilter.district=this.value;_histPage=0;renderHistoricos(document.getElementById('mainContent'))">
           <option value="all"${_histFilter.district==='all'?' selected':''}>Todos los distritos (${districts.length})</option>
@@ -1453,8 +1523,8 @@ async function pmRemovePdf(id,idx){
 }
 
 function exportHistoricos(){
-  const headers=['ID','Dirección','Distrito','Tipo','Valor Total','Precio Propiedad','Moneda','Área m²','Área Técnica','Área Ocupada','Fotos','PDFs','Fecha'];
-  const rows=_historicos.map(p=>[p.id,p.address||'',p.district||'',p.type||'',p.priceTotal||p.price||0,p.priceProp||0,p.currency||'',p.area||0,p.areaTech||0,p.areaOcup||0,(p.photoUrls||[]).length,(p.pdfUrls||p.pdfs||[]).length,p.createdAt?new Date(tsMs(p.createdAt)).toISOString():'']);
+  const headers=['ID','Dirección','Distrito','Tipo','Valor Total','Precio Propiedad','Moneda','Área m²','Área terreno','Área Técnica','Área Ocupada','Dormitorios','Baños','Estacionamientos','Antigüedad','Etiquetas','Fotos','PDFs','Fecha'];
+  const rows=_historicos.map(p=>[p.id,p.address||'',p.district||'',p.type||'',p.priceTotal||p.price||0,p.priceProp||0,p.currency||'',p.area||0,p.areaTerr||0,p.areaTech||0,p.areaOcup||0,p.beds||0,p.baths||0,p.parking||0,p.age||0,(p.features||[]).join('; '),(p.photoUrls||[]).length,(p.pdfUrls||p.pdfs||[]).length,p.createdAt?new Date(tsMs(p.createdAt)).toISOString():'']);
   const csv=[headers.join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
   const url=URL.createObjectURL(blob);
