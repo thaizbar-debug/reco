@@ -208,3 +208,225 @@ exports.adminGetStats = onCall(
     };
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminDisableUser — enable or disable a Firebase Auth account.
+//
+// Client contract:
+//   const fn = fns.httpsCallable('adminDisableUser');
+//   const { data } = await fn({ uid: '...', disabled: true });
+//   // data = { uid, disabled }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.adminDisableUser = onCall(
+  { region: REGION, maxInstances: 5 },
+  async (request) => {
+    const caller = _requireAdmin(request);
+
+    const targetUid = request.data && request.data.uid;
+    if (!targetUid || typeof targetUid !== 'string') {
+      throw new HttpsError('invalid-argument', 'uid requerido.');
+    }
+    const disabled = !!(request.data && request.data.disabled);
+
+    if (targetUid === caller.uid) {
+      throw new HttpsError('failed-precondition', 'No puedes deshabilitarte a ti mismo.');
+    }
+
+    let targetUser;
+    try {
+      targetUser = await getAuth().getUser(targetUid);
+    } catch (e) {
+      throw new HttpsError('not-found', 'Usuario no encontrado.');
+    }
+
+    if (SEED_ADMIN_EMAILS.includes((targetUser.email || '').toLowerCase())) {
+      throw new HttpsError('permission-denied', 'No se puede deshabilitar un admin semilla.');
+    }
+
+    await getAuth().updateUser(targetUid, { disabled });
+
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email,
+        action: disabled ? 'user.disable' : 'user.enable',
+        targetType: 'user',
+        targetId: targetUid,
+        extras: { targetEmail: targetUser.email || null },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[adminDisableUser] audit write failed', { err: e && e.message });
+    }
+
+    return { uid: targetUid, disabled };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminUpdateUser — update a user's display name or email from the admin panel.
+//
+// Client contract:
+//   const fn = fns.httpsCallable('adminUpdateUser');
+//   const { data } = await fn({ uid, displayName, email });
+//   // data = { uid, updated: ['displayName', ...] }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.adminUpdateUser = onCall(
+  { region: REGION, maxInstances: 5 },
+  async (request) => {
+    const caller = _requireAdmin(request);
+
+    const targetUid = request.data && request.data.uid;
+    if (!targetUid || typeof targetUid !== 'string') {
+      throw new HttpsError('invalid-argument', 'uid requerido.');
+    }
+
+    const updates = {};
+    const updatedFields = [];
+    if (request.data.displayName !== undefined) {
+      updates.displayName = String(request.data.displayName).trim().slice(0, 100);
+      updatedFields.push('displayName');
+    }
+    if (request.data.email !== undefined) {
+      const newEmail = String(request.data.email).trim().toLowerCase();
+      if (!/.+@.+\..+/.test(newEmail)) {
+        throw new HttpsError('invalid-argument', 'Email inválido.');
+      }
+      updates.email = newEmail;
+      updatedFields.push('email');
+    }
+
+    if (!updatedFields.length) {
+      throw new HttpsError('invalid-argument', 'Nada que actualizar.');
+    }
+
+    try {
+      await getAuth().getUser(targetUid);
+    } catch (e) {
+      throw new HttpsError('not-found', 'Usuario no encontrado.');
+    }
+
+    await getAuth().updateUser(targetUid, updates);
+
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email,
+        action: 'user.update',
+        targetType: 'user',
+        targetId: targetUid,
+        extras: { fields: updatedFields },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[adminUpdateUser] audit write failed', { err: e && e.message });
+    }
+
+    return { uid: targetUid, updated: updatedFields };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminListAdmins — list all users who have the admin custom claim.
+//
+// Client contract:
+//   const fn = fns.httpsCallable('adminListAdmins');
+//   const { data } = await fn({});
+//   // data = { admins: [{uid, email, displayName, role, lastSignIn}] }
+//
+// Iterates all Firebase Auth users to find those with admin=true claim.
+// For small user bases this is fine; for very large ones consider caching.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.adminListAdmins = onCall(
+  { region: REGION, maxInstances: 5 },
+  async (request) => {
+    _requireAdmin(request);
+
+    const admins = [];
+    let pageToken;
+
+    do {
+      const listResult = await getAuth().listUsers(1000, pageToken);
+      for (const u of listResult.users) {
+        const claims = u.customClaims || {};
+        const email = (u.email || '').toLowerCase();
+        if (claims.admin === true || SEED_ADMIN_EMAILS.includes(email)) {
+          admins.push({
+            uid: u.uid,
+            email: u.email || null,
+            displayName: u.displayName || null,
+            disabled: u.disabled,
+            lastSignIn: u.metadata.lastSignInTime || null,
+            createdAt: u.metadata.creationTime || null,
+            isSeed: SEED_ADMIN_EMAILS.includes(email),
+            role: claims.adminRole || (SEED_ADMIN_EMAILS.includes(email) ? 'Super-admin' : 'Admin'),
+          });
+        }
+      }
+      pageToken = listResult.pageToken;
+    } while (pageToken);
+
+    return { admins };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// adminSetRole — set a custom adminRole label on a user's custom claims.
+//
+// Client contract:
+//   const fn = fns.httpsCallable('adminSetRole');
+//   const { data } = await fn({ uid, role: 'Editor data' });
+//   // data = { uid, role }
+//
+// The role is a display label stored in customClaims.adminRole.
+// The user must already have admin=true claim.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.adminSetRole = onCall(
+  { region: REGION, maxInstances: 5 },
+  async (request) => {
+    const caller = _requireAdmin(request);
+
+    const targetUid = request.data && request.data.uid;
+    if (!targetUid || typeof targetUid !== 'string') {
+      throw new HttpsError('invalid-argument', 'uid requerido.');
+    }
+    const role = request.data && request.data.role;
+    if (!role || typeof role !== 'string') {
+      throw new HttpsError('invalid-argument', 'role requerido.');
+    }
+    const VALID_ROLES = ['Super-admin', 'Admin', 'Editor data', 'Servicio', 'Solo lectura'];
+    if (!VALID_ROLES.includes(role)) {
+      throw new HttpsError('invalid-argument', 'Rol inválido. Válidos: ' + VALID_ROLES.join(', '));
+    }
+
+    let targetUser;
+    try {
+      targetUser = await getAuth().getUser(targetUid);
+    } catch (e) {
+      throw new HttpsError('not-found', 'Usuario no encontrado.');
+    }
+
+    const existing = targetUser.customClaims || {};
+    if (!existing.admin && !SEED_ADMIN_EMAILS.includes((targetUser.email || '').toLowerCase())) {
+      throw new HttpsError('failed-precondition', 'El usuario no es admin. Primero otorga permisos de admin.');
+    }
+
+    await getAuth().setCustomUserClaims(targetUid, { ...existing, admin: true, adminRole: role });
+
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email,
+        action: 'admin.role.set',
+        targetType: 'user',
+        targetId: targetUid,
+        extras: { role, targetEmail: targetUser.email || null },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[adminSetRole] audit write failed', { err: e && e.message });
+    }
+
+    return { uid: targetUid, role };
+  }
+);

@@ -284,7 +284,7 @@ input,select,textarea{font-family:var(--font);font-size:.875rem}
 .user-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer}
 .user-row:hover{background:var(--bg-hover)}
 .user-row:last-child{border-bottom:none}
-.user-row .u-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;flex-shrink:0}
+.u-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;flex-shrink:0}
 .user-row .u-info{flex:1;min-width:0}
 .user-row .u-name{font-weight:600;font-size:.84rem}
 .user-row .u-email{font-size:.72rem;color:var(--txt-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -1677,147 +1677,268 @@ async function deleteContact(id){
 let _usersData=[];
 let _usersLoading=false;
 let _usersSearch='';
+let _usersFilter={status:'all'};
+let _usersPage=0;
+const USERS_PAGE_SIZE=25;
 
-function renderUsers(el){
-  el.innerHTML=`
-    <div class="main-header">
-      <div><h1>Gestión de Usuarios</h1><div class="subtitle">Usuarios, llaves y actividad de la plataforma</div></div>
-      <div class="header-actions"><button class="btn btn-primary" onclick="showAddKeysModal()">${IC.key} Gestionar Llaves</button></div>
-    </div>
-    <div class="main-body">
-      <div class="grid-2" style="margin-bottom:24px">
-        <div class="section-card">
-          <div class="card-header"><h3>${IC.users} Lista de Usuarios</h3><button class="btn btn-outline btn-sm" onclick="loadUsersList()">Cargar usuarios</button></div>
-          <div class="card-body" id="usersListContainer">
-            <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:12px">Carga la lista de usuarios registrados desde Firebase Auth.</p>
-            <button class="btn btn-primary" onclick="loadUsersList()">Cargar Lista de Usuarios</button>
-          </div>
-        </div>
-        <div class="section-card">
-          <div class="card-header"><h3>${IC.key} Administrar Llaves</h3></div>
-          <div class="card-body">
-            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Agrega o quita llaves de un usuario específico.</p>
-            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-              <div style="flex:1;min-width:200px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email</label><input id="keysEmail" type="email" placeholder="usuario@ejemplo.com" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
-              <div style="width:100px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Cantidad</label><input id="keysAmount" type="number" min="-100" max="100" value="5" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
-              <button class="btn btn-primary" onclick="addUserKeys()">Agregar</button>
-              <button class="btn btn-error" onclick="removeUserKeys()">Quitar</button>
-            </div>
-            <div id="keysResult" style="margin-top:12px;font-size:.85rem"></div>
-          </div>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="card-header"><h3>${IC.chart} Actividad por Usuario</h3></div>
-        <div class="card-body">${renderUserActivityTable()}</div>
-      </div>
-    </div>`;
+const PLAN_TIERS=[
+  {name:'Individual',min:1,max:1},
+  {name:'Bronce',min:2,max:5},
+  {name:'Plata',min:6,max:10},
+  {name:'Oro',min:11,max:999}
+];
+function userPlan(keys){
+  const k=Number(keys)||0;
+  if(k>=11)return{name:'Oro',color:'var(--amber)',bg:'var(--warning-light)'};
+  if(k>=6)return{name:'Plata',color:'var(--txt-muted)',bg:'var(--bg)'};
+  if(k>=2)return{name:'Bronce',color:'var(--amber2)',bg:'var(--warning-light)'};
+  if(k>=1)return{name:'Individual',color:'var(--txt-muted)',bg:'var(--bg)'};
+  return{name:'Sin plan',color:'var(--txt-muted)',bg:'var(--bg)'};
 }
 
-function renderUserActivityTable(){
-  const userPubs={};
-  _pubs.forEach(p=>{
-    const key=p.userEmail||p.userId||'unknown';
-    if(!userPubs[key])userPubs[key]={email:p.userEmail||'',name:p.userName||'',count:0,approved:0,pending:0,rejected:0,lastDate:0};
-    userPubs[key].count++;
-    if(p.status==='approved')userPubs[key].approved++;
-    else if(p.status==='pending')userPubs[key].pending++;
-    else if(p.status==='rejected')userPubs[key].rejected++;
-    const t=tsMs(p.createdAt);if(t>userPubs[key].lastDate)userPubs[key].lastDate=t;
-  });
-  const sorted=Object.entries(userPubs).sort((a,b)=>b[1].count-a[1].count).slice(0,30);
-  if(!sorted.length)return'<div class="empty-state"><p>Sin publicaciones registradas</p></div>';
-  return`<div style="overflow-x:auto"><table class="data-table">
-    <thead><tr><th>Usuario</th><th>Email</th><th>Total</th><th>Aprob.</th><th>Pend.</th><th>Rech.</th><th>Última</th></tr></thead>
-    <tbody>${sorted.map(([key,u])=>`<tr>
-      <td><strong>${esc(u.name||'—')}</strong></td>
-      <td style="font-size:.78rem">${esc(u.email||key)}</td>
-      <td><strong>${u.count}</strong></td>
-      <td><span style="color:var(--green)">${u.approved}</span></td>
-      <td><span style="color:var(--amber)">${u.pending}</span></td>
-      <td><span style="color:var(--red)">${u.rejected}</span></td>
-      <td style="font-size:.72rem">${u.lastDate?new Date(u.lastDate).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'}):'—'}</td>
-    </tr>`).join('')}</tbody></table></div>`;
+function fmtRelTime(dateStr){
+  if(!dateStr)return'—';
+  const d=new Date(dateStr);const now=Date.now();const diff=now-d.getTime();
+  if(diff<0)return'Ahora';
+  const mins=Math.floor(diff/60000);
+  if(mins<1)return'Ahora';if(mins<60)return'Hace '+mins+' min';
+  const hrs=Math.floor(mins/60);if(hrs<24)return'Hace '+hrs+' h';
+  const days=Math.floor(hrs/24);if(days<30)return'Hace '+days+' d';
+  const months=Math.floor(days/30);return'Hace '+months+' mes'+(months>1?'es':'');
+}
+
+function renderUsers(el){
+  const activeCount=_usersData.filter(u=>!u.disabled).length;
+  const totalCount=_usersData.length;
+
+  let filtered=_usersData.slice();
+  if(_usersFilter.status==='active')filtered=filtered.filter(u=>!u.disabled);
+  if(_usersFilter.status==='disabled')filtered=filtered.filter(u=>u.disabled);
+  if(_usersSearch){const q=_usersSearch.toLowerCase();filtered=filtered.filter(u=>(u.email||'').toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q));}
+
+  const totalPages=Math.ceil(filtered.length/USERS_PAGE_SIZE);
+  if(_usersPage>=totalPages)_usersPage=Math.max(0,totalPages-1);
+  const paged=filtered.slice(_usersPage*USERS_PAGE_SIZE,(_usersPage+1)*USERS_PAGE_SIZE);
+
+  el.innerHTML=`
+    <div class="main-header">
+      <div><h1>Usuarios Reco</h1><div class="subtitle">${totalCount>0?fmtNum(activeCount)+' usuarios activos · '+fmtNum(filtered.length)+' mostrados':'Carga la lista de usuarios para empezar'}.</div></div>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="exportUsers()">Exportar</button>
+        <button class="btn btn-primary" onclick="showInviteUserModal()">+ Invitar usuario</button>
+      </div>
+    </div>
+    <div class="main-body">
+      ${!_usersData.length?`<div class="section-card"><div class="card-body" style="text-align:center;padding:40px">
+        <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Carga la lista de usuarios registrados desde Firebase Auth.</p>
+        <button class="btn btn-primary" onclick="loadUsersList()">Cargar Lista de Usuarios</button>
+        <div id="usersListContainer"></div>
+      </div></div>`:`
+      <div class="filter-bar" style="margin-bottom:16px">
+        <div class="search-input">${IC.search}<input placeholder="Buscar por nombre o email..." value="${esc(_usersSearch)}" oninput="_usersSearch=this.value;_usersPage=0;renderUsers(document.getElementById('mainContent'))"/></div>
+        <select onchange="_usersFilter.status=this.value;_usersPage=0;renderUsers(document.getElementById('mainContent'))">
+          <option value="all"${_usersFilter.status==='all'?' selected':''}>Todos (${totalCount})</option>
+          <option value="active"${_usersFilter.status==='active'?' selected':''}>Activos (${activeCount})</option>
+          <option value="disabled"${_usersFilter.status==='disabled'?' selected':''}>Suspendidos (${totalCount-activeCount})</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="loadUsersList()">${IC.refresh} Actualizar</button>
+      </div>
+      <div class="section-card">
+        <div class="card-body no-pad" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr>
+              <th>Usuario</th>
+              <th>Plan</th>
+              <th>Llaves</th>
+              <th>Última Actividad</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr></thead>
+            <tbody>
+              ${paged.map(u=>{
+                const plan=userPlan(u.keysLeft);
+                return`<tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div class="u-avatar">${initials(u.displayName||u.email)}</div>
+                    <div><div style="font-weight:600;font-size:.84rem">${esc(u.displayName||'Sin nombre')}</div><div style="font-size:.72rem;color:var(--txt-muted)">${esc(u.email||'—')}</div></div>
+                  </div>
+                </td>
+                <td><span class="badge" style="background:${plan.bg};color:${plan.color};font-weight:600">${plan.name}</span></td>
+                <td style="font-weight:700;font-size:1rem;text-align:center">${u.keysLeft||0}</td>
+                <td style="font-size:.82rem;color:var(--txt-muted)">${fmtRelTime(u.lastSignIn)}</td>
+                <td><span class="badge badge-${u.disabled?'rejected':'approved'}">${u.disabled?'Inactivo':'Activo'}</span></td>
+                <td style="white-space:nowrap">
+                  <button class="btn btn-outline btn-sm" onclick='showUserDetail(${JSON.stringify(u).replace(/'/g,"&#39;")})'>Ver</button>
+                  <button class="btn btn-outline btn-sm" onclick='toggleUserDisabled(${JSON.stringify({uid:u.uid,email:u.email,disabled:u.disabled}).replace(/'/g,"&#39;")})'>${u.disabled?'Activar':'Suspender'}</button>
+                </td>
+              </tr>`;}).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      ${totalPages>1?`<div class="pagination">
+        <button class="btn btn-outline btn-sm" onclick="_usersPage=0;renderUsers(document.getElementById('mainContent'))" ${_usersPage===0?'disabled':''}>«</button>
+        <button class="btn btn-outline btn-sm" onclick="_usersPage=Math.max(0,_usersPage-1);renderUsers(document.getElementById('mainContent'))" ${_usersPage===0?'disabled':''}>‹</button>
+        <span class="page-info">Página ${_usersPage+1} de ${totalPages}</span>
+        <button class="btn btn-outline btn-sm" onclick="_usersPage=Math.min(${totalPages-1},_usersPage+1);renderUsers(document.getElementById('mainContent'))" ${_usersPage>=totalPages-1?'disabled':''}>›</button>
+        <button class="btn btn-outline btn-sm" onclick="_usersPage=${totalPages-1};renderUsers(document.getElementById('mainContent'))" ${_usersPage>=totalPages-1?'disabled':''}>»</button>
+      </div>`:''}`}
+    </div>`;
 }
 
 async function loadUsersList(){
   const container=document.getElementById('usersListContainer');
-  if(!container)return;
-  container.innerHTML='<div class="loading-center"><div class="spinner"></div> Cargando usuarios...</div>';
+  if(container)container.innerHTML='<div class="loading-center" style="margin-top:12px"><div class="spinner"></div> Cargando usuarios...</div>';
+  else toast('Cargando usuarios...');
   try{
-    const fn=fns.httpsCallable('adminListUsers');
-    const res=await fn({limit:100,pageToken:_usersPageToken||undefined});
-    _usersData=res.data.users||[];
-    _usersPageToken=res.data.nextPageToken||null;
-    renderUsersList(container);
+    _usersData=[];_usersPageToken=null;
+    let hasMore=true;
+    while(hasMore){
+      const fn=fns.httpsCallable('adminListUsers');
+      const res=await fn({limit:100,pageToken:_usersPageToken||undefined});
+      _usersData=_usersData.concat(res.data.users||[]);
+      _usersPageToken=res.data.nextPageToken||null;
+      hasMore=!!_usersPageToken;
+    }
+    _usersPage=0;
+    renderUsers(document.getElementById('mainContent'));
   }catch(e){
     if(e.code==='not-found'||(e.message&&e.message.includes('not found'))){
-      container.innerHTML='<div style="padding:16px;background:var(--warning-light);border-radius:var(--r);color:var(--warning-dark);font-size:.85rem">El Cloud Function <code>adminListUsers</code> aún no está desplegado. Se habilitará en la fase de integración.</div>';
-    }else{
-      container.innerHTML='<div style="color:var(--red);font-size:.85rem">Error: '+esc(e.message)+'</div>';
-    }
+      const c=container||document.getElementById('mainContent');
+      if(c)c.innerHTML='<div style="padding:16px;background:var(--warning-light);border-radius:var(--r);color:var(--warning-dark);font-size:.85rem;margin:20px 30px">El Cloud Function <code>adminListUsers</code> aún no está desplegado. Se habilitará en la fase de integración.</div>';
+    }else{toast('Error: '+e.message);}
   }
 }
 
-function renderUsersList(container){
-  if(!_usersData.length){container.innerHTML='<div class="empty-state"><p>No hay usuarios</p></div>';return;}
-  let html=`<div style="margin-bottom:12px"><input placeholder="Filtrar por email o nombre..." oninput="_usersSearch=this.value;renderUsersList(document.getElementById('usersListContainer'))" value="${esc(_usersSearch)}" style="width:100%;padding:8px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.82rem"/></div>`;
-  let users=_usersData;
-  if(_usersSearch){const q=_usersSearch.toLowerCase();users=users.filter(u=>(u.email||'').toLowerCase().includes(q)||(u.displayName||'').toLowerCase().includes(q));}
-  html+=`<div style="max-height:400px;overflow-y:auto">`;
-  users.forEach(u=>{
-    html+=`<div class="user-row" onclick='showUserDetail(${JSON.stringify(u).replace(/'/g,"&#39;")})'>
-      <div class="u-avatar">${initials(u.displayName||u.email)}</div>
-      <div class="u-info"><div class="u-name">${esc(u.displayName||'Sin nombre')}${u.isAdmin?' <span class="badge badge-admin">Admin</span>':''}</div><div class="u-email">${esc(u.email||'—')}</div></div>
-      <div class="u-meta">
-        <span class="badge badge-info" title="Llaves">${IC.key} ${u.keysLeft||0}</span>
-        <span style="font-size:.72rem;color:var(--txt-muted)" title="Favoritos">${u.favoritesCount||0} fav</span>
-      </div>
-    </div>`;
-  });
-  html+=`</div>`;
-  if(_usersPageToken)html+=`<div style="text-align:center;margin-top:12px"><button class="btn btn-outline btn-sm" onclick="loadMoreUsers()">Cargar más</button></div>`;
-  container.innerHTML=html;
-}
-
 function showUserDetail(u){
+  const plan=userPlan(u.keysLeft);
+  const userPubs=_pubs.filter(p=>p.userEmail===u.email||p.userId===u.uid);
+  const approved=userPubs.filter(p=>p.status==='approved').length;
+  const pending=userPubs.filter(p=>p.status==='pending').length;
+  const rejected=userPubs.filter(p=>p.status==='rejected').length;
   openModal(`
     <h3>Detalle de Usuario</h3>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:16px;background:var(--bg);border-radius:var(--r)">
+      <div class="u-avatar" style="width:48px;height:48px;font-size:.9rem">${initials(u.displayName||u.email)}</div>
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:1rem">${esc(u.displayName||'Sin nombre')}</div>
+        <div style="font-size:.82rem;color:var(--txt-muted)">${esc(u.email||'—')}</div>
+      </div>
+      <span class="badge badge-${u.disabled?'rejected':'approved'}">${u.disabled?'Inactivo':'Activo'}</span>
+    </div>
     <div class="detail-pane">
       <div class="detail-row"><div class="dlabel">UID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(u.uid)}</div></div>
-      <div class="detail-row"><div class="dlabel">Nombre</div><div class="dvalue">${esc(u.displayName||'—')}</div></div>
-      <div class="detail-row"><div class="dlabel">Email</div><div class="dvalue">${esc(u.email||'—')}</div></div>
+      <div class="detail-row"><div class="dlabel">Plan</div><div class="dvalue"><span class="badge" style="background:${plan.bg};color:${plan.color};font-weight:600">${plan.name}</span></div></div>
+      <div class="detail-row"><div class="dlabel">Llaves</div><div class="dvalue"><strong>${u.keysLeft||0}</strong></div></div>
       <div class="detail-row"><div class="dlabel">Verificado</div><div class="dvalue">${u.emailVerified?'<span style="color:var(--green)">Sí</span>':'<span style="color:var(--red)">No</span>'}</div></div>
       <div class="detail-row"><div class="dlabel">Admin</div><div class="dvalue">${u.isAdmin?'<span class="badge badge-admin">Admin</span>':'No'}</div></div>
-      <div class="detail-row"><div class="dlabel">Llaves</div><div class="dvalue"><strong>${u.keysLeft||0}</strong></div></div>
       <div class="detail-row"><div class="dlabel">Favoritos</div><div class="dvalue">${u.favoritesCount||0}</div></div>
+      <div class="detail-row"><div class="dlabel">Publicaciones</div><div class="dvalue">${userPubs.length} total (<span style="color:var(--green)">${approved} aprob.</span> / <span style="color:var(--amber)">${pending} pend.</span> / <span style="color:var(--red)">${rejected} rech.</span>)</div></div>
       <div class="detail-row"><div class="dlabel">Creado</div><div class="dvalue">${u.createdAt||'—'}</div></div>
-      <div class="detail-row"><div class="dlabel">Último login</div><div class="dvalue">${u.lastSignIn||'—'}</div></div>
+      <div class="detail-row"><div class="dlabel">Último login</div><div class="dvalue">${fmtRelTime(u.lastSignIn)}</div></div>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal();document.getElementById('keysEmail').value='${esc(u.email)}';navigateTo('users')">Gestionar llaves</button>
+      <button class="btn btn-outline" onclick="closeModal();showEditUserModal('${esc(u.uid)}','${esc(u.displayName||'')}','${esc(u.email||'')}')">${IC.edit} Editar</button>
+      <button class="btn btn-outline" onclick="closeModal();showAddKeysModal('${esc(u.email)}')">${IC.key} Llaves</button>
+      <button class="btn ${u.disabled?'btn-success':'btn-error'}" onclick="closeModal();toggleUserDisabled({uid:'${esc(u.uid)}',email:'${esc(u.email||'')}',disabled:${!!u.disabled}})">${u.disabled?'Activar':'Suspender'}</button>
       <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
+    </div>
+  `,'modal-lg');
+}
+
+function showEditUserModal(uid,name,email){
+  openModal(`
+    <h3>${IC.edit} Editar Usuario</h3>
+    <label>Nombre</label>
+    <input id="eu_name" value="${esc(name)}"/>
+    <label>Email</label>
+    <input id="eu_email" type="email" value="${esc(email)}"/>
+    <div id="eu_result" style="margin-top:12px;font-size:.85rem"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEditUser('${esc(uid)}')">Guardar Cambios</button>
     </div>
   `);
 }
 
-async function loadMoreUsers(){
-  if(!_usersPageToken)return;
+async function saveEditUser(uid){
+  const name=document.getElementById('eu_name').value.trim();
+  const email=document.getElementById('eu_email').value.trim();
+  const result=document.getElementById('eu_result');
+  result.innerHTML='<div class="spinner"></div> Guardando...';
   try{
-    const fn=fns.httpsCallable('adminListUsers');
-    const res=await fn({limit:100,pageToken:_usersPageToken});
-    _usersData=_usersData.concat(res.data.users||[]);
-    _usersPageToken=res.data.nextPageToken||null;
-    renderUsersList(document.getElementById('usersListContainer'));
-  }catch(e){toast('Error: '+e.message);}
+    const fn=fns.httpsCallable('adminUpdateUser');
+    const res=await fn({uid,displayName:name,email});
+    result.innerHTML=`<span style="color:var(--green)">Usuario actualizado: ${res.data.updated.join(', ')}</span>`;
+    toast('Usuario actualizado');
+    const u=_usersData.find(x=>x.uid===uid);
+    if(u){if(name)u.displayName=name;if(email)u.email=email;}
+    setTimeout(()=>{closeModal();renderUsers(document.getElementById('mainContent'));},800);
+  }catch(e){
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminUpdateUser</code> no desplegado aún.</span>';
+    else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
+  }
 }
 
-function showAddKeysModal(){
+async function toggleUserDisabled(u){
+  const action=u.disabled?'activar':'suspender';
+  if(!confirm(`¿${action.charAt(0).toUpperCase()+action.slice(1)} al usuario ${u.email||u.uid}?`))return;
+  toast(u.disabled?'Activando...':'Suspendiendo...');
+  try{
+    const fn=fns.httpsCallable('adminDisableUser');
+    await fn({uid:u.uid,disabled:!u.disabled});
+    toast('Usuario '+(u.disabled?'activado':'suspendido'));
+    const user=_usersData.find(x=>x.uid===u.uid);
+    if(user)user.disabled=!u.disabled;
+    renderUsers(document.getElementById('mainContent'));
+  }catch(e){
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))toast('Cloud Function adminDisableUser no desplegado aún.');
+    else toast('Error: '+e.message);
+  }
+}
+
+function showInviteUserModal(){
+  openModal(`
+    <h3>${IC.users} Invitar Usuario</h3>
+    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Envía una invitación por email para registrarse en Reco.</p>
+    <label>Email</label>
+    <input id="inv_email" type="email" placeholder="usuario@ejemplo.com"/>
+    <label>Nombre (opcional)</label>
+    <input id="inv_name" placeholder="Nombre del usuario"/>
+    <label>Llaves iniciales</label>
+    <input id="inv_keys" type="number" min="0" max="100" value="0"/>
+    <div id="inv_result" style="margin-top:12px;font-size:.85rem"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="sendInvite()">Enviar Invitación</button>
+    </div>
+  `);
+}
+
+async function sendInvite(){
+  const email=document.getElementById('inv_email').value.trim();
+  const name=document.getElementById('inv_name').value.trim();
+  const keys=parseInt(document.getElementById('inv_keys').value,10)||0;
+  if(!email){toast('Ingresa un email');return;}
+  const result=document.getElementById('inv_result');
+  result.innerHTML='<div class="spinner"></div> Enviando...';
+  try{
+    const greeting=name?('Hola '+name+','):'Hola,';
+    const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#0891b2">Te invitamos a Reco</h2><p>'+esc(greeting)+'</p><p>Has sido invitado a unirte a <strong>Reco</strong>, la plataforma inmobiliaria más completa de Perú.</p>'+(keys>0?'<p>Recibirás <strong>'+keys+' llaves</strong> de cortesía al registrarte.</p>':'')+'<p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Registrarse en Reco</a></p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
+    await db.collection('mail').add({to:email,message:{subject:'Invitación a Reco',html,text:greeting+'\n\nHas sido invitado a Reco. Visita https://recosac.com/ para registrarte.\n\n— Equipo Reco'}});
+    adminAudit('user.invite','user',email,{name,keys});
+    result.innerHTML=`<span style="color:var(--green)">Invitación enviada a ${esc(email)}</span>`;
+    toast('Invitación enviada');
+  }catch(e){result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;}
+}
+
+function showAddKeysModal(prefillEmail){
   openModal(`
     <h3>${IC.key} Gestionar Llaves</h3>
     <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Agrega o quita llaves de un usuario.</p>
     <label>Email del usuario</label>
-    <input id="mk_email" type="email" placeholder="usuario@ejemplo.com"/>
+    <input id="mk_email" type="email" placeholder="usuario@ejemplo.com" value="${esc(prefillEmail||'')}"/>
     <label>Cantidad (positivo agrega, negativo quita)</label>
     <input id="mk_amount" type="number" min="-1000" max="1000" value="5"/>
     <div id="mk_result" style="margin-top:12px;font-size:.85rem"></div>
@@ -1840,6 +1961,8 @@ async function modalAddKeys(){
     const res=await fn({email,amount});
     result.innerHTML=`<span style="color:var(--green)">${amount>0?'+':''}${amount} llaves para ${esc(email)}. Nuevo balance: ${res.data.newBalance} (antes: ${res.data.previousBalance})</span>`;
     toast(Math.abs(amount)+' llaves '+(amount>0?'agregadas':'quitadas'));
+    const u=_usersData.find(x=>x.email===email);
+    if(u)u.keysLeft=res.data.newBalance;
   }catch(e){
     if(e.code==='not-found'||(e.message&&e.message.includes('not found'))){
       result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminUpdateUserKeys</code> no desplegado aún.</span>';
@@ -1847,46 +1970,70 @@ async function modalAddKeys(){
   }
 }
 
-async function addUserKeys(){
-  const email=document.getElementById('keysEmail').value.trim();
-  const amount=Math.abs(parseInt(document.getElementById('keysAmount').value,10));
-  if(!email){toast('Ingresa un email');return;}
-  if(!amount){toast('Cantidad inválida');return;}
-  const result=document.getElementById('keysResult');
-  result.innerHTML='<div class="spinner"></div> Procesando...';
-  try{
-    const fn=fns.httpsCallable('adminUpdateUserKeys');
-    const res=await fn({email,amount});
-    result.innerHTML=`<span style="color:var(--green)">+${amount} llaves para ${esc(email)}. Balance: ${res.data.previousBalance} → ${res.data.newBalance}</span>`;
-    toast(amount+' llaves agregadas');
-  }catch(e){
-    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado aún.</span>';
-    else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
-  }
-}
-
-async function removeUserKeys(){
-  const email=document.getElementById('keysEmail').value.trim();
-  const amount=-Math.abs(parseInt(document.getElementById('keysAmount').value,10));
-  if(!email){toast('Ingresa un email');return;}
-  if(amount===0){toast('Cantidad inválida');return;}
-  const result=document.getElementById('keysResult');
-  result.innerHTML='<div class="spinner"></div> Procesando...';
-  try{
-    const fn=fns.httpsCallable('adminUpdateUserKeys');
-    const res=await fn({email,amount});
-    result.innerHTML=`<span style="color:var(--green)">${amount} llaves para ${esc(email)}. Balance: ${res.data.previousBalance} → ${res.data.newBalance}</span>`;
-    toast(Math.abs(amount)+' llaves removidas');
-  }catch(e){
-    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function no desplegado aún.</span>';
-    else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
-  }
+function exportUsers(){
+  if(!_usersData.length){toast('Carga los usuarios primero');return;}
+  const headers=['UID','Nombre','Email','Verificado','Admin','Llaves','Favoritos','Estado','Creado','Último Login'];
+  const rows=_usersData.map(u=>[u.uid,u.displayName||'',u.email||'',u.emailVerified?'Sí':'No',u.isAdmin?'Sí':'No',u.keysLeft||0,u.favoritesCount||0,u.disabled?'Inactivo':'Activo',u.createdAt||'',u.lastSignIn||'']);
+  const csv=[headers.join(','),...rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(','))].join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='reco_usuarios_'+new Date().toISOString().slice(0,10)+'.csv';a.click();URL.revokeObjectURL(url);
+  toast('Usuarios exportados');
 }
 
 // ═══════════════════════════════════════════════════════════════
 // ADMINS
 // ═══════════════════════════════════════════════════════════════
+let _adminsData=[];
+const ADMIN_ROLES=['Super-admin','Admin','Editor data','Servicio','Solo lectura'];
+
 function renderAdmins(el){
+  el.innerHTML=`
+    <div class="main-header">
+      <div><h1>Usuarios Admin & Roles</h1><div class="subtitle">Control de acceso al panel. Los roles se gestionan vía Custom Claims en Firebase.</div></div>
+      <div class="header-actions">
+        <button class="btn btn-primary" onclick="showNewAdminModal()">+ Nuevo admin</button>
+      </div>
+    </div>
+    <div class="main-body">
+      <div class="section-card">
+        <div class="card-body" id="adminsListContainer">
+          ${_adminsData.length?renderAdminsList():`
+            <div style="text-align:center;padding:30px">
+              <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Carga la lista de administradores desde Firebase Auth.</p>
+              <button class="btn btn-primary" onclick="loadAdminsList()">Cargar Administradores</button>
+            </div>`}
+        </div>
+      </div>
+      <div class="section-card" style="margin-top:20px">
+        <div class="card-header"><h3>${IC.chart} Actividad de Administradores</h3><button class="btn btn-outline btn-sm" onclick="loadAdminsList()">${IC.refresh} Actualizar</button></div>
+        <div class="card-body">${renderAdminActivityTable()}</div>
+      </div>
+    </div>`;
+}
+
+function renderAdminsList(){
+  return`<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Última Sesión</th><th>Acciones</th></tr></thead>
+    <tbody>
+      ${_adminsData.map(a=>{
+        const roleBg=a.role==='Super-admin'?'var(--success-light)':a.role==='Editor data'?'var(--primary-light)':a.role==='Servicio'?'var(--warning-light)':'var(--bg)';
+        const roleColor=a.role==='Super-admin'?'var(--success-dark)':a.role==='Editor data'?'var(--blue-dark)':a.role==='Servicio'?'var(--warning-dark)':'var(--txt-muted)';
+        return`<tr>
+        <td><strong>${esc(a.displayName||'Sin nombre')}</strong></td>
+        <td style="font-size:.82rem">${esc(a.email||'—')}</td>
+        <td><span class="badge" style="background:${roleBg};color:${roleColor};font-weight:600">${esc(a.role||'Admin')}</span></td>
+        <td style="font-size:.82rem;color:var(--txt-muted)">${fmtRelTime(a.lastSignIn)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn btn-outline btn-sm" onclick="showAdminRoleModal('${esc(a.uid)}','${esc(a.email||'')}','${esc(a.role||'Admin')}')">Permisos</button>
+          ${a.isSeed?'':`<button class="btn btn-outline btn-sm" onclick="revokeAdminFn('${esc(a.uid)}','${esc(a.email||'')}')">Revocar</button>`}
+        </td>
+      </tr>`;}).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function renderAdminActivityTable(){
   const adminActions=_auditLog.reduce((acc,e)=>{
     const email=e.adminEmail||e.adminUid||'unknown';
     if(!acc[email])acc[email]={count:0,lastAction:null,lastDate:0};
@@ -1896,65 +2043,111 @@ function renderAdmins(el){
     return acc;
   },{});
   const adminList=Object.entries(adminActions).sort((a,b)=>b[1].count-a[1].count);
-
-  el.innerHTML=`
-    <div class="main-header">
-      <div><h1>Administradores</h1><div class="subtitle">Gestión del equipo admin de Reco</div></div>
-    </div>
-    <div class="main-body">
-      <div class="grid-2">
-        <div class="section-card">
-          <div class="card-header"><h3>${IC.shield} Gestionar Admin Claims</h3></div>
-          <div class="card-body">
-            <p style="color:var(--txt-muted);font-size:.82rem;margin-bottom:16px">Otorga o revoca permisos de administrador. Emails semilla: ${ADMIN_EMAILS.map(e=>'<code>'+esc(e)+'</code>').join(', ')}</p>
-            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-              <div style="flex:1;min-width:200px"><label style="display:block;font-size:.76rem;font-weight:600;color:var(--txt-muted);margin-bottom:4px">Email</label><input id="adminClaimEmail" type="email" placeholder="usuario@ejemplo.com" style="width:100%;padding:9px 13px;border:1.5px solid var(--border);border-radius:var(--r)"/></div>
-              <button class="btn btn-success" onclick="setAdminClaimFn(true)">${IC.check} Otorgar</button>
-              <button class="btn btn-error" onclick="setAdminClaimFn(false)">${IC.x} Revocar</button>
-            </div>
-            <div id="adminClaimResult" style="margin-top:12px;font-size:.85rem"></div>
-          </div>
-        </div>
-        <div class="section-card">
-          <div class="card-header"><h3>${IC.shield} Admins Semilla</h3></div>
-          <div class="card-body">
-            ${ADMIN_EMAILS.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border-radius:var(--r);margin-bottom:8px">
-              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem">${initials(e.split('@')[0])}</div>
-              <div style="flex:1"><strong style="font-size:.84rem">${esc(e)}</strong><br><span style="font-size:.7rem;color:var(--txt-muted)">Admin permanente</span></div>
-              <span class="badge badge-admin">Admin</span>
-            </div>`).join('')}
-          </div>
-        </div>
-      </div>
-      <div class="section-card" style="margin-top:20px">
-        <div class="card-header"><h3>${IC.chart} Actividad de Administradores</h3></div>
-        <div class="card-body">
-          ${adminList.length?`<div style="overflow-x:auto"><table class="data-table">
-            <thead><tr><th>Admin</th><th>Total</th><th>Última Acción</th><th>Fecha</th></tr></thead>
-            <tbody>${adminList.map(([email,data])=>`<tr>
-              <td><strong>${esc(email)}</strong></td>
-              <td>${data.count}</td>
-              <td><span class="badge badge-info">${esc(data.lastAction||'—')}</span></td>
-              <td style="font-size:.72rem">${data.lastDate?new Date(data.lastDate).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</td>
-            </tr>`).join('')}</tbody>
-          </table></div>`:'<div class="empty-state"><p>Sin actividad registrada</p></div>'}
-        </div>
-      </div>
-    </div>`;
+  if(!adminList.length)return'<div class="empty-state"><p>Sin actividad registrada</p></div>';
+  return`<div style="overflow-x:auto"><table class="data-table">
+    <thead><tr><th>Admin</th><th>Total</th><th>Última Acción</th><th>Fecha</th></tr></thead>
+    <tbody>${adminList.map(([email,data])=>`<tr>
+      <td><strong>${esc(email)}</strong></td>
+      <td>${data.count}</td>
+      <td><span class="badge badge-info">${esc(data.lastAction||'—')}</span></td>
+      <td style="font-size:.72rem">${data.lastDate?new Date(data.lastDate).toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
 }
 
-async function setAdminClaimFn(grant){
-  const email=document.getElementById('adminClaimEmail').value.trim();
+async function loadAdminsList(){
+  const container=document.getElementById('adminsListContainer');
+  if(container)container.innerHTML='<div class="loading-center"><div class="spinner"></div> Cargando administradores...</div>';
+  try{
+    const fn=fns.httpsCallable('adminListAdmins');
+    const res=await fn({});
+    _adminsData=res.data.admins||[];
+    if(container)container.innerHTML=renderAdminsList();
+  }catch(e){
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found'))){
+      _adminsData=ADMIN_EMAILS.map(email=>({uid:'',email,displayName:email.split('@')[0],isSeed:true,role:'Super-admin',lastSignIn:null}));
+      if(container)container.innerHTML=renderAdminsList()+'<div style="padding:12px;background:var(--warning-light);border-radius:var(--r);color:var(--warning-dark);font-size:.82rem;margin-top:12px">Cloud Function <code>adminListAdmins</code> no desplegado. Mostrando solo admins semilla.</div>';
+    }else{
+      if(container)container.innerHTML=`<div style="color:var(--red);font-size:.85rem;padding:16px">Error: ${esc(e.message)}</div>`;
+    }
+  }
+}
+
+function showNewAdminModal(){
+  openModal(`
+    <h3>${IC.shield} Nuevo Administrador</h3>
+    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Otorga permisos de administrador a un usuario existente.</p>
+    <label>Email del usuario</label>
+    <input id="na_email" type="email" placeholder="usuario@ejemplo.com"/>
+    <label>Rol</label>
+    <select id="na_role">${ADMIN_ROLES.map(r=>`<option value="${r}"${r==='Admin'?' selected':''}>${r}</option>`).join('')}</select>
+    <div id="na_result" style="margin-top:12px;font-size:.85rem"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="grantNewAdmin()">Otorgar Acceso</button>
+    </div>
+  `);
+}
+
+async function grantNewAdmin(){
+  const email=document.getElementById('na_email').value.trim();
+  const role=document.getElementById('na_role').value;
   if(!email){toast('Ingresa un email');return;}
-  if(!confirm(`¿${grant?'Otorgar':'Revocar'} admin para ${email}?`))return;
-  const result=document.getElementById('adminClaimResult');
+  const result=document.getElementById('na_result');
   result.innerHTML='<div class="spinner"></div> Procesando...';
   try{
-    const fn=fns.httpsCallable('setAdminClaim');
-    const res=await fn({email,admin:grant});
-    result.innerHTML=`<span style="color:var(--green)">Admin ${grant?'otorgado':'revocado'} para ${esc(email)} (uid: ${esc(res.data.targetUid)})</span>`;
-    toast(grant?'Admin otorgado':'Admin revocado');
+    const fn1=fns.httpsCallable('setAdminClaim');
+    const res1=await fn1({email,admin:true});
+    try{
+      const fn2=fns.httpsCallable('adminSetRole');
+      await fn2({uid:res1.data.targetUid,role});
+    }catch(e2){/* role fn may not be deployed yet */}
+    result.innerHTML=`<span style="color:var(--green)">Admin otorgado a ${esc(email)} con rol ${esc(role)}</span>`;
+    toast('Admin otorgado');
+    setTimeout(()=>{closeModal();loadAdminsList();},800);
   }catch(e){result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;}
+}
+
+function showAdminRoleModal(uid,email,currentRole){
+  openModal(`
+    <h3>${IC.shield} Permisos de ${esc(email)}</h3>
+    <label>Rol</label>
+    <select id="ar_role">${ADMIN_ROLES.map(r=>`<option value="${r}"${r===currentRole?' selected':''}>${r}</option>`).join('')}</select>
+    <div id="ar_result" style="margin-top:12px;font-size:.85rem"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAdminRole('${esc(uid)}')">Guardar Rol</button>
+    </div>
+  `);
+}
+
+async function saveAdminRole(uid){
+  const role=document.getElementById('ar_role').value;
+  const result=document.getElementById('ar_result');
+  result.innerHTML='<div class="spinner"></div> Guardando...';
+  try{
+    const fn=fns.httpsCallable('adminSetRole');
+    await fn({uid,role});
+    result.innerHTML=`<span style="color:var(--green)">Rol actualizado a ${esc(role)}</span>`;
+    toast('Rol actualizado');
+    const a=_adminsData.find(x=>x.uid===uid);
+    if(a)a.role=role;
+    setTimeout(()=>{closeModal();renderAdmins(document.getElementById('mainContent'));},800);
+  }catch(e){
+    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminSetRole</code> no desplegado aún.</span>';
+    else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
+  }
+}
+
+async function revokeAdminFn(uid,email){
+  if(!confirm(`¿Revocar admin para ${email}?`))return;
+  try{
+    const fn=fns.httpsCallable('setAdminClaim');
+    await fn({email,admin:false});
+    toast('Admin revocado para '+email);
+    _adminsData=_adminsData.filter(a=>a.uid!==uid);
+    renderAdmins(document.getElementById('mainContent'));
+  }catch(e){toast('Error: '+e.message);}
 }
 
 // ═══════════════════════════════════════════════════════════════
