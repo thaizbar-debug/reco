@@ -17,6 +17,7 @@ const RecoGateway = (() => {
     maxRetries: 3,
     retryBaseDelay: 1000,   // ms — exponential backoff base
     isMock: true,           // clearly identified as mock mode (Principle 8)
+    transport: 'fetch',     // 'fetch' (default) or 'firebase' (Cloud Functions)
   };
 
   let _authToken = null;
@@ -207,6 +208,72 @@ const RecoGateway = (() => {
     return requestWithRetry(endpoint, { method: 'DELETE' });
   }
 
+  // ── 4b. Firebase Cloud Functions transport ─────────────────
+  // When transport === 'firebase' and isMock === false, calls go through
+  // firebase.app().functions('southamerica-east1').httpsCallable(name).
+  // The endpoint parameter becomes the callable function name.
+  function callFirebase(functionName, data) {
+    if (_config.isMock) {
+      _mockLog('CALLABLE', functionName, data);
+      return Promise.resolve(_ok({ mock: true, function: functionName }));
+    }
+
+    if (typeof RecoFirebase === 'undefined' || !RecoFirebase.getFunctions || !RecoFirebase.isReady()) {
+      return Promise.resolve(_fail(ErrorType.UNKNOWN_ERROR, 'Firebase no inicializado'));
+    }
+
+    var callable = RecoFirebase.getFunctions().httpsCallable(functionName, {
+      timeout: _config.timeout
+    });
+
+    return callable(data || {})
+      .then(function(result) {
+        return _ok(result.data);
+      })
+      .catch(function(err) {
+        var code = err && err.code;
+        var message = err && err.message;
+
+        if (code === 'unauthenticated' || code === 'permission-denied') {
+          return _fail(ErrorType.AUTH_ERROR, message || 'No autorizado');
+        }
+        if (code === 'invalid-argument') {
+          return _fail(ErrorType.VALIDATION_ERROR, message || 'Datos no válidos');
+        }
+        if (code === 'deadline-exceeded' || code === 'unavailable') {
+          return _fail(ErrorType.TIMEOUT_ERROR, message || 'Tiempo de espera agotado');
+        }
+        if (code === 'internal' || code === 'unknown') {
+          return _fail(ErrorType.SERVER_ERROR, message || 'Error del servidor');
+        }
+        return _fail(ErrorType.NETWORK_ERROR, message || 'Error de red');
+      });
+  }
+
+  function callFirebaseWithRetry(functionName, data, options) {
+    options = options || {};
+    var maxRetries = options.maxRetries !== undefined ? options.maxRetries : _config.maxRetries;
+    var baseDelay = options.retryBaseDelay !== undefined ? options.retryBaseDelay : _config.retryBaseDelay;
+
+    function attempt(n) {
+      return callFirebase(functionName, data).then(function(result) {
+        if (result.ok) return result;
+
+        var retryable = result.error &&
+          (result.error.type === ErrorType.NETWORK_ERROR || result.error.type === ErrorType.TIMEOUT_ERROR);
+
+        if (!retryable || n >= maxRetries) return result;
+
+        var delay = baseDelay * Math.pow(2, n);
+        return new Promise(function(resolve) {
+          setTimeout(function() { resolve(attempt(n + 1)); }, delay);
+        });
+      });
+    }
+
+    return attempt(0);
+  }
+
   // ── 5. Auth placeholder (H7) ──────────────────────────────
   function setAuthToken(token) {
     _authToken = token;
@@ -279,6 +346,10 @@ const RecoGateway = (() => {
     post: post,
     put:  put,
     del:  del,
+
+    // Firebase Cloud Functions
+    callFirebase:          callFirebase,
+    callFirebaseWithRetry: callFirebaseWithRetry,
 
     // Auth
     setAuthToken:    setAuthToken,
