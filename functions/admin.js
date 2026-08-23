@@ -359,7 +359,7 @@ exports.adminListAdmins = onCall(
             lastSignIn: u.metadata.lastSignInTime || null,
             createdAt: u.metadata.creationTime || null,
             isSeed: SEED_ADMIN_EMAILS.includes(email),
-            role: claims.adminRole || (SEED_ADMIN_EMAILS.includes(email) ? 'Super-admin' : 'Admin'),
+            role: SEED_ADMIN_EMAILS.includes(email) ? 'Super-admin' : 'Admin',
           });
         }
       }
@@ -370,63 +370,3 @@ exports.adminListAdmins = onCall(
   }
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// adminSetRole — set a custom adminRole label on a user's custom claims.
-//
-// Client contract:
-//   const fn = fns.httpsCallable('adminSetRole');
-//   const { data } = await fn({ uid, role: 'Editor data' });
-//   // data = { uid, role }
-//
-// The role is a display label stored in customClaims.adminRole.
-// The user must already have admin=true claim.
-// ─────────────────────────────────────────────────────────────────────────────
-exports.adminSetRole = onCall(
-  { region: REGION, maxInstances: 5 },
-  async (request) => {
-    const caller = _requireAdmin(request);
-
-    const targetUid = request.data && request.data.uid;
-    if (!targetUid || typeof targetUid !== 'string') {
-      throw new HttpsError('invalid-argument', 'uid requerido.');
-    }
-    const role = request.data && request.data.role;
-    if (!role || typeof role !== 'string') {
-      throw new HttpsError('invalid-argument', 'role requerido.');
-    }
-    const VALID_ROLES = ['Super-admin', 'Admin', 'Editor data', 'Servicio', 'Solo lectura'];
-    if (!VALID_ROLES.includes(role)) {
-      throw new HttpsError('invalid-argument', 'Rol inválido. Válidos: ' + VALID_ROLES.join(', '));
-    }
-
-    let targetUser;
-    try {
-      targetUser = await getAuth().getUser(targetUid);
-    } catch (e) {
-      throw new HttpsError('not-found', 'Usuario no encontrado.');
-    }
-
-    const existing = targetUser.customClaims || {};
-    if (!existing.admin && !SEED_ADMIN_EMAILS.includes((targetUser.email || '').toLowerCase())) {
-      throw new HttpsError('failed-precondition', 'El usuario no es admin. Primero otorga permisos de admin.');
-    }
-
-    await getAuth().setCustomUserClaims(targetUid, { ...existing, admin: true, adminRole: role });
-
-    try {
-      await db.collection('adminAuditLog').add({
-        adminUid: caller.uid,
-        adminEmail: caller.email,
-        action: 'admin.role.set',
-        targetType: 'user',
-        targetId: targetUid,
-        extras: { role, targetEmail: targetUser.email || null },
-        createdAt: FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      logger.warn('[adminSetRole] audit write failed', { err: e && e.message });
-    }
-
-    return { uid: targetUid, role };
-  }
-);

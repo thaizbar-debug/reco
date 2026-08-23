@@ -1681,20 +1681,6 @@ let _usersFilter={status:'all'};
 let _usersPage=0;
 const USERS_PAGE_SIZE=25;
 
-const PLAN_TIERS=[
-  {name:'Individual',min:1,max:1},
-  {name:'Bronce',min:2,max:5},
-  {name:'Plata',min:6,max:10},
-  {name:'Oro',min:11,max:999}
-];
-function userPlan(keys){
-  const k=Number(keys)||0;
-  if(k>=11)return{name:'Oro',color:'var(--amber)',bg:'var(--warning-light)'};
-  if(k>=6)return{name:'Plata',color:'var(--txt-muted)',bg:'var(--bg)'};
-  if(k>=2)return{name:'Bronce',color:'var(--amber2)',bg:'var(--warning-light)'};
-  if(k>=1)return{name:'Individual',color:'var(--txt-muted)',bg:'var(--bg)'};
-  return{name:'Sin plan',color:'var(--txt-muted)',bg:'var(--bg)'};
-}
 
 function fmtRelTime(dateStr){
   if(!dateStr)return'—';
@@ -1748,7 +1734,6 @@ function renderUsers(el){
           <table class="data-table">
             <thead><tr>
               <th>Usuario</th>
-              <th>Plan</th>
               <th>Llaves</th>
               <th>Última Actividad</th>
               <th>Estado</th>
@@ -1756,7 +1741,6 @@ function renderUsers(el){
             </tr></thead>
             <tbody>
               ${paged.map(u=>{
-                const plan=userPlan(u.keysLeft);
                 return`<tr>
                 <td>
                   <div style="display:flex;align-items:center;gap:10px">
@@ -1764,7 +1748,6 @@ function renderUsers(el){
                     <div><div style="font-weight:600;font-size:.84rem">${esc(u.displayName||'Sin nombre')}</div><div style="font-size:.72rem;color:var(--txt-muted)">${esc(u.email||'—')}</div></div>
                   </div>
                 </td>
-                <td><span class="badge" style="background:${plan.bg};color:${plan.color};font-weight:600">${plan.name}</span></td>
                 <td style="font-weight:700;font-size:1rem;text-align:center">${u.keysLeft||0}</td>
                 <td style="font-size:.82rem;color:var(--txt-muted)">${fmtRelTime(u.lastSignIn)}</td>
                 <td><span class="badge badge-${u.disabled?'rejected':'approved'}">${u.disabled?'Inactivo':'Activo'}</span></td>
@@ -1812,7 +1795,6 @@ async function loadUsersList(){
 }
 
 function showUserDetail(u){
-  const plan=userPlan(u.keysLeft);
   const userPubs=_pubs.filter(p=>p.userEmail===u.email||p.userId===u.uid);
   const approved=userPubs.filter(p=>p.status==='approved').length;
   const pending=userPubs.filter(p=>p.status==='pending').length;
@@ -1829,7 +1811,6 @@ function showUserDetail(u){
     </div>
     <div class="detail-pane">
       <div class="detail-row"><div class="dlabel">UID</div><div class="dvalue" style="font-family:var(--mono);font-size:.72rem">${esc(u.uid)}</div></div>
-      <div class="detail-row"><div class="dlabel">Plan</div><div class="dvalue"><span class="badge" style="background:${plan.bg};color:${plan.color};font-weight:600">${plan.name}</span></div></div>
       <div class="detail-row"><div class="dlabel">Llaves</div><div class="dvalue"><strong>${u.keysLeft||0}</strong></div></div>
       <div class="detail-row"><div class="dlabel">Verificado</div><div class="dvalue">${u.emailVerified?'<span style="color:var(--green)">Sí</span>':'<span style="color:var(--red)">No</span>'}</div></div>
       <div class="detail-row"><div class="dlabel">Admin</div><div class="dvalue">${u.isAdmin?'<span class="badge badge-admin">Admin</span>':'No'}</div></div>
@@ -1901,13 +1882,11 @@ async function toggleUserDisabled(u){
 function showInviteUserModal(){
   openModal(`
     <h3>${IC.users} Invitar Usuario</h3>
-    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Envía una invitación por email para registrarse en Reco.</p>
+    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Envía una invitación por email para registrarse en Reco. Una vez registrado, podrás asignarle llaves desde la sección de usuarios.</p>
     <label>Email</label>
     <input id="inv_email" type="email" placeholder="usuario@ejemplo.com"/>
     <label>Nombre (opcional)</label>
     <input id="inv_name" placeholder="Nombre del usuario"/>
-    <label>Llaves iniciales</label>
-    <input id="inv_keys" type="number" min="0" max="100" value="0"/>
     <div id="inv_result" style="margin-top:12px;font-size:.85rem"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
@@ -1919,15 +1898,14 @@ function showInviteUserModal(){
 async function sendInvite(){
   const email=document.getElementById('inv_email').value.trim();
   const name=document.getElementById('inv_name').value.trim();
-  const keys=parseInt(document.getElementById('inv_keys').value,10)||0;
   if(!email){toast('Ingresa un email');return;}
   const result=document.getElementById('inv_result');
   result.innerHTML='<div class="spinner"></div> Enviando...';
   try{
     const greeting=name?('Hola '+name+','):'Hola,';
-    const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#0891b2">Te invitamos a Reco</h2><p>'+esc(greeting)+'</p><p>Has sido invitado a unirte a <strong>Reco</strong>, la plataforma inmobiliaria más completa de Perú.</p>'+(keys>0?'<p>Recibirás <strong>'+keys+' llaves</strong> de cortesía al registrarte.</p>':'')+'<p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Registrarse en Reco</a></p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
+    const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#0891b2">Te invitamos a Reco</h2><p>'+esc(greeting)+'</p><p>Has sido invitado a unirte a <strong>Reco</strong>, la plataforma inmobiliaria más completa de Perú.</p><p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Registrarse en Reco</a></p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
     await db.collection('mail').add({to:email,message:{subject:'Invitación a Reco',html,text:greeting+'\n\nHas sido invitado a Reco. Visita https://recosac.com/ para registrarte.\n\n— Equipo Reco'}});
-    adminAudit('user.invite','user',email,{name,keys});
+    adminAudit('user.invite','user',email,{name});
     result.innerHTML=`<span style="color:var(--green)">Invitación enviada a ${esc(email)}</span>`;
     toast('Invitación enviada');
   }catch(e){result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;}
@@ -1985,12 +1963,11 @@ function exportUsers(){
 // ADMINS
 // ═══════════════════════════════════════════════════════════════
 let _adminsData=[];
-const ADMIN_ROLES=['Super-admin','Admin','Editor data','Servicio','Solo lectura'];
 
 function renderAdmins(el){
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Usuarios Admin & Roles</h1><div class="subtitle">Control de acceso al panel. Los roles se gestionan vía Custom Claims en Firebase.</div></div>
+      <div><h1>Administradores</h1><div class="subtitle">Control de acceso al panel de administración.</div></div>
       <div class="header-actions">
         <button class="btn btn-primary" onclick="showNewAdminModal()">+ Nuevo admin</button>
       </div>
@@ -2014,19 +1991,18 @@ function renderAdmins(el){
 
 function renderAdminsList(){
   return`<div style="overflow-x:auto"><table class="data-table">
-    <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Última Sesión</th><th>Acciones</th></tr></thead>
+    <thead><tr><th>Nombre</th><th>Correo</th><th>Tipo</th><th>Última Sesión</th><th>Estado</th><th>Acciones</th></tr></thead>
     <tbody>
       ${_adminsData.map(a=>{
-        const roleBg=a.role==='Super-admin'?'var(--success-light)':a.role==='Editor data'?'var(--primary-light)':a.role==='Servicio'?'var(--warning-light)':'var(--bg)';
-        const roleColor=a.role==='Super-admin'?'var(--success-dark)':a.role==='Editor data'?'var(--blue-dark)':a.role==='Servicio'?'var(--warning-dark)':'var(--txt-muted)';
+        const isSeed=a.isSeed;
         return`<tr>
         <td><strong>${esc(a.displayName||'Sin nombre')}</strong></td>
         <td style="font-size:.82rem">${esc(a.email||'—')}</td>
-        <td><span class="badge" style="background:${roleBg};color:${roleColor};font-weight:600">${esc(a.role||'Admin')}</span></td>
+        <td><span class="badge ${isSeed?'badge-approved':'badge-info'}" style="font-weight:600">${isSeed?'Super-admin':'Admin'}</span></td>
         <td style="font-size:.82rem;color:var(--txt-muted)">${fmtRelTime(a.lastSignIn)}</td>
+        <td><span class="badge badge-${a.disabled?'rejected':'approved'}">${a.disabled?'Inactivo':'Activo'}</span></td>
         <td style="white-space:nowrap">
-          <button class="btn btn-outline btn-sm" onclick="showAdminRoleModal('${esc(a.uid)}','${esc(a.email||'')}','${esc(a.role||'Admin')}')">Permisos</button>
-          ${a.isSeed?'':`<button class="btn btn-outline btn-sm" onclick="revokeAdminFn('${esc(a.uid)}','${esc(a.email||'')}')">Revocar</button>`}
+          ${isSeed?'<span style="font-size:.72rem;color:var(--txt-muted)">Permanente</span>':`<button class="btn btn-outline btn-sm" onclick="revokeAdminFn('${esc(a.uid)}','${esc(a.email||'')}')">Revocar</button>`}
         </td>
       </tr>`;}).join('')}
     </tbody>
@@ -2076,11 +2052,9 @@ async function loadAdminsList(){
 function showNewAdminModal(){
   openModal(`
     <h3>${IC.shield} Nuevo Administrador</h3>
-    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Otorga permisos de administrador a un usuario existente.</p>
+    <p style="color:var(--txt-muted);font-size:.85rem;margin-bottom:16px">Otorga permisos de administrador a un usuario registrado. El usuario podrá acceder al panel de admin.</p>
     <label>Email del usuario</label>
     <input id="na_email" type="email" placeholder="usuario@ejemplo.com"/>
-    <label>Rol</label>
-    <select id="na_role">${ADMIN_ROLES.map(r=>`<option value="${r}"${r==='Admin'?' selected':''}>${r}</option>`).join('')}</select>
     <div id="na_result" style="margin-top:12px;font-size:.85rem"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
@@ -2091,52 +2065,16 @@ function showNewAdminModal(){
 
 async function grantNewAdmin(){
   const email=document.getElementById('na_email').value.trim();
-  const role=document.getElementById('na_role').value;
   if(!email){toast('Ingresa un email');return;}
   const result=document.getElementById('na_result');
   result.innerHTML='<div class="spinner"></div> Procesando...';
   try{
     const fn1=fns.httpsCallable('setAdminClaim');
-    const res1=await fn1({email,admin:true});
-    try{
-      const fn2=fns.httpsCallable('adminSetRole');
-      await fn2({uid:res1.data.targetUid,role});
-    }catch(e2){/* role fn may not be deployed yet */}
-    result.innerHTML=`<span style="color:var(--green)">Admin otorgado a ${esc(email)} con rol ${esc(role)}</span>`;
+    await fn1({email,admin:true});
+    result.innerHTML=`<span style="color:var(--green)">Acceso admin otorgado a ${esc(email)}</span>`;
     toast('Admin otorgado');
     setTimeout(()=>{closeModal();loadAdminsList();},800);
   }catch(e){result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;}
-}
-
-function showAdminRoleModal(uid,email,currentRole){
-  openModal(`
-    <h3>${IC.shield} Permisos de ${esc(email)}</h3>
-    <label>Rol</label>
-    <select id="ar_role">${ADMIN_ROLES.map(r=>`<option value="${r}"${r===currentRole?' selected':''}>${r}</option>`).join('')}</select>
-    <div id="ar_result" style="margin-top:12px;font-size:.85rem"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveAdminRole('${esc(uid)}')">Guardar Rol</button>
-    </div>
-  `);
-}
-
-async function saveAdminRole(uid){
-  const role=document.getElementById('ar_role').value;
-  const result=document.getElementById('ar_result');
-  result.innerHTML='<div class="spinner"></div> Guardando...';
-  try{
-    const fn=fns.httpsCallable('adminSetRole');
-    await fn({uid,role});
-    result.innerHTML=`<span style="color:var(--green)">Rol actualizado a ${esc(role)}</span>`;
-    toast('Rol actualizado');
-    const a=_adminsData.find(x=>x.uid===uid);
-    if(a)a.role=role;
-    setTimeout(()=>{closeModal();renderAdmins(document.getElementById('mainContent'));},800);
-  }catch(e){
-    if(e.code==='not-found'||(e.message&&e.message.includes('not found')))result.innerHTML='<span style="color:var(--warning-dark)">Cloud Function <code>adminSetRole</code> no desplegado aún.</span>';
-    else result.innerHTML=`<span style="color:var(--red)">Error: ${esc(e.message)}</span>`;
-  }
 }
 
 async function revokeAdminFn(uid,email){
