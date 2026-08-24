@@ -716,6 +716,15 @@ const LegalUI = (() => {
         },
         _checkResult ? _checkResult.propertyId : null
       );
+      // Bridge to Cloud Function for authenticated users
+      if (typeof OrderBridge !== 'undefined') {
+        OrderBridge.submit({
+          serviceId: _selectedServiceId,
+          notes: _bookingData.notes,
+          contactPhone: _bookingData.contactPhone
+        });
+      }
+
       RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.LEGAL_LEAD_CREATED, {
         service_id: _selectedServiceId,
         order_id: _currentOrder.id,

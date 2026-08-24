@@ -89,6 +89,7 @@ const RecoFirebase = (() => {
             '<a href="index.html#perfil">Mi perfil</a>' +
             '<a href="index.html#favoritos">Mis favoritos</a>' +
             '<a href="index.html#publicaciones">Mis publicaciones</a>' +
+            '<a href="#" onclick="event.preventDefault();MyOrdersUI.show()">Mis servicios</a>' +
             '<hr/>' +
             '<a href="#" onclick="event.preventDefault();RecoFirebase.signOut()">Cerrar sesión</a>' +
           '</div></div>' +

@@ -724,6 +724,15 @@ const ValuationUI = (() => {
         { name: _requestData.contactName, phone: _requestData.contactPhone, email: _requestData.contactEmail, notes: _requestData.notes }
       );
       ValuationService.submitOrder(_currentOrder.id);
+
+      // Bridge to Cloud Function for authenticated users
+      if (typeof OrderBridge !== 'undefined') {
+        OrderBridge.submit({
+          serviceId: _requestView,
+          notes: _requestData.notes,
+          contactPhone: _requestData.contactPhone
+        });
+      }
     }
 
     return `

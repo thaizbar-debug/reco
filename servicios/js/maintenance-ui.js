@@ -502,6 +502,15 @@ const MaintenanceUI = (() => {
       MaintenanceService.updateOrderStatus(_currentOrder.id, MKT_ORDER_STATUS.QUOTED);
       _currentOrder.status = MKT_ORDER_STATUS.QUOTED;
 
+      // Bridge to Cloud Function for authenticated users
+      if (typeof OrderBridge !== 'undefined') {
+        OrderBridge.submit({
+          serviceId: _selectedServiceId,
+          propertyId: _requestData.propertyId || null,
+          notes: _requestData.description
+        });
+      }
+
       RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.MAINTENANCE_REQUESTED, {
         order_id: _currentOrder.id,
         service_id: _selectedServiceId,

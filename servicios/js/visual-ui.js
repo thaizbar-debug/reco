@@ -579,6 +579,15 @@ const VisualUI = (() => {
         }
       );
 
+      // Bridge to Cloud Function for authenticated users
+      if (typeof OrderBridge !== 'undefined') {
+        OrderBridge.submit({
+          serviceId: _selectedServiceId,
+          notes: _bookingData.notes,
+          contactPhone: _bookingData.contactPhone
+        });
+      }
+
       if (serviceType === VISUAL_SERVICE_TYPES.PHOTO || serviceType === VISUAL_SERVICE_TYPES.VIDEO) {
         RecoAnalytics.track('photo_booking_completed', { service_id: _selectedServiceId, order_id: _currentOrder.id });
       } else if (serviceType === VISUAL_SERVICE_TYPES.AI_TOUR) {
