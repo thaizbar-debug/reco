@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://www.google.com https://www.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.cloudfunctions.net https://*.firebaseapp.com https://www.google.com https://firebase.googleapis.com https://firebaseinstallations.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.gstatic.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://www.google.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'">
+<!-- CSP applied via HTTP headers in production (meta tag removed — it blocks defer scripts on file:// in some browsers) -->
 <meta name="description" content="Reco Servicios — Tasaciones, crédito hipotecario, servicios legales, fotografía profesional, mantenimiento del hogar y más para tu propiedad en Lima, Perú.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://www.reco.pe/servicios">
@@ -877,7 +877,9 @@ button.job-card, button.job-svc-card, button.job-related-card {
   <div class="trust-item">Soporte por WhatsApp</div>
 </div>
 
-<div class="svc-content" id="svcContent" role="tabpanel"></div>
+<div class="svc-content" id="svcContent" role="tabpanel">
+  <noscript><p style="text-align:center;padding:40px 20px;color:#64748b">Habilita JavaScript para ver los servicios disponibles.</p></noscript>
+</div>
 
 <!-- AUTH MODAL (shared with index.html) -->
 <div class="auth-overlay" id="authOverlay">
@@ -972,6 +974,9 @@ button.job-card, button.job-svc-card, button.job-related-card {
   </div>
 </footer>
 
+<script>
+window.onerror=function(m,s,l){var el=document.getElementById('svcContent');if(el&&!el.dataset.ok){el.innerHTML='<p style="text-align:center;padding:40px 20px;color:#dc2626">Error cargando servicios: '+m+'</p>';}};
+</script>
 <script defer src="servicios/js/data.js"></script>
 <script defer src="servicios/js/jobs-data.js"></script>
 <script defer src="servicios/js/analytics.js"></script>

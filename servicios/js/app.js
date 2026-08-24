@@ -120,6 +120,7 @@ const RecoApp = (() => {
 
     if (_currentTab === JOBS_VIEW) {
       el.innerHTML = JobsUI.render();
+      el.dataset.ok = '1';
       return;
     }
 
@@ -131,6 +132,7 @@ const RecoApp = (() => {
 
     const services = getServicesByCategory(_currentTab);
     el.innerHTML = renderer(services, _searchQuery);
+    el.dataset.ok = '1';
   }
 
   function getCurrentTab() {
