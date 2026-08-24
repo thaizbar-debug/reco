@@ -151,4 +151,20 @@ const RecoApp = (() => {
   };
 })();
 
-document.addEventListener('DOMContentLoaded', RecoApp.init);
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize property context from URL params (Flow 2)
+  if (typeof PropertyContext !== 'undefined') {
+    PropertyContext.initFromUrl();
+  }
+
+  // Restore property context after auth redirect (Flow 3)
+  if (typeof PropertyContext !== 'undefined' && typeof RecoFirebase !== 'undefined' && RecoFirebase.auth) {
+    RecoFirebase.auth.onAuthStateChanged(function(user) {
+      if (user && PropertyContext.restoreAfterAuth()) {
+        console.log('[RecoApp] Property context restored after auth');
+      }
+    });
+  }
+
+  RecoApp.init();
+});

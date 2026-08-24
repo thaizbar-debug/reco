@@ -799,3 +799,72 @@ exports.setAdminClaim = onCall(
     return { targetUid: targetUser.uid, admin };
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createServiceOrder — Create a service order linking user → service → property.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('createServiceOrder');
+//   const { data } = await fn({
+//     serviceId: 'tasacion-express',
+//     propertyId: '1-TI01-24',   // optional
+//     listingId: 'abc123',       // optional (publication id)
+//     notes: 'Necesito...',      // optional
+//     contactPhone: '+51...',    // optional
+//   });
+//   // data = { orderId, status: 'requested', createdAt }
+//
+// Errors (HttpsError):
+//   unauthenticated       — no auth context
+//   invalid-argument      — serviceId missing
+// ─────────────────────────────────────────────────────────────────────────────
+exports.createServiceOrder = onCall(
+  {
+    region: REGION,
+    maxInstances: 20,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'createServiceOrder');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const raw = request.data;
+
+    if (!raw || typeof raw !== 'object') {
+      throw new HttpsError('invalid-argument', 'Datos de la orden requeridos.');
+    }
+
+    const serviceId = raw.serviceId;
+    if (!serviceId || typeof serviceId !== 'string' || serviceId.length > 128) {
+      throw new HttpsError('invalid-argument', 'serviceId requerido (string, <=128 chars).');
+    }
+
+    const propertyId = (raw.propertyId && typeof raw.propertyId === 'string') ? raw.propertyId.slice(0, 128) : null;
+    const listingId = (raw.listingId && typeof raw.listingId === 'string') ? raw.listingId.slice(0, 128) : null;
+    const notes = (raw.notes && typeof raw.notes === 'string') ? raw.notes.slice(0, 2000) : '';
+    const contactPhone = (raw.contactPhone && typeof raw.contactPhone === 'string') ? raw.contactPhone.slice(0, 20) : null;
+
+    const orderRef = db.collection('serviceOrders').doc();
+    const orderData = {
+      userId: uid,
+      userEmail: (request.auth.token && request.auth.token.email) || null,
+      serviceId: serviceId,
+      propertyId: propertyId,
+      listingId: listingId,
+      status: 'requested',
+      notes: notes,
+      contactPhone: contactPhone,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    await orderRef.set(orderData);
+
+    return {
+      orderId: orderRef.id,
+      status: 'requested',
+      createdAt: new Date().toISOString(),
+    };
+  }
+);

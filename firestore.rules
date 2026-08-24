@@ -256,6 +256,16 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ── serviceOrders ─────────────────────────────────────────
+    // Created by createServiceOrder Cloud Function (server-side).
+    // Users can read their own orders. Admins can read all.
+    // Updates only via Cloud Functions (status transitions).
+    match /serviceOrders/{orderId} {
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create, update, delete: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

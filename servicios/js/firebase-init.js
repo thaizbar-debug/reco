@@ -129,6 +129,10 @@ const RecoFirebase = (() => {
 
   // ── Auth Modal functions (work regardless of Firebase state) ──
   function openAuthModal(tab) {
+    // Preserve property context before auth (Flow 3)
+    if (typeof PropertyContext !== 'undefined') {
+      PropertyContext.preserveForAuth();
+    }
     var el = document.getElementById('authOverlay');
     if (el) el.classList.add('open');
     switchAuthTab(tab || 'login');
