@@ -878,6 +878,10 @@ button.job-card, button.job-svc-card, button.job-related-card {
 </div>
 
 <div class="svc-content" id="svcContent" role="tabpanel">
+  <div id="svcLoading" style="text-align:center;padding:48px 20px">
+    <div style="font-size:28px;margin-bottom:12px">&#9203;</div>
+    <p style="color:var(--ink-3,#64748b);font-size:14px;margin:0">Cargando servicios...</p>
+  </div>
   <noscript><p style="text-align:center;padding:40px 20px;color:#64748b">Habilita JavaScript para ver los servicios disponibles.</p></noscript>
 </div>
 
@@ -975,7 +979,8 @@ button.job-card, button.job-svc-card, button.job-related-card {
 </footer>
 
 <script>
-window.onerror=function(m,s,l){var el=document.getElementById('svcContent');if(el&&!el.dataset.ok){el.innerHTML='<p style="text-align:center;padding:40px 20px;color:#dc2626">Error cargando servicios: '+m+'</p>';}};
+window._svcErrors=[];
+window.onerror=function(m,s,l){window._svcErrors.push(m+' ('+s+':'+l+')');};
 </script>
 <script defer src="servicios/js/data.js"></script>
 <script defer src="servicios/js/jobs-data.js"></script>
@@ -1012,6 +1017,26 @@ window.onerror=function(m,s,l){var el=document.getElementById('svcContent');if(e
 <script defer src="servicios/js/maintenance-ui.js"></script>
 <script defer src="servicios/js/jobs-ui.js"></script>
 <script defer src="servicios/js/app.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  var el=document.getElementById('svcContent');
+  if(!el) return;
+  setTimeout(function(){
+    if(!el.dataset.ok){
+      var errs=window._svcErrors||[];
+      var msg='<div style="text-align:center;padding:40px 20px">';
+      msg+='<div style="font-size:28px;margin-bottom:12px">&#9888;&#65039;</div>';
+      msg+='<p style="color:#dc2626;font-size:14px;font-weight:600;margin:0 0 8px">No se pudieron cargar los servicios</p>';
+      if(errs.length>0){
+        msg+='<p style="color:#64748b;font-size:12px;margin:0 0 16px">Errores: '+errs.join(' | ')+'</p>';
+      }
+      msg+='<p style="color:#64748b;font-size:13px;margin:0">Intenta recargar la página (Ctrl+Shift+R).</p>';
+      msg+='</div>';
+      el.innerHTML=msg;
+    }
+  },3000);
+});
+</script>
 
 </body>
 </html>

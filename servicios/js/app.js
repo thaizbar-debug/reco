@@ -154,19 +154,25 @@ const RecoApp = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize property context from URL params (Flow 2)
-  if (typeof PropertyContext !== 'undefined') {
-    PropertyContext.initFromUrl();
-  }
+  try {
+    if (typeof PropertyContext !== 'undefined') {
+      PropertyContext.initFromUrl();
+    }
 
-  // Restore property context after auth redirect (Flow 3)
-  if (typeof PropertyContext !== 'undefined' && typeof RecoFirebase !== 'undefined' && RecoFirebase.auth) {
-    RecoFirebase.auth.onAuthStateChanged(function(user) {
-      if (user && PropertyContext.restoreAfterAuth()) {
-        console.log('[RecoApp] Property context restored after auth');
-      }
-    });
-  }
+    if (typeof PropertyContext !== 'undefined' && typeof RecoFirebase !== 'undefined' && RecoFirebase.auth) {
+      RecoFirebase.auth.onAuthStateChanged(function(user) {
+        if (user && PropertyContext.restoreAfterAuth()) {
+          console.log('[RecoApp] Property context restored after auth');
+        }
+      });
+    }
 
-  RecoApp.init();
+    RecoApp.init();
+  } catch (e) {
+    console.error('[RecoApp] Init failed:', e);
+    var el = document.getElementById('svcContent');
+    if (el) {
+      el.innerHTML = '<div style="text-align:center;padding:40px 20px"><p style="color:#dc2626;font-weight:600">Error al inicializar: ' + (e.message || e) + '</p><p style="color:#64748b;font-size:13px">Recarga la página (Ctrl+Shift+R).</p></div>';
+    }
+  }
 });
