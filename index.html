@@ -7281,7 +7281,11 @@ async function _pullUserDataFromFirestore(){
     }
     const data = snap.data() || {};
     if(Array.isArray(data.favorites)) localStorage.setItem('reco_favs', JSON.stringify(data.favorites));
-    if(Array.isArray(data.keyHistory)) localStorage.setItem('reco_key_hist', JSON.stringify(data.keyHistory));
+    if(Array.isArray(data.keyHistory)){
+      localStorage.setItem('reco_key_hist', JSON.stringify(data.keyHistory));
+      data.keyHistory.forEach(e => { if(e && e.propId) S.unlockedIds.add(e.propId); });
+      if(typeof applyFilters === 'function') applyFilters();
+    }
     if(typeof data.keysLeft === 'number'){
       S.keysLeft = data.keysLeft;
       if(typeof updateKeyCount === 'function') updateKeyCount();
