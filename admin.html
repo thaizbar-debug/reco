@@ -929,10 +929,33 @@ function renderDashboard(el){
 // ═══════════════════════════════════════════════════════════════
 // PUBLICATIONS (Venta/Alquiler only)
 // ═══════════════════════════════════════════════════════════════
-let _pubFilter={status:'all',search:'',type:'all',op:'all'};
+let _pubFilter={status:'all',search:'',type:'all',op:'all',vigencia:'all'};
 let _pubSort={key:'createdAt',dir:'desc'};
 let _pubPage=0;
 const PUB_PAGE_SIZE=25;
+const VIGENCIA_DAYS=90;
+
+function _vigenciaDays(p){
+  const ref=p.lastConfirmedAt||p.moderatedAt||p.createdAt;
+  if(!ref)return 999;
+  const ms=ref.toMillis?ref.toMillis():(ref.seconds?ref.seconds*1000:new Date(ref).getTime());
+  return Math.floor((Date.now()-ms)/(24*60*60*1000));
+}
+function _vigenciaStatus(p){
+  if(p.status!=='approved')return'na';
+  const d=_vigenciaDays(p);
+  if(d>=VIGENCIA_DAYS)return'vencida';
+  if(d>=VIGENCIA_DAYS-30)return'por_vencer';
+  return'vigente';
+}
+function _vigenciaBadge(p){
+  const s=_vigenciaStatus(p);
+  const d=_vigenciaDays(p);
+  if(s==='na')return'';
+  if(s==='vencida')return`<span class="badge badge-rejected" title="${d} días">${d}d</span>`;
+  if(s==='por_vencer')return`<span class="badge badge-pending" title="${d} días">${d}d</span>`;
+  return`<span class="badge badge-approved" title="${d} días">${d}d</span>`;
+}
 
 function renderPublications(el){
   let filtered=_pubs.slice();
@@ -943,6 +966,7 @@ function renderPublications(el){
     const q=_pubFilter.search.toLowerCase();
     filtered=filtered.filter(p=>(p.address||'').toLowerCase().includes(q)||(p.district||'').toLowerCase().includes(q)||(p.title||'').toLowerCase().includes(q)||(p.userEmail||'').toLowerCase().includes(q)||(p.userName||'').toLowerCase().includes(q));
   }
+  if(_pubFilter.vigencia!=='all')filtered=filtered.filter(p=>_vigenciaStatus(p)===_pubFilter.vigencia);
 
   filtered.sort((a,b)=>{
     let va,vb;
@@ -962,13 +986,16 @@ function renderPublications(el){
   const pending=_pubs.filter(p=>p.status==='pending').length;
   const approved=_pubs.filter(p=>p.status==='approved').length;
   const rejected=_pubs.filter(p=>p.status==='rejected').length;
+  const vencidas=_pubs.filter(p=>_vigenciaStatus(p)==='vencida').length;
+  const porVencer=_pubs.filter(p=>_vigenciaStatus(p)==='por_vencer').length;
 
   function sortIcon(key){return _pubSort.key===key?(_pubSort.dir==='asc'?' ↑':' ↓'):'';}
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Gesti&oacute;n de Propiedades</h1><div class="subtitle">${_pubs.length} total — ${pending} pendientes, ${approved} aprobadas, ${rejected} rechazadas</div></div>
+      <div><h1>Gesti&oacute;n de Propiedades</h1><div class="subtitle">${_pubs.length} total — ${pending} pendientes, ${approved} aprobadas, ${rejected} rechazadas${vencidas?` · <span style="color:var(--red);font-weight:600">${vencidas} vencidas</span>`:''}</div></div>
       <div class="header-actions">
+        ${vencidas?`<button class="btn btn-outline" onclick="bulkVigenciaCheck()" style="color:var(--red)">${IC.mail} Verificar Vencidas (${vencidas})</button>`:''}
         <button class="btn btn-outline" onclick="exportPubs()">Exportar CSV</button>
         <button class="btn btn-outline" onclick="refreshPubs().then(()=>renderPublications(document.getElementById('mainContent')))">${IC.refresh} Actualizar</button>
       </div>
@@ -991,6 +1018,12 @@ function renderPublications(el){
           <option value="all"${_pubFilter.type==='all'?' selected':''}>Todos los tipos</option>
           ${PUB_TYPES.map(t=>`<option value="${t}"${_pubFilter.type===t?' selected':''}>${t}</option>`).join('')}
         </select>
+        <select onchange="_pubFilter.vigencia=this.value;_pubPage=0;renderPublications(document.getElementById('mainContent'))">
+          <option value="all"${_pubFilter.vigencia==='all'?' selected':''}>Toda vigencia</option>
+          <option value="vencida"${_pubFilter.vigencia==='vencida'?' selected':''}>Vencidas >${VIGENCIA_DAYS}d (${vencidas})</option>
+          <option value="por_vencer"${_pubFilter.vigencia==='por_vencer'?' selected':''}>Por vencer (${porVencer})</option>
+          <option value="vigente"${_pubFilter.vigencia==='vigente'?' selected':''}>Vigentes</option>
+        </select>
       </div>
 
       ${paged.length===0?'<div class="section-card"><div class="card-body"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><p>No hay propiedades que coincidan con los filtros.</p></div></div></div>':
@@ -1007,6 +1040,7 @@ function renderPublications(el){
               <th>$/m²</th>
               <th>Usuario</th>
               <th class="sortable" onclick="togglePubSort('createdAt')">Fecha${sortIcon('createdAt')}</th>
+              <th>Vigencia</th>
               <th>Acciones</th>
             </tr></thead>
             <tbody>
@@ -1023,6 +1057,7 @@ function renderPublications(el){
                 <td>${pm2?'$'+fmtNum(pm2):'—'}</td>
                 <td style="max-width:130px;font-size:.72rem;color:var(--txt-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p.userEmail||'')}">${esc(p.userName||p.userEmail||'—')}</td>
                 <td style="white-space:nowrap;font-size:.72rem">${fmtShortDate(p.createdAt)}</td>
+                <td style="white-space:nowrap;text-align:center">${_vigenciaBadge(p)}${_vigenciaStatus(p)==='vencida'&&!p.vigenciaEmailSentAt?` <button class="btn-icon" onclick="sendVigenciaCheck('${esc(p.id)}')" title="Enviar verificación" style="color:var(--amber)">${IC.mail}</button>`:''}</td>
                 <td style="white-space:nowrap">
                   ${p.status==='pending'?`<button class="btn btn-success btn-xs" onclick="approvePub('${esc(p.id)}')">${IC.check}</button> <button class="btn btn-error btn-xs" onclick="rejectPub('${esc(p.id)}')">${IC.x}</button>`:
                    p.status==='approved'?`<button class="btn btn-outline btn-xs" onclick="unapprovePub('${esc(p.id)}')">Despublicar</button>`:
@@ -1101,6 +1136,7 @@ function showPubDetail(id){
         ${p.listedAt?`<div class="detail-row"><div class="dlabel">Listada</div><div class="dvalue">${fmtDate(p.listedAt)}</div></div>`:''}
         ${p.moderatedAt?`<div class="detail-row"><div class="dlabel">Moderada</div><div class="dvalue">${fmtDate(p.moderatedAt)} por ${esc(p.moderatedBy||'—')}</div></div>`:''}
         ${p.rejectionReason?`<div class="detail-row"><div class="dlabel">Razón rechazo</div><div class="dvalue" style="color:var(--error-dark)">${esc(p.rejectionReason)}</div></div>`:''}
+        ${!isHist?`<div class="detail-row"><div class="dlabel">Vigencia</div><div class="dvalue">${_vigenciaBadge(p)} <span style="font-size:.72rem;color:var(--txt-muted)">${_vigenciaDays(p)} días desde ${p.lastConfirmedAt?'última confirmación':'publicación'}</span>${p.vigenciaEmailSentAt?'<br><span style="font-size:.68rem;color:var(--txt-muted)">Email enviado: '+fmtDate(p.vigenciaEmailSentAt)+'</span>':''}${p.lastConfirmedAt?'<br><span style="font-size:.68rem;color:var(--green)">Confirmada: '+fmtDate(p.lastConfirmedAt)+'</span>':''}</div></div>`:''}
       </div>
       ${p.desc?`<div style="margin-top:12px"><strong style="font-size:.82rem">Descripción:</strong><div style="font-size:.82rem;white-space:pre-wrap;margin-top:6px;padding:12px;background:var(--bg);border-radius:var(--r);max-height:200px;overflow-y:auto">${esc(p.desc)}</div></div>`:''}
       ${isHist&&(p.pdfUrls||p.pdfs||[]).length?`<div style="margin-top:12px"><strong style="font-size:.82rem">PDFs de Transacción (${(p.pdfUrls||p.pdfs||[]).length}):</strong><div class="pdf-list" style="margin-top:6px">${(p.pdfUrls||p.pdfs||[]).map((url,i)=>{const label=typeof url==='object'?(url.label||'Documento '+(i+1)):'Documento '+(i+1);const href=typeof url==='object'?url.url:url;return`<div class="pdf-item">${IC.file} <a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a></div>`;}).join('')}</div></div>`:''}
@@ -1108,6 +1144,7 @@ function showPubDetail(id){
         <button class="btn btn-outline" onclick="closeModal();showEditPub('${esc(p.id)}')">${IC.edit} Editar</button>
         ${isHist?`<button class="btn btn-outline" onclick="closeModal();showHistPdfs('${esc(p.id)}')">${IC.file} Archivos</button>`:''}
         ${p.status==='pending'?`<button class="btn btn-success" onclick="closeModal();approvePub('${esc(p.id)}')">${IC.check} Aprobar</button><button class="btn btn-error" onclick="closeModal();rejectPub('${esc(p.id)}')">${IC.x} Rechazar</button>`:''}
+        ${!isHist&&p.status==='approved'?`<button class="btn btn-outline" style="color:var(--green);border-color:var(--green)" onclick="closeModal();confirmVigencia('${esc(p.id)}')">${IC.check} Confirmar vigencia</button><button class="btn btn-outline" onclick="closeModal();sendVigenciaCheck('${esc(p.id)}')">${IC.mail} Verificar disponibilidad</button>`:''}
         <button class="btn btn-outline" onclick="closeModal()">Cerrar</button>
       </div>
     </div>
@@ -1345,6 +1382,93 @@ function queueModerationEmail(pub,kind,reason){
     :'<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a"><h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2><p>'+greeting+'</p><p>Revisamos tu publicación de <strong>'+esc(pub.address||'—')+'</strong> en <strong>'+esc(pub.district||'—')+'</strong> y, por el momento, no podemos publicarla en Reco.</p>'+(reason?'<p><strong>Razón:</strong> '+esc(reason)+'</p>':'')+'<p>Puedes corregir lo indicado y volver a enviarla.</p><p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
   const text=isApproved?greeting+'\n\nTu publicación de '+(pub.address||'')+' en '+(pub.district||'')+' fue aprobada.\n\n— Equipo Reco':greeting+'\n\nTu publicación de '+(pub.address||'')+' en '+(pub.district||'')+' no pudo ser aprobada.'+(reason?'\nRazón: '+reason:'')+'\n\n— Equipo Reco';
   db.collection('mail').add({to:pub.userEmail,message:{subject,html,text}}).catch(e=>console.warn('mail:',e.message));
+}
+
+// ── Vigencia (staleness check) ──
+async function sendVigenciaCheck(id){
+  if(!isAdmin())return;
+  try{
+    const ref=db.collection('publications').doc(id);
+    const snap=await ref.get();
+    if(!snap.exists){toast('Publicación no encontrada');return;}
+    const pub={id:snap.id,...snap.data()};
+    if(!pub.userEmail){toast('No hay email del propietario/corredor');return;}
+    const name=pub.userName?pub.userName.split(' ')[0]:'';
+    const greeting=name?('Hola '+name+','):'Hola,';
+    const addr=pub.address||pub.title||'tu propiedad';
+    const dist=pub.district||'';
+    const opLabel=(pub.op==='Alquiler'?'alquiler':'venta');
+    const subject='¿Tu propiedad en Reco sigue disponible?';
+    const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">'
+      +'<h2 style="color:#0891b2">Verificación de disponibilidad</h2>'
+      +'<p>'+greeting+'</p>'
+      +'<p>Han pasado más de 3 meses desde que publicaste tu propiedad en <strong>'+esc(opLabel)+'</strong>:</p>'
+      +'<div style="background:#f0f9ff;border-left:4px solid #0891b2;padding:12px 16px;border-radius:6px;margin:16px 0">'
+      +'<strong>'+esc(addr)+'</strong>'+(dist?' — '+esc(dist):'')
+      +'<br><span style="color:#64748b;font-size:.85rem">'+esc(pub.type||'')+' en '+esc(opLabel)+'</span>'
+      +'</div>'
+      +'<p>¿Sigue disponible para el público? Si ya se vendió o alquiló, te pedimos que la retires para mantener la calidad de información en Reco.</p>'
+      +'<p>Puedes ingresar a tu cuenta y actualizar el estado de tu publicación.</p>'
+      +'<p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ir a Reco</a></p>'
+      +'<p style="color:#64748b;font-size:.85rem;margin-top:32px">Si no tomas acción, podríamos pausar la publicación para asegurar la mejor experiencia a nuestros usuarios.</p>'
+      +'<p style="color:#64748b;font-size:.85rem">— Equipo Reco</p></div>';
+    const text=greeting+'\n\nHan pasado más de 3 meses desde que publicaste tu propiedad de '+opLabel+': '+addr+(dist?' — '+dist:'')+'.\n\n¿Sigue disponible? Si ya se vendió o alquiló, retírala desde tu cuenta para mantener la calidad de Reco.\n\nhttps://recosac.com/\n\n— Equipo Reco';
+    await db.collection('mail').add({to:pub.userEmail,message:{subject,html,text}});
+    await ref.update({vigenciaEmailSentAt:firebase.firestore.FieldValue.serverTimestamp()});
+    adminAudit('vigencia.emailSent','publication',id,{email:pub.userEmail});
+    toast('Email de verificación enviado a '+pub.userEmail);
+    await refreshPubs();renderView();
+  }catch(e){toast('Error al enviar verificación: '+e.message);}
+}
+
+async function bulkVigenciaCheck(){
+  if(!isAdmin())return;
+  const vencidas=_pubs.filter(p=>_vigenciaStatus(p)==='vencida'&&p.userEmail);
+  if(vencidas.length===0){toast('No hay propiedades vencidas con email');return;}
+  if(!confirm('¿Enviar email de verificación a '+vencidas.length+' propiedades vencidas?'))return;
+  let sent=0,errors=0;
+  toast('Enviando '+vencidas.length+' emails...');
+  for(const pub of vencidas){
+    try{
+      const name=pub.userName?pub.userName.split(' ')[0]:'';
+      const greeting=name?('Hola '+name+','):'Hola,';
+      const addr=pub.address||pub.title||'tu propiedad';
+      const dist=pub.district||'';
+      const opLabel=(pub.op==='Alquiler'?'alquiler':'venta');
+      const subject='¿Tu propiedad en Reco sigue disponible?';
+      const html='<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">'
+        +'<h2 style="color:#0891b2">Verificación de disponibilidad</h2>'
+        +'<p>'+greeting+'</p>'
+        +'<p>Han pasado más de 3 meses desde que publicaste tu propiedad en <strong>'+esc(opLabel)+'</strong>:</p>'
+        +'<div style="background:#f0f9ff;border-left:4px solid #0891b2;padding:12px 16px;border-radius:6px;margin:16px 0">'
+        +'<strong>'+esc(addr)+'</strong>'+(dist?' — '+esc(dist):'')
+        +'<br><span style="color:#64748b;font-size:.85rem">'+esc(pub.type||'')+' en '+esc(opLabel)+'</span>'
+        +'</div>'
+        +'<p>¿Sigue disponible para el público? Si ya se vendió o alquiló, te pedimos que la retires para mantener la calidad de información en Reco.</p>'
+        +'<p style="margin-top:24px"><a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ir a Reco</a></p>'
+        +'<p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p></div>';
+      const text=greeting+'\n\n¿Tu propiedad de '+opLabel+' en '+addr+(dist?' — '+dist:'')+' sigue disponible?\n\nhttps://recosac.com/\n\n— Equipo Reco';
+      await db.collection('mail').add({to:pub.userEmail,message:{subject,html,text}});
+      await db.collection('publications').doc(pub.id).update({vigenciaEmailSentAt:firebase.firestore.FieldValue.serverTimestamp()});
+      adminAudit('vigencia.emailSent','publication',pub.id,{email:pub.userEmail,bulk:true});
+      sent++;
+    }catch(e){errors++;console.warn('vigencia mail error:',pub.id,e.message);}
+  }
+  toast(sent+' emails enviados'+(errors?', '+errors+' errores':''));
+  await refreshPubs();renderView();
+}
+
+async function confirmVigencia(id){
+  if(!isAdmin())return;
+  try{
+    await db.collection('publications').doc(id).update({
+      lastConfirmedAt:firebase.firestore.FieldValue.serverTimestamp(),
+      vigenciaEmailSentAt:firebase.firestore.FieldValue.delete()
+    });
+    adminAudit('vigencia.confirm','publication',id);
+    toast('Vigencia confirmada');
+    await refreshPubs();renderView();
+  }catch(e){toast('Error al confirmar vigencia: '+e.message);}
 }
 
 // ═══════════════════════════════════════════════════════════════
