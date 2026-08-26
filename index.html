@@ -6047,13 +6047,13 @@ function _pn(){
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 async function _uploadPublicationPhotos(pubId, photos){
   if(!photos || !photos.length) return [];
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if(!uid) throw new Error('unauthenticated');
   const urls = [];
   for(let i=0; i<photos.length; i++){
     const dataUrl = photos[i];
     const blob = await (await fetch(dataUrl)).blob();
-    const ref = storage.ref(`publications/${pubId}/${i}.jpg`);
-    // contentType explícito: storage.rules solo admite jpeg/png/webp y el
-    // blob reconstruido desde un dataURL puede llegar sin tipo.
+    const ref = storage.ref(`publications/${pubId}/${uid}/${i}.jpg`);
     const snap = await ref.put(blob, { contentType: 'image/jpeg' });
     urls.push(await snap.ref.getDownloadURL());
   }
@@ -6104,10 +6104,6 @@ async function _ppub(){
     // marca el doc para que moderación lo detecte, en vez de dejar un
     // registro huérfano sin imágenes, y se avisa al usuario.
     try {
-      // Esperar a que el doc escrito por el callable sea visible para las
-      // Storage rules (firestore.get() de ownership). Sin delay las reglas
-      // pueden leer el doc como inexistente y rechazar con storage/unauthorized.
-      await new Promise(r => setTimeout(r, 1500));
       const photoUrls = await _uploadPublicationPhotos(publicationId, _pd.photos || []);
       if(photoUrls.length){
         await db.collection('publications').doc(publicationId).update({ photoUrls, photosPending: false });
