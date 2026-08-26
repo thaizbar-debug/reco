@@ -8094,17 +8094,17 @@ function registerWithEmail() {
   auth.createUserWithEmailAndPassword(email, pass)
     .then(cred => { createdUser = cred.user; return cred.user.updateProfile({ displayName: name }); })
     .then(() => {
-      // Fire the verification email best-effort. If Firebase's SMTP
-      // hits a snag we still close the auth modal — the "Verificá tu
-      // email" banner offers a resend button, so a transient send
-      // failure does not leave the user stranded.
       if (createdUser && typeof createdUser.sendEmailVerification === 'function') {
-        return createdUser.sendEmailVerification().catch(err => {
+        var settings = { url: window.location.origin + window.location.pathname };
+        return createdUser.sendEmailVerification(settings).catch(err => {
           console.warn('[reco] sendEmailVerification failed:', err && err.message);
         });
       }
     })
-    .then(() => closeAuthModal())
+    .then(() => {
+      switchAuthTab('login');
+      showAuthSuccess('¡Cuenta creada! Te enviamos un email de verificación a ' + email + '. Revisá tu bandeja de entrada y la carpeta de spam.');
+    })
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('registerBtn', false));
 }
@@ -8117,9 +8117,10 @@ function sendPasswordReset() {
   // message is phrased neutrally ("if the email is registered…") so the
   // response looks identical whether the account exists or not. Other
   // failures (invalid-email, too-many-requests, network) still surface.
-  auth.sendPasswordResetEmail(email)
+  var settings = { url: window.location.origin + window.location.pathname };
+  auth.sendPasswordResetEmail(email, settings)
     .catch(e => { if (e.code !== 'auth/user-not-found') throw e; })
-    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.'))
+    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña. Revisá tu bandeja de entrada y la carpeta de spam.'))
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('forgotBtn', false));
 }
@@ -8479,7 +8480,8 @@ async function resendVerificationEmail() {
   const originalLabel = btn ? btn.textContent : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   try {
-    await user.sendEmailVerification();
+    var settings = { url: window.location.origin + window.location.pathname };
+    await user.sendEmailVerification(settings);
     toast('✉️ Te reenviamos el link. Revisá tu bandeja de entrada y spam.');
   } catch (e) {
     console.warn('[reco] resend verification failed:', e && e.code, e && e.message);

@@ -40,6 +40,37 @@ themselves live in your Google Cloud / Firebase / Resend accounts.
   forces a token refresh so the new `email_verified: true` reaches the
   callables without a full re-login.
 
+### 3.1 Fix email deliverability (verification & password reset)
+
+By default Firebase sends auth emails from `noreply@<project>.firebaseapp.com`.
+This generic domain has no SPF/DKIM/DMARC alignment with your app, so
+Gmail, Outlook, and corporate filters send them to spam or block them
+entirely. To fix this, configure a custom SMTP provider in Firebase
+Console so auth emails are sent from your own verified domain:
+
+1. Open Firebase Console → Authentication → Templates.
+2. Click on "Email address verification" (or "Password reset").
+3. Click the pencil icon → **Customize action URL** is optional; the
+   important part is the SMTP settings below.
+4. Click **SMTP Settings** (at the bottom of the template editor).
+5. Fill in the Resend SMTP credentials (same ones used for the Trigger
+   Email extension):
+   - **Sender email:** `no-reply@recosac.com` (must be a verified sender
+     in Resend, or use `onboarding@resend.dev` for sandbox testing).
+   - **Sender name:** `Reco`
+   - **SMTP host:** `smtp.resend.com`
+   - **SMTP port:** `465`
+   - **Username:** `resend`
+   - **Password:** your `re_xxxxx...` API key from Resend.
+   - **Security mode:** SSL
+6. Click **Save**. This applies to ALL auth email templates (verification,
+   password reset, email change).
+
+After configuring, also verify `recosac.com` in Resend (Resend dashboard →
+Domains → Add domain) and add the SPF, DKIM, and DMARC DNS records Resend
+provides. This ensures emails from `@recosac.com` pass authentication
+checks and land in the inbox, not spam.
+
 ## 4. Email notifications (Phase 5)
 
 Approval / rejection emails are sent by the official Firebase extension
