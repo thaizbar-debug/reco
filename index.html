@@ -5890,8 +5890,11 @@ function _rps(){
         <div style="margin-top:16px;padding:14px;background:var(--light);border-radius:10px;border:1px solid var(--border)">
           <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Costo de publicación</div>
           <div style="display:flex;align-items:center;justify-content:space-between">
-            <div style="font-size:22px;font-weight:700">🔑 3 llaves</div>
-            <div style="font-size:12px;color:var(--muted)">Saldo: ${S.keysLeft} llave${S.keysLeft!==1?'s':''}</div>
+            ${_PUB_COST>0
+              ?`<div style="font-size:22px;font-weight:700">🔑 ${_PUB_COST} llave${_PUB_COST!==1?'s':''}</div>
+            <div style="font-size:12px;color:var(--muted)">Saldo: ${S.keysLeft} llave${S.keysLeft!==1?'s':''}</div>`
+              :`<div style="font-size:22px;font-weight:700;color:var(--green)">Publicación gratuita</div>
+            <div style="font-size:12px;color:var(--muted)">No consume llaves</div>`}
           </div>
         </div>
       </div>
@@ -6059,14 +6062,14 @@ async function _ppub(){
   if(!_ensureEmailVerified()) return;
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
-  if(S.keysLeft<3){
+  if(_PUB_COST>0 && S.keysLeft<_PUB_COST){
     // Pre-flight check for a nicer UX; the server-side rule is what
     // actually enforces this. Open the buy-keys modal without closing
     // the publish modal so the form data survives the round trip.
     // simulatePay() reads pendingPublish and resumes _ppub() after a
     // successful purchase.
     S.pendingPublish = true;
-    toast(`Necesitas ${3 - S.keysLeft} llave${3 - S.keysLeft !== 1 ? 's' : ''} más. Compra llaves para continuar.`);
+    toast(`Necesitas ${_PUB_COST - S.keysLeft} llave${_PUB_COST - S.keysLeft !== 1 ? 's' : ''} más. Compra llaves para continuar.`);
     openModal();
     return;
   }
@@ -6120,8 +6123,8 @@ async function _ppub(){
     }
     // Best-effort local history for the "Mis llaves" section — the
     // authoritative entry was already appended by the callable.
-    if(typeof addKeyHistoryEntry === 'function'){
-      addKeyHistoryEntry('use', 3, null, 'Publicación: '+_pd.title);
+    if(_PUB_COST>0 && typeof addKeyHistoryEntry === 'function'){
+      addKeyHistoryEntry('use', _PUB_COST, null, 'Publicación: '+_pd.title);
     }
     toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
     setTimeout(()=>closePublish(),1800);
@@ -6220,7 +6223,11 @@ function _pubParseCSV(text){
   });
 }
 const _PUB_BULK_MAX = 200;
-const _PUB_BULK_COST_PER = 3;
+// Costo en llaves de publicar un inmueble. En 0 mientras la pasarela de
+// pagos no esté conectada: publicar es gratuito. Para volver a cobrar,
+// poner el número acá y el mismo valor en PUBLISH_COST (functions/index.js).
+const _PUB_COST = 0;
+const _PUB_BULK_COST_PER = _PUB_COST;
 const _PUB_BULK_TYPES = ['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
 const _PUB_BULK_OPS = ['Venta','Alquiler'];
 const _PUB_BULK_CURRENCIES = ['USD','PEN'];
@@ -6279,12 +6286,12 @@ function _pubShowBulkPreview(rows){
   const validCount = annotated.filter(a=>a.valid).length;
   const invalidCount = annotated.length - validCount;
   const cost = validCount * _PUB_BULK_COST_PER;
-  const shortKeys = cost > S.keysLeft;
+  const shortKeys = cost > 0 && cost > S.keysLeft;
   const keys=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','titulo'];
   prev.innerHTML=`
     <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;font-weight:600">${annotated.length} fila${annotated.length!==1?'s':''} · <span style="color:var(--green)">${validCount} válida${validCount!==1?'s':''}</span>${invalidCount?` · <span style="color:var(--red)">${invalidCount} con errores</span>`:''}</div>
-      <div style="font-size:12px;color:var(--muted)">Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}</div>
+      <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
     </div>
     ${capped?`<div style="margin-top:8px;padding:8px 12px;background:#fff4e5;border:1px solid #f5b342;border-radius:6px;font-size:12px;color:#8a5a00">⚠️ Archivo tiene ${rows.length} filas. Solo se procesarán las primeras ${_PUB_BULK_MAX}.</div>`:''}
     <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
@@ -6296,9 +6303,9 @@ function _pubShowBulkPreview(rows){
     ${annotated.length>10?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Mostrando 10 de ${annotated.length} filas.</div>`:''}
     <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
     <div class="pub-actions" style="margin-top:20px">
-      <div style="font-size:12px;color:var(--muted)">Cada publicación cuesta ${_PUB_BULK_COST_PER} llaves. Las inválidas se saltan.</div>
+      <div style="font-size:12px;color:var(--muted)">${_PUB_BULK_COST_PER>0?`Cada publicación cuesta ${_PUB_BULK_COST_PER} llaves.`:'Publicar es gratuito por ahora.'} Las inválidas se saltan.</div>
       <button class="pub-btn primary" id="pubBulkSubmitBtn" ${(!validCount||shortKeys)?'disabled':''} onclick="_pubBulkSubmit()">
-        ${shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:validCount?`Publicar ${validCount} · 🔑 ${cost} llaves`:'Sin filas válidas para publicar'}
+        ${shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:validCount?(cost>0?`Publicar ${validCount} · 🔑 ${cost} llaves`:`Publicar ${validCount} inmueble${validCount!==1?'s':''}`):'Sin filas válidas para publicar'}
       </button>
     </div>`;
 }
@@ -6309,7 +6316,7 @@ async function _pubBulkSubmit(){
   const valid = _pubBulkRows.filter(a=>a.valid);
   if(!valid.length){toast('⚠️ No hay filas válidas para publicar');return;}
   const cost = valid.length * _PUB_BULK_COST_PER;
-  if(S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft})`);return;}
+  if(cost>0 && S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft})`);return;}
   const btn=document.getElementById('pubBulkSubmitBtn'); if(btn) btn.disabled=true;
   const prog=document.getElementById('pubBulkProgress'); if(prog){ prog.style.display='block'; }
   const closeBtn=document.querySelector('.pub-modal-close'); if(closeBtn){ closeBtn.dataset._prevOnclick=closeBtn.getAttribute('onclick'); closeBtn.setAttribute('onclick','toast("Espera a que termine la carga…")'); }
@@ -6338,7 +6345,7 @@ async function _pubBulkSubmit(){
       }
     }
   }
-  if(ok>0 && typeof addKeyHistoryEntry === 'function'){
+  if(ok>0 && _PUB_BULK_COST_PER>0 && typeof addKeyHistoryEntry === 'function'){
     // Best-effort local history entry — the server appended a per-
     // publication entry inside each callable call.
     addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);

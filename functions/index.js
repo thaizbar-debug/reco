@@ -34,7 +34,11 @@ const SEED_ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
 
 const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
-const PUBLISH_COST = 3;
+// Publicar es gratuito mientras la pasarela de pagos no esté conectada.
+// Para volver a cobrar, poner el costo aquí y el mismo número en
+// _PUB_COST dentro de index.html. Con 0 no se valida saldo ni se
+// escribe movimiento de llaves.
+const PUBLISH_COST = 0;
 const HISTORY_CAP = 200;
 // Max contactRequests a single fromUserId can create in the rolling
 // last hour. Above this, submitContactRequest throws resource-exhausted.
@@ -289,7 +293,7 @@ exports.publishProperty = onCall(
       const userSnap = await tx.get(userRef);
       const userData = userSnap.exists ? userSnap.data() : {};
       const currentKeys = Number(userData.keysLeft) || 0;
-      if (currentKeys < PUBLISH_COST) {
+      if (PUBLISH_COST > 0 && currentKeys < PUBLISH_COST) {
         throw new HttpsError(
           'failed-precondition',
           `Sin llaves suficientes. Necesitas ${PUBLISH_COST} llaves para publicar (tenés ${currentKeys}).`
@@ -329,19 +333,23 @@ exports.publishProperty = onCall(
 
       tx.set(pubRef, pubData);
 
-      const historyEntry = {
-        type: 'use',
-        qty: PUBLISH_COST,
-        propId: null,
-        propLabel: 'Publicación: ' + title,
-        date: new Date().toISOString(),
-      };
-      const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
+      // Con costo 0 no se debita nada ni se ensucia el historial de
+      // llaves con movimientos vacíos.
+      if (PUBLISH_COST > 0) {
+        const historyEntry = {
+          type: 'use',
+          qty: PUBLISH_COST,
+          propId: null,
+          propLabel: 'Publicación: ' + title,
+          date: new Date().toISOString(),
+        };
+        const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
 
-      tx.set(userRef, {
-        keysLeft: currentKeys - PUBLISH_COST,
-        keyHistory: nextHistory,
-      }, { merge: true });
+        tx.set(userRef, {
+          keysLeft: currentKeys - PUBLISH_COST,
+          keyHistory: nextHistory,
+        }, { merge: true });
+      }
 
       return {
         publicationId: pubRef.id,
