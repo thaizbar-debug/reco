@@ -213,7 +213,7 @@ const MaintenanceUI = (() => {
           </div>
         ` : ''}
 
-        <button class="plan-cta" style="margin-top:20px" onclick="MaintenanceUI.startRequest('${escapeAttr(svc.id)}')">Solicitar servicio →</button>
+        <button class="plan-cta" style="margin-top:20px" onclick="MaintenanceUI.requestLead('${escapeAttr(svc.id)}')">Cotizar servicio →</button>
       </div>`;
   }
 
@@ -783,12 +783,27 @@ const MaintenanceUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(serviceId) {
+    var svc = MaintenanceService.getServiceById(serviceId);
+    if (!svc) return;
+    LeadCaptureModal.open({
+      serviceId: serviceId,
+      serviceName: svc.name,
+      category: 'mantenimiento',
+      icon: svc.icon,
+      price: svc.priceFrom ? MKT_CONFIG.currencySymbol + ' ' + svc.priceFrom + (svc.priceUnit || '') : 'A cotizar',
+      ctaLabel: 'Cotizar servicio',
+      extraFields: ['district', 'propertyType', 'address', 'area', 'preferredDate'],
+    });
+  }
+
   return {
     render,
     reset,
     showDetail,
     selectProvider,
     startRequest,
+    requestLead,
     updateRequest,
     getQuote,
     acceptQuote,

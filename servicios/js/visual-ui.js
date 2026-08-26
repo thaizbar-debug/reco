@@ -124,7 +124,7 @@ const VisualUI = (() => {
         <div class="svc-fin-title">${escapeHTML(service.name)}</div>
         <div class="svc-fin-desc">${escapeHTML(service.description)}</div>
         <div class="svc-fin-price">${escapeHTML(service.price.display)}</div>
-        <button class="svc-fin-cta" onclick="VisualUI.showBooking('${escapeAttr(service.id)}')">${escapeHTML(service.cta?.label || 'Solicitar')} →</button>
+        <button class="svc-fin-cta" onclick="VisualUI.requestLead('${escapeAttr(service.id)}')">${escapeHTML(service.cta?.label || 'Reservar sesión')} →</button>
       </div>`;
   }
 
@@ -741,10 +741,25 @@ const VisualUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(serviceId) {
+    var service = getServiceById(serviceId);
+    if (!service) return;
+    LeadCaptureModal.open({
+      serviceId: serviceId,
+      serviceName: service.name,
+      category: 'fotografia',
+      icon: service.icon || '📸',
+      price: service.price ? service.price.display : null,
+      ctaLabel: 'Reservar sesión',
+      extraFields: ['district', 'address', 'preferredDate'],
+    });
+  }
+
   return {
     render,
     reset,
     showBooking,
+    requestLead,
     backToCatalog,
     updateBooking,
     nextStep,

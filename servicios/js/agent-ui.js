@@ -454,8 +454,8 @@ const AgentUI = (() => {
           <div class="leg-detail-timeline">${escapeHTML(agent.responseTime)}</div>
         </div>
 
-        <button class="plan-cta" style="margin-top:16px" onclick="AgentUI.startContact('${escapeAttr(agent.id)}')">
-          Solicitar contacto →
+        <button class="plan-cta" style="margin-top:16px" onclick="AgentUI.requestLead('${escapeAttr(agent.id)}')">
+          Contactar agente →
         </button>
       </div>`;
   }
@@ -847,9 +847,22 @@ const AgentUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(agentId) {
+    LeadCaptureModal.open({
+      serviceId: 'reco-agent',
+      serviceName: 'Reco Agent — Asesoría Inmobiliaria',
+      category: 'reco_agent',
+      icon: '🏠',
+      price: null,
+      ctaLabel: 'Contactar agente',
+      extraFields: ['district', 'propertyType', 'budget'],
+    });
+  }
+
   return {
     render,
     reset,
+    requestLead,
     startWizard,
     updateWizard,
     wizardNext,

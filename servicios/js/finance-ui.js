@@ -567,7 +567,7 @@ const FinanceUI = (() => {
           </p>
         </div>
 
-        <button class="plan-cta" style="margin-top:16px" onclick="FinanceUI.startInsuranceLead('${escapeAttr(product.id)}')">
+        <button class="plan-cta" style="margin-top:16px" onclick="FinanceUI.requestLead('${escapeAttr(product.id)}','seguro')">
           Solicitar cotización →
         </button>
 
@@ -761,9 +761,26 @@ const FinanceUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(productId, type) {
+    var serviceName = type === 'seguro' ? 'Seguro de Hogar' : 'Servicio Financiero';
+    var icon = type === 'seguro' ? '🛡️' : '🏦';
+    var service = getServiceById(productId);
+    if (service) { serviceName = service.name; icon = service.icon || icon; }
+    LeadCaptureModal.open({
+      serviceId: productId,
+      serviceName: serviceName,
+      category: 'finanzas',
+      icon: icon,
+      price: service && service.price ? service.price.display : null,
+      ctaLabel: 'Solicitar cotización',
+      extraFields: ['district', 'propertyType'],
+    });
+  }
+
   return {
     render,
     reset,
+    requestLead,
     startMortgage,
     updateMortgage,
     mortgageNext,

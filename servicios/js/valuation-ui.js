@@ -84,7 +84,7 @@ const ValuationUI = (() => {
     if (service.id === 'tas-estimate') {
       onclick = `ValuationUI.showEstimateForm()`;
     } else {
-      onclick = `ValuationUI.showRequestFlow('${escapeAttr(service.id)}')`;
+      onclick = `ValuationUI.requestLead('${escapeAttr(service.id)}')`;
     }
 
     return `
@@ -402,7 +402,7 @@ const ValuationUI = (() => {
   function _upsellCard(service, analyticsEvent) {
     if (!service) return '';
     return `
-      <div class="val-upsell-card" onclick="ValuationUI.showRequestFlow('${escapeAttr(service.id)}');RecoAnalytics.track('${escapeAttr(analyticsEvent)}',{from:'estimate_result'})">
+      <div class="val-upsell-card" onclick="ValuationUI.requestLead('${escapeAttr(service.id)}');RecoAnalytics.track('${escapeAttr(analyticsEvent)}',{from:'estimate_result'})">
         <div style="font-size:24px">${escapeHTML(service.icon)}</div>
         <strong>${escapeHTML(service.name)}</strong>
         <div class="val-upsell-price">${escapeHTML(service.price.display)}</div>
@@ -836,12 +836,27 @@ const ValuationUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(serviceId) {
+    var service = getServiceById(serviceId);
+    if (!service) return;
+    LeadCaptureModal.open({
+      serviceId: serviceId,
+      serviceName: service.name,
+      category: 'tasaciones',
+      icon: service.icon || '📐',
+      price: service.price ? service.price.display : null,
+      ctaLabel: 'Solicitar tasación',
+      extraFields: ['district', 'propertyType', 'area', 'address', 'preferredDate'],
+    });
+  }
+
   return {
     render,
     reset,
     getView,
     showEstimateForm,
     showRequestFlow,
+    requestLead,
     backToTiers,
     updateField,
     runEstimate,

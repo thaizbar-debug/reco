@@ -522,7 +522,7 @@ const LegalUI = (() => {
           </div>
         </div>
 
-        <button class="plan-cta" style="margin-top:12px" onclick="LegalUI.showBooking('${escapeAttr(service.id)}')">
+        <button class="plan-cta" style="margin-top:12px" onclick="LegalUI.requestLead('${escapeAttr(service.id)}')">
           Solicitar ${escapeHTML(service.name)} →
         </button>
       </div>`;
@@ -840,12 +840,27 @@ const LegalUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function requestLead(serviceId) {
+    var service = getServiceById(serviceId);
+    if (!service) return;
+    LeadCaptureModal.open({
+      serviceId: serviceId,
+      serviceName: service.name,
+      category: 'legal',
+      icon: service.icon || '⚖️',
+      price: service.price ? service.price.display : null,
+      ctaLabel: 'Solicitar servicio legal',
+      extraFields: ['district', 'propertyType', 'address'],
+    });
+  }
+
   return {
     render,
     reset,
     showPropertyCheck,
     showServiceDetail,
     showBooking,
+    requestLead,
     runPropertyCheck,
     backToCatalog,
     updateCheckField,
