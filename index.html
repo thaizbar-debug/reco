@@ -5095,12 +5095,8 @@ function showGatePanel(p){
             :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
         }
       </div>
-      ${(!loggedIn||has)
-        ?`<button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
-          <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>`
-        :`<button class="gate-btn-primary" onclick="S.pendingUnlockId='${p.id}';openModal()">🛒 Comprar llaves</button>
-          <button class="gate-btn-secondary" onclick="closeDetail()">← Volver a resultados</button>`
-      }
+      <button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
+      <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>
     </div>`;
 }
 
@@ -7285,7 +7281,11 @@ async function _pullUserDataFromFirestore(){
     }
     const data = snap.data() || {};
     if(Array.isArray(data.favorites)) localStorage.setItem('reco_favs', JSON.stringify(data.favorites));
-    if(Array.isArray(data.keyHistory)) localStorage.setItem('reco_key_hist', JSON.stringify(data.keyHistory));
+    if(Array.isArray(data.keyHistory)){
+      localStorage.setItem('reco_key_hist', JSON.stringify(data.keyHistory));
+      data.keyHistory.forEach(e => { if(e && e.propId) S.unlockedIds.add(e.propId); });
+      if(typeof applyFilters === 'function') applyFilters();
+    }
     if(typeof data.keysLeft === 'number'){
       S.keysLeft = data.keysLeft;
       if(typeof updateKeyCount === 'function') updateKeyCount();
