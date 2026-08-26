@@ -5095,12 +5095,8 @@ function showGatePanel(p){
             :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
         }
       </div>
-      ${(!loggedIn||has)
-        ?`<button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
-          <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>`
-        :`<button class="gate-btn-primary" onclick="S.pendingUnlockId='${p.id}';openModal()">🛒 Comprar llaves</button>
-          <button class="gate-btn-secondary" onclick="closeDetail()">← Volver a resultados</button>`
-      }
+      <button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
+      <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>
     </div>`;
 }
 
