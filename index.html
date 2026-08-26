@@ -5979,19 +5979,51 @@ function _pFeat(feat,checked){
   if(checked){if(!_pd.features.includes(feat))_pd.features.push(feat);}
   else{_pd.features=_pd.features.filter(f=>f!==feat);}
 }
-function _pubHandleFiles(files){
-  Array.from(files).forEach(file=>{
-    if(!file.type.startsWith('image/'))return;
+// Normaliza cualquier imagen a JPEG (máx 1920 px) antes de guardarla en
+// _pd.photos. storage.rules solo acepta image/jpeg, image/png e
+// image/webp y hasta 10 MB: una foto HEIC de iPhone o un JPG de 12 MB
+// era rechazada por Storage con "User does not have permission".
+function _pubToJpegDataUrl(file){
+  return new Promise((resolve,reject)=>{
     const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('No se pudo leer '+file.name));
     reader.onload=e=>{
-      _pd.photos.push(e.target.result);
-      const prev=document.getElementById('pubPhotoPreview');
-      if(prev)prev.innerHTML=_pd.photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}</div>`).join('');
-      const cnt=document.getElementById('pubPhotoCount');
-      if(cnt)cnt.innerHTML=`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'}`;
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Formato no soportado ('+(file.type||file.name)+'). Convertila a JPG o PNG.'));
+      img.onload=()=>{
+        const MAX=1920;
+        let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        if(!w||!h){reject(new Error('Imagen inválida: '+file.name));return;}
+        if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
+        const cv=document.createElement('canvas');
+        cv.width=w;cv.height=h;
+        const cx=cv.getContext('2d');
+        cx.fillStyle='#fff';cx.fillRect(0,0,w,h);
+        cx.drawImage(img,0,0,w,h);
+        resolve(cv.toDataURL('image/jpeg',0.85));
+      };
+      img.src=e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+function _pubRenderPhotos(){
+  const prev=document.getElementById('pubPhotoPreview');
+  if(prev)prev.innerHTML=_pd.photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}</div>`).join('');
+  const cnt=document.getElementById('pubPhotoCount');
+  if(cnt)cnt.innerHTML=`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'}`;
+}
+async function _pubHandleFiles(files){
+  for(const file of Array.from(files)){
+    if(!file.type.startsWith('image/'))continue;
+    try{
+      _pd.photos.push(await _pubToJpegDataUrl(file));
+      _pubRenderPhotos();
+    }catch(err){
+      console.warn('[reco] foto descartada:', file.name, err);
+      toast('⚠️ '+(err.message||('No se pudo procesar '+file.name)));
+    }
+  }
 }
 function _pn(){
   const missing=[];
@@ -6010,7 +6042,9 @@ async function _uploadPublicationPhotos(pubId, photos){
     const dataUrl = photos[i];
     const blob = await (await fetch(dataUrl)).blob();
     const ref = storage.ref(`publications/${pubId}/${i}.jpg`);
-    const snap = await ref.put(blob);
+    // contentType explícito: storage.rules solo admite jpeg/png/webp y el
+    // blob reconstruido desde un dataURL puede llegar sin tipo.
+    const snap = await ref.put(blob, { contentType: 'image/jpeg' });
     urls.push(await snap.ref.getDownloadURL());
   }
   return urls;
@@ -6056,9 +6090,23 @@ async function _ppub(){
     // AFTER the doc exists, then the owner writes photoUrls back to
     // the same doc via a normal Firestore update. Rules still allow
     // owner updates on pending publications.
-    const photoUrls = await _uploadPublicationPhotos(publicationId, _pd.photos || []);
-    if(photoUrls.length){
-      await db.collection('publications').doc(publicationId).update({ photoUrls });
+    // Si la subida falla, el anuncio YA existe en estado 'pending'. Se
+    // marca el doc para que moderación lo detecte, en vez de dejar un
+    // registro huérfano sin imágenes, y se avisa al usuario.
+    try {
+      const photoUrls = await _uploadPublicationPhotos(publicationId, _pd.photos || []);
+      if(photoUrls.length){
+        await db.collection('publications').doc(publicationId).update({ photoUrls, photosPending: false });
+      }
+    } catch(upErr){
+      console.error('[reco] photo upload failed:', upErr);
+      try {
+        await db.collection('publications').doc(publicationId).update({
+          photosPending: true,
+          photoError: String((upErr && upErr.code) || (upErr && upErr.message) || 'upload-failed').slice(0,200)
+        });
+      } catch(_){}
+      toast('⚠️ El anuncio se creó pero las fotos no se subieron. Editalo desde "Mis publicaciones" para reintentar.');
     }
     // Server told us the authoritative keysLeft after the debit; use
     // it instead of the stale local counter.
