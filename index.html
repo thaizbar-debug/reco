@@ -1495,6 +1495,11 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .auth-label{display:block;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
 .auth-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;color:var(--txt);background:#fff;margin-bottom:12px;box-sizing:border-box}
 .auth-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,145,178,.12)}
+.auth-pw-wrap{position:relative;width:100%}
+.auth-pw-wrap .auth-input{padding-right:42px}
+.auth-pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(calc(-50% - 6px));background:none;border:none;cursor:pointer;padding:4px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.auth-pw-toggle:hover{color:var(--txt)}
+.auth-pw-toggle svg{width:20px;height:20px}
 .auth-forgot{font-size:.78rem;color:var(--blue);cursor:pointer;text-decoration:none;display:block;text-align:right;margin-top:-8px;margin-bottom:14px}
 .auth-submit{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:9px;font-weight:700;font-size:.9rem;cursor:pointer;font-family:inherit;transition:opacity .12s;margin-top:4px}
 .auth-submit:hover{opacity:.88}
@@ -6980,7 +6985,12 @@ function _applyLandingHash(){
         <label class="auth-label">Email</label>
         <input class="auth-input" type="email" id="loginEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
         <label class="auth-label">Contraseña</label>
-        <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
+        <div class="auth-pw-wrap">
+          <input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"/>
+          <button type="button" class="auth-pw-toggle" onclick="togglePasswordVisibility('loginPassword',this)" aria-label="Ver contraseña">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <a class="auth-forgot" onclick="switchAuthTab('forgot')">¿Olvidaste tu contraseña?</a>
         <button class="auth-submit" id="loginBtn" onclick="signInWithEmail()">Ingresar</button>
         <div class="auth-divider">o continuar con</div>
@@ -6998,9 +7008,19 @@ function _applyLandingHash(){
         <label class="auth-label">Email</label>
         <input class="auth-input" type="email" id="registerEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
         <label class="auth-label">Contraseña</label>
-        <input class="auth-input" type="password" id="registerPassword" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
+        <div class="auth-pw-wrap">
+          <input class="auth-input" type="password" id="registerPassword" placeholder="Mínimo 8 caracteres" autocomplete="new-password"/>
+          <button type="button" class="auth-pw-toggle" onclick="togglePasswordVisibility('registerPassword',this)" aria-label="Ver contraseña">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <label class="auth-label">Confirmar contraseña</label>
-        <input class="auth-input" type="password" id="registerPassword2" placeholder="Repite la contraseña" autocomplete="new-password"/>
+        <div class="auth-pw-wrap">
+          <input class="auth-input" type="password" id="registerPassword2" placeholder="Repite la contraseña" autocomplete="new-password"/>
+          <button type="button" class="auth-pw-toggle" onclick="togglePasswordVisibility('registerPassword2',this)" aria-label="Ver contraseña">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
         <button class="auth-submit" id="registerBtn" onclick="registerWithEmail()">Crear cuenta</button>
         <div class="auth-divider">o registrarse con</div>
         <button class="auth-google-btn" onclick="signInWithGoogle()">
@@ -7996,6 +8016,15 @@ window.addEventListener('popstate', function() {
   }
 });
 
+function togglePasswordVisibility(inputId, btn) {
+  var input = document.getElementById(inputId);
+  var show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.innerHTML = show
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  btn.setAttribute('aria-label', show ? 'Ocultar contraseña' : 'Ver contraseña');
+}
 function openAuthModal(tab) {
   document.getElementById('authOverlay').classList.add('open');
   switchAuthTab(tab || 'login');
