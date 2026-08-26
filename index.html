@@ -7876,8 +7876,10 @@ function renderLlaves(el) {
     html += hist.map(function(h) {
       var d = new Date(h.date);
       var dateStr = d.toLocaleDateString('es-PE', {day:'numeric', month:'short', year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit'});
-      if (h.type === 'buy') {
-        return '<div class="us-hist-item"><div class="us-hist-icon bought">🛒</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Compra de llaves')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
+      if (h.type === 'buy' || h.type === 'bonus') {
+        var icon = h.type === 'bonus' ? '🎁' : '🛒';
+        var label = h.propLabel || (h.type === 'bonus' ? 'Llave de bienvenida' : 'Compra de llaves');
+        return '<div class="us-hist-item"><div class="us-hist-icon bought">'+icon+'</div><div class="us-hist-detail"><div class="us-hist-title">'+label+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount pos">+'+h.qty+' 🔑</div></div>';
       } else {
         var clickable = h.propId ? ' onclick="closeUserSection();goToApp(\'#prop='+h.propId+'\')" style="cursor:pointer"' : '';
         return '<div class="us-hist-item"'+clickable+'><div class="us-hist-icon used">🔓</div><div class="us-hist-detail"><div class="us-hist-title">'+(h.propLabel||'Propiedad desbloqueada')+'</div><div class="us-hist-sub">'+dateStr+'</div></div><div class="us-hist-amount neg">-'+h.qty+' 🔑</div></div>';

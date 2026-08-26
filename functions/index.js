@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -36,6 +36,7 @@ const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
 const PUBLISH_COST = 3;
 const HISTORY_CAP = 200;
+const WELCOME_KEYS = 1;
 // Max contactRequests a single fromUserId can create in the rolling
 // last hour. Above this, submitContactRequest throws resource-exhausted.
 // A legit user contacting 15 property owners in 60 minutes is already
@@ -702,6 +703,43 @@ exports.cleanupHistDetailAccess = onSchedule(
     }
 
     logger.info(`[cleanupHistDetailAccess] deleted ${totalDeleted} old access records in ${round} rounds`);
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grantWelcomeKey — give every new user WELCOME_KEYS free keys.
+//
+// Fires when a /users/{uid} document is first created (by
+// _sanitizedSeed() on the client, which seeds keysLeft: 0). The admin
+// SDK bypasses Firestore rules, so it can set keysLeft to a non-zero
+// value that the client create rule intentionally blocks.
+//
+// Abuse surface: a user cannot re-trigger this by deleting and
+// re-creating their doc — the Firestore rule `allow delete: if false`
+// on /users prevents client-side deletion. Re-creating an existing doc
+// (set without merge) also fails because _pullUserDataFromFirestore
+// only calls set() when snap.exists === false.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.grantWelcomeKey = onDocumentCreated(
+  { region: REGION, document: 'users/{uid}' },
+  async (event) => {
+    const uid = event.params.uid;
+    const userRef = db.collection('users').doc(uid);
+
+    const historyEntry = {
+      type: 'bonus',
+      qty: WELCOME_KEYS,
+      propId: null,
+      propLabel: 'Llave de bienvenida',
+      date: new Date().toISOString(),
+    };
+
+    await userRef.update({
+      keysLeft: WELCOME_KEYS,
+      keyHistory: [historyEntry],
+    });
+
+    logger.info('[grantWelcomeKey] granted welcome key', { uid, keys: WELCOME_KEYS });
   }
 );
 
