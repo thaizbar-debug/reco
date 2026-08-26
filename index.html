@@ -5059,6 +5059,7 @@ function closeDetail(){
 }
 
 function showGatePanel(p){
+  const loggedIn=!!auth.currentUser;
   const has=S.keysLeft>0;
   document.getElementById('detailContent').innerHTML=`
     <div class="detail-header" style="background:${p.gradient}">
@@ -5087,12 +5088,14 @@ function showGatePanel(p){
         </div>
       </div>
       <div class="gate-keys-row">
-        ${has
-          ?`<span class="gk-count">🔑 ${S.keysLeft} llave${S.keysLeft!==1?'s':''} disponible${S.keysLeft!==1?'s':''}</span><span class="gk-cost">· Costo: 1 llave</span>`
-          :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
+        ${!loggedIn
+          ?`<span class="gk-zero">🔒 Iniciá sesión para desbloquear</span>`
+          :has
+            ?`<span class="gk-count">🔑 ${S.keysLeft} llave${S.keysLeft!==1?'s':''} disponible${S.keysLeft!==1?'s':''}</span><span class="gk-cost">· Costo: 1 llave</span>`
+            :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
         }
       </div>
-      ${has
+      ${(!loggedIn||has)
         ?`<button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
           <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>`
         :`<button class="gate-btn-primary" onclick="S.pendingUnlockId='${p.id}';openModal()">🛒 Comprar llaves</button>
