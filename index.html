@@ -2870,6 +2870,10 @@ const S = {
   commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
   poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
+  // BUG-02: intención guardada antes de mandar al usuario al login.
+  // Se reanuda en auth.onAuthStateChanged y se descarta si cierra el
+  // modal sin autenticarse.
+  pendingAuthAction:null,
 };
 
 // ── Premium cache ──────────────────────────────────────────────────
@@ -5116,7 +5120,7 @@ function updateKeyCount(){
 // after PR #41 made keysLeft read-only, the premium fields shipped
 // in the public JSON so an attacker could just read them anyway.
 async function unlockAndOpen(id){
-  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login');return;}
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login',function(){unlockAndOpen(id);});return;}
   if(!_ensureEmailVerified()) return;
   const btn = document.querySelector('.gate-btn-primary.unlock');
   const originalLabel = btn ? btn.textContent : null;
@@ -5148,7 +5152,7 @@ async function unlockAndOpen(id){
     const code = (e && e.code) || '';
     if(code === 'functions/unauthenticated' || code === 'unauthenticated'){
       toast('⚠️ Debes iniciar sesión para desbloquear informes');
-      openAuthModal('login');
+      openAuthModal('login',function(){unlockAndOpen(id);});
     } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
       toast('⚠️ Sin llaves suficientes. Comprá más llaves para desbloquear.');
       S.pendingUnlockId = id;
@@ -5171,7 +5175,7 @@ function pinClick(id){
 }
 
 // ─────────────────────── MODAL ───────────────────────
-function openModal(){ if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para comprar llaves');openAuthModal('login');return;} document.getElementById('modal').classList.add('open'); }
+function openModal(){ if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para comprar llaves');openAuthModal('login',openModal);return;} document.getElementById('modal').classList.add('open'); }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
   // If user closed the buy-keys modal without paying, drop any pending
@@ -5692,7 +5696,7 @@ const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','S
 const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
 
 function openPublish(){
-  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
   _ps=1;_pubTab='single';
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
@@ -6051,7 +6055,7 @@ async function _uploadPublicationPhotos(pubId, photos){
 }
 
 async function _ppub(){
-  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login');return;}
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',{notice:'✅ Sesión iniciada. Pulsá "Publicar ahora" para enviar tu anuncio.'});return;}
   if(!_ensureEmailVerified()) return;
   if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
   if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
@@ -6126,7 +6130,7 @@ async function _ppub(){
     const code = (e && e.code) || '';
     if(code === 'functions/unauthenticated' || code === 'unauthenticated'){
       toast('⚠️ Debes iniciar sesión para publicar');
-      openAuthModal('login');
+      openAuthModal('login',{notice:'✅ Sesión iniciada. Pulsá "Publicar ahora" para enviar tu anuncio.'});
     } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
       S.pendingPublish = true;
       toast('⚠️ Sin llaves suficientes. Comprá más y reintenta.');
@@ -6300,7 +6304,7 @@ function _pubShowBulkPreview(rows){
 }
 
 async function _pubBulkSubmit(){
-  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar inmuebles');openAuthModal('login');return;}
+  if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar inmuebles');openAuthModal('login',{notice:'✅ Sesión iniciada. Pulsá el botón de publicar para enviar el lote.'});return;}
   if(!_ensureEmailVerified()) return;
   const valid = _pubBulkRows.filter(a=>a.valid);
   if(!valid.length){toast('⚠️ No hay filas válidas para publicar');return;}
@@ -7759,7 +7763,7 @@ function _propCard(p, opts) {
 // ── PERFIL ──
 function renderPerfil(el) {
   var u = auth.currentUser;
-  if (!u) { closeUserSection(); openAuthModal('login'); return; }
+  if (!u) { closeUserSection(); openAuthModal('login', function(){ navigateUserSection('perfil'); }); return; }
   var created = u.metadata && u.metadata.creationTime;
   var since = created ? new Date(created).toLocaleDateString('es-PE', {year:'numeric', month:'long', day:'numeric'}) : '';
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
@@ -8043,14 +8047,42 @@ window.addEventListener('popstate', function() {
   }
 });
 
-function openAuthModal(tab) {
+// BUG-02: `pendingAction` es la intención original del usuario (abrir el
+// formulario de publicación, el modal de contacto, etc.). Puede ser una
+// función a ejecutar tras autenticarse, o un objeto
+// { resume:fn, notice:'texto' } cuando en vez de reejecutar la acción
+// solo queremos avisarle que ya puede continuar (envíos finales).
+function openAuthModal(tab, pendingAction) {
+  S.pendingAuthAction = pendingAction || null;
   document.getElementById('authOverlay').classList.add('open');
   switchAuthTab(tab || 'login');
   clearAuthMessages();
 }
 function closeAuthModal() {
+  // Cerrar con la ✕ o clic fuera cancela la intención: no queremos que
+  // se dispare sola en un login posterior no relacionado.
+  S.pendingAuthAction = null;
   document.getElementById('authOverlay').classList.remove('open');
   clearAuthMessages();
+}
+// Ejecuta (una sola vez) la intención guardada antes del login.
+function _runPendingAuthAction() {
+  const pending = S.pendingAuthAction;
+  if (!pending) return;
+  S.pendingAuthAction = null;
+  document.getElementById('authOverlay').classList.remove('open');
+  clearAuthMessages();
+  // Un tick para que el modal termine de cerrarse antes de abrir lo
+  // siguiente; si no, el bloqueo de scroll se pisa entre modales.
+  setTimeout(function() {
+    try {
+      if (typeof pending === 'function') { pending(); return; }
+      if (pending.notice) toast(pending.notice);
+      if (typeof pending.resume === 'function') pending.resume();
+    } catch (err) {
+      console.warn('[reco] pending auth action failed:', err);
+    }
+  }, 120);
 }
 function switchAuthTab(tab) {
   ['Login','Register','Forgot'].forEach(t => {
@@ -8249,7 +8281,7 @@ let _contactCtx = null; // {propertyId, kind, publicationOwnerId}
 async function openContactModal(propertyId, kind) {
   if (!auth.currentUser) {
     toast('⚠️ Debes iniciar sesión para contactar al propietario');
-    openAuthModal('login');
+    openAuthModal('login', function(){ openContactModal(propertyId, kind); });
     return;
   }
   const p = (typeof properties !== 'undefined') ? properties.find(x => x.id === propertyId) : null;
@@ -8367,7 +8399,7 @@ function _queueContactEmailToOwner(o){
 }
 
 async function submitContactRequest() {
-  if (!auth.currentUser) { openAuthModal('login'); return; }
+  if (!auth.currentUser) { openAuthModal('login', {notice:'✅ Sesión iniciada. Pulsá "Enviar" para mandar tu consulta.'}); return; }
   if (!_contactCtx) return;
   const name    = document.getElementById('contactName').value.trim();
   const email   = document.getElementById('contactEmail').value.trim();
@@ -8429,7 +8461,7 @@ async function submitContactRequest() {
       _showContactError('Alcanzaste el límite de contactos por hora. Reintentá en un rato.');
     } else if (code === 'functions/unauthenticated' || code === 'unauthenticated') {
       _showContactError('Debes iniciar sesión.');
-      openAuthModal('login');
+      openAuthModal('login', {notice:'✅ Sesión iniciada. Pulsá "Enviar" para mandar tu consulta.'});
     } else if (code === 'functions/failed-precondition' || code === 'failed-precondition') {
       _showContactError('Verificá tu email antes de continuar. Revisá tu bandeja de entrada.');
     } else if (code === 'functions/invalid-argument' || code === 'invalid-argument') {
@@ -8536,6 +8568,8 @@ async function refreshVerificationStatus() {
 
 auth.onAuthStateChanged(function(user) {
   _renderVerifyBanner(user);
+  // BUG-02: devolver al usuario a lo que estaba haciendo antes del login.
+  if (user) _runPendingAuthAction();
   const homeIngresarBtn = document.getElementById('homeIngresarBtn');
   const homeUserWrap    = document.getElementById('homeUserWrap');
   if (homeIngresarBtn && homeUserWrap) {
