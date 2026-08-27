@@ -6043,13 +6043,13 @@ function _pn(){
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 async function _uploadPublicationPhotos(pubId, photos){
   if(!photos || !photos.length) return [];
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if(!uid) throw new Error('unauthenticated');
   const urls = [];
   for(let i=0; i<photos.length; i++){
     const dataUrl = photos[i];
     const blob = await (await fetch(dataUrl)).blob();
-    const ref = storage.ref(`publications/${pubId}/${i}.jpg`);
-    // contentType explícito: storage.rules solo admite jpeg/png/webp y el
-    // blob reconstruido desde un dataURL puede llegar sin tipo.
+    const ref = storage.ref(`publications/${pubId}/${uid}/${i}.jpg`);
     const snap = await ref.put(blob, { contentType: 'image/jpeg' });
     urls.push(await snap.ref.getDownloadURL());
   }
@@ -6105,7 +6105,7 @@ async function _ppub(){
         await db.collection('publications').doc(publicationId).update({ photoUrls, photosPending: false });
       }
     } catch(upErr){
-      console.error('[reco] photo upload failed:', upErr);
+      console.error('[reco] photo upload failed:', upErr.code, upErr.message, 'pubId:', publicationId, 'uid:', auth.currentUser && auth.currentUser.uid);
       try {
         await db.collection('publications').doc(publicationId).update({
           photosPending: true,

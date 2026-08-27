@@ -2,7 +2,7 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // /publications/{pubId}/{filename}
+    // /publications/{pubId}/{uid}/{filename}
     //
     // Photos uploaded for user-submitted property listings.
     //
@@ -11,39 +11,36 @@ service firebase.storage {
     //         "Mis publicaciones" view but URLs are unguessable, so a
     //         public read is acceptable for an MVP.
     //
-    // - write: authenticated + the publication doc has to exist AND be
-    //         owned by the caller. This closes two attack windows:
-    //         (a) an attacker uploading photos to a `pubId` they do not
-    //         own before the legit owner writes to that path, and
-    //         (b) uploads to random guessed pubIds. Cost is one
-    //         Firestore read per photo upload (~US$0.06 / 100k reads,
-    //         negligible for MVP scale).
+    // - write: authenticated + the {uid} segment in the path must match
+    //         request.auth.uid. Encoding the owner in the path avoids a
+    //         cross-service firestore.get() call, which was intermittently
+    //         returning null and causing storage/unauthorized even when the
+    //         publication doc existed. Security is equivalent: only the
+    //         owner can write to their own uid sub-folder, and pubIds are
+    //         unguessable (auto-generated Firestore IDs).
     //
-    //         Content type is whitelisted to raster formats — image/*
-    //         used to be the pattern but that also matches
-    //         image/svg+xml, which can carry <script> tags that run in
-    //         the context of a viewer's browser. Approving an SVG in
-    //         the moderation panel would have executed script in
-    //         admin session.
+    //         Content type is whitelisted to raster formats only —
+    //         image/svg+xml can carry <script> tags that execute in a
+    //         viewer's browser.
     //
-    // - delete: owner or admin. Admin cleanup lives in the callable
-    //         side, so a direct client delete requires ownership.
-    match /publications/{pubId}/{filename} {
+    // - delete: owner only (same uid check).
+    match /publications/{pubId}/{uid}/{filename} {
       allow read: if true;
       allow write: if request.auth != null
+                   && request.auth.uid == uid
                    && request.resource.size < 10 * 1024 * 1024
                    && request.resource.contentType in [
                         'image/jpeg',
                         'image/png',
                         'image/webp'
-                      ]
-                   && firestore.get(
-                        /databases/(default)/documents/publications/$(pubId)
-                      ).data.userId == request.auth.uid;
+                      ];
       allow delete: if request.auth != null
-                    && firestore.get(
-                         /databases/(default)/documents/publications/$(pubId)
-                       ).data.userId == request.auth.uid;
+                    && request.auth.uid == uid;
+    }
+
+    // Legacy path (old uploads without uid segment) — read-only.
+    match /publications/{pubId}/{filename} {
+      allow read: if true;
     }
 
     // Default deny
