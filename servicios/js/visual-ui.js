@@ -37,8 +37,8 @@ const VisualUI = (() => {
       const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
       const svc = getServiceById(mapped);
       if (svc) {
-        showBooking(mapped);
-        return _renderBooking();
+        requestLead(mapped);
+        return _renderCatalog();
       }
     }
     if (_view === 'booking') return _renderBooking();
@@ -71,9 +71,7 @@ const VisualUI = (() => {
       </div>
 
       ${CategoryDivider('🤖', 'Servicios con IA', ia.length)}
-      <div class="vis-ai-notice">
-        ⚠️ Los servicios de IA utilizan proveedores simulados (mock). La integración con proveedores reales está en desarrollo.
-      </div>
+      <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Servicios con IA — precios referenciales. Te contactaremos con opciones personalizadas al solicitar.</div>
       <div class="svc-foto-grid">
         ${ia.map(s => _visualCard(s)).join('')}
       </div>

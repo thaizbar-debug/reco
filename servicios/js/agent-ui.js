@@ -48,7 +48,6 @@ const AgentUI = (() => {
       ${SectionHeader('Agentes inmobiliarios', 'Encuentra al agente ideal para tu operación', 'Reco te recomienda agentes verificados según tu zona, tipo de propiedad, presupuesto y objetivo. Sin costo para el usuario.')}
 
       <div class="agt-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Agentes y datos simulados</div>
         <div class="agt-hero-content">
           <div class="agt-hero-icon">🏠</div>
           <div>
@@ -317,7 +316,7 @@ const AgentUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="AgentUI.startWizard('${escapeAttr(_wizardData.operation)}')">← Modificar búsqueda</button>
 
-        <div class="val-mock-badge">⚠️ DATOS SIMULADOS — Agentes y scores de matching son mock</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Resultados referenciales. Al solicitar contacto, validamos disponibilidad y te conectamos directamente.</div>
 
         <div class="agt-results-header">
           <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">
@@ -384,7 +383,7 @@ const AgentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="AgentUI.backFromProfile()">← Volver</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Perfil de agente simulado. No representa una persona real.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Perfil referencial. Al solicitar contacto, te conectamos con agentes verificados de tu zona.</div>
 
         <div class="agt-profile-header">
           <div class="agt-avatar agt-avatar-lg">${escapeHTML(initials)}</div>
@@ -732,7 +731,7 @@ const AgentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="AgentUI.backToCatalog()">← Volver a agentes</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Dashboard con datos simulados</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Dashboard referencial — los datos se actualizarán con información real.</div>
 
         <div style="text-align:center;margin-bottom:24px">
           <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">Dashboard: ${escapeHTML(agent.name)}</h2>

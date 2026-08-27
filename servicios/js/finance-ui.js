@@ -64,7 +64,7 @@ const FinanceUI = (() => {
     return `
       ${SectionHeader('Finanzas', 'Financia y protege tu operación inmobiliaria', 'Reco conecta con entidades financieras y aseguradoras para que encuentres las mejores opciones. Sin costo, sin compromiso.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Datos simulados. No existen convenios reales implementados. Las simulaciones son referenciales.</div>
+      <div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Las simulaciones son referenciales. Al solicitar, un asesor se comunicará contigo con opciones reales.</div>
 
       <div class="fin-product-card fin-product-featured" onclick="FinanceUI.startMortgage()">
         <div class="fin-product-header">
@@ -456,7 +456,7 @@ const FinanceUI = (() => {
           <div class="val-order-row"><span>Cuota inicial</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.downPayment)}</strong></div>
         </div>
 
-        <div class="leg-mock-tag" style="margin-top:16px">⚠️ MOCK — No se enviaron solicitudes reales a entidades financieras.</div>
+        <div class="svc-ref-notice" style="margin-top:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Tu solicitud ha sido registrada. Un asesor financiero te contactará.</div>
 
         <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="FinanceUI.backToMarketplace()">Volver a Finanzas</button>
       </div>`;
@@ -540,7 +540,7 @@ const FinanceUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="FinanceUI.backToMarketplace()">← Volver a finanzas</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Producto de seguro simulado. No representa una póliza real.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Información referencial. Al solicitar, recibirás una cotización personalizada.</div>
 
         <div style="text-align:center;margin-bottom:24px">
           <div style="font-size:48px;margin-bottom:8px">${escapeHTML(product.icon)}</div>
@@ -624,7 +624,7 @@ const FinanceUI = (() => {
             <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">Enviado</strong></div>
           </div>
 
-          <div class="leg-mock-tag" style="margin-top:16px">⚠️ MOCK — No se enviaron solicitudes reales a aseguradoras.</div>
+          <div class="svc-ref-notice" style="margin-top:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Tu solicitud ha sido registrada. Un asesor te contactará con opciones reales.</div>
 
           <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="FinanceUI.backToMarketplace()">Volver a Finanzas</button>
         </div>`;

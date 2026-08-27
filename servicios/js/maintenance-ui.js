@@ -76,7 +76,7 @@ const MaintenanceUI = (() => {
     return `
       ${SectionHeader('Mantenimiento', 'Marketplace de mantenimiento', 'Conecta con profesionales verificados. Solicita, cotiza y agenda servicios para tu propiedad.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Proveedores y cotizaciones simulados. No representan servicios reales.</div>
+      <div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Los precios mostrados son referenciales. Al solicitar un servicio, te contactaremos con cotizaciones personalizadas.</div>
 
       ${activeOrders.length > 0 ? `
         <div class="mkt-active-orders" style="margin-bottom:24px">
@@ -232,7 +232,7 @@ const MaintenanceUI = (() => {
           <span style="font-size:11px;color:var(--ink-4)">⏱️ Respuesta: ${escapeHTML(prov.responseTime)}</span>
           <span style="font-size:11px;color:var(--ink-4)">📍 ${Array.isArray(prov.zones) ? escapeHTML(prov.zones.slice(0, 3).join(', ')) + (prov.zones.length > 3 ? ' +' + (prov.zones.length - 3) : '') : escapeHTML(prov.zones)}</span>
         </div>
-        <button class="plan-cta outline" style="margin-top:10px;font-size:12px;padding:8px" onclick="event.stopPropagation();MaintenanceUI.selectProvider('${escapeAttr(prov.id)}')">Seleccionar proveedor</button>
+        <button class="plan-cta outline" style="margin-top:10px;font-size:12px;padding:8px" onclick="event.stopPropagation();MaintenanceUI.requestLead('${escapeAttr(_selectedServiceId)}')">Cotizar con este proveedor</button>
       </div>`;
   }
 

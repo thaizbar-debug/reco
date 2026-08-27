@@ -37,22 +37,36 @@ const MyOrdersUI = (() => {
     _renderPanel();
 
     if (typeof UserService === 'undefined' || !UserService.isAuthenticated()) {
-      _loading = false;
-      _error = 'auth_required';
-      _renderPanel();
+      var localOnly = _mergeLocalRequests([]);
+      if (localOnly.length > 0) {
+        _orders = localOnly;
+        _loading = false;
+        _renderPanel();
+      } else {
+        _loading = false;
+        _error = 'auth_required';
+        _renderPanel();
+      }
       return;
     }
 
     ServiceOrderService.getUserOrders()
       .then(function(orders) {
-        _orders = orders;
+        _orders = _mergeLocalRequests(orders || []);
         _loading = false;
         _renderPanel();
       })
       .catch(function() {
-        _loading = false;
-        _error = 'load_failed';
-        _renderPanel();
+        var localOnly = _mergeLocalRequests([]);
+        if (localOnly.length > 0) {
+          _orders = localOnly;
+          _loading = false;
+          _renderPanel();
+        } else {
+          _loading = false;
+          _error = 'load_failed';
+          _renderPanel();
+        }
       });
   }
 
@@ -132,6 +146,39 @@ const MyOrdersUI = (() => {
       items += _orderCard(_orders[i]);
     }
     return '<div class="my-orders-list">' + items + '</div>';
+  }
+
+  function _mergeLocalRequests(firestoreOrders) {
+    var local = [];
+    try {
+      var raw = localStorage.getItem('reco_service_requests');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          local = parsed.map(function(r) {
+            return {
+              serviceId: r.serviceId || 'unknown',
+              status: 'requested',
+              createdAt: r.createdAt || r.timestamp || '',
+              _source: 'local',
+              _localRef: r.referenceNumber || ''
+            };
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    var existing = {};
+    firestoreOrders.forEach(function(o) { existing[o.serviceId + '_' + (o.createdAt || '')] = true; });
+    var merged = firestoreOrders.slice();
+    local.forEach(function(l) {
+      var key = l.serviceId + '_' + l.createdAt;
+      if (!existing[key]) merged.push(l);
+    });
+    merged.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    return merged;
   }
 
   function _orderCard(order) {

@@ -67,7 +67,6 @@ const LegalUI = (() => {
       ${SectionHeader('Legal e inmobiliario', 'Protección jurídica para tu operación', 'Abogados especializados en derecho inmobiliario peruano. Cada servicio incluye seguimiento digital y documentación verificada.')}
 
       <div class="leg-check-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Datos simulados</div>
         <div class="leg-check-hero-content">
           <div class="leg-check-hero-icon">🔍</div>
           <div>
@@ -503,7 +502,7 @@ const LegalUI = (() => {
 
         <div class="leg-detail-section">
           <h4>👨‍⚖️ Estudios disponibles</h4>
-          <div class="leg-mock-tag" style="margin-bottom:12px">⚠️ MOCK — Estudios de abogados simulados. No representan firmas reales.</div>
+          <div class="svc-ref-notice" style="margin-bottom:12px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Directorio referencial. Al solicitar, te conectamos con el estudio más adecuado para tu caso.</div>
           <div class="leg-provider-grid">
             ${providers.map(p => `
               <div class="leg-provider-card">

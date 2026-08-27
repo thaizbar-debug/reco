@@ -3980,22 +3980,36 @@ const MyOrdersUI = (() => {
     _renderPanel();
 
     if (typeof UserService === 'undefined' || !UserService.isAuthenticated()) {
-      _loading = false;
-      _error = 'auth_required';
-      _renderPanel();
+      var localOnly = _mergeLocalRequests([]);
+      if (localOnly.length > 0) {
+        _orders = localOnly;
+        _loading = false;
+        _renderPanel();
+      } else {
+        _loading = false;
+        _error = 'auth_required';
+        _renderPanel();
+      }
       return;
     }
 
     ServiceOrderService.getUserOrders()
       .then(function(orders) {
-        _orders = orders;
+        _orders = _mergeLocalRequests(orders || []);
         _loading = false;
         _renderPanel();
       })
       .catch(function() {
-        _loading = false;
-        _error = 'load_failed';
-        _renderPanel();
+        var localOnly = _mergeLocalRequests([]);
+        if (localOnly.length > 0) {
+          _orders = localOnly;
+          _loading = false;
+          _renderPanel();
+        } else {
+          _loading = false;
+          _error = 'load_failed';
+          _renderPanel();
+        }
       });
   }
 
@@ -4075,6 +4089,39 @@ const MyOrdersUI = (() => {
       items += _orderCard(_orders[i]);
     }
     return '<div class="my-orders-list">' + items + '</div>';
+  }
+
+  function _mergeLocalRequests(firestoreOrders) {
+    var local = [];
+    try {
+      var raw = localStorage.getItem('reco_service_requests');
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          local = parsed.map(function(r) {
+            return {
+              serviceId: r.serviceId || 'unknown',
+              status: 'requested',
+              createdAt: r.createdAt || r.timestamp || '',
+              _source: 'local',
+              _localRef: r.referenceNumber || ''
+            };
+          });
+        }
+      }
+    } catch (e) { /* ignore */ }
+
+    var existing = {};
+    firestoreOrders.forEach(function(o) { existing[o.serviceId + '_' + (o.createdAt || '')] = true; });
+    var merged = firestoreOrders.slice();
+    local.forEach(function(l) {
+      var key = l.serviceId + '_' + l.createdAt;
+      if (!existing[key]) merged.push(l);
+    });
+    merged.sort(function(a, b) {
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+    return merged;
   }
 
   function _orderCard(order) {
@@ -6272,8 +6319,8 @@ const VisualUI = (() => {
       const mapped = _REGISTRY_MAP[pendingSvc] || pendingSvc;
       const svc = getServiceById(mapped);
       if (svc) {
-        showBooking(mapped);
-        return _renderBooking();
+        requestLead(mapped);
+        return _renderCatalog();
       }
     }
     if (_view === 'booking') return _renderBooking();
@@ -6306,9 +6353,7 @@ const VisualUI = (() => {
       </div>
 
       ${CategoryDivider('🤖', 'Servicios con IA', ia.length)}
-      <div class="vis-ai-notice">
-        ⚠️ Los servicios de IA utilizan proveedores simulados (mock). La integración con proveedores reales está en desarrollo.
-      </div>
+      <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Servicios con IA — precios referenciales. Te contactaremos con opciones personalizadas al solicitar.</div>
       <div class="svc-foto-grid">
         ${ia.map(s => _visualCard(s)).join('')}
       </div>
@@ -7354,7 +7399,6 @@ const LegalUI = (() => {
       ${SectionHeader('Legal e inmobiliario', 'Protección jurídica para tu operación', 'Abogados especializados en derecho inmobiliario peruano. Cada servicio incluye seguimiento digital y documentación verificada.')}
 
       <div class="leg-check-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Datos simulados</div>
         <div class="leg-check-hero-content">
           <div class="leg-check-hero-icon">🔍</div>
           <div>
@@ -7790,7 +7834,7 @@ const LegalUI = (() => {
 
         <div class="leg-detail-section">
           <h4>👨‍⚖️ Estudios disponibles</h4>
-          <div class="leg-mock-tag" style="margin-bottom:12px">⚠️ MOCK — Estudios de abogados simulados. No representan firmas reales.</div>
+          <div class="svc-ref-notice" style="margin-bottom:12px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Directorio referencial. Al solicitar, te conectamos con el estudio más adecuado para tu caso.</div>
           <div class="leg-provider-grid">
             ${providers.map(p => `
               <div class="leg-provider-card">
@@ -9374,7 +9418,7 @@ const FinanceUI = (() => {
     return `
       ${SectionHeader('Finanzas', 'Financia y protege tu operación inmobiliaria', 'Reco conecta con entidades financieras y aseguradoras para que encuentres las mejores opciones. Sin costo, sin compromiso.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Datos simulados. No existen convenios reales implementados. Las simulaciones son referenciales.</div>
+      <div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Las simulaciones son referenciales. Al solicitar, un asesor se comunicará contigo con opciones reales.</div>
 
       <div class="fin-product-card fin-product-featured" onclick="FinanceUI.startMortgage()">
         <div class="fin-product-header">
@@ -9766,7 +9810,7 @@ const FinanceUI = (() => {
           <div class="val-order-row"><span>Cuota inicial</span><strong>${PAYMENT_FEE_CONFIG.formatAmount(_mortgageLead.downPayment)}</strong></div>
         </div>
 
-        <div class="leg-mock-tag" style="margin-top:16px">⚠️ MOCK — No se enviaron solicitudes reales a entidades financieras.</div>
+        <div class="svc-ref-notice" style="margin-top:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Tu solicitud ha sido registrada. Un asesor financiero te contactará.</div>
 
         <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="FinanceUI.backToMarketplace()">Volver a Finanzas</button>
       </div>`;
@@ -9850,7 +9894,7 @@ const FinanceUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="FinanceUI.backToMarketplace()">← Volver a finanzas</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Producto de seguro simulado. No representa una póliza real.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Información referencial. Al solicitar, recibirás una cotización personalizada.</div>
 
         <div style="text-align:center;margin-bottom:24px">
           <div style="font-size:48px;margin-bottom:8px">${escapeHTML(product.icon)}</div>
@@ -9934,7 +9978,7 @@ const FinanceUI = (() => {
             <div class="val-order-row"><span>Estado</span><strong style="color:var(--green)">Enviado</strong></div>
           </div>
 
-          <div class="leg-mock-tag" style="margin-top:16px">⚠️ MOCK — No se enviaron solicitudes reales a aseguradoras.</div>
+          <div class="svc-ref-notice" style="margin-top:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Tu solicitud ha sido registrada. Un asesor te contactará con opciones reales.</div>
 
           <button class="plan-cta" style="margin-top:20px;width:auto;padding:12px 32px" onclick="FinanceUI.backToMarketplace()">Volver a Finanzas</button>
         </div>`;
@@ -10494,7 +10538,6 @@ const AgentUI = (() => {
       ${SectionHeader('Agentes inmobiliarios', 'Encuentra al agente ideal para tu operación', 'Reco te recomienda agentes verificados según tu zona, tipo de propiedad, presupuesto y objetivo. Sin costo para el usuario.')}
 
       <div class="agt-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Agentes y datos simulados</div>
         <div class="agt-hero-content">
           <div class="agt-hero-icon">🏠</div>
           <div>
@@ -10763,7 +10806,7 @@ const AgentUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="AgentUI.startWizard('${escapeAttr(_wizardData.operation)}')">← Modificar búsqueda</button>
 
-        <div class="val-mock-badge">⚠️ DATOS SIMULADOS — Agentes y scores de matching son mock</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Resultados referenciales. Al solicitar contacto, validamos disponibilidad y te conectamos directamente.</div>
 
         <div class="agt-results-header">
           <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">
@@ -10830,7 +10873,7 @@ const AgentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="AgentUI.backFromProfile()">← Volver</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Perfil de agente simulado. No representa una persona real.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Perfil referencial. Al solicitar contacto, te conectamos con agentes verificados de tu zona.</div>
 
         <div class="agt-profile-header">
           <div class="agt-avatar agt-avatar-lg">${escapeHTML(initials)}</div>
@@ -11178,7 +11221,7 @@ const AgentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="AgentUI.backToCatalog()">← Volver a agentes</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Dashboard con datos simulados</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Dashboard referencial — los datos se actualizarán con información real.</div>
 
         <div style="text-align:center;margin-bottom:24px">
           <h2 class="section-title font-serif" style="text-align:center;margin:0 0 4px">Dashboard: ${escapeHTML(agent.name)}</h2>
@@ -12961,7 +13004,7 @@ const MaintenanceUI = (() => {
     return `
       ${SectionHeader('Mantenimiento', 'Marketplace de mantenimiento', 'Conecta con profesionales verificados. Solicita, cotiza y agenda servicios para tu propiedad.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Proveedores y cotizaciones simulados. No representan servicios reales.</div>
+      <div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Los precios mostrados son referenciales. Al solicitar un servicio, te contactaremos con cotizaciones personalizadas.</div>
 
       ${activeOrders.length > 0 ? `
         <div class="mkt-active-orders" style="margin-bottom:24px">
@@ -13117,7 +13160,7 @@ const MaintenanceUI = (() => {
           <span style="font-size:11px;color:var(--ink-4)">⏱️ Respuesta: ${escapeHTML(prov.responseTime)}</span>
           <span style="font-size:11px;color:var(--ink-4)">📍 ${Array.isArray(prov.zones) ? escapeHTML(prov.zones.slice(0, 3).join(', ')) + (prov.zones.length > 3 ? ' +' + (prov.zones.length - 3) : '') : escapeHTML(prov.zones)}</span>
         </div>
-        <button class="plan-cta outline" style="margin-top:10px;font-size:12px;padding:8px" onclick="event.stopPropagation();MaintenanceUI.selectProvider('${escapeAttr(prov.id)}')">Seleccionar proveedor</button>
+        <button class="plan-cta outline" style="margin-top:10px;font-size:12px;padding:8px" onclick="event.stopPropagation();MaintenanceUI.requestLead('${escapeAttr(_selectedServiceId)}')">Cotizar con este proveedor</button>
       </div>`;
   }
 
