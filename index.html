@@ -7307,6 +7307,7 @@ function _clearUserCache(){
   localStorage.removeItem('reco_my_pubs');
   S.keysLeft = 0;
   S.unlockedIds = new Set();
+  _premiumCache.clear();
   if(typeof updateKeyCount === 'function') updateKeyCount();
   if(typeof applyFilters === 'function') applyFilters();
 }
