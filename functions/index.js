@@ -24,13 +24,9 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 initializeApp();
 const db = getFirestore();
 
-// Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
-// Used by setAdminClaim to accept the current caller as admin even if
-// their token does not yet carry the `admin` custom claim — needed so
-// the very first invocation (when nobody has the claim yet) doesn't
-// hit chicken-and-egg. Keep in sync with the rules block AND the
-// client-side _ADMIN_EMAILS constant.
-const SEED_ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
+// Hardcoded seed-email fallback removed. All admins must have the
+// `admin` custom claim set via setAdminClaim (or the Firebase Admin SDK
+// for initial bootstrap). See firestore.rules → isAdmin().
 
 const REGION = 'southamerica-east1';
 const UNLOCK_COST = 1;
@@ -52,6 +48,11 @@ const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
 // dataset. Hitting the cap throws resource-exhausted (client shows
 // "demasiadas consultas, espera un momento").
 const HIST_DETAIL_RATE_LIMIT_PER_HOUR = 500;
+// Per-IP cap for getHistoricoDetail. Prevents multi-account scraping:
+// a single IP running N accounts would need N*500 calls; capping per
+// IP at 1000 means ≤2 accounts' worth of calls regardless of how many
+// uid's the attacker creates.
+const HIST_DETAIL_IP_RATE_LIMIT_PER_HOUR = 1000;
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -101,6 +102,13 @@ function requireVerifiedAuth(request) {
       'Verificá tu email antes de continuar. Revisá tu bandeja de entrada (y spam) por el link que te enviamos.'
     );
   }
+}
+
+// Strip HTML angle brackets from user-supplied text. Defense in depth
+// against stored XSS: even if a client-side esc() call is missing, the
+// stored value never contains raw < or > so innerHTML injection is inert.
+function stripHtml(s) {
+  return s.replace(/[<>]/g, '');
 }
 
 const PUB_TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
@@ -253,10 +261,10 @@ exports.publishProperty = onCall(
       throw new HttpsError('invalid-argument', 'Cuerpo de la publicación requerido.');
     }
 
-    // Validate + coerce
+    // Validate + coerce + strip HTML for XSS defense in depth
     const strOrThrow = (v, name, max = 500) => {
       if (v == null) throw new HttpsError('invalid-argument', `Falta ${name}.`);
-      const s = String(v).trim();
+      const s = stripHtml(String(v).trim());
       if (!s) throw new HttpsError('invalid-argument', `Falta ${name}.`);
       if (s.length > max) throw new HttpsError('invalid-argument', `${name} muy largo (máx ${max}).`);
       return s;
@@ -278,7 +286,7 @@ exports.publishProperty = onCall(
     const estado = PUB_ESTADOS.includes(raw.estado) ? raw.estado : 'Construido';
     const source = PUB_SOURCES.includes(raw.source) ? raw.source : 'single';
     const features = Array.isArray(raw.features)
-      ? raw.features.filter(f => typeof f === 'string' && f.length < 100).slice(0, 30)
+      ? raw.features.filter(f => typeof f === 'string' && f.length < 100).map(f => stripHtml(f)).slice(0, 30)
       : [];
 
     const lat = (typeof raw.lat === 'number' && isFinite(raw.lat)) ? raw.lat : null;
@@ -403,17 +411,17 @@ exports.submitContactRequest = onCall(
       throw new HttpsError('invalid-argument', 'Cuerpo del contacto requerido.');
     }
 
-    // Validate + coerce
+    // Validate + coerce + strip HTML for XSS defense in depth
     const str = (v, name, max) => {
       if (v == null) throw new HttpsError('invalid-argument', `Falta ${name}.`);
-      const s = String(v).trim();
+      const s = stripHtml(String(v).trim());
       if (!s) throw new HttpsError('invalid-argument', `Falta ${name}.`);
       if (s.length > max) throw new HttpsError('invalid-argument', `${name} muy largo (máx ${max}).`);
       return s;
     };
     const optStr = (v, max) => {
       if (v == null) return null;
-      const s = String(v).trim();
+      const s = stripHtml(String(v).trim());
       if (!s) return null;
       return s.slice(0, max);
     };
@@ -532,12 +540,13 @@ exports.getHistoricoDetail = onCall(
       throw new HttpsError('invalid-argument', 'propertyId requerido.');
     }
 
-    // Rate limit: aggregation count of this uid's accesses in the last
-    // rolling hour. count() is a single billed operation regardless of
-    // the number of matched docs, so this stays cheap even if a user
-    // hits the cap. Trades a tiny race window for simplicity — a burst
-    // of parallel requests may overshoot the cap by a handful, which
-    // is acceptable for a browsing rate limit (not a payment gate).
+    // Rate limit (per uid): aggregation count of this uid's accesses in
+    // the last rolling hour. count() is a single billed operation
+    // regardless of the number of matched docs, so this stays cheap
+    // even if a user hits the cap. Trades a tiny race window for
+    // simplicity — a burst of parallel requests may overshoot the cap
+    // by a handful, which is acceptable for a browsing rate limit (not
+    // a payment gate).
     const oneHourAgo = new Date(Date.now() - 3600 * 1000);
     const recentSnap = await db.collection('histDetailAccess')
       .where('uid', '==', uid)
@@ -549,6 +558,30 @@ exports.getHistoricoDetail = onCall(
         'resource-exhausted',
         `Demasiadas consultas de detalle en la última hora (máx ${HIST_DETAIL_RATE_LIMIT_PER_HOUR}). Intenta de nuevo más tarde.`
       );
+    }
+
+    // Rate limit (per IP): prevents multi-account scraping. An
+    // attacker creating N throwaway accounts from the same IP still
+    // hits this cap. The IP comes from Cloud Functions' x-forwarded-for
+    // header (set by the Google Front End); it cannot be spoofed by the
+    // caller because GFE overwrites the header.
+    const callerIp = (request.rawRequest && request.rawRequest.headers && request.rawRequest.headers['x-forwarded-for'])
+      ? request.rawRequest.headers['x-forwarded-for'].split(',')[0].trim()
+      : null;
+    if (callerIp) {
+      const ipSnap = await db.collection('histDetailAccess')
+        .where('ip', '==', callerIp)
+        .where('at', '>', oneHourAgo)
+        .count().get();
+      if (ipSnap.data().count >= HIST_DETAIL_IP_RATE_LIMIT_PER_HOUR) {
+        logger.warn('[getHistoricoDetail] IP rate-limit hit', {
+          ip: callerIp, uid, count: ipSnap.data().count,
+        });
+        throw new HttpsError(
+          'resource-exhausted',
+          'Demasiadas consultas desde esta red. Intenta de nuevo más tarde.'
+        );
+      }
     }
 
     const detailRef = db.collection('propertiesHistoricoDetail').doc(propertyId);
@@ -563,6 +596,7 @@ exports.getHistoricoDetail = onCall(
     await db.collection('histDetailAccess').add({
       uid,
       propertyId,
+      ip: callerIp,
       at: FieldValue.serverTimestamp(),
     });
 
@@ -743,8 +777,7 @@ function _requireAdminCaller(request) {
   requireVerifiedAuth(request);
   const token = request.auth.token || {};
   const email = String(token.email || '').toLowerCase();
-  const isAdmin = token.admin === true || SEED_ADMIN_EMAILS.includes(email);
-  if (!isAdmin) {
+  if (token.admin !== true) {
     throw new HttpsError('permission-denied', 'Solo un admin puede realizar esta acción.');
   }
   return { uid: request.auth.uid, email };
