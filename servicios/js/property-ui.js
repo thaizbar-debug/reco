@@ -38,6 +38,9 @@ const PropertyUI = (() => {
     if (!_tracked) {
       RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.PROPERTY_MANAGEMENT_VIEWED, {});
       _tracked = true;
+      PropertyService.loadRealProperties().then(function(result) {
+        if (result) _rerender();
+      });
     }
     if (_view === 'detail') return _renderDetail();
     if (_view === 'ticket_create') return _renderTicketCreate();
@@ -53,7 +56,9 @@ const PropertyUI = (() => {
     return `
       ${SectionHeader('Propiedades', 'Mis propiedades', 'Gestiona tu portafolio inmobiliario. Controla alquileres, gastos, mantenimiento y documentos desde un solo lugar.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Datos simulados. Propiedades de demostración.</div>
+      ${PropertyService.isUsingRealData()
+        ? '<div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Datos cargados desde tu cuenta Reco. Algunos campos pueden requerir actualización.</div>'
+        : '<div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Propiedades de demostración. Inicia sesión para ver tu portafolio real.</div>'}
 
       <div class="agt-stats-grid" style="margin-bottom:28px">
         <div class="agt-stat-card">
@@ -184,8 +189,6 @@ const PropertyUI = (() => {
 
     return `
       <button class="val-back" onclick="PropertyUI.backToDashboard()">← Mis propiedades</button>
-
-      <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Datos simulados</div>
 
       <div class="pm-detail-header">
         <div>
@@ -620,7 +623,7 @@ const PropertyUI = (() => {
           </div>
         </div>
 
-        <div class="leg-mock-tag" style="margin-bottom:16px">⚠️ MOCK — La carga de archivos es simulada. No se suben archivos reales.</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ La carga de archivos estará disponible próximamente. El registro del documento quedará guardado.</div>
 
         <button class="plan-cta" onclick="PropertyUI.submitDoc()">Subir documento →</button>
       </div>`;

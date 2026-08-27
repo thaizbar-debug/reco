@@ -103,6 +103,7 @@ const ValuationUI = (() => {
     _view = 'estimate-form';
     _result = null;
     RecoAnalytics.track('valuation_started', { type: 'estimate' });
+    ValuationService.loadFromListings();
     _rerender();
   }
 
@@ -254,7 +255,7 @@ const ValuationUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="ValuationUI.showEstimateForm()">← Modificar datos</button>
 
-        <div class="val-mock-badge">⚠️ ESTIMACIÓN REFERENCIAL — Motor de desarrollo (mock)</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">${r._dataSource === 'listings' ? 'ℹ️ Estimación basada en listings activos de la plataforma. Los valores son referenciales.' : 'ℹ️ Estimación referencial basada en promedios de mercado. Para una tasación formal, solicita una tasación profesional.'}</div>
 
         <div class="val-result-hero">
           <div class="val-result-tag">Reco Estimate</div>

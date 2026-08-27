@@ -67,19 +67,78 @@ const DOCUMENT_TYPE_LABELS = Object.freeze({
 });
 
 const PropertyService = (() => {
-  /**
-   * Property entity mapping — Reco Core <-> Servicios
-   * When integrating with the real API, map these local fields to the core entity:
-   *   id         -> property.id (from Reco core)
-   *   address    -> property.address
-   *   district   -> property.location.district
-   *   area       -> property.details.area_m2
-   *   rooms      -> property.details.rooms
-   *   bathrooms  -> property.details.bathrooms
-   *   propertyType -> property.type
-   *   status     -> derive from property.status + lease status
-   * DO NOT create a separate Property table — consume from Reco core API.
-   */
+  var _realProperties = null;
+  var _loadingReal = false;
+  var _realLoaded = false;
+
+  function loadRealProperties() {
+    if (_loadingReal || _realLoaded) return Promise.resolve(_realProperties);
+    _loadingReal = true;
+    var userId = null;
+    try {
+      if (typeof UserService !== 'undefined' && UserService.isAuthenticated()) {
+        var profile = UserService.getUserProfile();
+        userId = profile ? profile.uid : null;
+      }
+    } catch (e) { /* ignore */ }
+    if (!userId) { _loadingReal = false; return Promise.resolve(null); }
+    if (typeof CorePropertyService === 'undefined') { _loadingReal = false; return Promise.resolve(null); }
+
+    return CorePropertyService.getUserProperties(userId)
+      .then(function(pubs) {
+        if (!pubs || pubs.length === 0) {
+          _loadingReal = false;
+          _realLoaded = true;
+          return null;
+        }
+        _realProperties = pubs.map(function(p) {
+          return {
+            id: p.id,
+            address: p.address || '',
+            district: p.district || '',
+            propertyType: p.type || 'departamento',
+            area: p.area || 0,
+            rooms: p.beds || 0,
+            bathrooms: p.baths || 0,
+            status: _mapPublicationStatus(p),
+            valorEstimado: _estimateValue(p),
+            alquilerMensual: null,
+            proximoPago: null,
+            contratoVigente: false,
+            tenant: null,
+            gastos: { predial: 0, arbitrios: 0, mantenimiento: 0, seguro: 0 },
+            _isMock: false,
+            _source: 'firestore',
+          };
+        });
+        _loadingReal = false;
+        _realLoaded = true;
+        return _realProperties;
+      })
+      .catch(function() {
+        _loadingReal = false;
+        _realLoaded = true;
+        return null;
+      });
+  }
+
+  function _mapPublicationStatus(pub) {
+    if (pub.op === 'alquiler' && pub.status === 'active') return PM_PROPERTY_STATUS.OCCUPIED;
+    if (pub.status === 'active' || pub.status === 'approved') return PM_PROPERTY_STATUS.FOR_SALE;
+    return PM_PROPERTY_STATUS.VACANT;
+  }
+
+  function _estimateValue(pub) {
+    if (pub.price && pub.price > 0) {
+      var p = pub.price;
+      if (pub.currency === 'USD') p = Math.round(p * 3.72);
+      return p;
+    }
+    return 0;
+  }
+
+  function isUsingRealData() { return !!_realProperties; }
+
   const _mockProperties = [
     {
       id: 'prop-mock-1',
@@ -289,15 +348,19 @@ const PropertyService = (() => {
     { propertyId: 'prop-mock-5', month: '2026-06', amount: 1800, status: 'pendiente', date: null },
   ];
 
-  function getProperties() { return _mockProperties.map(p => ({ ...p })); }
+  function _activeProperties() {
+    return _realProperties || _mockProperties;
+  }
+
+  function getProperties() { return _activeProperties().map(p => ({ ...p })); }
 
   function getPropertyById(id) {
-    const p = _mockProperties.find(p => p.id === id);
+    const p = _activeProperties().find(p => p.id === id);
     return p ? { ...p } : null;
   }
 
   function getPortfolioSummary() {
-    const props = _mockProperties;
+    const props = _activeProperties();
     const occupied = props.filter(p => p.status === PM_PROPERTY_STATUS.OCCUPIED || (p.tenant && p.status === PM_PROPERTY_STATUS.MAINTENANCE));
     const vacant = props.filter(p => p.status === PM_PROPERTY_STATUS.VACANT || p.status === PM_PROPERTY_STATUS.FOR_SALE);
     const totalValue = props.reduce((s, p) => s + p.valorEstimado, 0);
@@ -333,7 +396,7 @@ const PropertyService = (() => {
   }
 
   function getFinancialSummary(propertyId) {
-    const prop = _mockProperties.find(p => p.id === propertyId);
+    const prop = _activeProperties().find(p => p.id === propertyId);
     if (!prop) return null;
     const income = prop.alquilerMensual || 0;
     const expenses = getPropertyExpenses(prop);
@@ -400,7 +463,7 @@ const PropertyService = (() => {
   }
 
   function getCrossSellSuggestions(propertyId) {
-    const prop = _mockProperties.find(p => p.id === propertyId);
+    const prop = _activeProperties().find(p => p.id === propertyId);
     if (!prop) return [];
     const suggestions = [];
     const yld = getPropertyYield(prop);
@@ -439,6 +502,8 @@ const PropertyService = (() => {
     getDocumentsByProperty,
     addDocument,
     getCrossSellSuggestions,
+    loadRealProperties,
+    isUsingRealData,
     TICKET_CATEGORIES,
   };
 })();

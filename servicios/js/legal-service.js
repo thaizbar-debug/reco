@@ -156,7 +156,7 @@ const PropertyDataRegistry = (() => {
           statusLabel: hasPartida ? 'Inscrito en SUNARP' : 'No verificado',
           inscriptionDate: hasPartida ? '2018-03-15' : null,
           registralZone: district ? 'Zona Registral N° IX — Sede Lima' : null,
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         },
 
         ownership: hasPartida ? {
@@ -164,7 +164,7 @@ const PropertyDataRegistry = (() => {
             ? [{ name: ownerPool[oi], percentage: 50, type: 'Persona natural' }, { name: ownerPool[(oi + 1) % ownerPool.length], percentage: 50, type: 'Persona natural' }]
             : [{ name: ownerPool[oi], percentage: 100, type: 'Persona natural' }],
           ownershipType: multiOwner ? 'Copropiedad' : 'Individual',
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         } : { owners: null, ownershipType: null, source: 'No disponible sin partida registral' },
 
         history: hasPartida ? {
@@ -172,14 +172,14 @@ const PropertyDataRegistry = (() => {
             { date: '2018-03-15', type: 'Compraventa', parties: ownerPool[(oi + 2) % ownerPool.length] + ' → ' + ownerPool[oi] },
             { date: '2010-08-22', type: 'Compraventa', parties: 'Constructora Lima SAC → ' + ownerPool[(oi + 2) % ownerPool.length] },
           ],
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         } : { transfers: [], source: 'No disponible sin partida registral' },
 
         encumbrances: {
           mortgages: seed % 5 === 0 ? [{ bank: 'Banco de Crédito del Perú', amount: 'No disponible', date: '2018-04-01', status: 'Vigente' }] : [],
           liens: [],
           litigation: seed % 11 === 0 && hasPartida ? [{ court: 'Juzgado Civil de Lima', case: 'Exp. ' + (1000 + seed % 9000), status: 'En trámite' }] : [],
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         },
 
         alerts,

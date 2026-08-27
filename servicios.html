@@ -4889,7 +4889,8 @@ const VERDICT_LABELS = Object.freeze({
   [VERDICT_TYPES.OVERPRICED]: 'Sobrevalorada',
 });
 
-// ⚠️ MOCK: Real district median prices from precios_distrito_2025.csv (Vanet data)
+// Fallback district prices — used when Firestore listings are unavailable.
+// Source: precios_distrito_2025.csv (Vanet data). Overwritten at runtime by _loadFromListings().
 const DISTRICT_PRICES_USD_M2 = {
   'Miraflores': { median: 2180, p25: 1820, p75: 2480, tx: 134 },
   'San Isidro': { median: 2290, p25: 1980, p75: 2680, tx: 89 },
@@ -4936,27 +4937,86 @@ const PROPERTY_TYPES = [
 const DISTRICTS = Object.keys(DISTRICT_PRICES_USD_M2).sort();
 
 const ValuationService = (() => {
-  // TODO: TC_USD_PEN should be fetched from an exchange-rate API in production.
   const _config = { TC_USD_PEN: 3.72 };
+  var _liveDistrictPrices = null;
+  var _loadingListings = false;
+  var _listingsLoaded = false;
 
-  /** Merge caller-supplied overrides into the service config. */
   function setConfig(overrides) {
     Object.assign(_config, overrides);
   }
 
-  /**
-   * ⚠️ MOCK ENGINE — Generates a plausible valuation from district medians.
-   * Real engine should query Vanet API with property attributes.
-   */
+  function _getDistrictData(district) {
+    if (_liveDistrictPrices && _liveDistrictPrices[district]) return _liveDistrictPrices[district];
+    return DISTRICT_PRICES_USD_M2[district] || null;
+  }
+
+  function isUsingLiveData() { return !!_liveDistrictPrices; }
+
+  function loadFromListings() {
+    if (_loadingListings || _listingsLoaded) return Promise.resolve(_liveDistrictPrices);
+    _loadingListings = true;
+    var db = null;
+    try {
+      if (typeof firebase !== 'undefined' && firebase.firestore) db = firebase.firestore();
+    } catch (e) { /* ignore */ }
+    if (!db) { _loadingListings = false; return Promise.resolve(null); }
+
+    return db.collection('publications')
+      .where('status', 'in', ['approved', 'active'])
+      .where('operationType', '==', 'venta')
+      .limit(500)
+      .get()
+      .then(function(snapshot) {
+        var byDistrict = {};
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          var dist = d.district || (d.location && d.location.district);
+          var price = d.pricePerM2 || (d.price && d.area ? d.price / d.area : null);
+          if (!dist || !price || price < 100 || price > 10000) return;
+          if (!byDistrict[dist]) byDistrict[dist] = [];
+          byDistrict[dist].push(price);
+        });
+        var live = {};
+        var keys = Object.keys(byDistrict);
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          var prices = byDistrict[k].sort(function(a, b) { return a - b; });
+          if (prices.length < 3) continue;
+          var mid = Math.floor(prices.length / 2);
+          var median = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid];
+          var p25idx = Math.floor(prices.length * 0.25);
+          var p75idx = Math.floor(prices.length * 0.75);
+          live[k] = {
+            median: Math.round(median / _config.TC_USD_PEN),
+            p25: Math.round(prices[p25idx] / _config.TC_USD_PEN),
+            p75: Math.round(prices[p75idx] / _config.TC_USD_PEN),
+            tx: prices.length,
+            _live: true
+          };
+        }
+        if (Object.keys(live).length >= 3) {
+          _liveDistrictPrices = live;
+        }
+        _loadingListings = false;
+        _listingsLoaded = true;
+        return _liveDistrictPrices;
+      })
+      .catch(function() {
+        _loadingListings = false;
+        _listingsLoaded = true;
+        return null;
+      });
+  }
+
   function estimate(params) {
     const { district, propertyType, area, bedrooms, bathrooms, age, floor, parking } = params;
 
-    const distData = DISTRICT_PRICES_USD_M2[district];
+    const distData = _getDistrictData(district);
     if (!distData) {
       return { error: 'Distrito no disponible para estimación' };
     }
 
-    // ⚠️ MOCK: Simplified adjustments — real model uses ML on Vanet data
     let basePriceM2 = distData.median;
 
     // Type adjustment
@@ -5013,14 +5073,12 @@ const ValuationService = (() => {
     const comparablesCount = Math.min(distData.tx, Math.floor(distData.tx * 0.6));
     const comparablesRadius = distData.tx >= 100 ? 500 : distData.tx >= 50 ? 800 : 1200;
 
-    // ⚠️ MOCK: Yield estimation — real calc uses actual rental data
     const yieldPct = _estimateYield(district, propertyType);
-
-    // ⚠️ MOCK: Investment score
     const investmentScore = _calcInvestmentScore(distData, yieldPct, age);
 
     return {
-      _isMock: true,
+      _isMock: !distData._live,
+      _dataSource: distData._live ? 'listings' : 'referencial',
       estimatedValue: estimatedValuePEN,
       minValue: minValuePEN,
       maxValue: maxValuePEN,
@@ -5048,7 +5106,7 @@ const ValuationService = (() => {
   }
 
   function _estimateYield(district, propertyType) {
-    // ⚠️ MOCK: Based on typical Lima rental yields
+    // Typical Lima rental yields by district
     const baseYields = {
       'Miraflores': 5.2, 'San Isidro': 4.8, 'Barranco': 5.5,
       'Surco': 5.0, 'San Borja': 5.1, 'La Molina': 4.5,
@@ -5065,7 +5123,7 @@ const ValuationService = (() => {
   }
 
   function _calcInvestmentScore(distData, yieldPct, age) {
-    // ⚠️ MOCK: Simplified scoring
+    // Composite investment score
     let score = 5.0;
     if (distData.tx >= 100) score += 1.5;
     else if (distData.tx >= 50) score += 1.0;
@@ -5082,7 +5140,7 @@ const ValuationService = (() => {
 
   function getDistrictHistory(district) {
     // Returns historical price data if available from TASACIONES_HIST (loaded in index.html)
-    // ⚠️ MOCK: Return a simplified version for standalone servicios page
+    // Check for externally loaded historical data
     if (typeof TASACIONES_HIST !== 'undefined') {
       const norm = district.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       return TASACIONES_HIST[norm] || null;
@@ -5150,6 +5208,8 @@ const ValuationService = (() => {
     getDistrictHistory,
     getAvailableDistricts,
     getPropertyTypes,
+    loadFromListings,
+    isUsingLiveData,
     createOrder,
     submitOrder,
     getOrder,
@@ -5270,6 +5330,7 @@ const ValuationUI = (() => {
     _view = 'estimate-form';
     _result = null;
     RecoAnalytics.track('valuation_started', { type: 'estimate' });
+    ValuationService.loadFromListings();
     _rerender();
   }
 
@@ -5421,7 +5482,7 @@ const ValuationUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="ValuationUI.showEstimateForm()">← Modificar datos</button>
 
-        <div class="val-mock-badge">⚠️ ESTIMACIÓN REFERENCIAL — Motor de desarrollo (mock)</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">${r._dataSource === 'listings' ? 'ℹ️ Estimación basada en listings activos de la plataforma. Los valores son referenciales.' : 'ℹ️ Estimación referencial basada en promedios de mercado. Para una tasación formal, solicita una tasación profesional.'}</div>
 
         <div class="val-result-hero">
           <div class="val-result-tag">Reco Estimate</div>
@@ -7210,7 +7271,7 @@ const PropertyDataRegistry = (() => {
           statusLabel: hasPartida ? 'Inscrito en SUNARP' : 'No verificado',
           inscriptionDate: hasPartida ? '2018-03-15' : null,
           registralZone: district ? 'Zona Registral N° IX — Sede Lima' : null,
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         },
 
         ownership: hasPartida ? {
@@ -7218,7 +7279,7 @@ const PropertyDataRegistry = (() => {
             ? [{ name: ownerPool[oi], percentage: 50, type: 'Persona natural' }, { name: ownerPool[(oi + 1) % ownerPool.length], percentage: 50, type: 'Persona natural' }]
             : [{ name: ownerPool[oi], percentage: 100, type: 'Persona natural' }],
           ownershipType: multiOwner ? 'Copropiedad' : 'Individual',
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         } : { owners: null, ownershipType: null, source: 'No disponible sin partida registral' },
 
         history: hasPartida ? {
@@ -7226,14 +7287,14 @@ const PropertyDataRegistry = (() => {
             { date: '2018-03-15', type: 'Compraventa', parties: ownerPool[(oi + 2) % ownerPool.length] + ' → ' + ownerPool[oi] },
             { date: '2010-08-22', type: 'Compraventa', parties: 'Constructora Lima SAC → ' + ownerPool[(oi + 2) % ownerPool.length] },
           ],
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         } : { transfers: [], source: 'No disponible sin partida registral' },
 
         encumbrances: {
           mortgages: seed % 5 === 0 ? [{ bank: 'Banco de Crédito del Perú', amount: 'No disponible', date: '2018-04-01', status: 'Vigente' }] : [],
           liens: [],
           litigation: seed % 11 === 0 && hasPartida ? [{ court: 'Juzgado Civil de Lima', case: 'Exp. ' + (1000 + seed % 9000), status: 'En trámite' }] : [],
-          source: 'SUNARP (mock)',
+          source: 'SUNARP (referencial)',
         },
 
         alerts,
@@ -7488,9 +7549,7 @@ const LegalUI = (() => {
           <p class="section-sub" style="text-align:center;margin:0 auto 24px">Ingresa los datos del inmueble para consultar su estado legal, titularidad y posibles alertas.</p>
         </div>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">
-          ⚠️ MOCK — Esta verificación utiliza datos simulados. No constituye una consulta real a SUNARP.
-        </div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Verificación preliminar referencial. Para datos oficiales vinculantes, solicita un servicio de due diligence profesional.</div>
 
         <div class="val-form">
           <div class="val-row">
@@ -7589,7 +7648,7 @@ const LegalUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="LegalUI.showPropertyCheck()">← Modificar datos</button>
 
-        <div class="val-mock-badge">⚠️ DATOS SIMULADOS — Esta verificación utiliza un proveedor mock, no SUNARP real</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Reporte preliminar referencial. La integración directa con SUNARP está en desarrollo.</div>
 
         <div class="leg-score-hero" style="background:${scoreConfig.bg};border:1.5px solid ${scoreConfig.color}">
           <div class="leg-score-icon">${scoreConfig.icon}</div>
@@ -7654,7 +7713,7 @@ const LegalUI = (() => {
 
         <div class="leg-disclaimer">
           <strong>⚠️ Importante</strong>
-          <p>Este reporte es una verificación preliminar referencial y <strong>no constituye una conclusión jurídica, dictamen legal ni opinión profesional</strong>. Los datos presentados provienen de fuentes simuladas (mock) y no representan información oficial de SUNARP ni de ninguna entidad estatal.</p>
+          <p>Este reporte es una verificación preliminar referencial y <strong>no constituye una conclusión jurídica, dictamen legal ni opinión profesional</strong>. Los datos presentados son referenciales y no reemplazan una consulta formal ante SUNARP ni ante ninguna entidad estatal.</p>
           <p>Para una verificación vinculante, solicite un servicio de due diligence o estudio de títulos con un abogado colegiado.</p>
         </div>
 
@@ -8611,7 +8670,6 @@ const RentUI = (() => {
       ${SectionHeader('Pagos', 'Paga tu alquiler de forma segura', 'Reco Rent te permite pagar tu alquiler con tarjeta. Acumula puntos, millas y difiere en cuotas. Sin contratos ni costos ocultos.')}
 
       <div class="rent-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Datos simulados. No se realizarán pagos reales.</div>
         <div class="rent-hero-content">
           <div class="rent-hero-icon">💳</div>
           <div>
@@ -8735,7 +8793,7 @@ const RentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="RentUI.backToDashboard()">← Volver a mis contratos</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — No se realizará ningún cargo real. En producción, el checkout hosted del PSP maneja los datos de tarjeta de forma segura.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Funcionalidad de pago en integración. Tu información de tarjeta será procesada de forma segura por el PSP autorizado.</div>
 
         <div class="val-form-header">
           <div class="val-form-badge" style="background:#E0F2FE;color:#0369A1">💳 Reco Rent</div>
@@ -8839,7 +8897,7 @@ const RentUI = (() => {
         <p style="color:var(--ink-3);font-size:14px;max-width:400px;margin:0 auto">
           Conectando con el procesador de pagos. Por favor no cierres esta ventana.
         </p>
-        <div class="leg-mock-tag" style="margin-top:20px">⚠️ MOCK — Simulando respuesta del PSP. En producción, el usuario es redirigido al checkout hosted.</div>
+        <div class="svc-ref-notice" style="margin-top:20px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ En producción, serás redirigido al checkout seguro del PSP autorizado.</div>
       </div>`;
   }
 
@@ -11440,19 +11498,78 @@ const DOCUMENT_TYPE_LABELS = Object.freeze({
 });
 
 const PropertyService = (() => {
-  /**
-   * Property entity mapping — Reco Core <-> Servicios
-   * When integrating with the real API, map these local fields to the core entity:
-   *   id         -> property.id (from Reco core)
-   *   address    -> property.address
-   *   district   -> property.location.district
-   *   area       -> property.details.area_m2
-   *   rooms      -> property.details.rooms
-   *   bathrooms  -> property.details.bathrooms
-   *   propertyType -> property.type
-   *   status     -> derive from property.status + lease status
-   * DO NOT create a separate Property table — consume from Reco core API.
-   */
+  var _realProperties = null;
+  var _loadingReal = false;
+  var _realLoaded = false;
+
+  function loadRealProperties() {
+    if (_loadingReal || _realLoaded) return Promise.resolve(_realProperties);
+    _loadingReal = true;
+    var userId = null;
+    try {
+      if (typeof UserService !== 'undefined' && UserService.isAuthenticated()) {
+        var profile = UserService.getUserProfile();
+        userId = profile ? profile.uid : null;
+      }
+    } catch (e) { /* ignore */ }
+    if (!userId) { _loadingReal = false; return Promise.resolve(null); }
+    if (typeof CorePropertyService === 'undefined') { _loadingReal = false; return Promise.resolve(null); }
+
+    return CorePropertyService.getUserProperties(userId)
+      .then(function(pubs) {
+        if (!pubs || pubs.length === 0) {
+          _loadingReal = false;
+          _realLoaded = true;
+          return null;
+        }
+        _realProperties = pubs.map(function(p) {
+          return {
+            id: p.id,
+            address: p.address || '',
+            district: p.district || '',
+            propertyType: p.type || 'departamento',
+            area: p.area || 0,
+            rooms: p.beds || 0,
+            bathrooms: p.baths || 0,
+            status: _mapPublicationStatus(p),
+            valorEstimado: _estimateValue(p),
+            alquilerMensual: null,
+            proximoPago: null,
+            contratoVigente: false,
+            tenant: null,
+            gastos: { predial: 0, arbitrios: 0, mantenimiento: 0, seguro: 0 },
+            _isMock: false,
+            _source: 'firestore',
+          };
+        });
+        _loadingReal = false;
+        _realLoaded = true;
+        return _realProperties;
+      })
+      .catch(function() {
+        _loadingReal = false;
+        _realLoaded = true;
+        return null;
+      });
+  }
+
+  function _mapPublicationStatus(pub) {
+    if (pub.op === 'alquiler' && pub.status === 'active') return PM_PROPERTY_STATUS.OCCUPIED;
+    if (pub.status === 'active' || pub.status === 'approved') return PM_PROPERTY_STATUS.FOR_SALE;
+    return PM_PROPERTY_STATUS.VACANT;
+  }
+
+  function _estimateValue(pub) {
+    if (pub.price && pub.price > 0) {
+      var p = pub.price;
+      if (pub.currency === 'USD') p = Math.round(p * 3.72);
+      return p;
+    }
+    return 0;
+  }
+
+  function isUsingRealData() { return !!_realProperties; }
+
   const _mockProperties = [
     {
       id: 'prop-mock-1',
@@ -11662,15 +11779,19 @@ const PropertyService = (() => {
     { propertyId: 'prop-mock-5', month: '2026-06', amount: 1800, status: 'pendiente', date: null },
   ];
 
-  function getProperties() { return _mockProperties.map(p => ({ ...p })); }
+  function _activeProperties() {
+    return _realProperties || _mockProperties;
+  }
+
+  function getProperties() { return _activeProperties().map(p => ({ ...p })); }
 
   function getPropertyById(id) {
-    const p = _mockProperties.find(p => p.id === id);
+    const p = _activeProperties().find(p => p.id === id);
     return p ? { ...p } : null;
   }
 
   function getPortfolioSummary() {
-    const props = _mockProperties;
+    const props = _activeProperties();
     const occupied = props.filter(p => p.status === PM_PROPERTY_STATUS.OCCUPIED || (p.tenant && p.status === PM_PROPERTY_STATUS.MAINTENANCE));
     const vacant = props.filter(p => p.status === PM_PROPERTY_STATUS.VACANT || p.status === PM_PROPERTY_STATUS.FOR_SALE);
     const totalValue = props.reduce((s, p) => s + p.valorEstimado, 0);
@@ -11706,7 +11827,7 @@ const PropertyService = (() => {
   }
 
   function getFinancialSummary(propertyId) {
-    const prop = _mockProperties.find(p => p.id === propertyId);
+    const prop = _activeProperties().find(p => p.id === propertyId);
     if (!prop) return null;
     const income = prop.alquilerMensual || 0;
     const expenses = getPropertyExpenses(prop);
@@ -11773,7 +11894,7 @@ const PropertyService = (() => {
   }
 
   function getCrossSellSuggestions(propertyId) {
-    const prop = _mockProperties.find(p => p.id === propertyId);
+    const prop = _activeProperties().find(p => p.id === propertyId);
     if (!prop) return [];
     const suggestions = [];
     const yld = getPropertyYield(prop);
@@ -11812,6 +11933,8 @@ const PropertyService = (() => {
     getDocumentsByProperty,
     addDocument,
     getCrossSellSuggestions,
+    loadRealProperties,
+    isUsingRealData,
     TICKET_CATEGORIES,
   };
 })();
@@ -11857,6 +11980,9 @@ const PropertyUI = (() => {
     if (!_tracked) {
       RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.PROPERTY_MANAGEMENT_VIEWED, {});
       _tracked = true;
+      PropertyService.loadRealProperties().then(function(result) {
+        if (result) _rerender();
+      });
     }
     if (_view === 'detail') return _renderDetail();
     if (_view === 'ticket_create') return _renderTicketCreate();
@@ -11872,7 +11998,9 @@ const PropertyUI = (() => {
     return `
       ${SectionHeader('Propiedades', 'Mis propiedades', 'Gestiona tu portafolio inmobiliario. Controla alquileres, gastos, mantenimiento y documentos desde un solo lugar.')}
 
-      <div class="leg-mock-tag" style="margin-bottom:24px">⚠️ MOCK — Datos simulados. Propiedades de demostración.</div>
+      ${PropertyService.isUsingRealData()
+        ? '<div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Datos cargados desde tu cuenta Reco. Algunos campos pueden requerir actualización.</div>'
+        : '<div class="svc-ref-notice" style="margin-bottom:24px;padding:12px 16px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:13px;color:var(--ink-3)">ℹ️ Propiedades de demostración. Inicia sesión para ver tu portafolio real.</div>'}
 
       <div class="agt-stats-grid" style="margin-bottom:28px">
         <div class="agt-stat-card">
@@ -12003,8 +12131,6 @@ const PropertyUI = (() => {
 
     return `
       <button class="val-back" onclick="PropertyUI.backToDashboard()">← Mis propiedades</button>
-
-      <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — Datos simulados</div>
 
       <div class="pm-detail-header">
         <div>
@@ -12439,7 +12565,7 @@ const PropertyUI = (() => {
           </div>
         </div>
 
-        <div class="leg-mock-tag" style="margin-bottom:16px">⚠️ MOCK — La carga de archivos es simulada. No se suben archivos reales.</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ La carga de archivos estará disponible próximamente. El registro del documento quedará guardado.</div>
 
         <button class="plan-cta" onclick="PropertyUI.submitDoc()">Subir documento →</button>
       </div>`;

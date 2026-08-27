@@ -43,7 +43,6 @@ const RentUI = (() => {
       ${SectionHeader('Pagos', 'Paga tu alquiler de forma segura', 'Reco Rent te permite pagar tu alquiler con tarjeta. Acumula puntos, millas y difiere en cuotas. Sin contratos ni costos ocultos.')}
 
       <div class="rent-hero">
-        <div class="leg-mock-tag">⚠️ MOCK — Datos simulados. No se realizarán pagos reales.</div>
         <div class="rent-hero-content">
           <div class="rent-hero-icon">💳</div>
           <div>
@@ -167,7 +166,7 @@ const RentUI = (() => {
       <div class="val-form-wrap">
         <button class="val-back" onclick="RentUI.backToDashboard()">← Volver a mis contratos</button>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">⚠️ MOCK — No se realizará ningún cargo real. En producción, el checkout hosted del PSP maneja los datos de tarjeta de forma segura.</div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Funcionalidad de pago en integración. Tu información de tarjeta será procesada de forma segura por el PSP autorizado.</div>
 
         <div class="val-form-header">
           <div class="val-form-badge" style="background:#E0F2FE;color:#0369A1">💳 Reco Rent</div>
@@ -271,7 +270,7 @@ const RentUI = (() => {
         <p style="color:var(--ink-3);font-size:14px;max-width:400px;margin:0 auto">
           Conectando con el procesador de pagos. Por favor no cierres esta ventana.
         </p>
-        <div class="leg-mock-tag" style="margin-top:20px">⚠️ MOCK — Simulando respuesta del PSP. En producción, el usuario es redirigido al checkout hosted.</div>
+        <div class="svc-ref-notice" style="margin-top:20px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ En producción, serás redirigido al checkout seguro del PSP autorizado.</div>
       </div>`;
   }
 

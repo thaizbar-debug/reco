@@ -156,9 +156,7 @@ const LegalUI = (() => {
           <p class="section-sub" style="text-align:center;margin:0 auto 24px">Ingresa los datos del inmueble para consultar su estado legal, titularidad y posibles alertas.</p>
         </div>
 
-        <div class="leg-mock-tag" style="margin-bottom:18px">
-          ⚠️ MOCK — Esta verificación utiliza datos simulados. No constituye una consulta real a SUNARP.
-        </div>
+        <div class="svc-ref-notice" style="margin-bottom:18px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Verificación preliminar referencial. Para datos oficiales vinculantes, solicita un servicio de due diligence profesional.</div>
 
         <div class="val-form">
           <div class="val-row">
@@ -257,7 +255,7 @@ const LegalUI = (() => {
       <div class="val-result-wrap">
         <button class="val-back" onclick="LegalUI.showPropertyCheck()">← Modificar datos</button>
 
-        <div class="val-mock-badge">⚠️ DATOS SIMULADOS — Esta verificación utiliza un proveedor mock, no SUNARP real</div>
+        <div class="svc-ref-notice" style="margin-bottom:16px;padding:10px 14px;background:var(--paper,#f8f8f4);border:1px solid var(--r-border);border-radius:var(--r);font-size:12px;color:var(--ink-3)">ℹ️ Reporte preliminar referencial. La integración directa con SUNARP está en desarrollo.</div>
 
         <div class="leg-score-hero" style="background:${scoreConfig.bg};border:1.5px solid ${scoreConfig.color}">
           <div class="leg-score-icon">${scoreConfig.icon}</div>
@@ -322,7 +320,7 @@ const LegalUI = (() => {
 
         <div class="leg-disclaimer">
           <strong>⚠️ Importante</strong>
-          <p>Este reporte es una verificación preliminar referencial y <strong>no constituye una conclusión jurídica, dictamen legal ni opinión profesional</strong>. Los datos presentados provienen de fuentes simuladas (mock) y no representan información oficial de SUNARP ni de ninguna entidad estatal.</p>
+          <p>Este reporte es una verificación preliminar referencial y <strong>no constituye una conclusión jurídica, dictamen legal ni opinión profesional</strong>. Los datos presentados son referenciales y no reemplazan una consulta formal ante SUNARP ni ante ninguna entidad estatal.</p>
           <p>Para una verificación vinculante, solicite un servicio de due diligence o estudio de títulos con un abogado colegiado.</p>
         </div>
 

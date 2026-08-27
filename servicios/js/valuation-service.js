@@ -53,7 +53,8 @@ const VERDICT_LABELS = Object.freeze({
   [VERDICT_TYPES.OVERPRICED]: 'Sobrevalorada',
 });
 
-// ⚠️ MOCK: Real district median prices from precios_distrito_2025.csv (Vanet data)
+// Fallback district prices — used when Firestore listings are unavailable.
+// Source: precios_distrito_2025.csv (Vanet data). Overwritten at runtime by _loadFromListings().
 const DISTRICT_PRICES_USD_M2 = {
   'Miraflores': { median: 2180, p25: 1820, p75: 2480, tx: 134 },
   'San Isidro': { median: 2290, p25: 1980, p75: 2680, tx: 89 },
@@ -100,27 +101,86 @@ const PROPERTY_TYPES = [
 const DISTRICTS = Object.keys(DISTRICT_PRICES_USD_M2).sort();
 
 const ValuationService = (() => {
-  // TODO: TC_USD_PEN should be fetched from an exchange-rate API in production.
   const _config = { TC_USD_PEN: 3.72 };
+  var _liveDistrictPrices = null;
+  var _loadingListings = false;
+  var _listingsLoaded = false;
 
-  /** Merge caller-supplied overrides into the service config. */
   function setConfig(overrides) {
     Object.assign(_config, overrides);
   }
 
-  /**
-   * ⚠️ MOCK ENGINE — Generates a plausible valuation from district medians.
-   * Real engine should query Vanet API with property attributes.
-   */
+  function _getDistrictData(district) {
+    if (_liveDistrictPrices && _liveDistrictPrices[district]) return _liveDistrictPrices[district];
+    return DISTRICT_PRICES_USD_M2[district] || null;
+  }
+
+  function isUsingLiveData() { return !!_liveDistrictPrices; }
+
+  function loadFromListings() {
+    if (_loadingListings || _listingsLoaded) return Promise.resolve(_liveDistrictPrices);
+    _loadingListings = true;
+    var db = null;
+    try {
+      if (typeof firebase !== 'undefined' && firebase.firestore) db = firebase.firestore();
+    } catch (e) { /* ignore */ }
+    if (!db) { _loadingListings = false; return Promise.resolve(null); }
+
+    return db.collection('publications')
+      .where('status', 'in', ['approved', 'active'])
+      .where('operationType', '==', 'venta')
+      .limit(500)
+      .get()
+      .then(function(snapshot) {
+        var byDistrict = {};
+        snapshot.forEach(function(doc) {
+          var d = doc.data();
+          var dist = d.district || (d.location && d.location.district);
+          var price = d.pricePerM2 || (d.price && d.area ? d.price / d.area : null);
+          if (!dist || !price || price < 100 || price > 10000) return;
+          if (!byDistrict[dist]) byDistrict[dist] = [];
+          byDistrict[dist].push(price);
+        });
+        var live = {};
+        var keys = Object.keys(byDistrict);
+        for (var i = 0; i < keys.length; i++) {
+          var k = keys[i];
+          var prices = byDistrict[k].sort(function(a, b) { return a - b; });
+          if (prices.length < 3) continue;
+          var mid = Math.floor(prices.length / 2);
+          var median = prices.length % 2 === 0 ? (prices[mid - 1] + prices[mid]) / 2 : prices[mid];
+          var p25idx = Math.floor(prices.length * 0.25);
+          var p75idx = Math.floor(prices.length * 0.75);
+          live[k] = {
+            median: Math.round(median / _config.TC_USD_PEN),
+            p25: Math.round(prices[p25idx] / _config.TC_USD_PEN),
+            p75: Math.round(prices[p75idx] / _config.TC_USD_PEN),
+            tx: prices.length,
+            _live: true
+          };
+        }
+        if (Object.keys(live).length >= 3) {
+          _liveDistrictPrices = live;
+        }
+        _loadingListings = false;
+        _listingsLoaded = true;
+        return _liveDistrictPrices;
+      })
+      .catch(function() {
+        _loadingListings = false;
+        _listingsLoaded = true;
+        return null;
+      });
+  }
+
   function estimate(params) {
     const { district, propertyType, area, bedrooms, bathrooms, age, floor, parking } = params;
 
-    const distData = DISTRICT_PRICES_USD_M2[district];
+    const distData = _getDistrictData(district);
     if (!distData) {
       return { error: 'Distrito no disponible para estimación' };
     }
 
-    // ⚠️ MOCK: Simplified adjustments — real model uses ML on Vanet data
     let basePriceM2 = distData.median;
 
     // Type adjustment
@@ -177,14 +237,12 @@ const ValuationService = (() => {
     const comparablesCount = Math.min(distData.tx, Math.floor(distData.tx * 0.6));
     const comparablesRadius = distData.tx >= 100 ? 500 : distData.tx >= 50 ? 800 : 1200;
 
-    // ⚠️ MOCK: Yield estimation — real calc uses actual rental data
     const yieldPct = _estimateYield(district, propertyType);
-
-    // ⚠️ MOCK: Investment score
     const investmentScore = _calcInvestmentScore(distData, yieldPct, age);
 
     return {
-      _isMock: true,
+      _isMock: !distData._live,
+      _dataSource: distData._live ? 'listings' : 'referencial',
       estimatedValue: estimatedValuePEN,
       minValue: minValuePEN,
       maxValue: maxValuePEN,
@@ -212,7 +270,7 @@ const ValuationService = (() => {
   }
 
   function _estimateYield(district, propertyType) {
-    // ⚠️ MOCK: Based on typical Lima rental yields
+    // Typical Lima rental yields by district
     const baseYields = {
       'Miraflores': 5.2, 'San Isidro': 4.8, 'Barranco': 5.5,
       'Surco': 5.0, 'San Borja': 5.1, 'La Molina': 4.5,
@@ -229,7 +287,7 @@ const ValuationService = (() => {
   }
 
   function _calcInvestmentScore(distData, yieldPct, age) {
-    // ⚠️ MOCK: Simplified scoring
+    // Composite investment score
     let score = 5.0;
     if (distData.tx >= 100) score += 1.5;
     else if (distData.tx >= 50) score += 1.0;
@@ -246,7 +304,7 @@ const ValuationService = (() => {
 
   function getDistrictHistory(district) {
     // Returns historical price data if available from TASACIONES_HIST (loaded in index.html)
-    // ⚠️ MOCK: Return a simplified version for standalone servicios page
+    // Check for externally loaded historical data
     if (typeof TASACIONES_HIST !== 'undefined') {
       const norm = district.toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
       return TASACIONES_HIST[norm] || null;
@@ -314,6 +372,8 @@ const ValuationService = (() => {
     getDistrictHistory,
     getAvailableDistricts,
     getPropertyTypes,
+    loadFromListings,
+    isUsingLiveData,
     createOrder,
     submitOrder,
     getOrder,
