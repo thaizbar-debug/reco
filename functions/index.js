@@ -807,3 +807,94 @@ exports.setAdminClaim = onCall(
     return { targetUid: targetUser.uid, admin };
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grantKeys — admin-only callable that adds keys to a user's balance.
+//
+// Client contract:
+//   const fn = firebase.app().functions('southamerica-east1')
+//     .httpsCallable('grantKeys');
+//   const { data } = await fn({ email: 'user@example.com', qty: 50 });
+//   // data = { targetUid, email, added, newBalance }
+//
+// Errors (HttpsError):
+//   unauthenticated       — no auth context / AppCheck failed
+//   failed-precondition   — email not verified
+//   permission-denied     — caller is not an admin
+//   invalid-argument      — missing/malformed email or qty
+//   not-found             — no user account with that email
+// ─────────────────────────────────────────────────────────────────────────────
+exports.grantKeys = onCall(
+  {
+    region: REGION,
+    maxInstances: 5,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'grantKeys');
+    const caller = _requireAdminCaller(request);
+
+    const targetEmailRaw = request.data && request.data.email;
+    if (!targetEmailRaw || typeof targetEmailRaw !== 'string' || !/.+@.+\..+/.test(targetEmailRaw)) {
+      throw new HttpsError('invalid-argument', 'email requerido.');
+    }
+    const targetEmail = targetEmailRaw.trim().toLowerCase();
+
+    const qty = request.data && request.data.qty;
+    if (typeof qty !== 'number' || !Number.isInteger(qty) || qty < 1 || qty > 10000) {
+      throw new HttpsError('invalid-argument', 'qty requerido (entero entre 1 y 10000).');
+    }
+
+    let targetUser;
+    try {
+      targetUser = await getAuth().getUserByEmail(targetEmail);
+    } catch (e) {
+      throw new HttpsError('not-found', 'No hay una cuenta con ese email.');
+    }
+
+    const userRef = db.collection('users').doc(targetUser.uid);
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      const data = snap.exists ? snap.data() : {};
+      const currentKeys = Number(data.keysLeft) || 0;
+      const newBalance = currentKeys + qty;
+
+      const historyEntry = {
+        type: 'grant',
+        qty,
+        grantedBy: caller.email,
+        date: new Date().toISOString(),
+      };
+      const nextHistory = [historyEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
+
+      tx.set(userRef, {
+        keysLeft: newBalance,
+        keyHistory: nextHistory,
+      }, { merge: true });
+
+      return { newBalance };
+    });
+
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email || null,
+        action: 'keys.grant',
+        targetType: 'user',
+        targetId: targetUser.uid,
+        extras: { targetEmail, qty, newBalance: result.newBalance },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[grantKeys] audit write failed', { err: e && e.message });
+    }
+
+    return {
+      targetUid: targetUser.uid,
+      email: targetEmail,
+      added: qty,
+      newBalance: result.newBalance,
+    };
+  }
+);
