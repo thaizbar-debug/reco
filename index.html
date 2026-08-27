@@ -7306,7 +7306,9 @@ function _clearUserCache(){
   localStorage.removeItem('reco_key_hist');
   localStorage.removeItem('reco_my_pubs');
   S.keysLeft = 0;
+  S.unlockedIds = new Set();
   if(typeof updateKeyCount === 'function') updateKeyCount();
+  if(typeof applyFilters === 'function') applyFilters();
 }
 
 // ─────────────────────── FAVORITES & RECENTS (localStorage) ───────────────────────
