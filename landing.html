@@ -603,7 +603,7 @@ function slideImg(cardIdx, dir) {
 function scrollCarousel(gridId, dir) {
   const grid = document.getElementById(gridId);
   const cardWidth = grid.querySelector('.prop-card').offsetWidth + 16;
-  grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
+  try{grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });}catch(e){grid.scrollLeft+=dir*cardWidth;}
 }
 function initCarouselArrows(gridId, leftId, rightId) {
   const grid = document.getElementById(gridId);
@@ -651,7 +651,7 @@ function setTab(tab,el){
 function goTab(tab){
   const el=document.getElementById('tab-'+tab);
   if(el)setTab(tab,el);
-  document.querySelector('.hero').scrollIntoView({behavior:'smooth'});
+  try{document.querySelector('.hero').scrollIntoView({behavior:'smooth'});}catch(e){window.scrollTo(0,0);}
   setTimeout(()=>document.getElementById('heroQ').focus(),400);
 }
 

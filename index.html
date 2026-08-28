@@ -4921,7 +4921,7 @@ function openDetail(id){
     document.getElementById('detailOverlay').classList.add('open');
     document.getElementById('detailPanel').classList.add('open');
     const card=document.getElementById('card-'+id);
-    if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(card) try{card.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){card.scrollIntoView(false);}
     return;
   }
 
@@ -5048,7 +5048,7 @@ function openDetail(id){
 
   // scroll card into view
   const card=document.getElementById('card-'+id);
-  if(card) card.scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(card) try{card.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){card.scrollIntoView(false);}
 }
 
 function closeDetail(){
@@ -5169,7 +5169,7 @@ async function unlockAndOpen(id){
 function pinClick(id){
   openDetail(id);
   const card=document.getElementById('card-'+id);
-  if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); }
+  if(card){ try{card.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){card.scrollIntoView(true);} }
   if(leafletMap&&GEO[id]){ leafletMap.panTo(GEO[id]); }
 }
 
@@ -6529,7 +6529,7 @@ function toggleMobileMap(){
   function scrollCarousel(gridId, dir) {
     const grid = document.getElementById(gridId);
     const cardWidth = grid.querySelector('.prop-card').offsetWidth + 16;
-    grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
+    try{grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });}catch(e){grid.scrollLeft+=dir*cardWidth;}
   }
   function initCarouselArrows(gridId, leftId, rightId) {
     const grid = document.getElementById(gridId); const leftBtn = document.getElementById(leftId); const rightBtn = document.getElementById(rightId);
@@ -6571,7 +6571,7 @@ function toggleMobileMap(){
   function goTab(tab){
     const el=document.getElementById('tab-'+tab);
     if(el)setTab(tab,el);
-    document.querySelector('.hero').scrollIntoView({behavior:'smooth'});
+    try{document.querySelector('.hero').scrollIntoView({behavior:'smooth'});}catch(e){window.scrollTo(0,0);}
     setTimeout(()=>document.getElementById('heroQ').focus(),400);
   }
 
