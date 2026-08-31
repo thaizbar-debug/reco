@@ -325,6 +325,35 @@ input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:var(--txt-muted)}
 
+/* ── Data de Mercado ── */
+.dm-conf-high{background:var(--success-light);color:var(--success-dark)}
+.dm-conf-med{background:#dbeafe;color:#1e40af}
+.dm-conf-low{background:var(--warning-light);color:var(--warning-dark)}
+.dm-conf-none{background:var(--error-light);color:var(--error-dark)}
+.dm-sample-ok{background:var(--success-light);color:var(--success-dark)}
+.dm-sample-ind{background:var(--warning-light);color:var(--warning-dark)}
+.dm-sample-low{background:var(--error-light);color:var(--error-dark)}
+.dm-trust{background:var(--bg);border-radius:var(--r);padding:14px 18px;margin-top:20px;font-size:.72rem;color:var(--txt-muted);border:1px solid var(--border)}
+.dm-trust strong{color:var(--txt);font-weight:700}
+.dm-gauge{position:relative;height:28px;border-radius:var(--r);overflow:visible;margin:20px 0 36px}
+.dm-gauge-bg{height:100%;border-radius:var(--r);background:linear-gradient(90deg,#dbeafe,var(--success-light) 25%,var(--success-light) 75%,#fef3c7)}
+.dm-gauge-mk{position:absolute;top:-4px;width:3px;height:36px;background:var(--txt);border-radius:2px;z-index:2}
+.dm-gauge-md{position:absolute;top:0;width:2px;height:28px;background:var(--txt-muted);opacity:.5}
+.dm-gauge-lbl{position:absolute;top:34px;font-size:.68rem;font-weight:700;white-space:nowrap}
+.dm-cross{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
+.dm-src{padding:14px;background:var(--bg);border-radius:var(--r);text-align:center;border:1px solid var(--border)}
+.dm-src .src-lbl{font-size:.68rem;color:var(--txt-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.dm-src .src-val{font-size:1.3rem;font-weight:800}
+.dm-src .src-sub{font-size:.68rem;color:var(--txt-muted);margin-top:4px}
+.dm-crumb{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--txt-muted);margin-bottom:16px}
+.dm-crumb a{cursor:pointer;color:var(--primary);font-weight:600}
+.dm-crumb .sep{color:var(--border)}
+.dm-prop-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;font-size:.82rem}
+.dm-prop-row:hover{background:var(--bg-hover)}
+.dm-prop-row:last-child{border-bottom:none}
+.dm-empty{text-align:center;padding:40px 20px;color:var(--txt-muted)}
+.dm-empty p{font-size:.88rem;margin-top:8px}
+
 /* ── Responsive ── */
 @media(max-width:900px){
   .sidebar{position:fixed;left:calc(-1*var(--sidebar-w));z-index:50;height:100%;transition:left .25s}
@@ -2217,6 +2246,525 @@ async function revokeAdminFn(uid,email){
 // ═══════════════════════════════════════════════════════════════
 // MARKET INTELLIGENCE
 // ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// DATA DE MERCADO — Sprint 1 Core (I-01, I-02, I-06)
+// Normalization · Governance · Calculation · UI
+// ═══════════════════════════════════════════════════════════════
+let _dmView='panorama',_dmDist='',_dmTipo='',_dmPropId='';
+
+// ── District Normalization Layer ──
+const _DM_BCRP_MAP={'Surco':'Santiago de Surco','Magdalena':'Magdalena del Mar'};
+const _DM_ACCENT_MAP={'JESUS MARIA':'Jesús María','JOSE LUIS BUSTAMANTE Y RIVERO':'José Luis Bustamante y Rivero'};
+const _DM_LOWER=['de','del','la','las','los','y','el'];
+function _dmTC(s){return s.split(' ').map((w,i)=>{const l=w.toLowerCase();return(i>0&&_DM_LOWER.indexOf(l)>=0)?l:l.charAt(0).toUpperCase()+l.slice(1);}).join(' ');}
+function _dmND(n,src){if(!n)return'';const t=n.trim();if(src==='bcrp')return _DM_BCRP_MAP[t]||t;if(src==='tas')return _DM_ACCENT_MAP[t]||_dmTC(t);return t;}
+
+// ── Governance: R-OUT-01 IQR Outlier Removal ──
+function _dmClean(a){if(a.length<10)return[...a];const s=[...a].sort((x,y)=>x-y),q1=s[Math.floor(s.length*.25)],q3=s[Math.floor(s.length*.75)],iqr=q3-q1;return a.filter(v=>v>=(q1-1.5*iqr)&&v<=(q3+1.5*iqr));}
+
+// ── Confidence Score (5 dimensions) ──
+function _dmConf(n,nSrc,geo,fresh,qual){
+  const sv=n>=100?100:n>=50?80:n>=30?60:n>=10?30:0;
+  const cv=nSrc>=3?100:nSrc===2?70:nSrc===1?40:0;
+  const gv=geo==='distrito'?100:geo==='provincia'?60:30;
+  const tv=fresh>=80?100:fresh>=50?60:30;
+  const qv=qual>=80?100:qual>=50?60:30;
+  return Math.round(sv*.30+cv*.20+gv*.20+tv*.15+qv*.15);
+}
+function _dmCBadge(sc){
+  if(sc>=80)return'<span class="badge dm-conf-high">Confianza Alta ('+sc+')</span>';
+  if(sc>=60)return'<span class="badge dm-conf-med">Confianza Media ('+sc+')</span>';
+  if(sc>=40)return'<span class="badge dm-conf-low">Confianza Baja ('+sc+')</span>';
+  return'<span class="badge dm-conf-none">Datos Insuficientes ('+sc+')</span>';
+}
+function _dmSBadge(n){
+  if(n>=30)return'<span class="badge dm-sample-ok">n='+fmtNum(n)+' · Confiable</span>';
+  if(n>=10)return'<span class="badge dm-sample-ind">n='+fmtNum(n)+' · Indicativo</span>';
+  return'<span class="badge dm-sample-low">n='+fmtNum(n)+' · Insuficiente</span>';
+}
+function _dmTrust(conf,nSrc,n,outliers,scope){
+  const dt=new Date().toLocaleDateString('es-PE',{month:'short',year:'numeric'});
+  return'<div class="dm-trust"><strong>Data Trust</strong> · '+_dmCBadge(conf)+
+    '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:16px"><span>Fuentes: '+nSrc+'</span><span>Muestra: '+fmtNum(n)+'</span>'+
+    (outliers>0?'<span>Outliers removidos: '+fmtNum(outliers)+' (IQR)</span>':'')+
+    '<span>Ámbito: '+esc(scope)+'</span><span>Actualización: '+dt+'</span></div>'+
+    '<div style="margin-top:6px;font-style:italic">Los valores de oferta reflejan precios de publicación (asking), no precios de transacción. Medianas y percentiles excluyen outliers según política IQR (R-OUT-01). No se mezclan poblaciones oferta/transacción (R-COMP-01).</div></div>';
+}
+function _dmNav(view,dist,tipo,propId){
+  _dmView=view;if(dist!==undefined)_dmDist=dist;if(tipo!==undefined)_dmTipo=tipo;if(propId!==undefined)_dmPropId=propId;
+  renderMarket(document.getElementById('mainContent'));
+}
+
+// ── I-01: Panorama de Mercado ──
+function _dmRenderPanorama(){
+  const vLima=_pubs.filter(p=>p.op==='Venta'&&p.department==='Lima'&&p.cur==='$'&&p.price>0);
+  const vArea=vLima.filter(p=>p.area>0);
+  const rawPm2=vArea.map(p=>p.price/p.area);
+  const pm2=_dmClean(rawPm2);
+  const med=_mktMedian(pm2);
+  const totalAct=_pubs.filter(p=>p.op==='Venta'||p.op==='Alquiler').length;
+  const nV=_pubs.filter(p=>p.op==='Venta').length;
+  const nA=_pubs.filter(p=>p.op==='Alquiler').length;
+
+  const hist=_marketData.histMarket?.historicos||[];
+  const hPm2Raw=hist.filter(h=>h.precio_m2_usd>0).map(h=>h.precio_m2_usd);
+  const hPm2=_dmClean(hPm2Raw);
+  const medH=_mktMedian(hPm2);
+
+  const bcrpA=_marketData.bcrp?.data_anual||{};
+  const bYrs=Object.keys(bcrpA).sort();
+  const latB=bYrs.length?bcrpA[bYrs[bYrs.length-1]]:null;
+
+  const nSrc=1+(hPm2.length>=10?1:0)+(_marketData.bcrp?1:0);
+  const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
+  const conf=_dmConf(pm2.length,nSrc,'provincia',90,qPct);
+
+  // District ranking
+  const byDist={};
+  vArea.forEach(p=>{
+    const d=p.district||'';if(!d)return;
+    if(!byDist[d])byDist[d]={pm2:[],n:0,types:{}};
+    byDist[d].pm2.push(p.price/p.area);byDist[d].n++;
+    const t=p.type||'Otro';byDist[d].types[t]=(byDist[d].types[t]||0)+1;
+  });
+  const dRank=Object.entries(byDist).map(([name,d])=>{
+    const c=_dmClean(d.pm2);
+    return{name,med:_mktMedian(c),n:c.length,count:d.n,
+      p25:c.length>=4?_mktPct(c,.25):0,p75:c.length>=4?_mktPct(c,.75):0};
+  }).filter(d=>d.n>=3).sort((a,b)=>b.count-a.count);
+
+  // Type distribution
+  const byType={};
+  vLima.forEach(p=>{const t=p.type||'Otro';byType[t]=(byType[t]||0)+1;});
+  const typeEnt=Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+
+  // Cross-source comparison
+  let crossHtml='';
+  if(med>0){
+    crossHtml='<div class="dm-cross">';
+    crossHtml+='<div class="dm-src"><div class="src-lbl">Oferta Reco</div><div class="src-val" style="color:var(--blue)">$'+fmtNum(Math.round(med))+'</div><div class="src-sub">'+fmtNum(pm2.length)+' registros · Asking</div></div>';
+    if(hPm2.length>=10)crossHtml+='<div class="dm-src"><div class="src-lbl">Transacciones</div><div class="src-val" style="color:var(--amber)">$'+fmtNum(Math.round(medH))+'</div><div class="src-sub">'+fmtNum(hPm2.length)+' registros · Cerradas</div></div>';
+    if(latB)crossHtml+='<div class="dm-src"><div class="src-lbl">BCRP Oficial</div><div class="src-val" style="color:var(--green)">$'+fmtNum(latB.precio_promedio_usd_m2||0)+'</div><div class="src-sub">'+bYrs[bYrs.length-1].replace('_est',' (est.)')+' · Promedio</div></div>';
+    crossHtml+='</div>';
+  }
+
+  // Percentiles
+  const pctHtml=pm2.length>=10?'<div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.78rem;margin-bottom:8px">'+
+    ['P10',_mktPct(pm2,.1),'P25',_mktPct(pm2,.25),'Mediana',med,'P75',_mktPct(pm2,.75),'P90',_mktPct(pm2,.9)]
+    .reduce((acc,v,i,a)=>{if(i%2===0){const lbl=v,val=a[i+1],isMed=lbl==='Mediana';
+      acc+='<div style="flex:1;min-width:70px;padding:8px;background:'+(isMed?'var(--primary-light)':'var(--bg)')+';border-radius:var(--r);text-align:center"><div style="color:'+(isMed?'var(--blue)':'var(--txt-muted)')+(isMed?';font-weight:600':'')+'">'
+        +lbl+'</div><div style="font-weight:700'+(isMed?';color:var(--blue)':'')+'">$'+fmtNum(Math.round(val))+'</div></div>';}return acc;},'')+'</div>':'';
+
+  return`
+    <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:20px">
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:18px 12px">
+        <div style="font-size:1.6rem;font-weight:800;color:var(--blue)">$${fmtNum(Math.round(med))}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600;margin:4px 0">Mediana USD/m²</div>
+        <div style="font-size:.68rem;color:var(--txt-muted)">Oferta Venta · Lima</div>
+        <div style="margin-top:6px">${_dmSBadge(pm2.length)}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:18px 12px">
+        <div style="font-size:1.6rem;font-weight:800;color:var(--green)">${fmtNum(totalAct)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600;margin:4px 0">Propiedades Activas</div>
+        <div style="font-size:.68rem;color:var(--txt-muted)">${fmtNum(nV)} venta · ${fmtNum(nA)} alquiler</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:18px 12px">
+        <div style="font-size:1.6rem;font-weight:800;color:var(--amber)">${fmtNum(hist.length)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600;margin:4px 0">Transacciones Hist.</div>
+        <div style="font-size:.68rem;color:var(--txt-muted)">${fmtNum(hPm2.length)} con precio/m²</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:18px 12px">
+        <div style="font-size:1.6rem;font-weight:800;color:var(--purple)">${hPm2.length>=10?'$'+fmtNum(Math.round(medH)):'—'}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600;margin:4px 0">Mediana Hist. USD/m²</div>
+        <div style="font-size:.68rem;color:var(--txt-muted)">Transacciones cerradas</div>
+        ${hPm2.length>=10?'<div style="margin-top:6px">'+_dmSBadge(hPm2.length)+'</div>':''}
+      </div></div>
+      ${latB?`<div class="section-card"><div class="card-body" style="text-align:center;padding:18px 12px">
+        <div style="font-size:1.6rem;font-weight:800;color:var(--blue)">$${fmtNum(latB.precio_promedio_usd_m2||0)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600;margin:4px 0">BCRP Depto Lima</div>
+        <div style="font-size:.68rem;color:var(--txt-muted)">${bYrs[bYrs.length-1].replace('_est',' (est.)')} · Fuente oficial</div>
+      </div></div>`:''}
+    </div>
+
+    ${crossHtml?`<div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>${IC.chart} Comparativa Multi-fuente (R-CROSS-01)</h3><span style="font-size:.68rem;color:var(--txt-muted)">Mediana USD/m² por fuente · Lima</span></div>
+      <div class="card-body">${crossHtml}
+        <div style="font-size:.68rem;color:var(--txt-muted);margin-top:8px;font-style:italic">Cada fuente refleja una población diferente. Oferta = precios publicación. Transacciones = precios cerrados. BCRP = promedio departamental oficial.</div>
+      </div>
+    </div>`:''}
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Distribución Precio/m² — Oferta Venta Lima</h3><span style="font-size:.68rem;color:var(--txt-muted)">Percentiles (excl. outliers)</span></div>
+      <div class="card-body">${pctHtml||'<p style="color:var(--txt-muted);font-size:.82rem">Muestra insuficiente para distribución</p>'}</div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px">
+      <div class="section-card">
+        <div class="card-header"><h3>${IC.chart} Por Tipo de Propiedad</h3></div>
+        <div class="card-body">${typeEnt.length?renderPieChart(typeEnt,120):'Sin datos'}</div>
+      </div>
+      <div class="section-card">
+        <div class="card-header"><h3>${IC.trendUp} Ranking Distrital</h3><span style="font-size:.68rem;color:var(--txt-muted)">${fmtNum(dRank.length)} distritos · ≥3 registros</span></div>
+        <div class="card-body no-pad" style="overflow-x:auto;max-height:420px">
+          <table class="data-table"><thead><tr><th>#</th><th>Distrito</th><th>n</th><th>Mediana</th><th>P25–P75</th><th>Muestra</th><th></th></tr></thead><tbody>
+            ${dRank.slice(0,25).map((d,i)=>`<tr style="cursor:pointer" onclick="_dmNav('distrito','${esc(d.name).replace(/'/g,"\\'")}')">
+              <td>${i+1}</td>
+              <td><strong>${esc(d.name)}</strong></td>
+              <td>${fmtNum(d.count)}</td>
+              <td style="font-weight:700;color:var(--blue)">$${fmtNum(Math.round(d.med))}</td>
+              <td style="font-size:.72rem">${d.p25?'$'+fmtNum(Math.round(d.p25))+' — $'+fmtNum(Math.round(d.p75)):'—'}</td>
+              <td>${_dmSBadge(d.n)}</td>
+              <td style="color:var(--primary);font-size:.72rem">Ver →</td>
+            </tr>`).join('')}
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+
+    ${_dmTrust(conf,nSrc,pm2.length,rawPm2.length-pm2.length,'Lima Metropolitana — Oferta Venta')}`;
+}
+
+// ── I-02: District Pricing Benchmark ──
+function _dmRenderDistrito(){
+  // Build district list
+  const allDists=[...new Set(_pubs.filter(p=>p.op==='Venta'&&p.department==='Lima'&&p.cur==='$'&&p.price>0&&p.area>0&&p.district).map(p=>p.district))].sort();
+  if(!allDists.length)return'<div class="dm-empty"><p>No hay datos de oferta para calcular benchmarks distritales.</p></div>';
+
+  const distSel=_dmDist||allDists[0];
+  const tipos=[...new Set(_pubs.filter(p=>p.op==='Venta'&&p.district===distSel&&p.cur==='$'&&p.price>0&&p.area>0).map(p=>p.type||'Otro'))].sort();
+
+  // Selector bar
+  const selBar=`<div class="filter-bar" style="margin-bottom:20px">
+    <select onchange="_dmNav('distrito',this.value,'','')" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt)">
+      ${allDists.map(d=>`<option value="${esc(d)}"${d===distSel?' selected':''}>${esc(d)}</option>`).join('')}
+    </select>
+    ${tipos.length>1?`<select onchange="_dmNav('distrito',undefined,this.value,'')" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt)">
+      <option value="">Todos los tipos</option>
+      ${tipos.map(t=>`<option value="${esc(t)}"${t===_dmTipo?' selected':''}>${esc(t)}</option>`).join('')}
+    </select>`:''}
+    ${_dmTipo?'<button class="btn btn-outline btn-sm" onclick="_dmNav(\'distrito\',undefined,\'\',\'\')">Limpiar</button>':''}
+  </div>`;
+
+  // Calculate benchmark
+  let vDist=_pubs.filter(p=>p.op==='Venta'&&p.district===distSel&&p.cur==='$'&&p.price>0&&p.area>0);
+  if(_dmTipo)vDist=vDist.filter(p=>p.type===_dmTipo);
+  const rawPm2=vDist.map(p=>p.price/p.area);
+  const pm2=_dmClean(rawPm2);
+  const n=pm2.length;
+
+  // Breadcrumb
+  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><span>'+esc(distSel)+(_dmTipo?' · '+esc(_dmTipo):'')+'</span></div>';
+
+  // Insufficient data
+  if(n<10){
+    const rawN=rawPm2.length;
+    return crumb+selBar+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;margin-bottom:14px;opacity:.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <p><strong>Datos insuficientes</strong></p>
+      <p>Se requieren al menos 10 registros para generar un benchmark confiable${_dmTipo?' para '+esc(_dmTipo):''} en ${esc(distSel)}.</p>
+      <p style="font-size:.78rem;margin-top:8px">${_dmSBadge(rawN)}</p>
+      ${_dmTipo?'<p style="margin-top:12px"><button class="btn btn-outline btn-sm" onclick="_dmNav(\'distrito\',undefined,\'\')">Ver todos los tipos</button></p>':''}
+    </div></div></div>`;
+  }
+
+  const med=_mktMedian(pm2);
+  const p10=_mktPct(pm2,.1),p25=_mktPct(pm2,.25),p75=_mktPct(pm2,.75),p90=_mktPct(pm2,.9);
+  const iqr=p75-p25;
+  const disp=med>0?(iqr/med*100):0;
+  const dispFlag=disp>40;
+
+  // By-type breakdown (unfiltered)
+  const byType={};
+  _pubs.filter(p=>p.op==='Venta'&&p.district===distSel&&p.cur==='$'&&p.price>0&&p.area>0).forEach(p=>{
+    const t=p.type||'Otro';
+    if(!byType[t])byType[t]={pm2:[],n:0};
+    byType[t].pm2.push(p.price/p.area);byType[t].n++;
+  });
+  const typeRows=Object.entries(byType).map(([t,d])=>{
+    const c=_dmClean(d.pm2);
+    return{type:t,med:c.length>=3?_mktMedian(c):null,n:c.length,rawN:d.n};
+  }).sort((a,b)=>b.rawN-a.rawN);
+
+  // Cross-reference sources (R-CROSS-01: label each clearly)
+  const crossParts=[];
+  crossParts.push({label:'Oferta Reco',val:med,n:n,sub:'Asking · '+(_dmTipo||'Todos'),color:'var(--blue)'});
+
+  const histAll=_marketData.histMarket?.historicos||[];
+  const histD=histAll.filter(h=>_dmND(h.distrito,'hist')===distSel&&h.precio_m2_usd>0);
+  if(histD.length>=10){
+    const hc=_dmClean(histD.map(h=>h.precio_m2_usd));
+    crossParts.push({label:'Transacciones',val:_mktMedian(hc),n:hc.length,sub:'Cerradas',color:'var(--amber)'});
+  }
+
+  if(_marketData.bcrp?.por_distrito_2025){
+    for(const[bk,bv]of Object.entries(_marketData.bcrp.por_distrito_2025)){
+      if(_dmND(bk,'bcrp')===distSel){
+        crossParts.push({label:'BCRP 2025',val:bv.mediana_usd_m2,n:null,sub:'Depto · Mediana',color:'var(--green)'});
+        break;
+      }
+    }
+  }
+
+  const tas=_marketData.tasFull||_marketData.tasaciones;
+  if(tas?.distritos){
+    for(const[tk,tv]of Object.entries(tas.distritos)){
+      if(_dmND(tk,'tas')===distSel){
+        const yrs=Object.keys(tv.años||{}).sort();
+        const lat=yrs.length?tv.años[yrs[yrs.length-1]]:null;
+        if(lat&&lat.mediana_usd_m2){
+          crossParts.push({label:'Tasación '+yrs[yrs.length-1],val:lat.mediana_usd_m2,n:lat.n||null,sub:'Valor referencial',color:'var(--purple)'});
+        }
+        break;
+      }
+    }
+  }
+
+  const nSrc=crossParts.length;
+  const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
+  const conf=_dmConf(n,nSrc,'distrito',90,qPct);
+
+  // Properties list for I-06 navigation
+  const props=_pubs.filter(p=>p.op==='Venta'&&p.district===distSel&&p.cur==='$'&&p.price>0&&p.area>0)
+    .map(p=>({id:p.id,address:p.address||p.desc||'Sin dirección',type:p.type||'Otro',price:p.price,area:p.area,ppm2:p.price/p.area,beds:p.beds||0}))
+    .sort((a,b)=>b.ppm2-a.ppm2);
+
+  return crumb+selBar+`
+    <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px">
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--blue)">$${fmtNum(Math.round(med))}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Mediana USD/m²</div>
+        <div style="margin-top:6px">${_dmSBadge(n)}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--green)">$${fmtNum(Math.round(p25))}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">P25</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--amber)">$${fmtNum(Math.round(p75))}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">P75</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:${dispFlag?'var(--red)':'var(--txt)'}">${disp.toFixed(0)}%</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Dispersión IQR</div>
+        ${dispFlag?'<div style="font-size:.68rem;color:var(--red);margin-top:4px">⚠ Alta dispersión</div>':''}
+      </div></div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Distribución Precio/m² — ${esc(distSel)}</h3><span style="font-size:.68rem;color:var(--txt-muted)">${_dmTipo?esc(_dmTipo)+' · ':''}Percentiles (excl. outliers)</span></div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;font-size:.78rem">
+          ${[['P10',p10],['P25',p25],['Mediana',med],['P75',p75],['P90',p90]].map(([lbl,v])=>{
+            const isM=lbl==='Mediana';
+            return'<div style="flex:1;min-width:70px;padding:8px;background:'+(isM?'var(--primary-light)':'var(--bg)')+';border-radius:var(--r);text-align:center"><div style="color:'+(isM?'var(--blue)':'var(--txt-muted)')+(isM?';font-weight:600':'')+'">'
+              +lbl+'</div><div style="font-weight:700'+(isM?';color:var(--blue)':'')+'">$'+fmtNum(Math.round(v))+'</div></div>';
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    ${crossParts.length>1?`<div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>${IC.chart} Comparativa Multi-fuente (R-CROSS-01)</h3><span style="font-size:.68rem;color:var(--txt-muted)">${esc(distSel)} · USD/m²</span></div>
+      <div class="card-body">
+        <div class="dm-cross">${crossParts.map(c=>'<div class="dm-src"><div class="src-lbl">'+esc(c.label)+'</div><div class="src-val" style="color:'+c.color+'">$'+fmtNum(Math.round(c.val))+'</div><div class="src-sub">'+esc(c.sub)+(c.n?' · n='+fmtNum(c.n):'')+'</div></div>').join('')}</div>
+        <div style="font-size:.68rem;color:var(--txt-muted);margin-top:8px;font-style:italic">Cada fuente refleja una población diferente. Las medianas no son directamente comparables entre fuentes (R-COMP-01).</div>
+      </div>
+    </div>`:''}
+
+    ${typeRows.length>1?`<div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Segmentación por Tipo</h3><span style="font-size:.68rem;color:var(--txt-muted)">${esc(distSel)}</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Tipo</th><th>Propiedades</th><th>Mediana USD/m²</th><th>Muestra</th></tr></thead><tbody>
+          ${typeRows.map(t=>`<tr${t.n>=3?' style="cursor:pointer" onclick="_dmNav(\'distrito\',undefined,\''+esc(t.type).replace(/'/g,"\\'")+'\')"':''}>
+            <td><strong>${esc(t.type)}</strong></td>
+            <td>${fmtNum(t.rawN)}</td>
+            <td style="font-weight:700">${t.med!==null?'$'+fmtNum(Math.round(t.med)):'<span style="color:var(--txt-muted)">n<3</span>'}</td>
+            <td>${_dmSBadge(t.n)}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      </div>
+    </div>`:''}
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Propiedades en ${esc(distSel)}</h3><span style="font-size:.68rem;color:var(--txt-muted)">${fmtNum(props.length)} propiedades · Seleccionar para ver posición</span></div>
+      <div class="card-body no-pad" style="max-height:400px;overflow-y:auto">
+        ${props.length?props.slice(0,30).map(p=>{
+          const inRange=p.ppm2>=p25&&p.ppm2<=p75;
+          const above=p.ppm2>p75;
+          const clr=inRange?'var(--green)':above?'var(--amber)':'var(--blue)';
+          return`<div class="dm-prop-row" onclick="_dmNav('posicion',undefined,undefined,'${esc(p.id).replace(/'/g,"\\'")}')">
+            <div style="flex:1;min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(truncate(p.address,50))}</div><div style="font-size:.72rem;color:var(--txt-muted)">${esc(p.type)} · ${p.beds?p.beds+' dorm · ':''}${fmtNum(Math.round(p.area))} m²</div></div>
+            <div style="text-align:right;min-width:100px"><div style="font-weight:700">$${fmtNum(p.price)}</div><div style="font-weight:700;color:${clr};font-size:.78rem">$${fmtNum(Math.round(p.ppm2))}/m²</div></div>
+            <div style="color:var(--primary);font-size:.72rem;flex-shrink:0">Posición →</div>
+          </div>`;
+        }).join(''):'<div class="dm-empty"><p>Sin propiedades en este distrito</p></div>'}
+        ${props.length>30?'<div style="padding:10px 14px;font-size:.72rem;color:var(--txt-muted);text-align:center">Mostrando 30 de '+fmtNum(props.length)+'</div>':''}
+      </div>
+    </div>
+
+    ${_dmTrust(conf,nSrc,n,rawPm2.length-pm2.length,distSel+(_dmTipo?' · '+_dmTipo:''))}`;
+}
+
+// ── I-06: Market Position ──
+function _dmRenderPosicion(){
+  if(!_dmDist){_dmView='distrito';return _dmRenderDistrito();}
+
+  const props=_pubs.filter(p=>p.op==='Venta'&&p.district===_dmDist&&p.cur==='$'&&p.price>0&&p.area>0)
+    .map(p=>({id:p.id,address:p.address||p.desc||'Sin dirección',type:p.type||'Otro',price:p.price,area:p.area,ppm2:p.price/p.area,beds:p.beds||0}))
+    .sort((a,b)=>a.ppm2-b.ppm2);
+  if(!props.length)return'<div class="dm-empty"><p>No hay propiedades en '+esc(_dmDist)+' para analizar posición.</p></div>';
+
+  const selId=_dmPropId||props[0].id;
+  const prop=props.find(p=>p.id===selId)||props[0];
+
+  // Build benchmark from district data
+  let vDist=_pubs.filter(p=>p.op==='Venta'&&p.district===_dmDist&&p.cur==='$'&&p.price>0&&p.area>0);
+  const sameType=vDist.filter(p=>p.type===prop.type);
+  const useType=sameType.length>=10;
+  const benchPop=useType?sameType:vDist;
+  const rawPm2=benchPop.map(p=>p.price/p.area);
+  const pm2=_dmClean(rawPm2);
+  const n=pm2.length;
+
+  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><a onclick="_dmNav(\'distrito\',\''+esc(_dmDist).replace(/'/g,"\\'")+'\')">'+esc(_dmDist)+'</a><span class="sep">›</span><span>Posición</span></div>';
+
+  const propSel=`<div class="filter-bar" style="margin-bottom:20px">
+    <select onchange="_dmNav('posicion',undefined,undefined,this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt);max-width:500px">
+      ${props.map(p=>`<option value="${esc(p.id)}"${p.id===selId?' selected':''}>${esc(truncate(p.address,40))} — $${fmtNum(Math.round(p.ppm2))}/m²</option>`).join('')}
+    </select>
+  </div>`;
+
+  if(n<10){
+    return crumb+propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+      <p><strong>Datos insuficientes</strong></p>
+      <p>Se requieren al menos 10 propiedades comparables para determinar posición de mercado en ${esc(_dmDist)}.</p>
+      <p style="margin-top:8px">${_dmSBadge(n)}</p>
+    </div></div></div>`;
+  }
+
+  const med=_mktMedian(pm2);
+  const p25=_mktPct(pm2,.25),p75=_mktPct(pm2,.75);
+  const p10=_mktPct(pm2,.1),p90=_mktPct(pm2,.9);
+  const ppm2=prop.ppm2;
+
+  // Calculate percentile
+  const sorted=[...pm2].sort((a,b)=>a-b);
+  let rank=0;
+  for(let i=0;i<sorted.length;i++){if(sorted[i]<=ppm2)rank=i+1;}
+  const pctile=Math.round((rank/sorted.length)*100);
+  const diffPct=((ppm2-med)/med*100);
+
+  // Statistical zone (never evaluative)
+  let zone,zoneClr;
+  if(pctile<=10){zone='Significativamente por debajo de la mediana del distrito';zoneClr='var(--blue)';}
+  else if(pctile<=25){zone='Por debajo de la mediana del distrito';zoneClr='var(--blue)';}
+  else if(pctile<=75){zone='Dentro del rango central del mercado (P25–P75)';zoneClr='var(--green)';}
+  else if(pctile<=90){zone='Por encima de la mediana del distrito';zoneClr='var(--amber)';}
+  else{zone='Significativamente por encima de la mediana del distrito';zoneClr='var(--amber)';}
+
+  // Gauge visualization
+  const gaugeMin=Math.max(0,p10*.85);
+  const gaugeMax=p90*1.15;
+  const gaugeRange=gaugeMax-gaugeMin;
+  const propPos=Math.max(0,Math.min(100,((ppm2-gaugeMin)/gaugeRange)*100));
+  const medPos=((med-gaugeMin)/gaugeRange)*100;
+  const p25Pos=((p25-gaugeMin)/gaugeRange)*100;
+  const p75Pos=((p75-gaugeMin)/gaugeRange)*100;
+
+  const nSrc=1;
+  const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
+  const conf=_dmConf(n,nSrc,'distrito',90,qPct);
+
+  return crumb+propSel+`
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Propiedad Seleccionada</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+          <div>
+            <div style="font-weight:700;font-size:1rem">${esc(prop.address)}</div>
+            <div style="color:var(--txt-muted);font-size:.82rem;margin-top:4px">${esc(prop.type)} · ${prop.beds?prop.beds+' dorm · ':''}${fmtNum(Math.round(prop.area))} m² · $${fmtNum(prop.price)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:2rem;font-weight:800;color:${zoneClr}">$${fmtNum(Math.round(ppm2))}</div>
+            <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">USD/m²</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Posición en el Mercado</h3><span style="font-size:.68rem;color:var(--txt-muted)">${esc(_dmDist)} · ${useType?esc(prop.type):'Todos los tipos'} · ${_dmSBadge(n)}</span></div>
+      <div class="card-body">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:1.4rem;font-weight:800;color:${zoneClr}">Percentil ${pctile}</div>
+          <div style="font-size:.88rem;color:var(--txt-muted);margin-top:4px">${esc(zone)}</div>
+          <div style="font-size:.82rem;color:${diffPct>=0?'var(--amber)':'var(--blue)'};font-weight:700;margin-top:4px">${diffPct>=0?'+':''}${diffPct.toFixed(1)}% vs mediana del distrito</div>
+        </div>
+
+        <div class="dm-gauge">
+          <div class="dm-gauge-bg" style="position:relative">
+            <div style="position:absolute;left:${p25Pos}%;top:0;width:${p75Pos-p25Pos}%;height:100%;background:rgba(16,185,129,.15);border:1px dashed var(--green);border-radius:4px" title="Rango P25-P75"></div>
+          </div>
+          <div class="dm-gauge-md" style="left:${medPos}%" title="Mediana"></div>
+          <div class="dm-gauge-mk" style="left:${propPos}%" title="Esta propiedad"></div>
+          <div class="dm-gauge-lbl" style="left:${propPos}%;color:${zoneClr}">$${fmtNum(Math.round(ppm2))}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--txt-muted);margin-top:4px">
+          <span>$${fmtNum(Math.round(gaugeMin))}</span>
+          <span>P25: $${fmtNum(Math.round(p25))}</span>
+          <span>Med: $${fmtNum(Math.round(med))}</span>
+          <span>P75: $${fmtNum(Math.round(p75))}</span>
+          <span>$${fmtNum(Math.round(gaugeMax))}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:24px">
+          <div style="padding:12px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <div style="font-size:.68rem;color:var(--txt-muted);font-weight:600">Esta propiedad</div>
+            <div style="font-size:1.2rem;font-weight:800;color:${zoneClr}">$${fmtNum(Math.round(ppm2))}</div>
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <div style="font-size:.68rem;color:var(--txt-muted);font-weight:600">Mediana distrito</div>
+            <div style="font-size:1.2rem;font-weight:800">$${fmtNum(Math.round(med))}</div>
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <div style="font-size:.68rem;color:var(--txt-muted);font-weight:600">Rango P25–P75</div>
+            <div style="font-size:1rem;font-weight:700">$${fmtNum(Math.round(p25))} — $${fmtNum(Math.round(p75))}</div>
+          </div>
+          <div style="padding:12px;background:var(--bg);border-radius:var(--r);text-align:center">
+            <div style="font-size:.68rem;color:var(--txt-muted);font-weight:600">Diferencia</div>
+            <div style="font-size:1.2rem;font-weight:800;color:${diffPct>=0?'var(--amber)':'var(--blue)'}">${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</div>
+          </div>
+        </div>
+
+        <div style="margin-top:20px;padding:14px;background:var(--bg);border-radius:var(--r);font-size:.78rem;border-left:3px solid ${zoneClr}">
+          <strong>Interpretación estadística:</strong> Esta propiedad se ubica en el <strong>percentil ${pctile}</strong> de las propiedades${useType?' tipo '+esc(prop.type):''} en ${esc(_dmDist)}, con un precio por m² <strong>${diffPct>=0?fmtNum(Math.round(Math.abs(diffPct)))+'% por encima':fmtNum(Math.round(Math.abs(diffPct)))+'% por debajo'}</strong> de la mediana del distrito. ${n>=30?'La muestra es estadísticamente confiable (n='+n+').':'La muestra es indicativa (n='+n+'); interpretar con cautela.'} ${dispFlag?'La alta dispersión ('+disp.toFixed(0)+'%) sugiere un mercado heterogéneo en esta zona.':''}
+        </div>
+      </div>
+    </div>
+
+    ${_dmTrust(conf,nSrc,n,rawPm2.length-pm2.length,_dmDist+(useType?' · '+prop.type:''))}`;
+}
+
+// ── Admin Raw wrapper ──
+function _dmRenderRaw(){
+  const a=computeMarketAnalytics();
+  const tabFn=(t)=>`_marketTab='${t}';_mktFilters={tipo:'',distrito:'',departamento:''};renderMarket(document.getElementById('mainContent'))`;
+  return`
+    <div class="tab-bar" style="flex-wrap:wrap;margin-bottom:0;border-bottom:1px solid var(--border)">
+      <button class="tab-btn${_marketTab==='resumen'?' active':''}" onclick="${tabFn('resumen')}">Resumen</button>
+      <button class="tab-btn${_marketTab==='venta'?' active':''}" onclick="${tabFn('venta')}">Venta</button>
+      <button class="tab-btn${_marketTab==='alquiler'?' active':''}" onclick="${tabFn('alquiler')}">Alquiler</button>
+      <button class="tab-btn${_marketTab==='transacciones'?' active':''}" onclick="${tabFn('transacciones')}">Transacciones</button>
+      <button class="tab-btn${_marketTab==='tasaciones'?' active':''}" onclick="${tabFn('tasaciones')}">Tasaciones</button>
+      <button class="tab-btn${_marketTab==='tendencias'?' active':''}" onclick="${tabFn('tendencias')}">Tendencias</button>
+      <button class="tab-btn${_marketTab==='valorizacion'?' active':''}" onclick="${tabFn('valorizacion')}">Valorización</button>
+    </div>
+    <div style="margin-top:16px">${renderMarketTab(a)}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MARKET DATA (Admin Raw — preserved original)
+// ═══════════════════════════════════════════════════════════════
 let _marketTab='resumen';
 let _mktFilters={tipo:'',distrito:'',departamento:''};
 
@@ -2330,26 +2878,32 @@ function computeMarketAnalytics(){
 }
 
 function renderMarket(el){
-  const a=computeMarketAnalytics();
-  const tabFn=(t)=>`_marketTab='${t}';_mktFilters={tipo:'',distrito:'',departamento:''};renderMarket(document.getElementById('mainContent'))`;
-  const totalRecords=a.totalTas+a.histData.length+(a.ventas.length+a.alquileres.length);
+  const tabs=[
+    {id:'panorama',label:'Panorama'},
+    {id:'distrito',label:'Distrito'},
+    {id:'posicion',label:'Posición'},
+    {id:'raw',label:'Admin Raw'}
+  ];
+  const tabBtns=tabs.map(t=>`<button class="tab-btn${_dmView===t.id?' active':''}" onclick="_dmNav('${t.id}')">${t.label}</button>`).join('');
+  const crumb=_dmView==='distrito'&&_dmDist?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist}${_dmTipo?' · '+_dmTipo:''}</div>`:
+    _dmView==='posicion'?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist?`<a href="#" onclick="_dmNav('distrito','${_dmDist.replace(/'/g,"\\'")}');return false">${_dmDist}</a><span class="sep">›</span>`:''} Posición</div>`:'';
 
   el.innerHTML=`
     <div class="main-header">
-      <div><h1>Inteligencia de Mercado</h1><div class="subtitle">Análisis por fuente del mercado inmobiliario peruano — ${fmtNum(totalRecords)} registros · ${fmtNum(a.totalDistritos)} distritos · 2017-2025</div></div>
+      <div><h1>Data de Mercado</h1><div class="subtitle">Inteligencia de mercado inmobiliario — análisis multi-fuente con gobernanza de datos</div></div>
     </div>
     <div class="main-body">
-      <div class="tab-bar" style="flex-wrap:wrap">
-        <button class="tab-btn${_marketTab==='resumen'?' active':''}" onclick="${tabFn('resumen')}">Resumen</button>
-        <button class="tab-btn${_marketTab==='venta'?' active':''}" onclick="${tabFn('venta')}">Venta</button>
-        <button class="tab-btn${_marketTab==='alquiler'?' active':''}" onclick="${tabFn('alquiler')}">Alquiler</button>
-        <button class="tab-btn${_marketTab==='transacciones'?' active':''}" onclick="${tabFn('transacciones')}">Transacciones</button>
-        <button class="tab-btn${_marketTab==='tasaciones'?' active':''}" onclick="${tabFn('tasaciones')}">Tasaciones</button>
-        <button class="tab-btn${_marketTab==='tendencias'?' active':''}" onclick="${tabFn('tendencias')}">Tendencias</button>
-        <button class="tab-btn${_marketTab==='valorizacion'?' active':''}" onclick="${tabFn('valorizacion')}">Valorización</button>
-      </div>
-      ${renderMarketTab(a)}
+      <div class="tab-bar">${tabBtns}</div>
+      ${crumb}
+      <div id="dmContent"></div>
     </div>`;
+
+  const ct=document.getElementById('dmContent');
+  if(!ct)return;
+  if(_dmView==='panorama')ct.innerHTML=_dmRenderPanorama();
+  else if(_dmView==='distrito')ct.innerHTML=_dmRenderDistrito();
+  else if(_dmView==='posicion')ct.innerHTML=_dmRenderPosicion();
+  else if(_dmView==='raw')ct.innerHTML=_dmRenderRaw();
 }
 
 function renderMarketTab(a){
