@@ -5713,6 +5713,8 @@ function closePublish(){
   document.getElementById('pubOverlay').classList.remove('open');
   document.getElementById('pubModal').classList.remove('open');
   _unlockScroll();
+  if(typeof recalcBody==='function') recalcBody();
+  if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);
 }
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
@@ -6381,6 +6383,8 @@ function goToApp(hash){
   document.body.classList.remove('show-user');
   if(hash==='#publish'){
     try{history.pushState({view:'publish'},'',location.pathname+location.search);}catch(e){}
+    if(typeof recalcBody==='function') recalcBody();
+    try{ if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60); }catch(e){}
     if(typeof openPublish==='function') openPublish();
     return;
   }
@@ -7369,6 +7373,8 @@ function navigateUserSection(section) {
 function closeUserSection() {
   document.body.classList.remove('show-user');
   history.replaceState(null, '', location.pathname + location.search);
+  if(typeof recalcBody==='function') recalcBody();
+  if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);
 }
 
 function renderUserSection(section) {
@@ -8111,6 +8117,8 @@ window.addEventListener('popstate', function() {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
+    if(typeof recalcBody==='function') recalcBody();
+    if(typeof leafletMap!=='undefined'&&leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);
   }
 });
 
