@@ -2883,17 +2883,28 @@ const _DATA_BASE = (typeof DATA_URL==='string') ? DATA_URL.replace(/properties\.
 // Mapa distrito(normalizado) → slug del archivo data/catastro/<slug>.geojson.gz.
 // Los distritos sin archivo aún (pendientes de convertir) se ignoran con gracia.
 const CATASTRO_FILES = {
-  // disponibles en el repo
+  // ── disponibles en el repo (15) ──
   'barranco':'barranco','brena':'brena','callao':'callao','jesus maria':'jesus-maria',
   'lince':'lince','magdalena del mar':'magdalena-del-mar','pueblo libre':'pueblo-libre',
   'punta hermosa':'punta-hermosa','punta negra':'punta-negra','rimac':'rimac',
   'san bartolo':'san-bartolo','san borja':'san-borja','san isidro':'san-isidro',
   'san luis':'san-luis','surquillo':'surquillo',
-  // pendientes (basta colocar el .gz convertido en data/catastro/ para activarlos)
+  // ── pendientes – KML disponible en Drive (12) ──
   'lurin':'lurin','miraflores':'miraflores','cercado de lima':'cercado-de-lima',
   'chorrillos':'chorrillos','san miguel':'san-miguel','santa anita':'santa-anita',
   'el agustino':'el-agustino','la molina':'la-molina','santiago de surco':'santiago-de-surco',
-  'san juan de miraflores':'san-juan-de-miraflores','carabayllo':'carabayllo','ate':'ate'
+  'san juan de miraflores':'san-juan-de-miraflores','carabayllo':'carabayllo','ate':'ate',
+  // ── pendientes – sin KML aún (23 · Lima + Callao) ──
+  'la victoria':'la-victoria','los olivos':'los-olivos',
+  'san juan de lurigancho':'san-juan-de-lurigancho','san martin de porres':'san-martin-de-porres',
+  'comas':'comas','independencia':'independencia','puente piedra':'puente-piedra',
+  'villa el salvador':'villa-el-salvador','villa maria del triunfo':'villa-maria-del-triunfo',
+  'chaclacayo':'chaclacayo','pachacamac':'pachacamac','cieneguilla':'cieneguilla',
+  'ancon':'ancon','santa rosa':'santa-rosa','lurigancho':'lurigancho',
+  'pucusana':'pucusana','santa maria del mar':'santa-maria-del-mar',
+  'bellavista':'bellavista','la perla':'la-perla','la punta':'la-punta',
+  'ventanilla':'ventanilla','carmen de la legua reynoso':'carmen-de-la-legua-reynoso',
+  'mi peru':'mi-peru'
 };
 let catastroLayer=null;
 const _catastroLoaded=new Set();
