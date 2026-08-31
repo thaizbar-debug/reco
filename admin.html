@@ -3157,6 +3157,152 @@ function _dmRenderGap(){
     ${_dmTrust(conf,nSrc,n,rawPm2.length-pm2.length,_dmDist+(useType?' · '+prop.type:''))}`;
 }
 
+// ── I-07: Ratio Market / Arancelario ──
+function _dmRenderRatio(){
+  const mef=_marketData.mef;
+  if(!mef?.lima_zonas)return'<div class="dm-empty"><p><strong>Sin datos arancelarios</strong></p><p>No se encontraron datos de valores arancelarios MEF.</p></div>';
+
+  // Group arancelario zones by district
+  const aranByDist={};
+  for(const[k,v]of Object.entries(mef.lima_zonas)){
+    if(!aranByDist[v.distrito])aranByDist[v.distrito]={zones:[],vals:[]};
+    aranByDist[v.distrito].zones.push({key:k,val:v.valor_usd_m2,uso:v.uso,zona:v.zona_arancel});
+    aranByDist[v.distrito].vals.push(v.valor_usd_m2);
+  }
+
+  // Calculate ratio for each district with governance
+  const rows=[];
+  const insufficient=[];
+  for(const[dist,aran]of Object.entries(aranByDist)){
+    const dProps=_pubs.filter(p=>p.op==='Venta'&&p.district===dist&&p.cur==='$'&&p.price>0&&p.area>0);
+    const rawPm2=dProps.map(p=>p.price/p.area);
+    const pm2=_dmClean(rawPm2);
+    const n=pm2.length;
+    if(n<10){insufficient.push({dist,n,rawN:rawPm2.length});continue;}
+
+    const mktMed=_mktMedian(pm2);
+    const aranMed=_mktMedian(aran.vals);
+    if(aranMed<=0)continue;
+    const ratio=mktMed/aranMed;
+    const diffAbs=mktMed-aranMed;
+    const diffPct=(diffAbs/aranMed)*100;
+    const p25=_mktPct(pm2,.25),p75=_mktPct(pm2,.75);
+    const iqr=p75-p25;
+    const disp=mktMed>0?(iqr/mktMed*100):0;
+    const nSrc=2;
+    const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
+    const conf=_dmConf(n,nSrc,'distrito',90,qPct);
+    rows.push({dist,n,rawN:rawPm2.length,mktMed,aranMed,ratio,diffAbs,diffPct,p25,p75,disp,conf,zones:aran.zones,outliers:rawPm2.length-pm2.length});
+  }
+  rows.sort((a,b)=>b.ratio-a.ratio);
+
+  if(!rows.length)return'<div class="dm-empty"><p><strong>Datos insuficientes</strong></p><p>Ningún distrito cumple los requisitos mínimos de muestra (n≥10) para calcular el ratio.</p></div>';
+
+  const avgRatio=rows.reduce((s,r)=>s+r.ratio,0)/rows.length;
+  const maxRatio=rows[0];
+  const minRatio=rows[rows.length-1];
+  const totalN=rows.reduce((s,r)=>s+r.n,0);
+
+  const overallConf=_dmConf(totalN,2,'lima',90,90);
+
+  // Ratio category (descriptive, not evaluative)
+  const ratioLabel=(r)=>{
+    if(r>=3)return{label:'Mercado >3x arancelario',clr:'var(--red)'};
+    if(r>=2)return{label:'Mercado 2-3x arancelario',clr:'var(--amber)'};
+    if(r>=1.5)return{label:'Mercado 1.5-2x arancelario',clr:'var(--amber2,var(--amber))'};
+    if(r>=1)return{label:'Mercado cercano al arancelario',clr:'var(--green)'};
+    return{label:'Mercado por debajo del arancelario',clr:'var(--blue)'};
+  };
+
+  // Ranking chart
+  const maxR=Math.max(...rows.map(r=>r.ratio));
+  const rankBars=rows.map(r=>{
+    const rl=ratioLabel(r.ratio);
+    const w=Math.max(8,Math.round((r.ratio/maxR)*100));
+    return`<div class="stat-row" style="cursor:pointer" onclick="_dmNav('distrito','${esc(r.dist).replace(/'/g,"\\'")}')">
+      <div class="stat-label" style="min-width:130px" title="${esc(r.dist)}">${esc(r.dist.length>18?r.dist.slice(0,16)+'…':r.dist)}</div>
+      <div class="stat-bar-track"><div class="stat-bar-fill" style="width:${w}%;background:${rl.clr}"></div></div>
+      <div class="stat-val" style="min-width:50px;font-weight:700">${r.ratio.toFixed(2)}x</div>
+    </div>`;
+  }).join('');
+
+  return`
+    <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:14px;margin-bottom:20px">
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--amber)">${avgRatio.toFixed(2)}x</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Ratio Promedio</div>
+        <div style="font-size:.66rem;color:var(--txt-muted);margin-top:4px">Mercado / Arancelario</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--red)">${maxRatio.ratio.toFixed(2)}x</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Ratio Máximo</div>
+        <div style="font-size:.66rem;color:var(--txt-muted);margin-top:4px">${esc(maxRatio.dist)}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--green)">${minRatio.ratio.toFixed(2)}x</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Ratio Mínimo</div>
+        <div style="font-size:.66rem;color:var(--txt-muted);margin-top:4px">${esc(minRatio.dist)}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--txt)">${rows.length}/${rows.length+insufficient.length}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Distritos Disponibles</div>
+        <div style="margin-top:6px">${_dmSBadge(totalN)}</div>
+      </div></div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>${IC.chart||''} Ranking Ratio Mercado / Arancelario</h3><span style="font-size:.68rem;color:var(--txt-muted)">${rows.length} distritos · Valor de oferta / valor arancelario MEF 2025</span></div>
+      <div class="card-body">
+        ${rankBars}
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Detalle por Distrito</h3><span style="font-size:.68rem;color:var(--txt-muted)">Ratio = Mediana oferta USD/m² / Mediana arancelario USD/m²</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Distrito</th><th>Mercado (med.)</th><th>Arancelario (med.)</th><th>Ratio</th><th>Diferencia</th><th>n</th><th>Confianza</th></tr></thead><tbody>
+          ${rows.map(r=>{const rl=ratioLabel(r.ratio);return`<tr style="cursor:pointer" onclick="_dmNav('distrito','${esc(r.dist).replace(/'/g,"\\'")}')">
+            <td><strong>${esc(r.dist)}</strong></td>
+            <td style="font-weight:700">$${fmtNum(Math.round(r.mktMed))}</td>
+            <td>$${fmtNum(Math.round(r.aranMed))}</td>
+            <td style="font-weight:800;color:${rl.clr}">${r.ratio.toFixed(2)}x</td>
+            <td style="color:${r.diffPct>=0?'var(--amber)':'var(--blue)'};font-weight:600">+${r.diffPct.toFixed(0)}%</td>
+            <td>${_dmSBadge(r.n)}</td>
+            <td>${_dmCBadge(r.conf)}</td>
+          </tr>`;}).join('')}
+        </tbody></table>
+      </div>
+    </div>
+
+    ${rows.length>=3?`<div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Zonas Arancelarias por Distrito</h3><span style="font-size:.68rem;color:var(--txt-muted)">Detalle de zonas MEF utilizadas en el cálculo</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto;max-height:400px;overflow-y:auto">
+        <table class="data-table"><thead><tr><th>Distrito</th><th>Zona</th><th>Arancel.</th><th>Uso</th><th>Zona MEF</th></tr></thead><tbody>
+          ${rows.map(r=>r.zones.map(z=>'<tr><td><strong>'+esc(r.dist)+'</strong></td><td>'+esc(z.key.replace(/_/g,' '))+'</td><td style="font-weight:700">$'+fmtNum(z.val)+'</td><td style="font-size:.72rem;color:var(--txt-muted)">'+esc(z.uso)+'</td><td>'+esc(z.zona)+'</td></tr>').join('')).join('')}
+        </tbody></table>
+      </div>
+    </div>`:''}
+
+    ${insufficient.length?`<div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Distritos No Disponibles</h3><span style="font-size:.68rem;color:var(--txt-muted)">${insufficient.length} distritos con muestra insuficiente (n<10)</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Distrito</th><th>Propiedades</th><th>Estado</th></tr></thead><tbody>
+          ${insufficient.sort((a,b)=>b.n-a.n).map(r=>'<tr><td>'+esc(r.dist)+'</td><td>'+r.rawN+'</td><td>'+_dmSBadge(r.n)+'</td></tr>').join('')}
+        </tbody></table>
+      </div>
+    </div>`:''}
+
+    <div style="margin-bottom:20px;padding:14px;background:var(--bg);border-radius:var(--r);font-size:.78rem;border-left:3px solid var(--amber)">
+      <strong>Metodología:</strong> El ratio se calcula como Mediana de oferta USD/m² (fuente: publicaciones Reco) dividido por Mediana de valor arancelario USD/m² (fuente: MEF RM N°255-2025-EF/15, vigencia 2025). Cada fuente representa una población diferente: los valores arancelarios son valores de referencia oficiales para autoavalúo, mientras que los precios de oferta son asking prices del mercado (R-CROSS-02). El ratio describe cuántas veces el valor observado de mercado representa respecto al valor arancelario oficial. Se aplicó remoción de outliers por IQR y un mínimo de 10 registros por distrito.
+      <div style="margin-top:8px;font-style:italic;color:var(--txt-muted)">Nota B2B: Los ratios con mayor diferencia sugieren zonas donde los valores oficiales están más desactualizados respecto al mercado. No implica valoración correcta o incorrecta de ninguna fuente.</div>
+    </div>
+
+    <div style="font-size:.72rem;color:var(--txt-muted);margin-bottom:6px"><strong>Fuente arancelario:</strong> ${esc(mef.metadata?.fuente||'MEF')} · ${esc(mef.metadata?.resolucion||'')} · Vigencia: ${esc(mef.metadata?.vigencia||'')}</div>
+    <div style="font-size:.72rem;color:var(--txt-muted);margin-bottom:6px"><strong>Fuente mercado:</strong> Publicaciones Reco · Tipo: asking prices · Moneda: USD/m² · TC ref: ${mef.metadata?.tipo_cambio_ref||'N/A'}</div>
+    <div style="font-size:.68rem;color:var(--txt-muted);font-style:italic;margin-bottom:12px">I-10 Propiedades Similares → V2 (pendiente). Comparable Finder no implementado en este sprint.</div>
+    ${_dmTrust(overallConf,2,totalN,rows.reduce((s,r)=>s+r.outliers,0),'Lima Metropolitana · Ratio Market/Arancelario')}`;
+}
+
 // ── Admin Raw wrapper ──
 function _dmRenderRaw(){
   const a=computeMarketAnalytics();
@@ -3297,6 +3443,7 @@ function renderMarket(el){
     {id:'tendBcrp',label:'Tendencia BCRP'},
     {id:'tendTas',label:'Tendencia Tas.'},
     {id:'gap',label:'Brecha'},
+    {id:'ratio',label:'Ratio M/A'},
     {id:'raw',label:'Admin Raw'}
   ];
   const tabBtns=tabs.map(t=>`<button class="tab-btn${_dmView===t.id?' active':''}" onclick="_dmNav('${t.id}')">${t.label}</button>`).join('');
@@ -3323,6 +3470,7 @@ function renderMarket(el){
   else if(_dmView==='tendBcrp')ct.innerHTML=_dmRenderTendBcrp();
   else if(_dmView==='tendTas')ct.innerHTML=_dmRenderTendTas();
   else if(_dmView==='gap')ct.innerHTML=_dmRenderGap();
+  else if(_dmView==='ratio')ct.innerHTML=_dmRenderRatio();
   else if(_dmView==='raw')ct.innerHTML=_dmRenderRaw();
 }
 
