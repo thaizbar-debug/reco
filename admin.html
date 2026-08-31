@@ -2595,7 +2595,7 @@ function _dmRenderDistrito(){
           return`<div class="dm-prop-row" onclick="_dmNav('posicion',undefined,undefined,'${esc(p.id).replace(/'/g,"\\'")}')">
             <div style="flex:1;min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(truncate(p.address,50))}</div><div style="font-size:.72rem;color:var(--txt-muted)">${esc(p.type)} · ${p.beds?p.beds+' dorm · ':''}${fmtNum(Math.round(p.area))} m²</div></div>
             <div style="text-align:right;min-width:100px"><div style="font-weight:700">$${fmtNum(p.price)}</div><div style="font-weight:700;color:${clr};font-size:.78rem">$${fmtNum(Math.round(p.ppm2))}/m²</div></div>
-            <div style="color:var(--primary);font-size:.72rem;flex-shrink:0">Posición →</div>
+            <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;font-size:.72rem"><span style="color:var(--primary);cursor:pointer" onclick="event.stopPropagation();_dmNav('posicion',undefined,undefined,'${esc(p.id).replace(/'/g,"\\'")}')">Posición →</span><span style="color:var(--amber);cursor:pointer" onclick="event.stopPropagation();_dmNav('gap',undefined,undefined,'${esc(p.id).replace(/'/g,"\\'")}')">Brecha →</span></div>
           </div>`;
         }).join(''):'<div class="dm-empty"><p>Sin propiedades en este distrito</p></div>'}
         ${props.length>30?'<div style="padding:10px 14px;font-size:.72rem;color:var(--txt-muted);text-align:center">Mostrando 30 de '+fmtNum(props.length)+'</div>':''}
@@ -2645,6 +2645,9 @@ function _dmRenderPosicion(){
   const med=_mktMedian(pm2);
   const p25=_mktPct(pm2,.25),p75=_mktPct(pm2,.75);
   const p10=_mktPct(pm2,.1),p90=_mktPct(pm2,.9);
+  const iqr=p75-p25;
+  const disp=med>0?(iqr/med*100):0;
+  const dispFlag=disp>40;
   const ppm2=prop.ppm2;
 
   // Calculate percentile
@@ -2740,6 +2743,415 @@ function _dmRenderPosicion(){
           <strong>Interpretación estadística:</strong> Esta propiedad se ubica en el <strong>percentil ${pctile}</strong> de las propiedades${useType?' tipo '+esc(prop.type):''} en ${esc(_dmDist)}, con un precio por m² <strong>${diffPct>=0?fmtNum(Math.round(Math.abs(diffPct)))+'% por encima':fmtNum(Math.round(Math.abs(diffPct)))+'% por debajo'}</strong> de la mediana del distrito. ${n>=30?'La muestra es estadísticamente confiable (n='+n+').':'La muestra es indicativa (n='+n+'); interpretar con cautela.'} ${dispFlag?'La alta dispersión ('+disp.toFixed(0)+'%) sugiere un mercado heterogéneo en esta zona.':''}
         </div>
       </div>
+    </div>
+
+    <div style="text-align:center;margin-bottom:16px">
+      <button class="btn btn-outline btn-sm" onclick="_dmNav('gap',undefined,undefined,'${esc(prop.id).replace(/'/g,"\\'")}')">Ver Brecha de Valoración →</button>
+    </div>
+
+    ${_dmTrust(conf,nSrc,n,rawPm2.length-pm2.length,_dmDist+(useType?' · '+prop.type:''))}`;
+}
+
+// ── I-04: BCRP Price Trend ──
+function _dmRenderTendBcrp(){
+  const bcrp=_marketData.bcrp;
+  if(!bcrp||!bcrp.data_anual)return'<div class="dm-empty"><p><strong>Sin datos BCRP</strong></p><p>No se encontraron datos de la serie de precios BCRP.</p></div>';
+  const anual=bcrp.data_anual;
+  const years=Object.keys(anual).filter(y=>!y.includes('est')).sort();
+  const estKey=Object.keys(anual).find(y=>y.includes('est'));
+  if(years.length<2)return'<div class="dm-empty"><p><strong>Datos insuficientes</strong></p><p>Se requieren al menos 2 periodos anuales para graficar tendencia.</p></div>';
+
+  const vals=years.map(y=>({year:y,price:anual[y].precio_promedio_usd_m2,idx:anual[y].indice,var:anual[y].variacion_anual_pct}));
+  const first=vals[0],last=vals[vals.length-1];
+  const totalVar=first.price>0?((last.price-first.price)/first.price*100):0;
+  const cagr=years.length>1?(Math.pow(last.price/first.price,1/(years.length-1))-1)*100:0;
+  const maxP=Math.max(...vals.map(v=>v.price));
+  const minP=Math.min(...vals.map(v=>v.price));
+
+  const nSrc=1;
+  const conf=_dmConf(years.length,nSrc,'lima',100,100);
+
+  const chartH=180;
+  const barW=Math.max(28,Math.min(50,Math.floor(600/(vals.length+1))));
+  const chartW=vals.length*(barW+8)+20;
+  const bars=vals.map((v,i)=>{
+    const h=Math.max(6,Math.round(((v.price-minP*0.85)/(maxP*1.05-minP*0.85))*chartH));
+    const clr=v.var>=0?'var(--blue)':'var(--amber)';
+    const x=i*(barW+8)+10;
+    return`<div style="position:absolute;bottom:0;left:${x}px;width:${barW}px;text-align:center">
+      <div style="font-size:.58rem;font-weight:700;color:${clr};margin-bottom:2px">${v.var>=0?'+':''}${v.var.toFixed(1)}%</div>
+      <div style="height:${h}px;background:${clr};border-radius:4px 4px 0 0;transition:opacity .2s;cursor:default" title="${v.year}: $${fmtNum(v.price)}/m² (${v.var>=0?'+':''}${v.var.toFixed(1)}%)"></div>
+      <div style="font-size:.58rem;color:var(--txt-muted);margin-top:3px">${v.year}</div>
+    </div>`;
+  }).join('');
+
+  const distKeys=Object.keys(bcrp.por_distrito_2025||{});
+  const distSection=distKeys.length?`<div class="section-card" style="margin-bottom:20px">
+    <div class="card-header"><h3>Precios por Distrito — BCRP 2025</h3><span style="font-size:.68rem;color:var(--txt-muted)">${distKeys.length} distritos · Mediana USD/m²</span></div>
+    <div class="card-body no-pad" style="overflow-x:auto">
+      <table class="data-table"><thead><tr><th>Distrito</th><th>Mediana USD/m²</th><th>P25</th><th>P75</th><th>Tx (18m)</th></tr></thead><tbody>
+        ${distKeys.sort((a,b)=>(bcrp.por_distrito_2025[b].mediana_usd_m2||0)-(bcrp.por_distrito_2025[a].mediana_usd_m2||0)).map(dk=>{
+          const dv=bcrp.por_distrito_2025[dk];
+          return`<tr><td><strong>${esc(dk)}</strong></td><td style="font-weight:700">$${fmtNum(dv.mediana_usd_m2)}</td><td>$${fmtNum(dv.p25)}</td><td>$${fmtNum(dv.p75)}</td><td>${fmtNum(dv.tx_18m)}</td></tr>`;
+        }).join('')}
+      </tbody></table>
+    </div>
+  </div>`:'';
+
+  return`
+    <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px">
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--blue)">$${fmtNum(last.price)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Precio Prom. ${last.year} (USD/m²)</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:${last.var>=0?'var(--green)':'var(--red)'}">${last.var>=0?'+':''}${last.var.toFixed(1)}%</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Variación ${last.year}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--amber)">${totalVar>=0?'+':''}${totalVar.toFixed(1)}%</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Var. Total ${first.year}–${last.year}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--txt)">${cagr>=0?'+':''}${cagr.toFixed(1)}%</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">CAGR Anual</div>
+      </div></div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>${IC.trendUp||IC.chart||''} Evolución Precio Departamentos — Lima Metropolitana</h3><span style="font-size:.68rem;color:var(--txt-muted)">BCRP serie PN01289XM · ${first.year}–${last.year} · USD/m²</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <div style="position:relative;height:${chartH+50}px;min-width:${chartW}px">
+          ${bars}
+        </div>
+        ${estKey?`<div style="margin-top:8px;font-size:.68rem;color:var(--txt-muted);font-style:italic">* ${estKey}: $${fmtNum(anual[estKey].precio_promedio_usd_m2)}/m² (estimado BCRP, ${anual[estKey].variacion_anual_pct>=0?'+':''}${anual[estKey].variacion_anual_pct}%)</div>`:''}
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Serie Anual Detallada</h3><span style="font-size:.68rem;color:var(--txt-muted)">Índice base 2009 = 100</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Año</th><th>Precio USD/m²</th><th>Índice</th><th>Variación</th></tr></thead><tbody>
+          ${vals.map(v=>{const vc=v.var>=0?'var(--green)':'var(--red)';return`<tr><td><strong>${v.year}</strong></td><td style="font-weight:700">$${fmtNum(v.price)}</td><td>${v.idx.toFixed(1)}</td><td style="color:${vc};font-weight:600">${v.var>=0?'+':''}${v.var.toFixed(1)}%</td></tr>`;}).join('')}
+          ${(()=>{if(!estKey)return'';const ev=anual[estKey];const ec=ev.variacion_anual_pct>=0?'var(--green)':'var(--red)';return`<tr style="opacity:.7"><td><strong>${estKey}</strong> *</td><td style="font-weight:700">$${fmtNum(ev.precio_promedio_usd_m2)}</td><td>${ev.indice.toFixed(1)}</td><td style="color:${ec};font-weight:600">${ev.variacion_anual_pct>=0?'+':''}${ev.variacion_anual_pct}%</td></tr>`;})()}
+        </tbody></table>
+      </div>
+    </div>
+
+    ${distSection}
+
+    <div style="font-size:.72rem;color:var(--txt-muted);margin-bottom:6px"><strong>Fuente:</strong> ${esc(bcrp.metadata?.fuente||'BCRP')} · Serie: ${esc(bcrp.metadata?.serie||'PN01289XM')} · ${esc(bcrp.metadata?.unidad||'USD/m²')}</div>
+    <div style="font-size:.68rem;color:var(--txt-muted);font-style:italic;margin-bottom:12px">Datos oficiales del Banco Central. No mezclar con otras poblaciones (R-COMP-01).</div>
+    ${_dmTrust(conf,nSrc,years.length,0,'Lima Metropolitana · BCRP')}`;
+}
+
+// ── I-03: Tasaciones Trend ──
+function _dmRenderTendTas(){
+  const tas=_marketData.tasFull;
+  if(!tas?.distritos)return'<div class="dm-empty"><p><strong>Sin datos de Tasaciones</strong></p><p>No se encontró tasaciones_full.json.</p></div>';
+
+  const limaDists={};
+  for(const[dk,dv]of Object.entries(tas.distritos)){
+    if(dv.departamento==='LIMA'&&dv.total_tasaciones>=20){
+      limaDists[dk]=dv;
+    }
+  }
+  const distKeys=Object.keys(limaDists).sort();
+  if(!distKeys.length)return'<div class="dm-empty"><p><strong>Datos insuficientes</strong></p><p>No hay distritos de Lima con suficientes tasaciones para tendencia.</p></div>';
+
+  // Aggregate Lima-wide trend by year
+  const allYears={};
+  for(const dv of Object.values(limaDists)){
+    for(const[yr,yv]of Object.entries(dv.años||{})){
+      if(!allYears[yr])allYears[yr]={meds:[],ns:0,totalN:0};
+      if(yv.mediana_usd_m2>0&&yv.n_tasaciones>=5){
+        allYears[yr].meds.push({med:yv.mediana_usd_m2,n:yv.n_tasaciones});
+        allYears[yr].totalN+=yv.n_tasaciones;
+      }
+    }
+  }
+
+  const yearKeys=Object.keys(allYears).sort();
+  const validYears=yearKeys.filter(y=>allYears[y].meds.length>=3&&allYears[y].totalN>=30);
+  if(validYears.length<2)return'<div class="dm-empty"><p><strong>Datos insuficientes</strong></p><p>Se requieren al menos 2 periodos con muestra suficiente para graficar tendencia de tasaciones.</p></div>';
+
+  const yearData=validYears.map(y=>{
+    const d=allYears[y];
+    const totalW=d.meds.reduce((s,m)=>s+m.n,0);
+    const wMed=d.meds.reduce((s,m)=>s+m.med*m.n,0)/totalW;
+    return{year:y,med:Math.round(wMed),n:d.totalN,nDist:d.meds.length};
+  });
+
+  for(let i=1;i<yearData.length;i++){
+    yearData[i].var=yearData[i-1].med>0?((yearData[i].med-yearData[i-1].med)/yearData[i-1].med*100):null;
+  }
+  yearData[0].var=null;
+
+  const first=yearData[0],last=yearData[yearData.length-1];
+  const totalVar=first.med>0?((last.med-first.med)/first.med*100):0;
+  const maxP=Math.max(...yearData.map(v=>v.med));
+  const minP=Math.min(...yearData.map(v=>v.med));
+
+  // District-level detail
+  const distData=distKeys.map(dk=>{
+    const dv=limaDists[dk];
+    const yrs=Object.keys(dv.años||{}).sort();
+    const latest=yrs.length?dv.años[yrs[yrs.length-1]]:null;
+    const earliest=yrs.length?dv.años[yrs[0]]:null;
+    const latestYr=yrs[yrs.length-1]||'';
+    const nYrs=yrs.filter(y=>(dv.años[y].n_tasaciones||0)>=5).length;
+    const varTotal=earliest&&latest&&earliest.mediana_usd_m2>0?((latest.mediana_usd_m2-earliest.mediana_usd_m2)/earliest.mediana_usd_m2*100):null;
+    return{dist:dk,normDist:_dmND(dk,'tas'),total:dv.total_tasaciones,latest:latest?.mediana_usd_m2||0,latestYr,nYrs,varTotal,yrs};
+  }).sort((a,b)=>b.total-a.total);
+
+  const nSrc=1;
+  const totalN=yearData.reduce((s,y)=>s+y.n,0);
+  const conf=_dmConf(totalN,nSrc,'lima',80,90);
+
+  const chartH=180;
+  const barW=Math.max(36,Math.min(60,Math.floor(600/(yearData.length+1))));
+  const chartW=yearData.length*(barW+10)+20;
+  const bars=yearData.map((v,i)=>{
+    const h=Math.max(6,Math.round(((v.med-minP*0.85)/(maxP*1.05-minP*0.85))*chartH));
+    const x=i*(barW+10)+10;
+    const clr=v.var!==null?(v.var>=0?'var(--purple)':'var(--amber)'):'var(--purple)';
+    return`<div style="position:absolute;bottom:0;left:${x}px;width:${barW}px;text-align:center">
+      ${v.var!==null?`<div style="font-size:.58rem;font-weight:700;color:${clr};margin-bottom:2px">${v.var>=0?'+':''}${v.var.toFixed(1)}%</div>`:'<div style="height:14px"></div>'}
+      <div style="height:${h}px;background:var(--purple);border-radius:4px 4px 0 0;opacity:.85;cursor:default" title="${v.year}: $${fmtNum(v.med)}/m² · n=${fmtNum(v.n)} · ${v.nDist} dist."></div>
+      <div style="font-size:.58rem;color:var(--txt-muted);margin-top:3px">${v.year}</div>
+    </div>`;
+  }).join('');
+
+  // Temporal gaps
+  const gapYears=[];
+  for(let i=1;i<validYears.length;i++){
+    const diff=parseInt(validYears[i])-parseInt(validYears[i-1]);
+    if(diff>1){for(let g=1;g<diff;g++)gapYears.push(String(parseInt(validYears[i-1])+g));}
+  }
+
+  return`
+    <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px">
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--purple)">$${fmtNum(last.med)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Mediana Pond. ${last.year}</div>
+        <div style="margin-top:6px">${_dmSBadge(last.n)}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:${totalVar>=0?'var(--green)':'var(--red)'}">${totalVar>=0?'+':''}${totalVar.toFixed(1)}%</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Var. ${first.year}–${last.year}</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--txt)">${fmtNum(totalN)}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Tasaciones Totales</div>
+      </div></div>
+      <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
+        <div style="font-size:1.8rem;font-weight:800;color:var(--txt)">${distKeys.length}</div>
+        <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">Distritos Lima</div>
+      </div></div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>${IC.chart||''} Tendencia Tasaciones — Lima Metropolitana</h3><span style="font-size:.68rem;color:var(--txt-muted)">${first.year}–${last.year} · Mediana ponderada USD/m²</span></div>
+      <div class="card-body" style="overflow-x:auto">
+        <div style="position:relative;height:${chartH+50}px;min-width:${chartW}px">
+          ${bars}
+        </div>
+        ${gapYears.length?'<div style="margin-top:8px;font-size:.68rem;color:var(--amber);font-style:italic">Gaps temporales: '+gapYears.join(', ')+' — sin muestra suficiente, no se interpoló.</div>':''}
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Serie Anual Detallada</h3><span style="font-size:.68rem;color:var(--txt-muted)">Mediana ponderada por muestra distrital</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Año</th><th>Mediana USD/m²</th><th>Tasaciones</th><th>Distritos</th><th>Variación</th></tr></thead><tbody>
+          ${yearData.map(v=>{const vc=v.var!==null?(v.var>=0?'var(--green)':'var(--red)'):'';return`<tr><td><strong>${v.year}</strong></td><td style="font-weight:700">$${fmtNum(v.med)}</td><td>${fmtNum(v.n)}</td><td>${v.nDist}</td><td>${v.var!==null?'<span style="color:'+vc+';font-weight:600">'+(v.var>=0?'+':'')+v.var.toFixed(1)+'%</span>':'—'}</td></tr>`;}).join('')}
+        </tbody></table>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Cobertura por Distrito</h3><span style="font-size:.68rem;color:var(--txt-muted)">${distData.length} distritos con ≥20 tasaciones</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto;max-height:400px;overflow-y:auto">
+        <table class="data-table"><thead><tr><th>Distrito</th><th>Total</th><th>Última Med.</th><th>Año</th><th>Periodos</th><th>Var. Total</th></tr></thead><tbody>
+          ${distData.map(d=>{const dc=d.varTotal!==null?(d.varTotal>=0?'var(--green)':'var(--red)'):'';return`<tr><td><strong>${esc(d.normDist||d.dist)}</strong></td><td>${fmtNum(d.total)}</td><td style="font-weight:700">${d.latest?'$'+fmtNum(d.latest):'—'}</td><td>${d.latestYr}</td><td>${d.nYrs}</td><td>${d.varTotal!==null?'<span style="color:'+dc+';font-weight:600">'+(d.varTotal>=0?'+':'')+d.varTotal.toFixed(1)+'%</span>':'—'}</td></tr>`;}).join('')}
+        </tbody></table>
+      </div>
+    </div>
+
+    <div style="font-size:.72rem;color:var(--txt-muted);margin-bottom:6px"><strong>Fuente:</strong> ${esc(tas.metadata?.fuente||'Tasaciones')} · Periodo: ${esc(tas.metadata?.periodo||'')} · ${fmtNum(tas.metadata?.total_registros_con_valor_unitario||0)} registros con valor unitario</div>
+    <div style="font-size:.68rem;color:var(--txt-muted);font-style:italic;margin-bottom:12px">Valores de tasación representan valor referencial de mercado. No mezclar con precios de oferta (R-COMP-01). Periodos sin muestra suficiente omitidos (sin interpolación).</div>
+    ${_dmTrust(conf,nSrc,totalN,0,'Lima Metropolitana · Tasaciones')}`;
+}
+
+// ── I-05: Valuation Gap ──
+function _dmRenderGap(){
+  if(!_dmDist){_dmView='distrito';return _dmRenderDistrito();}
+
+  const props=_pubs.filter(p=>p.op==='Venta'&&p.district===_dmDist&&p.cur==='$'&&p.price>0&&p.area>0)
+    .map(p=>({id:p.id,address:p.address||p.desc||'Sin dirección',type:p.type||'Otro',price:p.price,area:p.area,ppm2:p.price/p.area,beds:p.beds||0}))
+    .sort((a,b)=>a.ppm2-b.ppm2);
+  if(!props.length)return'<div class="dm-empty"><p>No hay propiedades en '+esc(_dmDist)+' para analizar brecha.</p></div>';
+
+  const selId=_dmPropId||props[0].id;
+  const prop=props.find(p=>p.id===selId)||props[0];
+
+  // Build benchmark from I-02 district data (reuse same logic)
+  let vDist=_pubs.filter(p=>p.op==='Venta'&&p.district===_dmDist&&p.cur==='$'&&p.price>0&&p.area>0);
+  const sameType=vDist.filter(p=>p.type===prop.type);
+  const useType=sameType.length>=10;
+  const benchPop=useType?sameType:vDist;
+  const rawPm2=benchPop.map(p=>p.price/p.area);
+  const pm2=_dmClean(rawPm2);
+  const n=pm2.length;
+
+  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><a onclick="_dmNav(\'distrito\',\''+esc(_dmDist).replace(/'/g,"\\'")+'\')">'+esc(_dmDist)+'</a><span class="sep">›</span><span>Brecha</span></div>';
+
+  const propSel=`<div class="filter-bar" style="margin-bottom:20px">
+    <select onchange="_dmNav('gap',undefined,undefined,this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt);max-width:500px">
+      ${props.map(p=>`<option value="${esc(p.id)}"${p.id===selId?' selected':''}>${esc(truncate(p.address,40))} — $${fmtNum(Math.round(p.ppm2))}/m²</option>`).join('')}
+    </select>
+  </div>`;
+
+  if(n<10){
+    return crumb+propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+      <p><strong>Datos insuficientes</strong></p>
+      <p>Se requieren al menos 10 propiedades comparables para calcular brecha de valoración en ${esc(_dmDist)}.</p>
+      <p style="margin-top:8px">${_dmSBadge(n)}</p>
+    </div></div></div>`;
+  }
+
+  const med=_mktMedian(pm2);
+  const p25=_mktPct(pm2,.25),p75=_mktPct(pm2,.75);
+  const ppm2=prop.ppm2;
+  const diffAbs=ppm2-med;
+  const diffPct=med>0?((ppm2-med)/med*100):0;
+
+  // Percentile
+  const sorted=[...pm2].sort((a,b)=>a-b);
+  let rank=0;
+  for(let i=0;i<sorted.length;i++){if(sorted[i]<=ppm2)rank=i+1;}
+  const pctile=Math.round((rank/sorted.length)*100);
+
+  // Gather reference benchmarks from other sources
+  const refs=[];
+  refs.push({label:'Oferta Reco (I-02)',val:med,n:n,source:'Asking prices',color:'var(--blue)'});
+
+  // Tasaciones reference
+  const tas=_marketData.tasFull;
+  let tasMed=null,tasYr='',tasN=0;
+  if(tas?.distritos){
+    for(const[tk,tv]of Object.entries(tas.distritos)){
+      if(_dmND(tk,'tas')===_dmDist){
+        const yrs=Object.keys(tv.años||{}).sort();
+        const lat=yrs.length?tv.años[yrs[yrs.length-1]]:null;
+        if(lat&&lat.mediana_usd_m2&&lat.n_tasaciones>=10){
+          tasMed=lat.mediana_usd_m2;tasYr=yrs[yrs.length-1];tasN=lat.n_tasaciones;
+          refs.push({label:'Tasación '+tasYr,val:tasMed,n:tasN,source:'Valor referencial',color:'var(--purple)'});
+        }
+        break;
+      }
+    }
+  }
+
+  // BCRP reference
+  let bcrpMed=null;
+  if(_marketData.bcrp?.por_distrito_2025){
+    for(const[bk,bv]of Object.entries(_marketData.bcrp.por_distrito_2025)){
+      if(_dmND(bk,'bcrp')===_dmDist){
+        bcrpMed=bv.mediana_usd_m2;
+        refs.push({label:'BCRP 2025',val:bcrpMed,n:null,source:'Mediana departamental',color:'var(--green)'});
+        break;
+      }
+    }
+  }
+
+  const nSrc=refs.length;
+  const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
+  const conf=_dmConf(n,nSrc,'distrito',90,qPct);
+
+  // Gap summary for each reference
+  const gapRows=refs.map(r=>{
+    const gap=ppm2-r.val;
+    const gapPct=r.val>0?((ppm2-r.val)/r.val*100):0;
+    return{...r,gap,gapPct};
+  });
+
+  // Position label (statistical, never evaluative)
+  let posLabel,posClr;
+  if(Math.abs(diffPct)<=5){posLabel='Dentro del rango de referencia del mercado';posClr='var(--green)';}
+  else if(diffPct>20){posLabel='Significativamente por encima de la referencia';posClr='var(--amber)';}
+  else if(diffPct>5){posLabel='Por encima de la referencia del mercado';posClr='var(--amber)';}
+  else if(diffPct<-20){posLabel='Significativamente por debajo de la referencia';posClr='var(--blue)';}
+  else{posLabel='Por debajo de la referencia del mercado';posClr='var(--blue)';}
+
+  // Gauge for gap
+  const gaugeMin=Math.max(0,Math.min(...refs.map(r=>r.val),ppm2)*0.8);
+  const gaugeMax=Math.max(...refs.map(r=>r.val),ppm2)*1.15;
+  const gaugeRange=gaugeMax-gaugeMin;
+  const propPos=Math.max(0,Math.min(100,((ppm2-gaugeMin)/gaugeRange)*100));
+  const medPos=((med-gaugeMin)/gaugeRange)*100;
+
+  return crumb+propSel+`
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Propiedad Analizada</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+          <div>
+            <div style="font-weight:700;font-size:1rem">${esc(prop.address)}</div>
+            <div style="color:var(--txt-muted);font-size:.82rem;margin-top:4px">${esc(prop.type)} · ${prop.beds?prop.beds+' dorm · ':''}${fmtNum(Math.round(prop.area))} m² · $${fmtNum(prop.price)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:2rem;font-weight:800;color:${posClr}">$${fmtNum(Math.round(ppm2))}</div>
+            <div style="font-size:.72rem;color:var(--txt-muted);font-weight:600">USD/m²</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Brecha de Valoración</h3><span style="font-size:.68rem;color:var(--txt-muted)">${esc(_dmDist)} · ${useType?esc(prop.type):'Todos los tipos'} · Percentil ${pctile}</span></div>
+      <div class="card-body">
+        <div style="text-align:center;margin-bottom:16px">
+          <div style="font-size:1.4rem;font-weight:800;color:${posClr}">${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</div>
+          <div style="font-size:.78rem;color:var(--txt-muted);margin-top:2px">vs. mediana de oferta del distrito</div>
+          <div style="font-size:.88rem;color:${posClr};margin-top:8px;font-weight:600">${esc(posLabel)}</div>
+        </div>
+
+        <div class="dm-gauge">
+          <div class="dm-gauge-bg" style="position:relative">
+            ${refs.map(r=>{
+              const pos=((r.val-gaugeMin)/gaugeRange)*100;
+              return'<div style="position:absolute;left:'+pos.toFixed(1)+'%;top:0;width:2px;height:100%;background:'+r.color+';opacity:.6" title="'+esc(r.label)+': $'+fmtNum(Math.round(r.val))+'"></div>';
+            }).join('')}
+          </div>
+          <div class="dm-gauge-mk" style="left:${propPos}%" title="Precio observado"></div>
+          <div class="dm-gauge-lbl" style="left:${propPos}%;color:${posClr}">$${fmtNum(Math.round(ppm2))}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--txt-muted);margin-top:4px">
+          <span>$${fmtNum(Math.round(gaugeMin))}</span>
+          <span>$${fmtNum(Math.round(gaugeMax))}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card" style="margin-bottom:20px">
+      <div class="card-header"><h3>Comparativa con Referencias (R-CROSS-01)</h3><span style="font-size:.68rem;color:var(--txt-muted)">Diferencia entre precio observado y cada fuente</span></div>
+      <div class="card-body no-pad" style="overflow-x:auto">
+        <table class="data-table"><thead><tr><th>Referencia</th><th>Valor Ref.</th><th>Precio Obs.</th><th>Diferencia</th><th>%</th><th>Fuente</th></tr></thead><tbody>
+          ${gapRows.map(r=>{
+            const clr=r.gapPct>=0?'var(--amber)':'var(--blue)';
+            return`<tr><td><strong style="color:${r.color}">${esc(r.label)}</strong></td><td style="font-weight:700">$${fmtNum(Math.round(r.val))}</td><td>$${fmtNum(Math.round(ppm2))}</td><td style="font-weight:700;color:${clr}">${r.gap>=0?'+':''}$${fmtNum(Math.abs(Math.round(r.gap)))}</td><td style="font-weight:700;color:${clr}">${r.gapPct>=0?'+':''}${r.gapPct.toFixed(1)}%</td><td style="font-size:.72rem;color:var(--txt-muted)">${esc(r.source)}${r.n?' · n='+fmtNum(r.n):''}</td></tr>`;
+          }).join('')}
+        </tbody></table>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;padding:14px;background:var(--bg);border-radius:var(--r);font-size:.78rem;border-left:3px solid ${posClr}">
+      <strong>Explicación estadística:</strong> El precio observado de esta propiedad ($${fmtNum(Math.round(ppm2))}/m²) se sitúa en el <strong>percentil ${pctile}</strong>${useType?' entre propiedades tipo '+esc(prop.type):''} en ${esc(_dmDist)}, con una diferencia de <strong>${diffPct>=0?'+':''}${diffPct.toFixed(1)}%</strong> respecto a la mediana de oferta del distrito ($${fmtNum(Math.round(med))}/m²).
+      ${tasMed!==null?' La referencia de tasaciones ('+tasYr+') para este distrito es $'+fmtNum(Math.round(tasMed))+'/m², diferencia de '+(ppm2-tasMed>=0?'+':'')+((ppm2-tasMed)/tasMed*100).toFixed(1)+'%.':''}
+      ${bcrpMed!==null?' El BCRP reporta $'+fmtNum(Math.round(bcrpMed))+'/m² para este distrito.':''}
+      ${n>=30?' La muestra es estadísticamente confiable (n='+n+').':' La muestra es indicativa (n='+n+'); interpretar con cautela.'}
+      <div style="margin-top:8px;font-style:italic;color:var(--txt-muted)">Cada fuente refleja una población diferente (R-COMP-01). Las diferencias no implican valoración correcta o incorrecta; son posiciones relativas respecto a cada referencia.</div>
     </div>
 
     ${_dmTrust(conf,nSrc,n,rawPm2.length-pm2.length,_dmDist+(useType?' · '+prop.type:''))}`;
@@ -2882,18 +3294,23 @@ function renderMarket(el){
     {id:'panorama',label:'Panorama'},
     {id:'distrito',label:'Distrito'},
     {id:'posicion',label:'Posición'},
+    {id:'tendBcrp',label:'Tendencia BCRP'},
+    {id:'tendTas',label:'Tendencia Tas.'},
+    {id:'gap',label:'Brecha'},
     {id:'raw',label:'Admin Raw'}
   ];
   const tabBtns=tabs.map(t=>`<button class="tab-btn${_dmView===t.id?' active':''}" onclick="_dmNav('${t.id}')">${t.label}</button>`).join('');
+  const escD=_dmDist?_dmDist.replace(/'/g,"\\'"):'';
   const crumb=_dmView==='distrito'&&_dmDist?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist}${_dmTipo?' · '+_dmTipo:''}</div>`:
-    _dmView==='posicion'?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist?`<a href="#" onclick="_dmNav('distrito','${_dmDist.replace(/'/g,"\\'")}');return false">${_dmDist}</a><span class="sep">›</span>`:''} Posición</div>`:'';
+    _dmView==='posicion'?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist?`<a href="#" onclick="_dmNav('distrito','${escD}');return false">${_dmDist}</a><span class="sep">›</span>`:''} Posición</div>`:
+    _dmView==='gap'?`<div class="dm-crumb"><a href="#" onclick="_dmNav('panorama');return false">Panorama</a><span class="sep">›</span>${_dmDist?`<a href="#" onclick="_dmNav('distrito','${escD}');return false">${_dmDist}</a><span class="sep">›</span>`:''} Brecha</div>`:'';
 
   el.innerHTML=`
     <div class="main-header">
       <div><h1>Data de Mercado</h1><div class="subtitle">Inteligencia de mercado inmobiliario — análisis multi-fuente con gobernanza de datos</div></div>
     </div>
     <div class="main-body">
-      <div class="tab-bar">${tabBtns}</div>
+      <div class="tab-bar" style="flex-wrap:wrap">${tabBtns}</div>
       ${crumb}
       <div id="dmContent"></div>
     </div>`;
@@ -2903,6 +3320,9 @@ function renderMarket(el){
   if(_dmView==='panorama')ct.innerHTML=_dmRenderPanorama();
   else if(_dmView==='distrito')ct.innerHTML=_dmRenderDistrito();
   else if(_dmView==='posicion')ct.innerHTML=_dmRenderPosicion();
+  else if(_dmView==='tendBcrp')ct.innerHTML=_dmRenderTendBcrp();
+  else if(_dmView==='tendTas')ct.innerHTML=_dmRenderTendTas();
+  else if(_dmView==='gap')ct.innerHTML=_dmRenderGap();
   else if(_dmView==='raw')ct.innerHTML=_dmRenderRaw();
 }
 
