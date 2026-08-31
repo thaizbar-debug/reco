@@ -3026,7 +3026,11 @@ function getFiltered(){
       if(!pointInPolygon(GEO[p.id],S.polyPoints)) return false;
     }
     if(S.commute && S.commute.maxMin && GEO[p.id]){
-      if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
+      if(S.commute.isoCoords && S.commute.isoCoords.length>2){
+        if(!_pointInIsoPoly(GEO[p.id], S.commute.isoCoords)) return false;
+      } else {
+        if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
+      }
     }
     return true;
   });
@@ -3517,9 +3521,20 @@ function pointInPolygon(coord,poly){
   }
   return inside;
 }
+function _pointInIsoPoly(coord,poly){
+  const x=coord[0],y=coord[1];
+  let inside=false;
+  for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+    const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi)) inside=!inside;
+  }
+  return inside;
+}
 
 // ── Tiempo de traslado (commute) ──────────────────────────────
-// Pre-filtro rápido: Haversine × 1.3 ÷ 24 km/h. Visualización real: HERE Isoline API.
+// Pre-filtro rápido: Haversine × 1.3 ÷ velocidad promedio. Filtro preciso: punto dentro del polígono isócrono HERE.
+const _COMMUTE_SPEEDS={car:30,bicycle:15,pedestrian:5,bus:12};
+const _BUS_ISO_FACTOR=0.55;
 let commuteMarker=null, commuteCircle=null, commuteIsoLayer=null;
 let _commuteIsoDebounce=null;
 
@@ -3530,10 +3545,8 @@ function _haversineKm(aLat,aLng,bLat,bLng){
   return 2*R*Math.asin(Math.sqrt(x));
 }
 
-// Quick estimation for bulk property filtering (no API call)
 function commuteMinTo(c, geo){
-  const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
-  const spd=speeds[S.commuteTransport]||24;
+  const spd=_COMMUTE_SPEEDS[S.commuteTransport]||30;
   const km=_haversineKm(c.lat,c.lng,geo[0],geo[1])*1.3;
   return Math.max(1, Math.round(km/spd*60));
 }
@@ -3564,8 +3577,10 @@ function _decodeFlexPolyline(encoded){
 // Fetch isoline (isochrone) polygon from HERE Isoline API
 async function _fetchHereIsoline(lat,lng,seconds){
   const mode=S.commuteTransport||'car';
-  const hereMode=mode==='bus'?'car':mode; // bus uses car isoline as approximation, HERE Isoline doesn't support 'bus' directly
-  const url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=${hereMode}&origin=${lat},${lng}&range[type]=time&range[values]=${seconds}&apiKey=${HERE_API_KEY}`;
+  const hereMode=mode==='bus'?'car':(mode==='pedestrian'?'pedestrian':(mode==='bicycle'?'bicycle':'car'));
+  const isoSeconds=mode==='bus'?Math.round(seconds*_BUS_ISO_FACTOR):seconds;
+  let url=`https://isoline.router.hereapi.com/v8/isolines?transportMode=${hereMode}&origin=${lat},${lng}&range[type]=time&range[values]=${isoSeconds}&apiKey=${HERE_API_KEY}`;
+  if(hereMode==='car') url+=`&departureTime=${new Date().toISOString()}`;
   try{
     const resp=await fetch(url);
     if(!resp.ok) throw new Error('HERE Isoline '+resp.status);
@@ -3653,8 +3668,7 @@ function drawCommute(){
   commuteMarker=L.marker([S.commute.lat,S.commute.lng],{icon}).addTo(leafletMap);
   if(commuteIsoLayer){ commuteIsoLayer.remove(); commuteIsoLayer=null; }
   if(commuteCircle) commuteCircle.remove();
-  const speeds={car:24,bicycle:14,pedestrian:4.5,bus:18};
-  const km=(S.commute.maxMin/60)*(speeds[S.commuteTransport]||24)/1.3;
+  const km=(S.commute.maxMin/60)*(_COMMUTE_SPEEDS[S.commuteTransport]||30)/1.3;
   commuteCircle=L.circle([S.commute.lat,S.commute.lng],{radius:km*1000,color:'#0e7490',weight:2.5,dashArray:'6 5',fillColor:'#0891b2',fillOpacity:.15}).addTo(leafletMap);
   if(S.commute.isoCoords && S.commute.isoCoords.length>2){
     _drawIsoLayer();
@@ -3664,11 +3678,14 @@ function drawCommute(){
 const _COMMUTE_LABELS={car:'en auto',bicycle:'en bicicleta',pedestrian:'caminando',bus:'en bus'};
 function _commuteInfo(){
   const el=document.getElementById('commuteInfo'); if(!el) return;
-  const modeLabel=_COMMUTE_LABELS[S.commuteTransport]||'en auto';
+  const mode=S.commuteTransport||'car';
+  const modeLabel=_COMMUTE_LABELS[mode]||'en auto';
   if(!S.commute){ el.textContent='Haz clic en tu destino (trabajo, colegio…) para calcular el tiempo '+modeLabel+'.'; return; }
   const n=getFiltered().length;
   const method=S.commute.isoCoords?'':'(aprox.) ';
-  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min '+modeLabel+' '+method+'del destino. Tiempo referencial al momento de la consulta.';
+  const busNote=mode==='bus'?' (aprox. basado en tráfico vehicular)':'';
+  const trafficNote=S.commute.isoCoords&&mode==='car'?' Considera tráfico en tiempo real.':' Tiempo referencial al momento de la consulta.';
+  el.textContent=n.toLocaleString('es-PE')+' propiedades a ≤ '+S.commute.maxMin+' min '+modeLabel+busNote+' '+method+'del destino.'+trafficNote;
 }
 
 function clearCommute(){
@@ -4076,7 +4093,7 @@ function renderPins(list){
       _bindPinHover(marker,p.id);
       leafletMarkers[p.id]=marker;
     }else{
-      const label=n>999?'999+':n+(n===1?' prop.':' prop.');
+      const label=n>999?'999+':n+(n===1?' unid.':' unid.');
       const icon=L.divIcon({className:'lf-clust-wrap',html:`<div class="lf-cluster">${label}</div>`});
       const marker=L.marker([al,aln],{icon}).addTo(leafletMap);
       marker.on('click',()=>leafletMap.setView([al,aln],Math.min(z+2,16),{animate:true,duration:.5}));
