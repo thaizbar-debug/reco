@@ -10,47 +10,54 @@ demanda** por el mapa (capa "📐 Catastro", al acercar a zoom ≥ 14).
 - Registro de slugs en `CATASTRO_FILES` dentro de `index.html`.
 
 ## Generar un distrito
-Fuente: KML de catastro (carpeta de Drive de RECO). Conversor:
+Fuente: KML de catastro (carpeta de Drive `1uuv45KVciSMP0MWaMPvD3HSBG7jAqR09`).
+Los KML grandes están divididos en partes. Conversor:
 
 ```bash
-node tools/kml_to_geojson.js "150122-MIRAFLORES_PROD.kml" data/catastro/miraflores.geojson.gz
+node tools/kml_to_geojson.js data/catastro/<slug>.geojson.gz <in1.kml> [in2.kml ...]
 ```
 
-Para distritos partidos en varios KML (ATE-1/-2, CARABAYLLO-1/-2, CERCADO DE
-LIMA-2/3/4), conviene unir los features en un solo `<slug>.geojson.gz`.
+El conversor acepta múltiples KML y deduplica features automáticamente por
+coordenadas (tipo + primeros 2 vértices + cantidad de vértices).
 
-## Disponibles (15)
-barranco, brena, callao, jesus-maria, lince, magdalena-del-mar, pueblo-libre,
-punta-hermosa, punta-negra, rimac, san-bartolo, san-borja, san-isidro,
-san-luis, surquillo.
+## Disponibles – completos (16)
+barranco, brena, callao, cercado-de-lima, jesus-maria, lince,
+magdalena-del-mar, pueblo-libre, punta-hermosa, punta-negra, rimac,
+san-bartolo, san-borja, san-isidro, san-luis, surquillo.
 
-## Pendientes – KML disponible en Drive (12)
-Archivos KML > 10 MB; no transferibles por el conector de Drive en CI.
-Ya registrados en `CATASTRO_FILES`: basta colocar el `.gz` convertido en
-esta carpeta para que se activen automáticamente (sin tocar el HTML).
+## Disponibles – parciales (5)
+Convertidos con los KML descargados hasta ahora. Faltan partes por descargar
+de Drive para completar la cobertura total del distrito.
 
-| Distrito | KML en Drive | Tamaño | Notas |
+| Distrito | Partes cargadas | Lotes | Partes pendientes |
 |---|---|---|---|
-| lurin | 150119-LURIN_prod.kml | 7.4 MB | Único bajo 10 MB |
-| miraflores | 150122-MIRAFLORES_PROD.kml | 10.0 MB | |
-| cercado-de-lima | CERCADO DE LIMA-2/3/4_PROD.kml | 37.4 MB total | 3 archivos, unir features |
-| chorrillos | 150108-CHORRILLOS_PROD.kml | 12.1 MB | |
-| san-miguel | 150136-SAN MIGUEL_PROD.kml | 13.1 MB | |
-| santa-anita | 150137-SANTA ANITA_PROD.kml | 18.0 MB | |
-| el-agustino | 150111-EL AGUSTINO_prod.kml | 19.4 MB | |
-| la-molina | 150114-LA MOLINA_PROD.kml | 29.5 MB | |
-| santiago-de-surco | 150140-SANTIAGO DE SURCO_PROD.kml | 46.1 MB | |
-| san-juan-de-miraflores | 150133-SAN JUAN DE MIRAFLORES_prod.kml | 47.3 MB | |
-| carabayllo | 150106-CARABAYLLO-1/2_prod.kml | 106.1 MB total | 2 archivos, unir features |
-| ate | 150103-ATE-1/2_PROD.kml | 116.8 MB total | 2 archivos, unir features |
+| ate | 2 de 14 (Sector 9-11, 45-46) | 14,271 | Sectores 1-8, 12-44, 47+ |
+| independencia | 1 de 3 (PARTE3) | 7,579 | PARTE1, PARTE2 |
+| miraflores | 1 de 2 (PART2) | 668 | PART1 |
+| san-miguel | 1 de 2 (PARTE2) | 5,622 | PARTE1 |
+| santiago-de-surco | 1 de 5 (PART5) | 5,258 | PART1-4 |
 
-## Pendientes – sin KML aún (23 · Lima + Callao)
+## Pendientes – KML en Drive, sin convertir (7)
+KML disponible en la carpeta de Drive pero no descargado aún (conector de
+Drive inestable para archivos > 5 MB).
+
+| Distrito | Archivos en Drive | Notas |
+|---|---|---|
+| carabayllo | 14 partes (~101 MB total) | |
+| chorrillos | por confirmar | |
+| el-agustino | por confirmar | |
+| la-molina | 3 partes (~24.7 MB total) | |
+| lurin | 1 archivo (7.0 MB) | |
+| san-juan-de-miraflores | por confirmar | |
+| santa-anita | 1 archivo (7.2 MB) | |
+
+## Pendientes – sin KML aún (22 · Lima + Callao)
 Registrados en `CATASTRO_FILES` para activación automática futura.
 Se necesita obtener el KML fuente de cada distrito.
 
 **Lima Provincia:**
 la-victoria, los-olivos, san-juan-de-lurigancho, san-martin-de-porres,
-comas, independencia, puente-piedra, villa-el-salvador, villa-maria-del-triunfo,
+comas, puente-piedra, villa-el-salvador, villa-maria-del-triunfo,
 chaclacayo, pachacamac, cieneguilla, ancon, santa-rosa, lurigancho, pucusana,
 santa-maria-del-mar.
 
