@@ -524,9 +524,7 @@ function signInWithEmail(){
   btn.disabled=true;btn.textContent='Ingresando...';
   auth.signInWithEmailAndPassword(email,password).catch(e=>{
     btn.disabled=false;btn.textContent='Iniciar sesión';
-    if(e.code==='auth/user-not-found'||e.code==='auth/invalid-credential'){
-      auth.createUserWithEmailAndPassword(email,password).catch(e2=>showLoginError(authErrorMsg(e2)));
-    }else showLoginError(authErrorMsg(e));
+    showLoginError(authErrorMsg(e));
   });
 }
 function signInWithGoogle(){
@@ -2283,11 +2281,11 @@ function _dmSBadge(n){
   return'<span class="badge dm-sample-low">n='+fmtNum(n)+' · Insuficiente</span>';
 }
 function _dmTrust(conf,nSrc,n,outliers,scope){
-  const dt=new Date().toLocaleDateString('es-PE',{month:'short',year:'numeric'});
+  const dt=new Date().toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'});
   return'<div class="dm-trust"><strong>Data Trust</strong> · '+_dmCBadge(conf)+
     '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:16px"><span>Fuentes: '+nSrc+'</span><span>Muestra: '+fmtNum(n)+'</span>'+
     (outliers>0?'<span>Outliers removidos: '+fmtNum(outliers)+' (IQR)</span>':'')+
-    '<span>Ámbito: '+esc(scope)+'</span><span>Actualización: '+dt+'</span></div>'+
+    '<span>Ámbito: '+esc(scope)+'</span><span>Consulta: '+dt+'</span></div>'+
     '<div style="margin-top:6px;font-style:italic">Los valores de oferta reflejan precios de publicación (asking), no precios de transacción. Medianas y percentiles excluyen outliers según política IQR (R-OUT-01). No se mezclan poblaciones oferta/transacción (R-COMP-01).</div></div>';
 }
 function _dmNav(view,dist,tipo,propId){

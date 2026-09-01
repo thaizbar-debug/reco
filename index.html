@@ -1660,7 +1660,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label">En venta</div>
-      <a href="javascript:void(0)" onclick="goToApp('#op=venta')" class="sec-link" data-count-key="venta">Ver las 791 en venta →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#op=venta')" class="sec-link" data-count-key="venta">Ver propiedades en venta →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftVenta" onclick="scrollCarousel('featuredGridVenta',-1)">&#10094;</button>
@@ -1670,7 +1670,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:28px">
       <div class="section-label" style="background:#fef3c7;color:#d97706;border-color:#fcd34d">En alquiler</div>
-      <a href="javascript:void(0)" onclick="goToApp('#op=alquiler')" class="sec-link" data-count-key="alquiler">Ver las 123 en alquiler →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#op=alquiler')" class="sec-link" data-count-key="alquiler">Ver propiedades en alquiler →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftAlq" onclick="scrollCarousel('featuredGridAlq',-1)">&#10094;</button>
@@ -1686,7 +1686,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:#d1fae5;color:#059669;border-color:#6ee7b7">A estrenar</div>
-      <a href="javascript:void(0)" onclick="goToApp('#age=0&op=venta')" class="sec-link" data-count-key="estreno">Ver las 257 en venta a estrenar →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#age=0&op=venta')" class="sec-link" data-count-key="estreno">Ver propiedades a estrenar →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftEstreno" onclick="scrollCarousel('featuredGridEstreno',-1)">&#10094;</button>
@@ -1702,7 +1702,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div class="sec-row" style="margin-top:18px">
       <div class="section-label" style="background:rgba(245,158,11,.15);color:var(--amber);border-color:rgba(245,158,11,.4)">Exclusivo</div>
-      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo&op=venta')" class="sec-link" data-count-key="lujo">Ver las 25 en venta de lujo →</a>
+      <a href="javascript:void(0)" onclick="goToApp('#feat=lujo&op=venta')" class="sec-link" data-count-key="lujo">Ver propiedades de lujo →</a>
     </div>
     <div class="props-carousel-wrap">
       <button class="carousel-arrow carousel-arrow-left" id="carouselLeftLujo" onclick="scrollCarousel('featuredGridLujo',-1)">&#10094;</button>
@@ -4888,9 +4888,8 @@ function buildSunarpPanel(p, partidas, sunOverride){
 }
 
 function openDetail(id){
-  console.log('[reco] openDetail called:', id);
   const p=properties.find(x=>x.id===id);
-  if(!p){ console.log('[reco] property not found:', id); return; }
+  if(!p) return;
   S.selectedId=id;
   addRecent(id);
 
