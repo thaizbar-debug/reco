@@ -1589,7 +1589,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="mini-chart">
             <div class="bar" style="height:30%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:40%"></div><div class="bar hi" style="height:80%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:72%"></div><div class="bar hi" style="height:90%"></div>
           </div>
-          <span class="chart-label">Precio por zona · 2024</span>
+          <span class="chart-label">Precio por zona</span>
         </div>
         <div class="why-body">
           <h3>¿A cuánto se vendió en esta zona?</h3>
@@ -1780,7 +1780,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     </div>
 
     <div class="anun-stats">
-      <div class="anun-stat"><span class="anun-stat-n">800+</span><span class="anun-stat-l">Usuarios activos</span></div>
+      <div class="anun-stat"><span class="anun-stat-n">43</span><span class="anun-stat-l">Distritos de Lima</span></div>
       <div class="anun-stat"><span class="anun-stat-n">Lima</span><span class="anun-stat-l">Mercado objetivo</span></div>
       <div class="anun-stat"><span class="anun-stat-n">ABC1</span><span class="anun-stat-l">Perfil socioeconómico</span></div>
     </div>
@@ -5362,7 +5362,7 @@ function openFullReport(id){
       </div>
       <div style="display:flex;gap:8px">
         <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
-        ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
+        ${!isHist?`<button class="fr-btn-ghost" onclick="toast('Exportar PDF — próximamente')">↗ Exportar PDF</button>`:''}
       </div>
     </nav>
 
@@ -5431,12 +5431,12 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="closeFullReport()">← Volver a resultados</button>`
             : isAlq
             ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','arrendador')">📞 Contactar arrendador</button>
-               <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
+               <button class="fr-cta-sec" onclick="toast('Agendar visita — próximamente')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor')">📞 Contactar vendedor</button>`
           }
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
-            <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+            <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde pronto</div></div>
           </div>
         </div>
 
@@ -5446,7 +5446,7 @@ function openFullReport(id){
           <div class="fr-sidebar-title">Fuente de datos</div>
           <div class="fr-vanet">
             <div class="fr-vanet-dot"></div>
-            <div class="fr-vanet-text"><strong>Vanet Data</strong> — base de tasaciones con +25 años en el mercado peruano. Cruzada con Registros Públicos. Actualizado: Mayo 2026.</div>
+            <div class="fr-vanet-text"><strong>Vanet Data</strong> — base de tasaciones con +25 años en el mercado peruano. Cruzada con Registros Públicos. Actualizado periódicamente.</div>
           </div>
         </div>
       </div>
@@ -8537,7 +8537,7 @@ var FAQS=[
   ]},
   {cat:'Planes y pagos',items:[
     {q:'¿Es gratis?',a:'El acceso al mapa y las publicaciones activas es gratuito. Los reportes históricos detallados y la información de SUNARP se cobran por "llaves" (consultas).'},
-    {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos el plan Oro con API de valorización, integraciones SUNARP en vivo y reportes en lote. Escríbenos a webmaster@recosac.com.'},
+    {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Contáctanos para soluciones empresariales personalizadas con acceso a datos de mercado y reportes. Escríbenos a webmaster@recosac.com.'},
     {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
   ]},
   {cat:'Privacidad y soporte',items:[

@@ -434,7 +434,7 @@ input[type=checkbox]{accent-color:var(--blue);width:15px;height:15px}
       <div class="nav-section">Datos</div>
       <button class="nav-item" onclick="navigateTo('market')" data-nav="market">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-        Datos de Mercado
+        Data de Mercado
       </button>
       <button class="nav-item" onclick="navigateTo('audit')" data-nav="audit">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -2452,13 +2452,10 @@ function _dmRenderDistrito(){
   const pm2=_dmClean(rawPm2);
   const n=pm2.length;
 
-  // Breadcrumb
-  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><span>'+esc(distSel)+(_dmTipo?' · '+esc(_dmTipo):'')+'</span></div>';
-
   // Insufficient data
   if(n<10){
     const rawN=rawPm2.length;
-    return crumb+selBar+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+    return selBar+`<div class="section-card"><div class="card-body"><div class="dm-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:48px;height:48px;margin-bottom:14px;opacity:.4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <p><strong>Datos insuficientes</strong></p>
       <p>Se requieren al menos 10 registros para generar un benchmark confiable${_dmTipo?' para '+esc(_dmTipo):''} en ${esc(distSel)}.</p>
@@ -2528,7 +2525,7 @@ function _dmRenderDistrito(){
     .map(p=>({id:p.id,address:p.address||p.desc||'Sin dirección',type:p.type||'Otro',price:p.price,area:p.area,ppm2:p.price/p.area,beds:p.beds||0}))
     .sort((a,b)=>b.ppm2-a.ppm2);
 
-  return crumb+selBar+`
+  return selBar+`
     <div class="kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:14px;margin-bottom:20px">
       <div class="section-card"><div class="card-body" style="text-align:center;padding:16px 12px">
         <div style="font-size:1.8rem;font-weight:800;color:var(--blue)">$${fmtNum(Math.round(med))}</div>
@@ -2626,8 +2623,6 @@ function _dmRenderPosicion(){
   const pm2=_dmClean(rawPm2);
   const n=pm2.length;
 
-  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><a onclick="_dmNav(\'distrito\',\''+esc(_dmDist).replace(/'/g,"\\'")+'\')">'+esc(_dmDist)+'</a><span class="sep">›</span><span>Posición</span></div>';
-
   const propSel=`<div class="filter-bar" style="margin-bottom:20px">
     <select onchange="_dmNav('posicion',undefined,undefined,this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt);max-width:500px">
       ${props.map(p=>`<option value="${esc(p.id)}"${p.id===selId?' selected':''}>${esc(truncate(p.address,40))} — $${fmtNum(Math.round(p.ppm2))}/m²</option>`).join('')}
@@ -2635,7 +2630,7 @@ function _dmRenderPosicion(){
   </div>`;
 
   if(n<10){
-    return crumb+propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+    return propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
       <p><strong>Datos insuficientes</strong></p>
       <p>Se requieren al menos 10 propiedades comparables para determinar posición de mercado en ${esc(_dmDist)}.</p>
       <p style="margin-top:8px">${_dmSBadge(n)}</p>
@@ -2678,7 +2673,7 @@ function _dmRenderPosicion(){
   const qPct=rawPm2.length?(pm2.length/rawPm2.length*100):0;
   const conf=_dmConf(n,nSrc,'distrito',90,qPct);
 
-  return crumb+propSel+`
+  return propSel+`
     <div class="section-card" style="margin-bottom:20px">
       <div class="card-header"><h3>Propiedad Seleccionada</h3></div>
       <div class="card-body">
@@ -3004,8 +2999,6 @@ function _dmRenderGap(){
   const pm2=_dmClean(rawPm2);
   const n=pm2.length;
 
-  const crumb='<div class="dm-crumb"><a onclick="_dmNav(\'panorama\')">Panorama</a><span class="sep">›</span><a onclick="_dmNav(\'distrito\',\''+esc(_dmDist).replace(/'/g,"\\'")+'\')">'+esc(_dmDist)+'</a><span class="sep">›</span><span>Brecha</span></div>';
-
   const propSel=`<div class="filter-bar" style="margin-bottom:20px">
     <select onchange="_dmNav('gap',undefined,undefined,this.value)" style="padding:6px 12px;border:1px solid var(--border);border-radius:var(--r);font-size:.82rem;background:var(--bg-card);color:var(--txt);max-width:500px">
       ${props.map(p=>`<option value="${esc(p.id)}"${p.id===selId?' selected':''}>${esc(truncate(p.address,40))} — $${fmtNum(Math.round(p.ppm2))}/m²</option>`).join('')}
@@ -3013,7 +3006,7 @@ function _dmRenderGap(){
   </div>`;
 
   if(n<10){
-    return crumb+propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
+    return propSel+`<div class="section-card"><div class="card-body"><div class="dm-empty">
       <p><strong>Datos insuficientes</strong></p>
       <p>Se requieren al menos 10 propiedades comparables para calcular brecha de valoración en ${esc(_dmDist)}.</p>
       <p style="margin-top:8px">${_dmSBadge(n)}</p>
@@ -3091,7 +3084,7 @@ function _dmRenderGap(){
   const propPos=Math.max(0,Math.min(100,((ppm2-gaugeMin)/gaugeRange)*100));
   const medPos=((med-gaugeMin)/gaugeRange)*100;
 
-  return crumb+propSel+`
+  return propSel+`
     <div class="section-card" style="margin-bottom:20px">
       <div class="card-header"><h3>Propiedad Analizada</h3></div>
       <div class="card-body">
