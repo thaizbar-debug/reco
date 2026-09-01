@@ -592,7 +592,7 @@ async function loadAllData(){
       db.collection('contactRequests').get(),
       db.collection('adminAuditLog').orderBy('createdAt','desc').limit(200).get()
     ]);
-    const allPubs=pubSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const allPubs=pubSnap.docs.map(d=>{const o={id:d.id,...d.data()};if(!o.cur&&o.currency)o.cur=o.currency==='PEN'?'S/':'$';return o;});
     _pubs=allPubs.filter(p=>p.op!=='Histórico');
     _historicos=allPubs.filter(p=>p.op==='Histórico');
     _contacts=contactSnap.docs.map(d=>({id:d.id,...d.data()}));
@@ -631,7 +631,7 @@ async function loadMarketData(){
 }
 
 async function refreshPubs(){
-  try{const snap=await db.collection('publications').get();const all=snap.docs.map(d=>({id:d.id,...d.data()}));_pubs=all.filter(p=>p.op!=='Histórico');_historicos=all.filter(p=>p.op==='Histórico');updateBadges();}catch(e){console.error('refreshPubs:',e);}
+  try{const snap=await db.collection('publications').get();const all=snap.docs.map(d=>{const o={id:d.id,...d.data()};if(!o.cur&&o.currency)o.cur=o.currency==='PEN'?'S/':'$';return o;});_pubs=all.filter(p=>p.op!=='Histórico');_historicos=all.filter(p=>p.op==='Histórico');updateBadges();}catch(e){console.error('refreshPubs:',e);}
 }
 async function refreshContacts(){
   try{const snap=await db.collection('contactRequests').get();_contacts=snap.docs.map(d=>({id:d.id,...d.data()}));updateBadges();}catch(e){console.error('refreshContacts:',e);}
@@ -3266,7 +3266,7 @@ function _dmRenderRatio(){
             <td style="font-weight:700">$${fmtNum(Math.round(r.mktMed))}</td>
             <td>$${fmtNum(Math.round(r.aranMed))}</td>
             <td style="font-weight:800;color:${rl.clr}">${r.ratio.toFixed(2)}x</td>
-            <td style="color:${r.diffPct>=0?'var(--amber)':'var(--blue)'};font-weight:600">+${r.diffPct.toFixed(0)}%</td>
+            <td style="color:${r.diffPct>=0?'var(--amber)':'var(--blue)'};font-weight:600">${r.diffPct>=0?'+':''}${r.diffPct.toFixed(0)}%</td>
             <td>${_dmSBadge(r.n)}</td>
             <td>${_dmCBadge(r.conf)}</td>
           </tr>`;}).join('')}
