@@ -5244,53 +5244,10 @@ function openFullReport(id){
       </div>`;
 
   // ── Score de inversión (solo Venta/Alquiler) ─────────────────
-  const scoreHTML = !isHist ? `
-    <div class="fr-sec">
-      <h2 class="fr-sec-title">Score de inversión <small>· análisis Reco</small></h2>
-      <div class="fr-score-layout">
-        <div class="fr-score-grid">
-          ${[['Precio relativo','6.2','#e8b84b'],['Ubicación','8.4','#3DB07A'],['Liquidez histórica','7.8','#3DB07A'],
-             ['Potencial alquiler','7.1','#3DB07A'],['Momentum de zona','7.5','#3DB07A'],['Estado del inmueble','8.0','#3DB07A']]
-            .map(([lbl,val,color])=>`
-            <div class="fr-score-item">
-              <div class="fr-score-label">${lbl} <span>${val}</span></div>
-              <div class="fr-score-bar-track"><div style="width:${parseFloat(val)*10}%;height:5px;border-radius:3px;background:${color}"></div></div>
-            </div>`).join('')}
-        </div>
-        <div class="fr-score-total">
-          <div class="fr-score-num">7.5</div>
-          <div style="font-size:13px;opacity:.6">/ 10</div>
-          <div style="font-size:12px;margin-top:8px">★★★★☆</div>
-          <div style="font-size:13px;margin-top:8px;font-weight:500">Buena inversión</div>
-        </div>
-      </div>
-    </div>` : '';
+  const scoreHTML = '';
 
   // ── Contexto de mercado (solo Venta/Alquiler) ────────────────
-  const ctxHTML = !isHist ? `
-    <div class="fr-sec">
-      <h2 class="fr-sec-title">Contexto del mercado <small>· ${esc(p.district)}</small></h2>
-      <div class="fr-ctx-grid">
-        <div class="fr-ctx-card">
-          <div class="fr-ctx-lbl">Liquidez de la zona</div>
-          <div class="fr-ctx-val">38 días</div>
-          <div class="fr-ctx-sub">Promedio para ${isAlq?'arrendar':'vender'} en ${esc(p.district)}.</div>
-          <span class="fr-badge green">▲ Alta</span>
-        </div>
-        <div class="fr-ctx-card">
-          <div class="fr-ctx-lbl">${isAlq?'Ocupación estimada':'Yield estimado'}</div>
-          <div class="fr-ctx-val">${isAlq?'92%':'5.9%'}</div>
-          <div class="fr-ctx-sub">${isAlq?'Promedio histórico de ocupación en la zona.':'Alquiler ref. · ocupación 92%.'}</div>
-          <span class="fr-badge green">Sobre promedio Lima</span>
-        </div>
-        <div class="fr-ctx-card">
-          <div class="fr-ctx-lbl">Momentum del distrito</div>
-          <div class="fr-ctx-val">+6.2% YoY</div>
-          <div class="fr-ctx-sub">Apreciación sostenida por 4 trimestres.</div>
-          <span class="fr-badge amber">Cerca del techo histórico</span>
-        </div>
-      </div>
-    </div>` : '';
+  const ctxHTML = '';
 
   // ── Ficha SUNARP (solo Histórico) ────────────────────────────
   const sunHTML = isHist ? (() => {
@@ -5676,7 +5633,6 @@ let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null
          beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[],listedAt:null};
-const _SUGG=481000;
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
   'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
   'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
@@ -5717,7 +5673,7 @@ function renderPublish(){
   document.getElementById('vPublish').innerHTML=`<section class="pub-wrap">
     <div style="max-width:1100px;margin:0 auto">
       <h1 class="pub-title">Publicar Inmueble</h1>
-      <p class="pub-subtitle">Sube tu propiedad a Reco y recibe valorización IA con comparables reales de SUNARP.</p>
+      <p class="pub-subtitle">Sube tu propiedad a Reco y accede a comparables reales de SUNARP y datos de mercado.</p>
       <div class="pub-tabs">
         <button class="pub-tab${_pubTab==='single'?' active':''}" onclick="_pubSetTab('single')">📋 Publicar uno</button>
         <button class="pub-tab${_pubTab==='bulk'?' active':''}" onclick="_pubSetTab('bulk')">📊 Subir varios (CSV / Excel)</button>
@@ -5842,7 +5798,7 @@ function _rps(){
     </div>`;
     setTimeout(_pubMapInit,80);
   } else {
-    const pr=Number(_pd.price)||0,ar=Number(_pd.area)||1,dl=(pr-_SUGG)/_SUGG*100,nd=Math.max(8,Math.min(92,50+dl*1.6));
+    const pr=Number(_pd.price)||0,ar=Number(_pd.area)||1;
     body.innerHTML=`
     <div class="pub-grid">
       <div class="pub-card">
@@ -5866,14 +5822,9 @@ function _rps(){
         <div class="pub-field"><label>Descripción <span style="color:var(--red)">*</span></label><textarea rows="5" placeholder="Describe lo que hace especial tu propiedad…" oninput="_pd.desc=this.value">${esc(_pd.desc)}</textarea></div>
       </div>
       <div class="pub-card">
-        <h3>📊 Valorización Reco IA</h3>
-        <div class="pub-tip"><span>🤖</span><div><strong>Reco sugiere:</strong> ${_pd.currency==='PEN'?'S/':'$'} ${_SUGG.toLocaleString()} basado en 23 ventas comparables en 600 m (SUNARP, últimos 18 meses).</div></div>
+        <h3>📊 Resumen de precio</h3>
         <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Veredicto de precio</div>
-          <div class="gauge-track"><div class="gauge-needle" id="pn" style="left:${nd}%"></div></div>
-          <div class="gauge-labels"><span>Bajo mercado</span><span>Justo</span><span>Sobre mercado</span></div>
-          <div style="margin-top:12px;font-size:13px">${dl>5?`<strong style="color:var(--red)">▲ ${dl.toFixed(1)}% sobre el mercado.</strong> Considera bajar el precio.`:dl<-5?`<strong style="color:var(--green)">▼ ${Math.abs(dl).toFixed(1)}% bajo el mercado.</strong> Atraerás muchas visitas.`:`<strong style="color:var(--green)">✓ Precio en rango justo.</strong> Tiempo estimado: 32–45 días.`}</div>
-          <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--muted)"><span>Precio/m²</span><span style="font-weight:700;color:var(--txt)">${_pd.currency==='PEN'?'S/':'$'} ${Math.round(pr/ar).toLocaleString()}/m²</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--muted)"><span>Precio/m²</span><span style="font-weight:700;color:var(--txt)">${_pd.currency==='PEN'?'S/':'$'} ${Math.round(pr/ar).toLocaleString()}/m²</span></div>
         </div>
         <h3 style="margin-top:18px">📋 Resumen</h3>
         <div style="background:var(--light);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
@@ -8571,26 +8522,26 @@ if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
 var FAQS=[
   {cat:'Sobre Reco',items:[
     {q:'¿Qué es Reco y para quién está pensado?',a:'Reco es una plataforma de inteligencia inmobiliaria para Lima. Te dice si una propiedad vale lo que piden, basándose en transacciones reales de SUNARP, no en avisos. Útil para compradores, inversionistas, tasadores, bancos y desarrolladores.'},
-    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, sumando un veredicto IA (sobrevalorado / justo / oportunidad), liquidez de la zona, yield estimado y señales predictivas por distrito.'},
+    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, con datos de tasaciones, valores arancelarios y tendencias de mercado por distrito.'},
     {q:'¿Qué distritos cubren?',a:'Cobertura completa en 43 distritos de Lima Metropolitana. Estamos ampliando al Callao y balnearios del sur.'},
   ]},
   {cat:'Datos y metodología',items:[
     {q:'¿De dónde viene la información de precios?',a:'De transacciones inscritas en SUNARP (compraventas, hipotecas, transferencias), enriquecidas con data catastral y señales de mercado.'},
-    {q:'¿Cuántas transacciones tienen indexadas?',a:'Más de 847,000 transacciones, actualizadas diariamente a las 06:00 a. m.'},
-    {q:'¿Qué tan preciso es el modelo de valorización?',a:'El margen de error promedio (MAPE) del modelo Reco IA es de ±4.2% en distritos con buena profundidad de mercado. En cada análisis mostramos el intervalo de confianza y los comparables utilizados.'},
+    {q:'¿Cuántas transacciones tienen indexadas?',a:'Miles de transacciones inscritas en SUNARP, actualizadas periódicamente con datos públicos registrales.'},
+    {q:'¿Qué tan preciso es el modelo de valorización?',a:'Los precios que mostramos provienen de transacciones registradas en SUNARP y de fuentes oficiales (BCRP, MEF, SBS). Para cada análisis indicamos la muestra, la confianza y las fuentes utilizadas.'},
     {q:'¿Reemplaza a una tasación oficial?',a:'No. Reco entrega información referencial para tomar mejores decisiones, pero no sustituye la tasación de un perito registrado ante la SBS.'},
   ]},
   {cat:'Uso de la plataforma',items:[
-    {q:'¿Cómo analizo una propiedad?',a:'Escribe la dirección en el buscador. En 5 segundos recibes el veredicto, comparables, yield estimado y score de inversión.'},
+    {q:'¿Cómo analizo una propiedad?',a:'Escribe la dirección en el buscador. En segundos accedes a datos de transacciones SUNARP, tasaciones y comparables del distrito.'},
     {q:'¿Qué es el buscador con IA en español?',a:'Puedes escribir en lenguaje natural — "depa en Miraflores de 3 dormitorios hasta 600 mil dólares" — y Reco IA traduce eso a filtros automáticamente.'},
   ]},
   {cat:'Planes y pagos',items:[
-    {q:'¿Es gratis?',a:'El acceso al mapa de calor y al veredicto rápido es gratuito. Los reportes históricos detallados y la información de SUNARP se cobran por "llaves" (consultas).'},
+    {q:'¿Es gratis?',a:'El acceso al mapa y las publicaciones activas es gratuito. Los reportes históricos detallados y la información de SUNARP se cobran por "llaves" (consultas).'},
     {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos el plan Oro con API de valorización, integraciones SUNARP en vivo y reportes en lote. Escríbenos a webmaster@recosac.com.'},
     {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
   ]},
   {cat:'Privacidad y soporte',items:[
-    {q:'¿Necesito crear cuenta para usar Reco?',a:'Para el veredicto básico y el mapa de calor, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
+    {q:'¿Necesito crear cuenta para usar Reco?',a:'Para navegar el mapa y ver publicaciones activas, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
     {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733). Revisa el Aviso de Privacidad en el pie de página.'},
     {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página. Respondemos en máximo 30 días calendario.'},
     {q:'¿Cómo contacto al equipo?',a:'Escríbenos a webmaster@recosac.com. Para temas legales: webmaster@recosac.com.'},
