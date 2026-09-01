@@ -6,12 +6,14 @@
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>Reco Admin</title>
 <meta name="robots" content="noindex,nofollow"/>
-<!-- GA4: Replace G-XXXXXXXXXX with your real Measurement ID from https://analytics.google.com -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<!-- GA4: Set your Measurement ID below (one place). No requests while placeholder. -->
 <script>
+var GA4_MEASUREMENT_ID='G-XXXXXXXXXX';
 window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','G-XXXXXXXXXX');
-function _ga(event,params){try{gtag('event',event,params||{});}catch(e){}}
+function _ga(event,params){try{if(window._ga4ok)gtag('event',event,params||{});}catch(e){}}
+(function(){if(!GA4_MEASUREMENT_ID||/XXXX/.test(GA4_MEASUREMENT_ID))return;window._ga4ok=true;
+var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+GA4_MEASUREMENT_ID;document.head.appendChild(s);
+gtag('js',new Date());gtag('config',GA4_MEASUREMENT_ID);})();
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>

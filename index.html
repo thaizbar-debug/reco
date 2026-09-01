@@ -15,12 +15,14 @@
 <meta property="og:locale" content="es_PE"/>
 <meta name="twitter:card" content="summary_large_image"/>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230891b2'/%3E%3Ctext x='16' y='23' font-family='system-ui' font-size='20' font-weight='800' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E"/>
-<!-- GA4: Replace G-XXXXXXXXXX with your real Measurement ID from https://analytics.google.com -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<!-- GA4: Set your Measurement ID below (one place). No requests while placeholder. -->
 <script>
+var GA4_MEASUREMENT_ID='G-XXXXXXXXXX';
 window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','G-XXXXXXXXXX');
-function _ga(event,params){try{gtag('event',event,params||{});}catch(e){}}
+function _ga(event,params){try{if(window._ga4ok)gtag('event',event,params||{});}catch(e){}}
+(function(){if(!GA4_MEASUREMENT_ID||/XXXX/.test(GA4_MEASUREMENT_ID))return;window._ga4ok=true;
+var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+GA4_MEASUREMENT_ID;document.head.appendChild(s);
+gtag('js',new Date());gtag('config',GA4_MEASUREMENT_ID);})();
 </script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
