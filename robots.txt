@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /scripts/
+Disallow: /data/*.xlsx
+Disallow: /data/*.docx
+Disallow: /data/*.zip
+
+Sitemap: https://recosac.com/sitemap.xml

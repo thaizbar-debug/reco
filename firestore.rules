@@ -256,6 +256,18 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // /_marketProtected/{docId}
+    //
+    // Server-managed market data that was previously in a publicly
+    // accessible JSON file (data/historicos_market.json). Contains
+    // individual transaction prices — the core monetizable asset of
+    // the key-based unlock economy. Admin-only read; writes go
+    // through the Admin SDK migration script (scripts/upload-historicos-to-firestore.js).
+    match /_marketProtected/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

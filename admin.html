@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>Reco Admin</title>
+<meta name="robots" content="noindex,nofollow"/>
+<!-- GA4: Replace G-XXXXXXXXXX with your real Measurement ID from https://analytics.google.com -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','G-XXXXXXXXXX');
+function _ga(event,params){try{gtag('event',event,params||{});}catch(e){}}
+</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -621,7 +629,7 @@ async function loadMarketData(){
       fetch('data/serie_precios_tasaciones.json').then(r=>r.ok?r.json():null).catch(()=>null),
       fetch('data/valores_arancelarios_mef.json').then(r=>r.ok?r.json():null).catch(()=>null),
       fetch('data/zonificacion_lima_imp.json').then(r=>r.ok?r.json():null).catch(()=>null),
-      fetch('data/historicos_market.json').then(r=>r.ok?r.json():null).catch(()=>null),
+      db.collection('_marketProtected').doc('historicos').get().then(snap=>{if(!snap.exists)return null;const d=snap.data();return{historicos:d.records||[],metadata:d.metadata||{}};}).catch(()=>null),
       fetch('data/tasaciones_full.json').then(r=>r.ok?r.json():null).catch(()=>null)
     ]);
     _marketData={bcrp,tasaciones,mef,zoni,histMarket,tasFull};
@@ -2290,6 +2298,8 @@ function _dmTrust(conf,nSrc,n,outliers,scope){
 }
 function _dmNav(view,dist,tipo,propId){
   _dmView=view;if(dist!==undefined)_dmDist=dist;if(tipo!==undefined)_dmTipo=tipo;if(propId!==undefined)_dmPropId=propId;
+  const evMap={panorama:'market_view',distrito:'district_view',posicion:'property_market_view',tendBcrp:'market_view',tendTas:'market_view',gap:'market_view',ratio:'market_view'};
+  _ga(evMap[view]||'market_view',{view:view,district:dist||'',type:tipo||''});
   renderMarket(document.getElementById('mainContent'));
 }
 

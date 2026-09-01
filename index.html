@@ -4,7 +4,24 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
-<title>Reco SAC — Búsqueda de Inmuebles</title>
+<title>Reco SAC — Búsqueda de Inmuebles en Lima, Perú</title>
+<meta name="description" content="Busca propiedades en venta y alquiler en Lima con datos reales de SUNARP, tasaciones y valores de mercado. Departamentos, casas, terrenos y oficinas."/>
+<link rel="canonical" href="https://recosac.com/"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://recosac.com/"/>
+<meta property="og:title" content="Reco SAC — Inmuebles en Lima con datos reales"/>
+<meta property="og:description" content="Busca propiedades en venta y alquiler en Lima con datos reales de SUNARP, tasaciones y valores de mercado."/>
+<meta property="og:image" content="https://recosac.com/data/hero-landing.png"/>
+<meta property="og:locale" content="es_PE"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230891b2'/%3E%3Ctext x='16' y='23' font-family='system-ui' font-size='20' font-weight='800' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E"/>
+<!-- GA4: Replace G-XXXXXXXXXX with your real Measurement ID from https://analytics.google.com -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+gtag('js',new Date());gtag('config','G-XXXXXXXXXX');
+function _ga(event,params){try{gtag('event',event,params||{});}catch(e){}}
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Firebase SDKs -->
@@ -20,10 +37,20 @@
 // platform.here.com. Restricted to https://thaizbar-debug.github.io/*,
 // https://reco.pe/*, https://*.reco.pe/*, http://localhost:*/* and
 // http://127.0.0.1:*/* via the "App restrictions" panel on that key.
-// ⚠️  El dominio https://recosac.com/* DEBE agregarse a la lista
-// de restricciones en platform.here.com para que la geocodificación
-// funcione desde el dominio principal (CNAME actual: recosac.com).
-// Mientras tanto, el fallback a Photon (Komoot) se activa automáticamente.
+//
+// ┌─────────────────────────────────────────────────────────────┐
+// │ PRE-GO-LIVE: Agregar dominio a restricciones HERE           │
+// │                                                             │
+// │ 1. Ir a https://platform.here.com/admin/apps               │
+// │ 2. Abrir la app que contiene esta API key                   │
+// │ 3. En "App restrictions" → "Allowed domains", agregar:      │
+// │    • https://recosac.com/*                                  │
+// │    • https://www.recosac.com/*                               │
+// │ 4. Guardar cambios                                          │
+// │                                                             │
+// │ Sin esto, las llamadas a HERE desde recosac.com fallan      │
+// │ y el fallback a Photon (Komoot) se activa automáticamente.  │
+// └─────────────────────────────────────────────────────────────┘
 const HERE_API_KEY='dInOXAAJVAKb3WAEZO1-gajllipt9cmi0MvXSje89no';
 const GOOGLE_MAPS_KEY='';
 </script>
@@ -4132,6 +4159,7 @@ function _updateSortNewLabel(){
 function applyFilters(){
   _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
+  if(S.query) _ga('search',{search_term:S.query});
   S.type=document.getElementById('typeSel').value;
   S.bankOnly=document.getElementById('bankOnly').checked;
   S.sort=document.getElementById('sortSel').value;
@@ -4890,6 +4918,7 @@ function buildSunarpPanel(p, partidas, sunOverride){
 function openDetail(id){
   const p=properties.find(x=>x.id===id);
   if(!p) return;
+  _ga('property_view',{property_id:id,district:p.district||'',type:p.type||'',operation:p.op||''});
   S.selectedId=id;
   addRecent(id);
 
@@ -5054,6 +5083,7 @@ function closeDetail(){
 }
 
 function showGatePanel(p){
+  _ga('paywall_view',{property_id:p.id||'',district:p.district||''});
   const has=S.keysLeft>0;
   document.getElementById('detailContent').innerHTML=`
     <div class="detail-header" style="background:${p.gradient}">
@@ -5180,6 +5210,7 @@ function closeModal(){
 }
 
 function selectPlan(el,name,price,qty){
+  _ga('pro_cta_click',{plan_name:name,plan_price:price,plan_keys:qty});
   document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel'));
   el.classList.add('sel');
   S.selectedPlan={name,price,qty};
@@ -6268,6 +6299,9 @@ function goHome(){
 }
 function goToApp(hash){
   hash = hash || '';
+  if(hash.includes('op=venta')) _ga('buy_click');
+  else if(hash.includes('op=alquiler')) _ga('rent_click');
+  else if(hash.includes('op=hist')) _ga('historical_view');
   hideLegalPages();
   document.body.classList.remove('show-home');
   document.body.classList.remove('show-user');
@@ -7987,7 +8021,7 @@ function setAuthLoading(btnId, loading) {
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .then(() => closeAuthModal())
+    .then(() => { _ga('login',{method:'google'}); closeAuthModal(); })
     .catch(e => showAuthError(friendlyError(e.code)));
 }
 function signInWithEmail() {
@@ -7996,7 +8030,7 @@ function signInWithEmail() {
   if (!email || !pass) return showAuthError('Completa todos los campos.');
   setAuthLoading('loginBtn', true);
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => closeAuthModal())
+    .then(() => { _ga('login',{method:'email'}); closeAuthModal(); })
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
@@ -8023,7 +8057,7 @@ function registerWithEmail() {
         });
       }
     })
-    .then(() => closeAuthModal())
+    .then(() => { _ga('sign_up',{method:'email'}); closeAuthModal(); })
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('registerBtn', false));
 }
