@@ -3991,8 +3991,12 @@ function _renderDistritos(fc){
   fc.features.forEach(function(f){
     const name=f.properties.distrito||'';
     const display=name.charAt(0)+name.slice(1).toLowerCase();
-    var coords=f.geometry.coordinates[0];
-    if(f.geometry.type==='MultiPolygon') coords=f.geometry.coordinates[0][0];
+    var coords;
+    if(f.geometry.type==='MultiPolygon'){
+      var best=f.geometry.coordinates[0][0],bestLen=best.length;
+      f.geometry.coordinates.forEach(function(poly){if(poly[0].length>bestLen){best=poly[0];bestLen=poly[0].length;}});
+      coords=best;
+    } else { coords=f.geometry.coordinates[0]; }
     var lat=0,lng=0;
     coords.forEach(function(c){lat+=c[1];lng+=c[0];});
     lat/=coords.length; lng/=coords.length;

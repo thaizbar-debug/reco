@@ -1,0 +1,31 @@
+{
+  "districts": {
+    "pass": true,
+    "issues": [],
+    "features": 50
+  },
+  "catastro": {
+    "pass": true,
+    "issues": [],
+    "warnings": [],
+    "totalParcels": 96716
+  },
+  "frontend": {
+    "pass": true,
+    "issues": []
+  },
+  "performance": {
+    "districts": {
+      "before_kb": 273.4,
+      "after_kb": 273.4
+    },
+    "catastro": {
+      "before_kb": 2603.2,
+      "after_kb": 3321,
+      "before_features": 142684,
+      "after_features": 96716
+    },
+    "total_kb": 3594.4,
+    "pmtiles_needed": false
+  }
+}

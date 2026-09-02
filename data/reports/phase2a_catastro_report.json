@@ -1,0 +1,1163 @@
+{
+  "timestamp": "2026-09-02T13:50:27.256Z",
+  "summary": {
+    "districts_processed": 22,
+    "total_input_features": 142684,
+    "valid_parcels": 96716,
+    "frontage_lines": 45836,
+    "flagged": 61,
+    "conversions": 8,
+    "quality": {
+      "ready": 22,
+      "needs_review": 0,
+      "incomplete": 0
+    }
+  },
+  "inventory": [
+    {
+      "slug": "ate",
+      "file": "ate.geojson.gz",
+      "file_size_bytes": 243742,
+      "total_features": 14271,
+      "polygon": 14271,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 76052,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -76.95512,
+        -12.04357,
+        -76.80618,
+        -12.02088
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "barranco",
+      "file": "barranco.geojson.gz",
+      "file_size_bytes": 73349,
+      "total_features": 3325,
+      "polygon": 3325,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 22590,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.02883,
+        -12.15673,
+        -77.01254,
+        -12.13076
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "brena",
+      "file": "brena.geojson.gz",
+      "file_size_bytes": 50452,
+      "total_features": 4689,
+      "polygon": 259,
+      "multipolygon": 0,
+      "linestring": 4430,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 4430,
+      "ls_converted": 0,
+      "vertices_total": 10763,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.0608,
+        -12.07005,
+        -77.04182,
+        -12.04925
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "callao",
+      "file": "callao.geojson.gz",
+      "file_size_bytes": 14790,
+      "total_features": 1434,
+      "polygon": 69,
+      "multipolygon": 0,
+      "linestring": 1365,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 1365,
+      "ls_converted": 0,
+      "vertices_total": 3206,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.12511,
+        -11.97574,
+        -77.11552,
+        -11.96694
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "cercado-de-lima",
+      "file": "cercado-de-lima.geojson.gz",
+      "file_size_bytes": 599100,
+      "total_features": 27843,
+      "polygon": 27843,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 188504,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.08841,
+        -12.07975,
+        -77.002,
+        -12.0322
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "el-agustino",
+      "file": "el-agustino.geojson.gz",
+      "file_size_bytes": 120066,
+      "total_features": 5532,
+      "polygon": 5532,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 16,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 31711,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.01189,
+        -12.0627,
+        -76.94214,
+        -12.02185
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "independencia",
+      "file": "independencia.geojson.gz",
+      "file_size_bytes": 131338,
+      "total_features": 7579,
+      "polygon": 7579,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 40761,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.06519,
+        -12.00115,
+        -77.03166,
+        -11.96217
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "jesus-maria",
+      "file": "jesus-maria.geojson.gz",
+      "file_size_bytes": 56273,
+      "total_features": 4497,
+      "polygon": 1234,
+      "multipolygon": 0,
+      "linestring": 3263,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 3,
+      "ls_closed": 0,
+      "ls_open": 3263,
+      "ls_converted": 0,
+      "vertices_total": 13887,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.06279,
+        -12.09277,
+        -77.03633,
+        -12.06473
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "lince",
+      "file": "lince.geojson.gz",
+      "file_size_bytes": 121173,
+      "total_features": 5190,
+      "polygon": 5180,
+      "multipolygon": 0,
+      "linestring": 10,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 16,
+      "ls_closed": 4,
+      "ls_open": 6,
+      "ls_converted": 2,
+      "vertices_total": 35698,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.04854,
+        -12.09217,
+        -77.02386,
+        -12.07884
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "magdalena-del-mar",
+      "file": "magdalena-del-mar.geojson.gz",
+      "file_size_bytes": 95862,
+      "total_features": 4523,
+      "polygon": 4523,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 27750,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.07747,
+        -12.10521,
+        -77.05348,
+        -12.08364
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "miraflores",
+      "file": "miraflores.geojson.gz",
+      "file_size_bytes": 19933,
+      "total_features": 668,
+      "polygon": 668,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 4466,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.05367,
+        -12.13561,
+        -77.00365,
+        -12.10395
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "pueblo-libre",
+      "file": "pueblo-libre.geojson.gz",
+      "file_size_bytes": 66710,
+      "total_features": 6037,
+      "polygon": 355,
+      "multipolygon": 0,
+      "linestring": 5682,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 5682,
+      "ls_converted": 0,
+      "vertices_total": 14250,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.0781,
+        -12.08656,
+        -77.04994,
+        -12.06669
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "punta-hermosa",
+      "file": "punta-hermosa.geojson.gz",
+      "file_size_bytes": 56154,
+      "total_features": 3035,
+      "polygon": 3035,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 17430,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -76.8393,
+        -12.34567,
+        -76.81526,
+        -12.31189
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "punta-negra",
+      "file": "punta-negra.geojson.gz",
+      "file_size_bytes": 68862,
+      "total_features": 4043,
+      "polygon": 3926,
+      "multipolygon": 0,
+      "linestring": 117,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 1,
+      "ls_closed": 15,
+      "ls_open": 102,
+      "ls_converted": 6,
+      "vertices_total": 21418,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -76.81466,
+        -12.3824,
+        -76.78412,
+        -12.34579
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "rimac",
+      "file": "rimac.geojson.gz",
+      "file_size_bytes": 68551,
+      "total_features": 6134,
+      "polygon": 380,
+      "multipolygon": 0,
+      "linestring": 5754,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 5754,
+      "ls_converted": 0,
+      "vertices_total": 14508,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.04415,
+        -12.04318,
+        -77.01884,
+        -12.00715
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "san-bartolo",
+      "file": "san-bartolo.geojson.gz",
+      "file_size_bytes": 45978,
+      "total_features": 1969,
+      "polygon": 1969,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 10756,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -76.78952,
+        -12.39705,
+        -76.7687,
+        -12.38127
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "san-borja",
+      "file": "san-borja.geojson.gz",
+      "file_size_bytes": 228466,
+      "total_features": 10234,
+      "polygon": 1609,
+      "multipolygon": 0,
+      "linestring": 8625,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 1,
+      "ls_closed": 0,
+      "ls_open": 8625,
+      "ls_converted": 0,
+      "vertices_total": 56396,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.01192,
+        -12.11214,
+        -76.97886,
+        -12.0802
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "san-isidro",
+      "file": "san-isidro.geojson.gz",
+      "file_size_bytes": 270195,
+      "total_features": 9829,
+      "polygon": 3503,
+      "multipolygon": 0,
+      "linestring": 6326,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 24,
+      "ls_closed": 0,
+      "ls_open": 6326,
+      "ls_converted": 0,
+      "vertices_total": 69391,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.06072,
+        -12.11072,
+        -77.00774,
+        -12.08548
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "san-luis",
+      "file": "san-luis.geojson.gz",
+      "file_size_bytes": 52334,
+      "total_features": 4760,
+      "polygon": 302,
+      "multipolygon": 0,
+      "linestring": 4458,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 4458,
+      "ls_converted": 0,
+      "vertices_total": 11039,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.01005,
+        -12.08391,
+        -76.98749,
+        -12.06014
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "san-miguel",
+      "file": "san-miguel.geojson.gz",
+      "file_size_bytes": 100570,
+      "total_features": 5622,
+      "polygon": 5621,
+      "multipolygon": 0,
+      "linestring": 1,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 10,
+      "ls_closed": 0,
+      "ls_open": 1,
+      "ls_converted": 0,
+      "vertices_total": 31344,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.10093,
+        -12.09387,
+        -77.0715,
+        -12.06787
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "santiago-de-surco",
+      "file": "santiago-de-surco.geojson.gz",
+      "file_size_bytes": 113922,
+      "total_features": 5258,
+      "polygon": 5258,
+      "multipolygon": 0,
+      "linestring": 0,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 0,
+      "ls_converted": 0,
+      "vertices_total": 36750,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.01924,
+        -12.15614,
+        -76.99498,
+        -12.13473
+      ],
+      "has_properties": false
+    },
+    {
+      "slug": "surquillo",
+      "file": "surquillo.geojson.gz",
+      "file_size_bytes": 67820,
+      "total_features": 6212,
+      "polygon": 399,
+      "multipolygon": 0,
+      "linestring": 5813,
+      "other": 0,
+      "invalid": 0,
+      "empty": 0,
+      "duplicates": 0,
+      "ls_closed": 0,
+      "ls_open": 5813,
+      "ls_converted": 0,
+      "vertices_total": 14648,
+      "crs": "EPSG:4326",
+      "bbox": [
+        -77.02707,
+        -12.12617,
+        -76.994,
+        -12.10209
+      ],
+      "has_properties": false
+    }
+  ],
+  "district_reports": [
+    {
+      "distrito": "ATE",
+      "slug": "ate",
+      "parcels_valid": 14271,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 243742
+    },
+    {
+      "distrito": "BARRANCO",
+      "slug": "barranco",
+      "parcels_valid": 3325,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 73349
+    },
+    {
+      "distrito": "BRENA",
+      "slug": "brena",
+      "parcels_valid": 259,
+      "lines": 4430,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 5.5,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 50452
+    },
+    {
+      "distrito": "CALLAO",
+      "slug": "callao",
+      "parcels_valid": 69,
+      "lines": 1365,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 4.8,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 14790
+    },
+    {
+      "distrito": "LIMA",
+      "slug": "cercado-de-lima",
+      "parcels_valid": 27843,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 599100
+    },
+    {
+      "distrito": "EL AGUSTINO",
+      "slug": "el-agustino",
+      "parcels_valid": 5516,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 16,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 99.7,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 120066
+    },
+    {
+      "distrito": "INDEPENDENCIA",
+      "slug": "independencia",
+      "parcels_valid": 7578,
+      "lines": 0,
+      "invalid": 1,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 131338
+    },
+    {
+      "distrito": "JESUS MARIA",
+      "slug": "jesus-maria",
+      "parcels_valid": 1231,
+      "lines": 3263,
+      "invalid": 0,
+      "duplicates": 3,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 27.4,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 56273
+    },
+    {
+      "distrito": "LINCE",
+      "slug": "lince",
+      "parcels_valid": 5162,
+      "lines": 8,
+      "invalid": 4,
+      "duplicates": 16,
+      "converted": 2,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 99.5,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 121173
+    },
+    {
+      "distrito": "MAGDALENA DEL MAR",
+      "slug": "magdalena-del-mar",
+      "parcels_valid": 4523,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 95862
+    },
+    {
+      "distrito": "MIRAFLORES",
+      "slug": "miraflores",
+      "parcels_valid": 668,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 19933
+    },
+    {
+      "distrito": "PUEBLO LIBRE",
+      "slug": "pueblo-libre",
+      "parcels_valid": 355,
+      "lines": 5682,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 5.9,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 66710
+    },
+    {
+      "distrito": "PUNTA HERMOSA",
+      "slug": "punta-hermosa",
+      "parcels_valid": 3034,
+      "lines": 0,
+      "invalid": 1,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 56154
+    },
+    {
+      "distrito": "PUNTA NEGRA",
+      "slug": "punta-negra",
+      "parcels_valid": 3877,
+      "lines": 111,
+      "invalid": 54,
+      "duplicates": 1,
+      "converted": 6,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 95.9,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 68862
+    },
+    {
+      "distrito": "RIMAC",
+      "slug": "rimac",
+      "parcels_valid": 380,
+      "lines": 5754,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 6.2,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 68551
+    },
+    {
+      "distrito": "SAN BARTOLO",
+      "slug": "san-bartolo",
+      "parcels_valid": 1969,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 45978
+    },
+    {
+      "distrito": "SAN BORJA",
+      "slug": "san-borja",
+      "parcels_valid": 1607,
+      "lines": 8625,
+      "invalid": 1,
+      "duplicates": 1,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 15.7,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 228466
+    },
+    {
+      "distrito": "SAN ISIDRO",
+      "slug": "san-isidro",
+      "parcels_valid": 3479,
+      "lines": 6326,
+      "invalid": 0,
+      "duplicates": 24,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 35.4,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 270195
+    },
+    {
+      "distrito": "SAN LUIS",
+      "slug": "san-luis",
+      "parcels_valid": 302,
+      "lines": 4458,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 6.3,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 52334
+    },
+    {
+      "distrito": "SAN MIGUEL",
+      "slug": "san-miguel",
+      "parcels_valid": 5611,
+      "lines": 1,
+      "invalid": 0,
+      "duplicates": 10,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 99.8,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 100570
+    },
+    {
+      "distrito": "SANTIAGO DE SURCO",
+      "slug": "santiago-de-surco",
+      "parcels_valid": 5258,
+      "lines": 0,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 100,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 113922
+    },
+    {
+      "distrito": "SURQUILLO",
+      "slug": "surquillo",
+      "parcels_valid": 399,
+      "lines": 5813,
+      "invalid": 0,
+      "duplicates": 0,
+      "converted": 0,
+      "outside_district": 0,
+      "outside_lima": 0,
+      "coverage_pct": 6.4,
+      "quality": "READY",
+      "action": "none",
+      "file_size_before": 67820
+    }
+  ],
+  "conversion_log": [
+    {
+      "slug": "lince",
+      "vertices": 5,
+      "area_m2": 6.06,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "lince",
+      "vertices": 4,
+      "area_m2": 2.42,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.82,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 6.06,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.82,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 8,
+      "area_m2": 10.91,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.21,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 7.27,
+      "status": "CONVERTED"
+    }
+  ],
+  "discard_log": [
+    {
+      "slug": "lince",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 4
+    },
+    {
+      "slug": "lince",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 4
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 4
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 5
+    },
+    {
+      "slug": "punta-negra",
+      "reason": "CLOSED_LS_ZERO_AREA",
+      "vertices": 4
+    }
+  ],
+  "published_files": [
+    {
+      "slug": "ate",
+      "parcels": 14271,
+      "raw_bytes": 7602011,
+      "gz_bytes": 389799,
+      "gz_kb": 380.7
+    },
+    {
+      "slug": "barranco",
+      "parcels": 3325,
+      "raw_bytes": 1928648,
+      "gz_bytes": 118666,
+      "gz_kb": 115.9
+    },
+    {
+      "slug": "brena",
+      "parcels": 259,
+      "raw_bytes": 144172,
+      "gz_bytes": 11854,
+      "gz_kb": 11.6
+    },
+    {
+      "slug": "callao",
+      "parcels": 69,
+      "raw_bytes": 38934,
+      "gz_bytes": 3562,
+      "gz_kb": 3.5
+    },
+    {
+      "slug": "cercado-de-lima",
+      "parcels": 27843,
+      "raw_bytes": 16404024,
+      "gz_bytes": 930275,
+      "gz_kb": 908.5
+    },
+    {
+      "slug": "el-agustino",
+      "parcels": 5516,
+      "raw_bytes": 3117455,
+      "gz_bytes": 185992,
+      "gz_kb": 181.6
+    },
+    {
+      "slug": "independencia",
+      "parcels": 7578,
+      "raw_bytes": 4271561,
+      "gz_bytes": 219527,
+      "gz_kb": 214.4
+    },
+    {
+      "slug": "jesus-maria",
+      "parcels": 1231,
+      "raw_bytes": 694838,
+      "gz_bytes": 43932,
+      "gz_kb": 42.9
+    },
+    {
+      "slug": "lince",
+      "parcels": 5162,
+      "raw_bytes": 2955794,
+      "gz_bytes": 191444,
+      "gz_kb": 187
+    },
+    {
+      "slug": "magdalena-del-mar",
+      "parcels": 4523,
+      "raw_bytes": 2680648,
+      "gz_bytes": 157440,
+      "gz_kb": 153.8
+    },
+    {
+      "slug": "miraflores",
+      "parcels": 668,
+      "raw_bytes": 389893,
+      "gz_bytes": 30285,
+      "gz_kb": 29.6
+    },
+    {
+      "slug": "pueblo-libre",
+      "parcels": 355,
+      "raw_bytes": 209931,
+      "gz_bytes": 17360,
+      "gz_kb": 17
+    },
+    {
+      "slug": "punta-hermosa",
+      "parcels": 3034,
+      "raw_bytes": 1735424,
+      "gz_bytes": 90588,
+      "gz_kb": 88.5
+    },
+    {
+      "slug": "punta-negra",
+      "parcels": 3877,
+      "raw_bytes": 2162537,
+      "gz_bytes": 108631,
+      "gz_kb": 106.1
+    },
+    {
+      "slug": "rimac",
+      "parcels": 380,
+      "raw_bytes": 212860,
+      "gz_bytes": 17625,
+      "gz_kb": 17.2
+    },
+    {
+      "slug": "san-bartolo",
+      "parcels": 1969,
+      "raw_bytes": 1102314,
+      "gz_bytes": 74900,
+      "gz_kb": 73.1
+    },
+    {
+      "slug": "san-borja",
+      "parcels": 1607,
+      "raw_bytes": 1538785,
+      "gz_bytes": 169244,
+      "gz_kb": 165.3
+    },
+    {
+      "slug": "san-isidro",
+      "parcels": 3479,
+      "raw_bytes": 2726330,
+      "gz_bytes": 261865,
+      "gz_kb": 255.7
+    },
+    {
+      "slug": "san-luis",
+      "parcels": 302,
+      "raw_bytes": 172640,
+      "gz_bytes": 14185,
+      "gz_kb": 13.9
+    },
+    {
+      "slug": "san-miguel",
+      "parcels": 5611,
+      "raw_bytes": 3138398,
+      "gz_bytes": 161435,
+      "gz_kb": 157.7
+    },
+    {
+      "slug": "santiago-de-surco",
+      "parcels": 5258,
+      "raw_bytes": 3211870,
+      "gz_bytes": 183273,
+      "gz_kb": 179
+    },
+    {
+      "slug": "surquillo",
+      "parcels": 399,
+      "raw_bytes": 231373,
+      "gz_bytes": 18797,
+      "gz_kb": 18.4
+    }
+  ]
+}

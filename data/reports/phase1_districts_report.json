@@ -1,0 +1,848 @@
+{
+  "timestamp": "2026-09-02T13:52:21.446Z",
+  "source": "IGN/INEI via juaneladio/peru-geojson",
+  "version": "v2026_09_02",
+  "features": [
+    {
+      "distrito": "SAN BORJA",
+      "ubigeo": "150130",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1866,
+      "area_deg2": 0.0008535,
+      "bbox": [
+        -77.012116,
+        -12.11238,
+        -76.978256,
+        -12.079928
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "JESUS MARIA",
+      "ubigeo": "150113",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 618,
+      "area_deg2": 0.00036043,
+      "bbox": [
+        -77.063206,
+        -12.093017,
+        -77.036322,
+        -12.064283
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PACHACAMAC",
+      "ubigeo": "150123",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 4796,
+      "area_deg2": 0.01515323,
+      "bbox": [
+        -76.912377,
+        -12.239494,
+        -76.662895,
+        -12.071896
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN LUIS",
+      "ubigeo": "150134",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 623,
+      "area_deg2": 0.00028914,
+      "bbox": [
+        -77.010363,
+        -12.084082,
+        -76.986961,
+        -12.060506
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LA MOLINA",
+      "ubigeo": "150114",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 10023,
+      "area_deg2": 0.00418302,
+      "bbox": [
+        -76.97607,
+        -12.123445,
+        -76.869073,
+        -12.056702
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "ANCON",
+      "ubigeo": "150102",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 4921,
+      "area_deg2": 0.02548709,
+      "bbox": [
+        -77.198777,
+        -11.824736,
+        -77.00476,
+        -11.572504
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "VILLA EL SALVADOR",
+      "ubigeo": "150142",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 848,
+      "area_deg2": 0.00281994,
+      "bbox": [
+        -76.976783,
+        -12.252008,
+        -76.90961,
+        -12.182484
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SANTIAGO DE SURCO",
+      "ubigeo": "150140",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 7521,
+      "area_deg2": 0.00288237,
+      "bbox": [
+        -77.018352,
+        -12.173389,
+        -76.947354,
+        -12.075707
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "ATE",
+      "ubigeo": "150103",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1853,
+      "area_deg2": 0.00693709,
+      "bbox": [
+        -76.998096,
+        -12.084809,
+        -76.783875,
+        -11.992277
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CALLAO",
+      "ubigeo": "070101",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1295,
+      "area_deg2": 0.0041202,
+      "bbox": [
+        -77.158534,
+        -12.070494,
+        -77.076867,
+        -11.936794
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LOS OLIVOS",
+      "ubigeo": "150117",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 931,
+      "area_deg2": 0.0015125,
+      "bbox": [
+        -77.087734,
+        -12.012662,
+        -77.060144,
+        -11.917741
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LURIGANCHO",
+      "ubigeo": "150118",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 654,
+      "area_deg2": 0.02044885,
+      "bbox": [
+        -76.971176,
+        -12.023311,
+        -76.644423,
+        -11.875646
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "COMAS",
+      "ubigeo": "150110",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 663,
+      "area_deg2": 0.00404057,
+      "bbox": [
+        -77.073621,
+        -11.977271,
+        -76.987389,
+        -11.888008
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "VENTANILLA",
+      "ubigeo": "070106",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 3574,
+      "area_deg2": 0.0064952,
+      "bbox": [
+        -77.187959,
+        -11.950012,
+        -77.089313,
+        -11.817821
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SANTA ROSA",
+      "ubigeo": "150139",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 4201,
+      "area_deg2": 0.00168462,
+      "bbox": [
+        -77.198349,
+        -11.828643,
+        -77.134721,
+        -11.779561
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PUENTE PIEDRA",
+      "ubigeo": "150125",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1352,
+      "area_deg2": 0.00415645,
+      "bbox": [
+        -77.125891,
+        -11.949678,
+        -77.053947,
+        -11.80374
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CARMEN DE LA LEGUA REYNOSO",
+      "ubigeo": "070103",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 13,
+      "area_deg2": 0.00016042,
+      "bbox": [
+        -77.099131,
+        -12.04852,
+        -77.081547,
+        -12.036375
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CIENEGUILLA",
+      "ubigeo": "150109",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 3662,
+      "area_deg2": 0.01825491,
+      "bbox": [
+        -76.886703,
+        -12.14589,
+        -76.673395,
+        -11.999477
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PUCUSANA",
+      "ubigeo": "150124",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 3303,
+      "area_deg2": 0.00241882,
+      "bbox": [
+        -76.805476,
+        -12.519654,
+        -76.751561,
+        -12.417513
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LINCE",
+      "ubigeo": "150116",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 94,
+      "area_deg2": 0.00022906,
+      "bbox": [
+        -77.048589,
+        -12.09191,
+        -77.022812,
+        -12.078711
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "RIMAC",
+      "ubigeo": "150128",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 68,
+      "area_deg2": 0.00101076,
+      "bbox": [
+        -77.05302,
+        -12.044395,
+        -77.01257,
+        -11.996389
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CHACLACAYO",
+      "ubigeo": "150107",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 148,
+      "area_deg2": 0.0035426,
+      "bbox": [
+        -76.835488,
+        -12.023146,
+        -76.715166,
+        -11.960494
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SURQUILLO",
+      "ubigeo": "150141",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 149,
+      "area_deg2": 0.00038451,
+      "bbox": [
+        -77.027385,
+        -12.12652,
+        -76.9934,
+        -12.101922
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "MIRAFLORES",
+      "ubigeo": "150122",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 602,
+      "area_deg2": 0.0007616,
+      "bbox": [
+        -77.056032,
+        -12.139419,
+        -77.001342,
+        -12.102879
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LA PUNTA",
+      "ubigeo": "070105",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 214,
+      "area_deg2": 0.00007011,
+      "bbox": [
+        -77.171019,
+        -12.075379,
+        -77.15675,
+        -12.066606
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PUEBLO LIBRE",
+      "ubigeo": "150121",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 188,
+      "area_deg2": 0.00038081,
+      "bbox": [
+        -77.080902,
+        -12.086481,
+        -77.049736,
+        -12.066547
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SANTA ANITA",
+      "ubigeo": "150137",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 80,
+      "area_deg2": 0.00088633,
+      "bbox": [
+        -76.989133,
+        -12.058457,
+        -76.937895,
+        -12.0275
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LA PERLA",
+      "ubigeo": "070104",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 184,
+      "area_deg2": 0.00026933,
+      "bbox": [
+        -77.132965,
+        -12.079195,
+        -77.103955,
+        -12.063173
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN MIGUEL",
+      "ubigeo": "150136",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 259,
+      "area_deg2": 0.00079918,
+      "bbox": [
+        -77.111354,
+        -12.095816,
+        -77.071422,
+        -12.060258
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LA VICTORIA",
+      "ubigeo": "150115",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 326,
+      "area_deg2": 0.00075278,
+      "bbox": [
+        -77.035408,
+        -12.090812,
+        -76.996295,
+        -12.057461
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "BELLAVISTA",
+      "ubigeo": "070102",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 116,
+      "area_deg2": 0.00037647,
+      "bbox": [
+        -77.134236,
+        -12.067792,
+        -77.087666,
+        -12.05175
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CARABAYLLO",
+      "ubigeo": "150106",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1203,
+      "area_deg2": 0.030209,
+      "bbox": [
+        -77.09307,
+        -11.910473,
+        -76.804495,
+        -11.729045
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "BREÑA",
+      "ubigeo": "150105",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 193,
+      "area_deg2": 0.00026611,
+      "bbox": [
+        -77.06117,
+        -12.070172,
+        -77.04151,
+        -12.049131
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LURIN",
+      "ubigeo": "150119",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1268,
+      "area_deg2": 0.01567726,
+      "bbox": [
+        -76.935087,
+        -12.308497,
+        -76.663361,
+        -12.164414
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN BARTOLO",
+      "ubigeo": "150129",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1419,
+      "area_deg2": 0.00440456,
+      "bbox": [
+        -76.789735,
+        -12.400751,
+        -76.667281,
+        -12.333475
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SANTA MARIA DEL MAR",
+      "ubigeo": "150138",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1231,
+      "area_deg2": 0.00070466,
+      "bbox": [
+        -76.781802,
+        -12.428908,
+        -76.753101,
+        -12.386354
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PUNTA HERMOSA",
+      "ubigeo": "150126",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1598,
+      "area_deg2": 0.01025567,
+      "bbox": [
+        -76.845405,
+        -12.347442,
+        -76.645674,
+        -12.177907
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "PUNTA NEGRA",
+      "ubigeo": "150127",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 1758,
+      "area_deg2": 0.01081427,
+      "bbox": [
+        -76.81795,
+        -12.385225,
+        -76.620674,
+        -12.211092
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "BARRANCO",
+      "ubigeo": "150104",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 239,
+      "area_deg2": 0.00022545,
+      "bbox": [
+        -77.028288,
+        -12.157171,
+        -77.012486,
+        -12.130527
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "CHORRILLOS",
+      "ubigeo": "150108",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 2475,
+      "area_deg2": 0.00284374,
+      "bbox": [
+        -77.039951,
+        -12.231485,
+        -76.971123,
+        -12.153566
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN JUAN DE MIRAFLORES",
+      "ubigeo": "150133",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 2439,
+      "area_deg2": 0.00211588,
+      "bbox": [
+        -76.988762,
+        -12.217637,
+        -76.941094,
+        -12.115527
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "VILLA MARIA DEL TRIUNFO",
+      "ubigeo": "150143",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 932,
+      "area_deg2": 0.00539683,
+      "bbox": [
+        -76.958932,
+        -12.232451,
+        -76.882279,
+        -12.118945
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "MI PERU",
+      "ubigeo": "070107",
+      "provincia": "CALLAO",
+      "geometry_type": "MultiPolygon",
+      "vertices": 340,
+      "area_deg2": 0.00023474,
+      "bbox": [
+        -77.130425,
+        -11.865351,
+        -77.110705,
+        -11.841718
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "LIMA",
+      "ubigeo": "150101",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 253,
+      "area_deg2": 0.00179442,
+      "bbox": [
+        -77.088468,
+        -12.079869,
+        -77.002963,
+        -12.030393
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "EL AGUSTINO",
+      "ubigeo": "150111",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 168,
+      "area_deg2": 0.00110491,
+      "bbox": [
+        -77.012264,
+        -12.062984,
+        -76.937371,
+        -12.020895
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "INDEPENDENCIA",
+      "ubigeo": "150112",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 266,
+      "area_deg2": 0.00133537,
+      "bbox": [
+        -77.065803,
+        -12.017203,
+        -77.027488,
+        -11.960678
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN MARTIN DE PORRES",
+      "ubigeo": "150135",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 499,
+      "area_deg2": 0.00301281,
+      "bbox": [
+        -77.128503,
+        -12.038883,
+        -77.043412,
+        -11.936739
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN JUAN DE LURIGANCHO",
+      "ubigeo": "150132",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 375,
+      "area_deg2": 0.01167313,
+      "bbox": [
+        -77.030654,
+        -12.037324,
+        -76.894229,
+        -11.860868
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "MAGDALENA DEL MAR",
+      "ubigeo": "150120",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 268,
+      "area_deg2": 0.00028907,
+      "bbox": [
+        -77.077943,
+        -12.107775,
+        -77.054996,
+        -12.083584
+      ],
+      "valid": true,
+      "issues": []
+    },
+    {
+      "distrito": "SAN ISIDRO",
+      "ubigeo": "150131",
+      "provincia": "LIMA",
+      "geometry_type": "MultiPolygon",
+      "vertices": 420,
+      "area_deg2": 0.0008099,
+      "bbox": [
+        -77.061331,
+        -12.111583,
+        -77.00757,
+        -12.085016
+      ],
+      "valid": true,
+      "issues": []
+    }
+  ],
+  "corrections": [
+    {
+      "original": "MI PERÃz",
+      "corrected": "MI PERU",
+      "feature_index": 42
+    }
+  ],
+  "validation": {
+    "valid": 50,
+    "invalid": 0,
+    "issues": []
+  },
+  "comparison": {
+    "original_simple": {
+      "file": "lima_callao.geojson.gz (current)",
+      "raw_bytes": 144034,
+      "gz_bytes": 279962,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "Polygon"
+    },
+    "master_full_precision": {
+      "file": "districts_master.geojson.gz (full precision)",
+      "raw_bytes": 1739839,
+      "gz_bytes": 401097,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "MultiPolygon",
+      "coordinate_precision": "original (~14 decimals)"
+    },
+    "master_5dec": {
+      "file": "districts_master.geojson.gz (5 decimals ~1.1m)",
+      "raw_bytes": 1595217,
+      "gz_bytes": 279948,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "MultiPolygon",
+      "coordinate_precision": "5 decimals (~1.1m accuracy)"
+    }
+  },
+  "chosen_format": "master_5dec"
+}

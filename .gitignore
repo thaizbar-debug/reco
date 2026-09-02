@@ -4,3 +4,8 @@ firebase-debug.log
 firebase-debug.*.log
 .firebase/
 *.local
+
+# Large uncompressed GeoJSON (keep only .gz versions)
+data/master/*.geojson
+# Ephemeral test artifacts
+tools/etl/regression_test.js

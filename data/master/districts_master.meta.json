@@ -1,0 +1,65 @@
+{
+  "name": "districts_master",
+  "version": "v2026_09_02",
+  "source": {
+    "name": "IGN/INEI",
+    "repository": "github.com/juaneladio/peru-geojson",
+    "file": "departamentos/lima_callao_distritos.geojson",
+    "acquired_at": "2026-09-01",
+    "license": "Public domain (government data)"
+  },
+  "processing": {
+    "script": "tools/etl/phase1_districts.js",
+    "date": "2026-09-02T13:52:22.674Z",
+    "coordinate_precision": 5,
+    "corrections": [
+      {
+        "original": "MI PERÃz",
+        "corrected": "MI PERU",
+        "feature_index": 42
+      }
+    ],
+    "crs": "EPSG:4326"
+  },
+  "stats": {
+    "features": 50,
+    "vertices": 72489,
+    "raw_bytes": 1595217,
+    "gz_bytes": 279948,
+    "geometry_types": [
+      "MultiPolygon"
+    ]
+  },
+  "backup": {
+    "file": "data/raw/distritos/lima_callao_v0_simple.geojson.gz",
+    "checksum_note": "Original simple version before migration"
+  },
+  "comparison": {
+    "original_simple": {
+      "file": "lima_callao.geojson.gz (current)",
+      "raw_bytes": 144034,
+      "gz_bytes": 279962,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "Polygon"
+    },
+    "master_full_precision": {
+      "file": "districts_master.geojson.gz (full precision)",
+      "raw_bytes": 1739839,
+      "gz_bytes": 401097,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "MultiPolygon",
+      "coordinate_precision": "original (~14 decimals)"
+    },
+    "master_5dec": {
+      "file": "districts_master.geojson.gz (5 decimals ~1.1m)",
+      "raw_bytes": 1595217,
+      "gz_bytes": 279948,
+      "vertices": 72489,
+      "features": 50,
+      "geometry_type": "MultiPolygon",
+      "coordinate_precision": "5 decimals (~1.1m accuracy)"
+    }
+  }
+}

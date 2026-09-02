@@ -1,0 +1,2647 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "INDEPENDENCIA_P00175",
+        "district_id": "DIST_150112",
+        "district_name": "INDEPENDENCIA",
+        "geometry_type": "Polygon",
+        "source_id": "independencia",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 8.99,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.05232,
+              -11.97796
+            ],
+            [
+              -77.05236,
+              -11.97797
+            ],
+            [
+              -77.05232,
+              -11.97796
+            ],
+            [
+              -77.05232,
+              -11.97796
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "LINCE_P00381",
+        "district_id": "DIST_150116",
+        "district_name": "LINCE",
+        "geometry_type": "Polygon",
+        "source_id": "lince",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 2.23,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.0341,
+              -12.09026
+            ],
+            [
+              -77.0341,
+              -12.09026
+            ],
+            [
+              -77.0341,
+              -12.09026
+            ],
+            [
+              -77.0341,
+              -12.09027
+            ],
+            [
+              -77.0341,
+              -12.09026
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "LINCE_P01870",
+        "district_id": "DIST_150116",
+        "district_name": "LINCE",
+        "geometry_type": "Polygon",
+        "source_id": "lince",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 20.51,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.03159,
+              -12.08752
+            ],
+            [
+              -77.03161,
+              -12.08743
+            ],
+            [
+              -77.03161,
+              -12.08743
+            ],
+            [
+              -77.03159,
+              -12.08752
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "LINCE_P02189",
+        "district_id": "DIST_150116",
+        "district_name": "LINCE",
+        "geometry_type": "Polygon",
+        "source_id": "lince",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 39.35,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.02572,
+              -12.0861
+            ],
+            [
+              -77.02555,
+              -12.08604
+            ],
+            [
+              -77.02572,
+              -12.0861
+            ],
+            [
+              -77.02572,
+              -12.0861
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "LINCE_P04378",
+        "district_id": "DIST_150116",
+        "district_name": "LINCE",
+        "geometry_type": "Polygon",
+        "source_id": "lince",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 9.17,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -77.03,
+              -12.08225
+            ],
+            [
+              -77.03001,
+              -12.08221
+            ],
+            [
+              -77.03001,
+              -12.08221
+            ],
+            [
+              -77.03,
+              -12.08225
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_HERMOSA_P01372",
+        "district_id": "DIST_150126",
+        "district_name": "PUNTA HERMOSA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-hermosa",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0.61,
+        "perimeter_m": 7.1,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.82929,
+              -12.33235
+            ],
+            [
+              -76.82928,
+              -12.33232
+            ],
+            [
+              -76.82929,
+              -12.33234
+            ],
+            [
+              -76.82929,
+              -12.33235
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00038",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 52.62,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78816,
+              -12.37968
+            ],
+            [
+              -76.78792,
+              -12.37965
+            ],
+            [
+              -76.788,
+              -12.37966
+            ],
+            [
+              -76.78816,
+              -12.37968
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00080",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 3.11,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78909,
+              -12.37837
+            ],
+            [
+              -76.7891,
+              -12.37836
+            ],
+            [
+              -76.78909,
+              -12.37837
+            ],
+            [
+              -76.78909,
+              -12.37837
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00086",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 25.81,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.7891,
+              -12.37836
+            ],
+            [
+              -76.78916,
+              -12.37826
+            ],
+            [
+              -76.7891,
+              -12.37836
+            ],
+            [
+              -76.7891,
+              -12.37836
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00379",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 34.2,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79026,
+              -12.37585
+            ],
+            [
+              -76.79026,
+              -12.37585
+            ],
+            [
+              -76.7904,
+              -12.37592
+            ],
+            [
+              -76.79026,
+              -12.37585
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00466",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 3.11,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78769,
+              -12.37554
+            ],
+            [
+              -76.7877,
+              -12.37553
+            ],
+            [
+              -76.7877,
+              -12.37553
+            ],
+            [
+              -76.78769,
+              -12.37554
+            ],
+            [
+              -76.78769,
+              -12.37554
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00545",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 84.11,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78696,
+              -12.37504
+            ],
+            [
+              -76.78696,
+              -12.37504
+            ],
+            [
+              -76.78725,
+              -12.37529
+            ],
+            [
+              -76.78696,
+              -12.37504
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00569",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.51,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78696,
+              -12.37504
+            ],
+            [
+              -76.78682,
+              -12.37492
+            ],
+            [
+              -76.78696,
+              -12.37504
+            ],
+            [
+              -76.78696,
+              -12.37504
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00843",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.51,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78816,
+              -12.3723
+            ],
+            [
+              -76.78816,
+              -12.3723
+            ],
+            [
+              -76.7883,
+              -12.37242
+            ],
+            [
+              -76.78816,
+              -12.3723
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P00858",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 29.57,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78816,
+              -12.37229
+            ],
+            [
+              -76.78826,
+              -12.3722
+            ],
+            [
+              -76.78826,
+              -12.3722
+            ],
+            [
+              -76.78816,
+              -12.37229
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01263",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 42.08,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.78788,
+              -12.3696
+            ],
+            [
+              -76.78801,
+              -12.36974
+            ],
+            [
+              -76.78801,
+              -12.36974
+            ],
+            [
+              -76.78788,
+              -12.3696
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01451",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 59.31,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79407,
+              -12.36877
+            ],
+            [
+              -76.79407,
+              -12.36877
+            ],
+            [
+              -76.79428,
+              -12.36894
+            ],
+            [
+              -76.79428,
+              -12.36894
+            ],
+            [
+              -76.79407,
+              -12.36877
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01467",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 48.23,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79227,
+              -12.36859
+            ],
+            [
+              -76.79227,
+              -12.36859
+            ],
+            [
+              -76.79243,
+              -12.36874
+            ],
+            [
+              -76.79243,
+              -12.36874
+            ],
+            [
+              -76.79227,
+              -12.36859
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01472",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 46.71,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79198,
+              -12.36858
+            ],
+            [
+              -76.79214,
+              -12.36872
+            ],
+            [
+              -76.79214,
+              -12.36872
+            ],
+            [
+              -76.79198,
+              -12.36858
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01475",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 45.19,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79316,
+              -12.36862
+            ],
+            [
+              -76.79316,
+              -12.36862
+            ],
+            [
+              -76.7933,
+              -12.36877
+            ],
+            [
+              -76.7933,
+              -12.36877
+            ],
+            [
+              -76.79316,
+              -12.36862
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01487",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 38.97,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79316,
+              -12.36862
+            ],
+            [
+              -76.79328,
+              -12.36849
+            ],
+            [
+              -76.79316,
+              -12.36862
+            ],
+            [
+              -76.79316,
+              -12.36862
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01510",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 48.23,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79266,
+              -12.36822
+            ],
+            [
+              -76.79266,
+              -12.36822
+            ],
+            [
+              -76.79282,
+              -12.36837
+            ],
+            [
+              -76.79282,
+              -12.36837
+            ],
+            [
+              -76.79266,
+              -12.36822
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01515",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 47.39,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79323,
+              -12.36823
+            ],
+            [
+              -76.79323,
+              -12.36823
+            ],
+            [
+              -76.79341,
+              -12.36835
+            ],
+            [
+              -76.79341,
+              -12.36835
+            ],
+            [
+              -76.79323,
+              -12.36823
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01559",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 23.36,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79287,
+              -12.36768
+            ],
+            [
+              -76.79287,
+              -12.36768
+            ],
+            [
+              -76.79295,
+              -12.36775
+            ],
+            [
+              -76.79295,
+              -12.36775
+            ],
+            [
+              -76.79295,
+              -12.36775
+            ],
+            [
+              -76.79287,
+              -12.36768
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01565",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.46,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79295,
+              -12.36775
+            ],
+            [
+              -76.79308,
+              -12.36762
+            ],
+            [
+              -76.79308,
+              -12.36762
+            ],
+            [
+              -76.79295,
+              -12.36775
+            ],
+            [
+              -76.79295,
+              -12.36775
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01569",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 45.26,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79412,
+              -12.36761
+            ],
+            [
+              -76.79412,
+              -12.36761
+            ],
+            [
+              -76.79428,
+              -12.36774
+            ],
+            [
+              -76.79428,
+              -12.36774
+            ],
+            [
+              -76.79412,
+              -12.36761
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01589",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 46.71,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79357,
+              -12.36733
+            ],
+            [
+              -76.79357,
+              -12.36733
+            ],
+            [
+              -76.79373,
+              -12.36747
+            ],
+            [
+              -76.79373,
+              -12.36747
+            ],
+            [
+              -76.79357,
+              -12.36733
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01630",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 20.25,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79563,
+              -12.36679
+            ],
+            [
+              -76.79563,
+              -12.36679
+            ],
+            [
+              -76.7957,
+              -12.36685
+            ],
+            [
+              -76.79563,
+              -12.36679
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01637",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 31.21,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79563,
+              -12.36679
+            ],
+            [
+              -76.79552,
+              -12.3667
+            ],
+            [
+              -76.79563,
+              -12.36679
+            ],
+            [
+              -76.79563,
+              -12.36679
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01645",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 22.08,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.795,
+              -12.36675
+            ],
+            [
+              -76.79506,
+              -12.36667
+            ],
+            [
+              -76.79506,
+              -12.36667
+            ],
+            [
+              -76.795,
+              -12.36675
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01702",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 42.08,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79294,
+              -12.36613
+            ],
+            [
+              -76.79281,
+              -12.36599
+            ],
+            [
+              -76.79294,
+              -12.36613
+            ],
+            [
+              -76.79294,
+              -12.36613
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01734",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 53.07,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79266,
+              -12.36564
+            ],
+            [
+              -76.79282,
+              -12.36582
+            ],
+            [
+              -76.79282,
+              -12.36582
+            ],
+            [
+              -76.79266,
+              -12.36564
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01741",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 31.21,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79286,
+              -12.36554
+            ],
+            [
+              -76.79286,
+              -12.36554
+            ],
+            [
+              -76.79297,
+              -12.36563
+            ],
+            [
+              -76.79297,
+              -12.36563
+            ],
+            [
+              -76.79286,
+              -12.36554
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01743",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0.61,
+        "perimeter_m": 25.17,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79267,
+              -12.36562
+            ],
+            [
+              -76.79274,
+              -12.36553
+            ],
+            [
+              -76.7927,
+              -12.36558
+            ],
+            [
+              -76.79267,
+              -12.36562
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01758",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 20.25,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79263,
+              -12.36544
+            ],
+            [
+              -76.79256,
+              -12.36538
+            ],
+            [
+              -76.79263,
+              -12.36544
+            ],
+            [
+              -76.79263,
+              -12.36544
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01767",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 54.77,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.7922,
+              -12.36524
+            ],
+            [
+              -76.7922,
+              -12.36524
+            ],
+            [
+              -76.79236,
+              -12.36543
+            ],
+            [
+              -76.7922,
+              -12.36524
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01883",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 6.22,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79431,
+              -12.36436
+            ],
+            [
+              -76.79433,
+              -12.36434
+            ],
+            [
+              -76.79433,
+              -12.36434
+            ],
+            [
+              -76.79431,
+              -12.36436
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01890",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 6.22,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79433,
+              -12.36434
+            ],
+            [
+              -76.79435,
+              -12.36432
+            ],
+            [
+              -76.79433,
+              -12.36434
+            ],
+            [
+              -76.79433,
+              -12.36434
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01899",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.79,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79383,
+              -12.36422
+            ],
+            [
+              -76.79383,
+              -12.36422
+            ],
+            [
+              -76.79398,
+              -12.36433
+            ],
+            [
+              -76.79383,
+              -12.36422
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01921",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 12.76,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79392,
+              -12.36402
+            ],
+            [
+              -76.79392,
+              -12.36402
+            ],
+            [
+              -76.79397,
+              -12.36405
+            ],
+            [
+              -76.79392,
+              -12.36402
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01941",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 39.07,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79456,
+              -12.36383
+            ],
+            [
+              -76.7947,
+              -12.36394
+            ],
+            [
+              -76.7947,
+              -12.36394
+            ],
+            [
+              -76.79456,
+              -12.36383
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01942",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 52.91,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79757,
+              -12.36393
+            ],
+            [
+              -76.79736,
+              -12.36381
+            ],
+            [
+              -76.79757,
+              -12.36393
+            ],
+            [
+              -76.79757,
+              -12.36393
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P01998",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 14.13,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79442,
+              -12.36342
+            ],
+            [
+              -76.79446,
+              -12.36337
+            ],
+            [
+              -76.79446,
+              -12.36337
+            ],
+            [
+              -76.79442,
+              -12.36342
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02071",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.15,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79756,
+              -12.36275
+            ],
+            [
+              -76.79756,
+              -12.36275
+            ],
+            [
+              -76.79772,
+              -12.36284
+            ],
+            [
+              -76.79756,
+              -12.36275
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02086",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 6.22,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79758,
+              -12.3626
+            ],
+            [
+              -76.79758,
+              -12.3626
+            ],
+            [
+              -76.7976,
+              -12.36262
+            ],
+            [
+              -76.79758,
+              -12.3626
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02099",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 32.75,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79758,
+              -12.3626
+            ],
+            [
+              -76.79748,
+              -12.36249
+            ],
+            [
+              -76.79758,
+              -12.3626
+            ],
+            [
+              -76.79758,
+              -12.3626
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02225",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 49.8,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.797,
+              -12.36086
+            ],
+            [
+              -76.79711,
+              -12.36075
+            ],
+            [
+              -76.797,
+              -12.36086
+            ],
+            [
+              -76.79705,
+              -12.36091
+            ],
+            [
+              -76.797,
+              -12.36086
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02245",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 9.34,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79747,
+              -12.36054
+            ],
+            [
+              -76.79744,
+              -12.36051
+            ],
+            [
+              -76.79747,
+              -12.36054
+            ],
+            [
+              -76.79747,
+              -12.36054
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02266",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 46.68,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.79794,
+              -12.36038
+            ],
+            [
+              -76.79779,
+              -12.36023
+            ],
+            [
+              -76.79781,
+              -12.36025
+            ],
+            [
+              -76.79794,
+              -12.36038
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02455",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.79,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80166,
+              -12.35652
+            ],
+            [
+              -76.80166,
+              -12.35652
+            ],
+            [
+              -76.80166,
+              -12.35652
+            ],
+            [
+              -76.80151,
+              -12.35663
+            ],
+            [
+              -76.80151,
+              -12.35663
+            ],
+            [
+              -76.80166,
+              -12.35652
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02464",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 18.67,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.80166,
+              -12.35652
+            ],
+            [
+              -76.80166,
+              -12.35652
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02466",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 53.03,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.80147,
+              -12.35658
+            ],
+            [
+              -76.80151,
+              -12.35663
+            ],
+            [
+              -76.80151,
+              -12.35663
+            ],
+            [
+              -76.80147,
+              -12.35658
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02467",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 38.9,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80147,
+              -12.35658
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.80147,
+              -12.35658
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02478",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 40.46,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.80173,
+              -12.35633
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ],
+            [
+              -76.8016,
+              -12.35646
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02641",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 17.15,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80295,
+              -12.355
+            ],
+            [
+              -76.80301,
+              -12.35495
+            ],
+            [
+              -76.80301,
+              -12.35495
+            ],
+            [
+              -76.80295,
+              -12.355
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P02803",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0.61,
+        "perimeter_m": 27.4,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.81012,
+              -12.35405
+            ],
+            [
+              -76.81014,
+              -12.35404
+            ],
+            [
+              -76.81003,
+              -12.3541
+            ],
+            [
+              -76.81012,
+              -12.35405
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P03128",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 31.88,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80637,
+              -12.35246
+            ],
+            [
+              -76.80641,
+              -12.3524
+            ],
+            [
+              -76.80633,
+              -12.35252
+            ],
+            [
+              -76.80637,
+              -12.35246
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P03403",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 15.94,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80949,
+              -12.35057
+            ],
+            [
+              -76.80953,
+              -12.35051
+            ],
+            [
+              -76.80949,
+              -12.35057
+            ],
+            [
+              -76.80949,
+              -12.35057
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P03557",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 29.65,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.81096,
+              -12.34922
+            ],
+            [
+              -76.81105,
+              -12.34912
+            ],
+            [
+              -76.81105,
+              -12.34912
+            ],
+            [
+              -76.81096,
+              -12.34922
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "PUNTA_NEGRA_P03715",
+        "district_id": "DIST_150127",
+        "district_name": "PUNTA NEGRA",
+        "geometry_type": "Polygon",
+        "source_id": "punta-negra",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0,
+        "perimeter_m": 15.56,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.80978,
+              -12.34804
+            ],
+            [
+              -76.80983,
+              -12.34799
+            ],
+            [
+              -76.80978,
+              -12.34804
+            ],
+            [
+              -76.80978,
+              -12.34804
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "parcel_id": "SAN_BORJA_P00650",
+        "district_id": "DIST_150130",
+        "district_name": "SAN BORJA",
+        "geometry_type": "Polygon",
+        "source_id": "san-borja",
+        "source_name": "catastro_kml",
+        "source_version": "v2026_09_02",
+        "acquired_at": "2026-09-01",
+        "confidence_level": "low",
+        "area_m2": 0.61,
+        "perimeter_m": 49.06,
+        "status": "invalid_area",
+        "_converted_from": null,
+        "_original_vertices": null
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -76.98595,
+              -12.08253
+            ],
+            [
+              -76.98587,
+              -12.08264
+            ],
+            [
+              -76.986,
+              -12.08246
+            ],
+            [
+              -76.98595,
+              -12.08253
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

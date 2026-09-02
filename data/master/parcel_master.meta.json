@@ -1,0 +1,245 @@
+{
+  "name": "parcel_master",
+  "version": "v2026_09_02",
+  "source": {
+    "name": "catastro_kml",
+    "origin": "Municipal KML files converted via tools/kml_to_geojson.js",
+    "acquired_at": "2026-09-01",
+    "districts_covered": 22
+  },
+  "processing": {
+    "script": "tools/etl/phase2a_catastro.js",
+    "date": "2026-09-02T13:50:27.254Z",
+    "rules": [
+      "LineString open (2 vertices, not closed) → excluded from parcel_master, kept in parcel_frontage_lines",
+      "LineString closed (Lince, Punta Negra, San Miguel) → converted to Polygon if area > 1m²",
+      "Polygon with < 4 vertices → discarded as invalid",
+      "Duplicate polygons (same bbox) → deduplicated",
+      "Outside Lima/Callao bbox → flagged status=outside_lima",
+      "Outside district bbox (>500m tolerance) → flagged status=outside_district",
+      "Area < 1m² → flagged status=invalid_area"
+    ],
+    "crs": "EPSG:4326"
+  },
+  "stats": {
+    "total_input_features": 142684,
+    "valid_parcels": 96716,
+    "frontage_lines": 45836,
+    "flagged_parcels": 61,
+    "conversions": 8,
+    "discards": 11,
+    "districts_processed": 22
+  },
+  "conversion_log": [
+    {
+      "slug": "lince",
+      "vertices": 5,
+      "area_m2": 6.06,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "lince",
+      "vertices": 4,
+      "area_m2": 2.42,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.82,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 6.06,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.82,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 8,
+      "area_m2": 10.91,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 1.21,
+      "status": "CONVERTED"
+    },
+    {
+      "slug": "punta-negra",
+      "vertices": 4,
+      "area_m2": 7.27,
+      "status": "CONVERTED"
+    }
+  ],
+  "discard_summary": {
+    "total": 11,
+    "by_reason": {
+      "CLOSED_LS_ZERO_AREA": 11
+    }
+  },
+  "published_files": [
+    {
+      "slug": "ate",
+      "parcels": 14271,
+      "raw_bytes": 7602011,
+      "gz_bytes": 389799,
+      "gz_kb": 380.7
+    },
+    {
+      "slug": "barranco",
+      "parcels": 3325,
+      "raw_bytes": 1928648,
+      "gz_bytes": 118666,
+      "gz_kb": 115.9
+    },
+    {
+      "slug": "brena",
+      "parcels": 259,
+      "raw_bytes": 144172,
+      "gz_bytes": 11854,
+      "gz_kb": 11.6
+    },
+    {
+      "slug": "callao",
+      "parcels": 69,
+      "raw_bytes": 38934,
+      "gz_bytes": 3562,
+      "gz_kb": 3.5
+    },
+    {
+      "slug": "cercado-de-lima",
+      "parcels": 27843,
+      "raw_bytes": 16404024,
+      "gz_bytes": 930275,
+      "gz_kb": 908.5
+    },
+    {
+      "slug": "el-agustino",
+      "parcels": 5516,
+      "raw_bytes": 3117455,
+      "gz_bytes": 185992,
+      "gz_kb": 181.6
+    },
+    {
+      "slug": "independencia",
+      "parcels": 7578,
+      "raw_bytes": 4271561,
+      "gz_bytes": 219527,
+      "gz_kb": 214.4
+    },
+    {
+      "slug": "jesus-maria",
+      "parcels": 1231,
+      "raw_bytes": 694838,
+      "gz_bytes": 43932,
+      "gz_kb": 42.9
+    },
+    {
+      "slug": "lince",
+      "parcels": 5162,
+      "raw_bytes": 2955794,
+      "gz_bytes": 191444,
+      "gz_kb": 187
+    },
+    {
+      "slug": "magdalena-del-mar",
+      "parcels": 4523,
+      "raw_bytes": 2680648,
+      "gz_bytes": 157440,
+      "gz_kb": 153.8
+    },
+    {
+      "slug": "miraflores",
+      "parcels": 668,
+      "raw_bytes": 389893,
+      "gz_bytes": 30285,
+      "gz_kb": 29.6
+    },
+    {
+      "slug": "pueblo-libre",
+      "parcels": 355,
+      "raw_bytes": 209931,
+      "gz_bytes": 17360,
+      "gz_kb": 17
+    },
+    {
+      "slug": "punta-hermosa",
+      "parcels": 3034,
+      "raw_bytes": 1735424,
+      "gz_bytes": 90588,
+      "gz_kb": 88.5
+    },
+    {
+      "slug": "punta-negra",
+      "parcels": 3877,
+      "raw_bytes": 2162537,
+      "gz_bytes": 108631,
+      "gz_kb": 106.1
+    },
+    {
+      "slug": "rimac",
+      "parcels": 380,
+      "raw_bytes": 212860,
+      "gz_bytes": 17625,
+      "gz_kb": 17.2
+    },
+    {
+      "slug": "san-bartolo",
+      "parcels": 1969,
+      "raw_bytes": 1102314,
+      "gz_bytes": 74900,
+      "gz_kb": 73.1
+    },
+    {
+      "slug": "san-borja",
+      "parcels": 1607,
+      "raw_bytes": 1538785,
+      "gz_bytes": 169244,
+      "gz_kb": 165.3
+    },
+    {
+      "slug": "san-isidro",
+      "parcels": 3479,
+      "raw_bytes": 2726330,
+      "gz_bytes": 261865,
+      "gz_kb": 255.7
+    },
+    {
+      "slug": "san-luis",
+      "parcels": 302,
+      "raw_bytes": 172640,
+      "gz_bytes": 14185,
+      "gz_kb": 13.9
+    },
+    {
+      "slug": "san-miguel",
+      "parcels": 5611,
+      "raw_bytes": 3138398,
+      "gz_bytes": 161435,
+      "gz_kb": 157.7
+    },
+    {
+      "slug": "santiago-de-surco",
+      "parcels": 5258,
+      "raw_bytes": 3211870,
+      "gz_bytes": 183273,
+      "gz_kb": 179
+    },
+    {
+      "slug": "surquillo",
+      "parcels": 399,
+      "raw_bytes": 231373,
+      "gz_bytes": 18797,
+      "gz_kb": 18.4
+    }
+  ]
+}
