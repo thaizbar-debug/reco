@@ -1,5 +1,12 @@
 {
   "dependencies": {
     "playwright": "^1.60.0"
+  },
+  "scripts": {
+    "pilot:acquire": "node tools/etl/acquire_pilot_sources.js",
+    "pilot:shapefiles": "node tools/etl/process_external_shapefiles.js",
+    "pilot:analyze": "node tools/etl/pilot_analysis.js",
+    "pilot:report": "node tools/etl/pilot_report.js",
+    "pilot:all": "npm run pilot:acquire && npm run pilot:shapefiles && npm run pilot:analyze && npm run pilot:report"
   }
 }

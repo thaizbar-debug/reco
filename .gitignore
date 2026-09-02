@@ -9,3 +9,14 @@ firebase-debug.*.log
 data/master/*.geojson
 # Ephemeral test artifacts
 tools/etl/regression_test.js
+
+# External raw data (too large for git, acquired locally)
+data/raw/external/
+# Shapefile components (acquired locally)
+*.shp
+*.dbf
+*.shx
+*.prj
+*.cpg
+*.sbn
+*.sbx
