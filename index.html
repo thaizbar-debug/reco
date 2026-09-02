@@ -795,6 +795,8 @@ header .spacer{flex:1}
   font-size:.74rem;color:var(--muted);padding:5px 8px;cursor:pointer;transition:all .1s;
 }
 .mtool-clear:hover{background:#fee2e2;color:var(--red);border-color:var(--red)}
+.distrito-label-icon span{font-size:.6rem;font-weight:700;color:#4338ca;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;pointer-events:none}
+.distrito-tooltip{font-size:.72rem;font-weight:600;color:#4338ca;background:rgba(255,255,255,.92);border:1px solid #a5b4fc;border-radius:5px;padding:3px 7px;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .poi-chips{display:flex;flex-wrap:wrap;gap:6px}
 .poi-chip{
   background:#fff;border:1.5px solid var(--border);border-radius:99px;
@@ -2488,6 +2490,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()">👁️ Street View<span class="mtool-sub">Vista de calle de Google</span></button>
       <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en vivo</span></button>
       <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()">📐 Catastro<span class="mtool-sub">Lotes por distrito en Lima</span></button>
+      <button class="mtool-btn" id="distritosToggle" onclick="toggleDistritos()">🗺️ Distritos<span class="mtool-sub">Límites distritales Lima</span></button>
     </div>
 
     <!-- Paneles de herramientas (se abren a la izquierda del toolbar) -->
@@ -2540,6 +2543,14 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="mtool-hint" id="catastroHint">Activa el catastro y acércate a un distrito disponible.</div>
       <div class="mtool-hint" style="font-size:.68rem">Lima Metropolitana · se carga por distrito al acercar el mapa (zoom ≥ 14).</div>
       <button class="mtool-clear" onclick="clearCatastro()">✕ Quitar lotes</button>
+    </div>
+
+    <div class="mtool-panel" id="distritosPanel">
+      <button class="mtool-panel-close" onclick="closeActiveTool()">✕</button>
+      <div class="mtool-panel-row"><b>🗺️ Límites distritales</b></div>
+      <div class="mtool-hint" id="distritosHint">Cargando límites distritales...</div>
+      <div class="mtool-hint" style="font-size:.68rem">50 distritos de Lima Metropolitana y Callao · fuente: IGN/INEI.</div>
+      <button class="mtool-clear" onclick="clearDistritos()">✕ Quitar límites</button>
     </div>
 
   </div>
@@ -2868,7 +2879,7 @@ const S = {
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
-  poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
+  poiMode:false, trafficOn:false, catastroOn:false, distritosOn:false, poiRadius:800,
   unlockedIds:new Set(), pendingUnlockId:null,
   // BUG-02: intención guardada antes de mandar al usuario al login.
   // Se reanuda en auth.onAuthStateChanged y se descarta si cierra el
@@ -3389,6 +3400,14 @@ function _deactivateAllTools(){
     _catastroLoaded.clear();
     document.getElementById('catastroToggle')?.classList.remove('active');
     document.getElementById('catastroPanel')?.classList.remove('open');
+  }
+  // Distritos
+  if(S.distritosOn){
+    S.distritosOn=false;
+    if(_distritosLayer){ _distritosLayer.remove(); _distritosLayer=null; }
+    if(_distritosLabels){ _distritosLabels.remove(); _distritosLabels=null; }
+    document.getElementById('distritosToggle')?.classList.remove('active');
+    document.getElementById('distritosPanel')?.classList.remove('open');
   }
   S.activeTool=null;
   applyFilters();
@@ -3937,6 +3956,74 @@ function clearCatastro(){
   if(catastroLayer) catastroLayer.clearLayers();
   _catastroLoaded.clear();
   _catastroHint();
+}
+
+// ── Límites distritales (GeoJSON estático) ────────────────────
+let _distritosLayer=null;
+let _distritosData=null;
+let _distritosLabels=null;
+
+async function _loadDistritosData(){
+  if(_distritosData) return _distritosData;
+  const url=_DATA_BASE+'distritos/lima_callao.geojson.gz';
+  const resp=await fetch(url);
+  if(!resp.ok) throw new Error('HTTP '+resp.status);
+  _distritosData=await _gunzipJson(resp);
+  return _distritosData;
+}
+
+function _distritosHint(msg){
+  const el=document.getElementById('distritosHint'); if(!el) return;
+  el.textContent=msg||(_distritosLayer?'50 distritos de Lima y Callao.':'Cargando límites distritales...');
+}
+
+function _renderDistritos(fc){
+  if(!leafletMap) return;
+  _distritosLayer=L.geoJSON(fc,{
+    style:{color:'#6366f1',weight:2,opacity:.75,fill:true,fillColor:'#818cf8',fillOpacity:.06,dashArray:'6 3'},
+    onEachFeature:function(f,layer){
+      const name=f.properties.distrito||'';
+      const display=name.charAt(0)+name.slice(1).toLowerCase();
+      layer.bindTooltip(display,{permanent:false,direction:'center',className:'distrito-tooltip'});
+    }
+  }).addTo(leafletMap);
+  _distritosLabels=L.layerGroup();
+  fc.features.forEach(function(f){
+    const name=f.properties.distrito||'';
+    const display=name.charAt(0)+name.slice(1).toLowerCase();
+    var coords=f.geometry.coordinates[0];
+    if(f.geometry.type==='MultiPolygon') coords=f.geometry.coordinates[0][0];
+    var lat=0,lng=0;
+    coords.forEach(function(c){lat+=c[1];lng+=c[0];});
+    lat/=coords.length; lng/=coords.length;
+    var icon=L.divIcon({className:'distrito-label-icon',html:'<span>'+display+'</span>',iconSize:[0,0]});
+    L.marker([lat,lng],{icon:icon,interactive:false}).addTo(_distritosLabels);
+  });
+  _distritosLabels.addTo(leafletMap);
+}
+
+function toggleDistritos(){
+  const wasActive=S.distritosOn;
+  _deactivateAllTools();
+  if(!wasActive){
+    S.activeTool='distritos'; S.distritosOn=true;
+    document.getElementById('distritosToggle').classList.add('active');
+    document.getElementById('distritosPanel').classList.add('open');
+    _distritosHint('Cargando límites distritales...');
+    _loadDistritosData().then(function(fc){
+      if(!S.distritosOn) return;
+      _renderDistritos(fc);
+      _distritosHint();
+    }).catch(function(e){
+      console.warn('Distritos no disponible',e&&e.message);
+      _distritosHint('Error al cargar los límites distritales.');
+    });
+  }
+}
+function clearDistritos(){
+  if(_distritosLayer){ _distritosLayer.remove(); _distritosLayer=null; }
+  if(_distritosLabels){ _distritosLabels.remove(); _distritosLabels=null; }
+  _distritosHint('Límites distritales removidos.');
 }
 
 // ── Street View (Google) ──────────────────────────────────────
