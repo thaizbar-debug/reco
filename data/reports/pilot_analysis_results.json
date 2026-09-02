@@ -1,0 +1,532 @@
+{
+  "pilot_date": "2026-09-02T19:16:33.058Z",
+  "districts": {
+    "miraflores": {
+      "name": "MIRAFLORES",
+      "ubigeo": "150122",
+      "slug": "miraflores",
+      "scenario": "high_value_low_coverage",
+      "district_area_km2": 9.23,
+      "published": {
+        "file_stats": {
+          "gz_bytes": 30285,
+          "raw_bytes": 389893,
+          "gz_kb": 29.6,
+          "raw_kb": 380.8,
+          "gz_mb": 0.029,
+          "checksum_sha256": "1a80361270bd782a6dc976a3b58263a8a1f0e015053204cca437d17ecf245230"
+        },
+        "analysis": {
+          "label": "published",
+          "total_features": 668,
+          "geometry_types": {
+            "Polygon": 668
+          },
+          "polygons": 668,
+          "linestrings": 0,
+          "total_vertices": 4466,
+          "total_area_km2": 0.435,
+          "invalid_geometries": 0,
+          "degenerate": 0,
+          "duplicates_bbox": 0,
+          "area_stats": {
+            "min_m2": 48.5,
+            "max_m2": 48661.8,
+            "median_m2": 366,
+            "p25_m2": 255.7,
+            "p75_m2": 550.2
+          }
+        },
+        "district_comparison": {
+          "district_area_km2": 9.23,
+          "parcel_area_km2": 0.435,
+          "coverage_pct": 4.7,
+          "parcels_sampled": 668,
+          "inside_district": 650,
+          "outside_district": 18,
+          "outside_pct": 2.7
+        }
+      },
+      "raw": {
+        "file_stats": {
+          "gz_bytes": 19933,
+          "raw_bytes": 152680,
+          "gz_kb": 19.5,
+          "raw_kb": 149.1,
+          "gz_mb": 0.019,
+          "checksum_sha256": "10010ffcd42ef79aa5b18d97fc99f4ffaf5a13ae73fd6c0ac6815024a3ba631d"
+        },
+        "analysis": {
+          "label": "raw",
+          "total_features": 668,
+          "geometry_types": {
+            "Polygon": 668
+          },
+          "polygons": 668,
+          "linestrings": 0,
+          "total_vertices": 4466,
+          "total_area_km2": 0.435,
+          "invalid_geometries": 0,
+          "degenerate": 0,
+          "duplicates_bbox": 0,
+          "area_stats": {
+            "min_m2": 48.5,
+            "max_m2": 48661.8,
+            "median_m2": 366,
+            "p25_m2": 255.7,
+            "p75_m2": 550.2
+          }
+        }
+      },
+      "catastro_stats": {
+        "gz_bytes": 30285,
+        "raw_bytes": 389893,
+        "gz_kb": 29.6,
+        "raw_kb": 380.8,
+        "gz_mb": 0.029,
+        "checksum_sha256": "1a80361270bd782a6dc976a3b58263a8a1f0e015053204cca437d17ecf245230"
+      },
+      "performance": {
+        "read_ms": 1,
+        "decompress_ms": 9,
+        "parse_ms": 6,
+        "total_ms": 16,
+        "estimated_browser_ms": 30
+      },
+      "provenance": {
+        "source_name": "GEO GPS Peru (probable)",
+        "source_url": "NOT_VERIFIED",
+        "raw_file": "data/raw/catastro/miraflores.geojson.gz",
+        "published_file": "data/published/catastro/miraflores.geojson.gz",
+        "catastro_file": "data/catastro/miraflores.geojson.gz",
+        "checksum": "1a80361270bd782a6dc976a3b58263a8a1f0e015053204cca437d17ecf245230",
+        "acquired_at": "UNKNOWN",
+        "processing_script": "tools/etl/phase2a_catastro.js",
+        "processing_version": "1.0",
+        "verification_status": "PARTIALLY_VERIFIED"
+      },
+      "external_sources": {
+        "geo_gps_peru": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geogpsperu.com (HTTP 403)"
+        },
+        "cofopri_rest": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoportal.cofopri.gob.pe (HTTP 403)"
+        },
+        "geoidep_wfs": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoidep.gob.pe (HTTP 403)"
+        },
+        "municipal": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks municipal geoportals (HTTP 403)"
+        },
+        "osm_overpass": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks overpass-api.de (HTTP 403)"
+        }
+      },
+      "acceptance_score": {
+        "total": 78,
+        "verdict": "PASS",
+        "breakdown": "geometry=20, crs=15, topology=15, duplicates=10, area=8, coverage=3, attribution=5, freshness=2"
+      },
+      "confidence": {
+        "level": "MEDIUM",
+        "code": "B",
+        "reason": "Single source (GEO GPS probable), not cross-verified. Geometry valid, provenance undocumented."
+      }
+    },
+    "la-victoria": {
+      "name": "LA VICTORIA",
+      "ubigeo": "150115",
+      "slug": "la-victoria",
+      "scenario": "zero_coverage_urban_dense",
+      "district_area_km2": 9.122,
+      "published": null,
+      "raw": null,
+      "provenance": {
+        "source_name": "NONE",
+        "source_url": "NOT_VERIFIED",
+        "raw_file": null,
+        "published_file": null,
+        "catastro_file": null,
+        "checksum": null,
+        "acquired_at": "UNKNOWN",
+        "processing_script": "tools/etl/phase2a_catastro.js",
+        "processing_version": "1.0",
+        "verification_status": "NOT_VERIFIED"
+      },
+      "external_sources": {
+        "geo_gps_peru": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geogpsperu.com (HTTP 403)"
+        },
+        "cofopri_rest": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoportal.cofopri.gob.pe (HTTP 403)"
+        },
+        "geoidep_wfs": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoidep.gob.pe (HTTP 403)"
+        },
+        "municipal": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks municipal geoportals (HTTP 403)"
+        },
+        "osm_overpass": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks overpass-api.de (HTTP 403)"
+        }
+      },
+      "acceptance_score": {
+        "total": 0,
+        "verdict": "NO_DATA",
+        "breakdown": "No published data"
+      },
+      "confidence": {
+        "level": "NO_DATA",
+        "code": "D",
+        "reason": "No data available for this district."
+      }
+    },
+    "surquillo": {
+      "name": "SURQUILLO",
+      "ubigeo": "150141",
+      "slug": "surquillo",
+      "scenario": "ls_dominant_conversion",
+      "district_area_km2": 4.66,
+      "published": {
+        "file_stats": {
+          "gz_bytes": 18797,
+          "raw_bytes": 231373,
+          "gz_kb": 18.4,
+          "raw_kb": 226,
+          "gz_mb": 0.018,
+          "checksum_sha256": "7bca591fcf50fc479dd1384eb5f5bee864feeca501d521511752f934a60b52fc"
+        },
+        "analysis": {
+          "label": "published",
+          "total_features": 399,
+          "geometry_types": {
+            "Polygon": 399
+          },
+          "polygons": 399,
+          "linestrings": 0,
+          "total_vertices": 2616,
+          "total_area_km2": 3.466,
+          "invalid_geometries": 0,
+          "degenerate": 0,
+          "duplicates_bbox": 0,
+          "area_stats": {
+            "min_m2": 87.3,
+            "max_m2": 135938,
+            "median_m2": 6721.2,
+            "p25_m2": 3987.2,
+            "p75_m2": 9622.6
+          }
+        },
+        "district_comparison": {
+          "district_area_km2": 4.66,
+          "parcel_area_km2": 3.466,
+          "coverage_pct": 74.4,
+          "parcels_sampled": 399,
+          "inside_district": 390,
+          "outside_district": 9,
+          "outside_pct": 2.3
+        }
+      },
+      "raw": {
+        "file_stats": {
+          "gz_bytes": 67820,
+          "raw_bytes": 840458,
+          "gz_kb": 66.2,
+          "raw_kb": 820.8,
+          "gz_mb": 0.065,
+          "checksum_sha256": "16f78c58e5c8fc0bf6040478799f000417e571517f50b09b2c20974b052d6067"
+        },
+        "analysis": {
+          "label": "raw",
+          "total_features": 6212,
+          "geometry_types": {
+            "Polygon": 399,
+            "LineString": 5813
+          },
+          "polygons": 399,
+          "linestrings": 5813,
+          "total_vertices": 14648,
+          "total_area_km2": 3.466,
+          "invalid_geometries": 0,
+          "degenerate": 5813,
+          "duplicates_bbox": 0,
+          "area_stats": {
+            "min_m2": 87.3,
+            "max_m2": 135938,
+            "median_m2": 6721.2,
+            "p25_m2": 3987.2,
+            "p75_m2": 9622.6
+          }
+        }
+      },
+      "linestring_analysis": {
+        "total_linestrings": 5813,
+        "closed_linestrings": 0,
+        "open_linestrings": 72,
+        "closed_valid_as_polygon": 0,
+        "conversion_rate_pct": 0,
+        "closed_area_stats": null
+      },
+      "catastro_stats": {
+        "gz_bytes": 18797,
+        "raw_bytes": 231373,
+        "gz_kb": 18.4,
+        "raw_kb": 226,
+        "gz_mb": 0.018,
+        "checksum_sha256": "7bca591fcf50fc479dd1384eb5f5bee864feeca501d521511752f934a60b52fc"
+      },
+      "performance": {
+        "read_ms": 0,
+        "decompress_ms": 0,
+        "parse_ms": 1,
+        "total_ms": 1,
+        "estimated_browser_ms": 2
+      },
+      "provenance": {
+        "source_name": "GEO GPS Peru (probable)",
+        "source_url": "NOT_VERIFIED",
+        "raw_file": "data/raw/catastro/surquillo.geojson.gz",
+        "published_file": "data/published/catastro/surquillo.geojson.gz",
+        "catastro_file": "data/catastro/surquillo.geojson.gz",
+        "checksum": "7bca591fcf50fc479dd1384eb5f5bee864feeca501d521511752f934a60b52fc",
+        "acquired_at": "UNKNOWN",
+        "processing_script": "tools/etl/phase2a_catastro.js",
+        "processing_version": "1.0",
+        "verification_status": "PARTIALLY_VERIFIED"
+      },
+      "external_sources": {
+        "geo_gps_peru": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geogpsperu.com (HTTP 403)"
+        },
+        "cofopri_rest": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoportal.cofopri.gob.pe (HTTP 403)"
+        },
+        "geoidep_wfs": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoidep.gob.pe (HTTP 403)"
+        },
+        "municipal": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks municipal geoportals (HTTP 403)"
+        },
+        "osm_overpass": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks overpass-api.de (HTTP 403)"
+        }
+      },
+      "acceptance_score": {
+        "total": 90,
+        "verdict": "PASS",
+        "breakdown": "geometry=20, crs=15, topology=15, duplicates=10, area=8, coverage=15, attribution=5, freshness=2"
+      },
+      "confidence": {
+        "level": "MEDIUM",
+        "code": "B",
+        "reason": "Single source (GEO GPS probable), not cross-verified. Geometry valid, provenance undocumented."
+      }
+    },
+    "chorrillos": {
+      "name": "CHORRILLOS",
+      "ubigeo": "150108",
+      "slug": "chorrillos",
+      "scenario": "zero_coverage_large_mixed",
+      "district_area_km2": 34.464,
+      "published": null,
+      "raw": null,
+      "provenance": {
+        "source_name": "NONE",
+        "source_url": "NOT_VERIFIED",
+        "raw_file": null,
+        "published_file": null,
+        "catastro_file": null,
+        "checksum": null,
+        "acquired_at": "UNKNOWN",
+        "processing_script": "tools/etl/phase2a_catastro.js",
+        "processing_version": "1.0",
+        "verification_status": "NOT_VERIFIED"
+      },
+      "external_sources": {
+        "geo_gps_peru": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geogpsperu.com (HTTP 403)"
+        },
+        "cofopri_rest": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoportal.cofopri.gob.pe (HTTP 403)"
+        },
+        "geoidep_wfs": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoidep.gob.pe (HTTP 403)"
+        },
+        "municipal": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks municipal geoportals (HTTP 403)"
+        },
+        "osm_overpass": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks overpass-api.de (HTTP 403)"
+        }
+      },
+      "acceptance_score": {
+        "total": 0,
+        "verdict": "NO_DATA",
+        "breakdown": "No published data"
+      },
+      "confidence": {
+        "level": "NO_DATA",
+        "code": "D",
+        "reason": "No data available for this district."
+      }
+    },
+    "san-juan-de-lurigancho": {
+      "name": "SAN JUAN DE LURIGANCHO",
+      "ubigeo": "150132",
+      "slug": "san-juan-de-lurigancho",
+      "scenario": "zero_coverage_largest",
+      "district_area_km2": 141.467,
+      "published": null,
+      "raw": null,
+      "provenance": {
+        "source_name": "NONE",
+        "source_url": "NOT_VERIFIED",
+        "raw_file": null,
+        "published_file": null,
+        "catastro_file": null,
+        "checksum": null,
+        "acquired_at": "UNKNOWN",
+        "processing_script": "tools/etl/phase2a_catastro.js",
+        "processing_version": "1.0",
+        "verification_status": "NOT_VERIFIED"
+      },
+      "external_sources": {
+        "geo_gps_peru": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geogpsperu.com (HTTP 403)"
+        },
+        "cofopri_rest": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoportal.cofopri.gob.pe (HTTP 403)"
+        },
+        "geoidep_wfs": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks geoidep.gob.pe (HTTP 403)"
+        },
+        "municipal": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks municipal geoportals (HTTP 403)"
+        },
+        "osm_overpass": {
+          "status": "NOT_VERIFIED",
+          "reason": "Egress proxy blocks overpass-api.de (HTTP 403)"
+        }
+      },
+      "acceptance_score": {
+        "total": 0,
+        "verdict": "NO_DATA",
+        "breakdown": "No published data"
+      },
+      "confidence": {
+        "level": "NO_DATA",
+        "code": "D",
+        "reason": "No data available for this district."
+      }
+    }
+  },
+  "surquillo_ls_analysis": {
+    "total_features_raw": 6212,
+    "polygons_existing": 399,
+    "linestrings_total": 5813,
+    "linestrings_closed": 0,
+    "linestrings_open": 72,
+    "linestrings_too_short": 5741,
+    "valid_for_conversion": 0,
+    "conversion_would_add_polygons": 0,
+    "new_total_polygons": 399,
+    "conversion_area_stats": null,
+    "recommendation": "NOT_VIABLE — lines are frontage, not parcel boundaries"
+  },
+  "merge_simulation": {
+    "note": "Cannot simulate merge with external sources — egress blocked",
+    "existing_districts_status": {
+      "miraflores": {
+        "current_parcels": 668,
+        "action": "KEEP — no external source acquired",
+        "notes": "External source required for improvement. Must run acquisition from local machine."
+      },
+      "surquillo": {
+        "current_parcels": 399,
+        "action": "REVIEW — LS conversion potential",
+        "notes": "External source required for improvement. Must run acquisition from local machine."
+      },
+      "la-victoria": {
+        "current_parcels": 0,
+        "action": "FILL_GAP — requires external acquisition",
+        "notes": "No data. Must acquire from GEO GPS Peru or COFOPRI."
+      },
+      "chorrillos": {
+        "current_parcels": 0,
+        "action": "FILL_GAP — requires external acquisition",
+        "notes": "No data. Must acquire from GEO GPS Peru or COFOPRI."
+      },
+      "san-juan-de-lurigancho": {
+        "current_parcels": 0,
+        "action": "FILL_GAP — requires external acquisition",
+        "notes": "No data. Must acquire from GEO GPS Peru or COFOPRI."
+      }
+    }
+  },
+  "go_nogo": {
+    "overall": "BLOCKED",
+    "reason": "Pilot cannot complete from sandbox — external data endpoints blocked by egress proxy. 3 of 6 conditions cannot be evaluated.",
+    "conditions": [
+      {
+        "id": 1,
+        "desc": "3/5 pilot districts pass acceptance (>=50)",
+        "status": "CANNOT_EVALUATE",
+        "reason": "Only 2/5 districts have data. Cannot evaluate 3 without acquisition."
+      },
+      {
+        "id": 2,
+        "desc": "Miraflores coverage > 30%",
+        "status": "FAIL",
+        "reason": "Current coverage 4.7%. No external source acquired to improve."
+      },
+      {
+        "id": 3,
+        "desc": "SJL file < 5MB gzip",
+        "status": "CANNOT_EVALUATE",
+        "reason": "SJL has no data. Cannot evaluate size without acquisition."
+      },
+      {
+        "id": 4,
+        "desc": "No regressions in existing 22 districts",
+        "status": "PASS",
+        "reason": "parcel_master unchanged. All 22 districts intact."
+      },
+      {
+        "id": 5,
+        "desc": "Pipeline is reproducible",
+        "status": "PASS",
+        "reason": "ETL scripts exist and work (Phase 2a proven)."
+      },
+      {
+        "id": 6,
+        "desc": "No degradation from new sources",
+        "status": "CANNOT_EVALUATE",
+        "reason": "No new sources acquired to evaluate."
+      }
+    ]
+  }
+}
