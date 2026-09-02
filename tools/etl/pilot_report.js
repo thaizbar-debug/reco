@@ -27,6 +27,14 @@ function loadResults() {
   return JSON.parse(fs.readFileSync(RESULTS_FILE, 'utf8'));
 }
 
+function getExistingData(d) {
+  if (!d) return null;
+  if (d.existing && d.existing.published) return d.existing.published;
+  if (d.existing && d.existing.analysis) return d.existing;
+  if (d.published) return d.published;
+  return null;
+}
+
 function verdictEmoji(v) {
   if (v === 'PASS' || v === 'GO') return '[PASS]';
   if (v === 'CONDITIONAL') return '[COND]';
@@ -66,11 +74,12 @@ function buildMarkdownReport(results) {
     if (!d) continue;
     const ext = d.external_sources || {};
     for (const src of Object.keys(ext)) {
-      totalSources++;
       const ds = ext[src];
-      if (ds && ds.analysis && ds.analysis.total_features > 0) {
+      if (!ds || typeof ds !== 'object') continue;
+      totalSources++;
+      if (ds.analysis && (ds.analysis.feature_count || ds.analysis.total_features || 0) > 0) {
         sourcesSucceeded++;
-        totalFeatures += ds.analysis.total_features;
+        totalFeatures += (ds.analysis.feature_count || ds.analysis.total_features || 0);
       }
     }
   }
@@ -94,7 +103,7 @@ function buildMarkdownReport(results) {
     for (const [src, data] of Object.entries(ext)) {
       if (!sourceAgg[src]) sourceAgg[src] = { queried: 0, features: 0, errors: [] };
       sourceAgg[src].queried++;
-      if (data && data.analysis) sourceAgg[src].features += data.analysis.total_features || 0;
+      if (data && data.analysis) sourceAgg[src].features += (data.analysis.feature_count || data.analysis.total_features || 0);
       if (data && data.errors && data.errors.length > 0) sourceAgg[src].errors.push(...data.errors);
     }
   }
@@ -117,13 +126,13 @@ function buildMarkdownReport(results) {
       w(`| ${slug} | — | — | — | — | — | NO_DATA |`);
       continue;
     }
-    const existing = d.existing || d.published || {};
-    const existCount = existing.analysis ? existing.analysis.total_features : 0;
+    const existing = getExistingData(d) || {};
+    const existCount = existing.analysis ? (existing.analysis.feature_count || existing.analysis.total_features || 0) : 0;
 
     let extCount = 0;
     const ext = d.external_sources || {};
     for (const data of Object.values(ext)) {
-      if (data && data.analysis) extCount += data.analysis.total_features || 0;
+      if (data && data.analysis) extCount += (data.analysis.feature_count || data.analysis.total_features || 0);
     }
 
     const covExist = existing.district_comparison ? existing.district_comparison.coverage_pct + '%' : '0%';
@@ -149,11 +158,11 @@ function buildMarkdownReport(results) {
     w('');
 
     // Existing data
-    const existing = d.existing || d.published;
+    const existing = getExistingData(d);
     if (existing && existing.analysis) {
       const a = existing.analysis;
       w('**Existing data:**');
-      w(`- Features: ${a.total_features}`);
+      w(`- Features: ${a.feature_count || a.total_features}`);
       w(`- Geometry types: ${JSON.stringify(a.geometry_types)}`);
       w(`- Polygons: ${a.polygons}, LineStrings: ${a.linestrings}`);
       w(`- Area: ${a.total_area_km2} km²`);
@@ -175,9 +184,9 @@ function buildMarkdownReport(results) {
       w('**External sources:**');
       for (const [src, data] of Object.entries(ext)) {
         if (!data) continue;
-        if (data.analysis && data.analysis.total_features > 0) {
+        if (data.analysis && (data.analysis.feature_count || data.analysis.total_features || 0) > 0) {
           const a = data.analysis;
-          w(`- **${src}:** ${a.total_features} features (${a.polygons} polygons, ${a.linestrings} LS)`);
+          w(`- **${src}:** ${a.feature_count || a.total_features} features (${a.polygons} polygons, ${a.linestrings} LS)`);
           if (a.semantic_breakdown) {
             const sb = a.semantic_breakdown;
             const parts = [];
@@ -250,9 +259,9 @@ function buildMarkdownReport(results) {
     }
 
     // Performance
-    if (d.performance) {
-      const p = d.performance;
-      w(`**Performance:** read=${p.read_ms}ms, decompress=${p.decompress_ms}ms, parse=${p.parse_ms}ms, total=${p.total_ms}ms`);
+    const perf = d.performance && d.performance.published ? d.performance.published : d.performance;
+    if (perf && perf.total_ms !== undefined) {
+      w(`**Performance:** read=${perf.read_ms}ms, decompress=${perf.decompress_ms}ms, parse=${perf.parse_ms}ms, total=${perf.total_ms}ms`);
       w('');
     }
 
@@ -304,11 +313,12 @@ function buildMarkdownReport(results) {
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
     if (!d) continue;
-    const stats = (d.existing || d.published || {}).file_stats;
-    const a = (d.existing || d.published || {}).analysis;
-    const p = d.performance;
-    if (stats && a && p) {
-      w(`| ${d.name} | ${stats.raw_kb} | ${stats.gz_kb} | ${a.total_features} | ${a.total_vertices} | ${p.total_ms} | ${p.estimated_browser_ms}ms |`);
+    const perf = d.performance && d.performance.published ? d.performance.published : d.performance;
+    const fileSizes = perf && perf.file_sizes ? perf.file_sizes : {};
+    const existData = getExistingData(d);
+    const a = existData ? existData.analysis : null;
+    if (a && perf) {
+      w(`| ${d.name} | ${fileSizes.raw_kb || '—'} | ${fileSizes.gz_kb || '—'} | ${a.feature_count || a.total_features || '—'} | ${a.total_vertices || '—'} | ${perf.total_ms || perf.read_ms || '—'} | ${perf.estimated_browser_ms ? perf.estimated_browser_ms + 'ms' : '—'} |`);
     } else {
       w(`| ${d.name || slug} | — | — | — | — | — | — |`);
     }
@@ -337,7 +347,7 @@ function buildMarkdownReport(results) {
     if (!d) continue;
     if (!d.existing && !d.published && Object.keys(d.external_sources || {}).every(k => {
       const s = d.external_sources[k];
-      return !s || !s.analysis || s.analysis.total_features === 0;
+      return !s || !s.analysis || (s.analysis.feature_count || s.analysis.total_features || 0) === 0;
     })) {
       risks.push(`- **${d.name}:** No data from any source. Cannot evaluate this district.`);
     }
@@ -345,7 +355,8 @@ function buildMarkdownReport(results) {
       risks.push('- **SURQUILLO:** Existing polygons are manzanas (median 6720m²), not individual parcels. All 5813 LineStrings are open (frontage). LS→Polygon conversion NOT viable.');
     }
     if (slug === 'san-juan-de-lurigancho' && d.performance) {
-      const est = d.performance.estimated_browser_ms;
+      const perfSjl = d.performance.published || d.performance;
+      const est = perfSjl.estimated_browser_ms;
       if (est > 3000) {
         risks.push(`- **SJL:** Estimated browser render time ${est}ms exceeds 3s target. May need lazy loading or tile splitting.`);
       }
@@ -401,18 +412,20 @@ function buildJsonReport(results) {
     const d = districtResults[slug];
     if (!d) continue;
 
-    const existing = d.existing || d.published;
-    if (existing && existing.analysis && existing.analysis.total_features > 0) {
+    const existing = getExistingData(d);
+    const existFc = existing && existing.analysis ? (existing.analysis.feature_count || existing.analysis.total_features || 0) : 0;
+    if (existFc > 0) {
       report.executive_summary.districts_with_existing++;
-      report.executive_summary.total_existing_features += existing.analysis.total_features;
+      report.executive_summary.total_existing_features += existFc;
     }
 
     const ext = d.external_sources || {};
     let hasExternal = false;
     for (const data of Object.values(ext)) {
-      if (data && data.analysis && data.analysis.total_features > 0) {
+      const extFc = data && data.analysis ? (data.analysis.feature_count || data.analysis.total_features || 0) : 0;
+      if (extFc > 0) {
         hasExternal = true;
-        report.executive_summary.total_external_features += data.analysis.total_features;
+        report.executive_summary.total_external_features += extFc;
       }
     }
     if (hasExternal) report.executive_summary.districts_with_external++;
@@ -460,11 +473,11 @@ function main() {
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
     if (!d) continue;
-    const existing = d.existing || d.published;
-    const existCount = existing && existing.analysis ? existing.analysis.total_features : 0;
+    const existing = getExistingData(d);
+    const existCount = existing && existing.analysis ? (existing.analysis.feature_count || existing.analysis.total_features || 0) : 0;
     let extCount = 0;
     for (const data of Object.values(d.external_sources || {})) {
-      if (data && data.analysis) extCount += data.analysis.total_features || 0;
+      if (data && data.analysis) extCount += (data.analysis.feature_count || data.analysis.total_features || 0);
     }
     const acc = d.acceptance_score || {};
     console.log(`  ${(d.name || slug).padEnd(30)} ${String(existCount).padStart(10)} ${String(extCount).padStart(10)} ${String(acc.total || 0).padStart(7)} ${(acc.verdict || 'N/A').padStart(12)}`);
