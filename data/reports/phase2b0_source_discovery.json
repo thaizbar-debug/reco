@@ -1,0 +1,114 @@
+{
+  "phase": "2B-0",
+  "title": "Source Discovery, Pilot & Acceptance Framework",
+  "generated": "2026-09-02",
+  "baseline_summary": {
+    "districts_with_data": 22,
+    "districts_without_data": 28,
+    "total_published_parcels": 96716,
+    "total_published_size_mb": 3.24,
+    "frontage_lines_separated": 45836,
+    "districts_in_master": 50,
+    "linestring_in_published": 0
+  },
+  "sources_investigated": [
+    {
+      "name": "GEO GPS Perú",
+      "url": "geogpsperu.com",
+      "type": "community/open",
+      "format": "Shapefile",
+      "access": "FREE",
+      "coverage": "43+ districts Lima+Callao",
+      "verdict": "VIABLE — primary source",
+      "confidence": "medium"
+    },
+    {
+      "name": "COFOPRI GEOLLAQTA",
+      "url": "geoportal.cofopri.gob.pe/cofopri/rest/services/Cofopri/CATASTRO_URBANO/MapServer",
+      "type": "government/official",
+      "format": "ArcGIS REST JSON",
+      "access": "PUBLIC_API",
+      "coverage": "Variable (formalized areas)",
+      "verdict": "COMPLEMENTARY — peripheral districts",
+      "confidence": "high"
+    },
+    {
+      "name": "GEOIDEP WFS",
+      "url": "geoidep.gob.pe",
+      "type": "government/IDE",
+      "format": "WFS/GML",
+      "access": "PUBLIC_WFS",
+      "coverage": "Partial (node by node)",
+      "verdict": "COMPLEMENTARY — Miraflores confirmed",
+      "confidence": "high"
+    },
+    {
+      "name": "ICL Instituto Catastral de Lima",
+      "url": "icl.gob.pe",
+      "type": "government/official",
+      "format": "GeoServer WFS/WMS",
+      "access": "RESTRICTED",
+      "coverage": "Lima Metropolitana complete",
+      "verdict": "BLOCKED — requires institutional agreement",
+      "confidence": "very_high"
+    },
+    {
+      "name": "IMP ArcGIS Hub",
+      "url": "ciencia-datos-espaciales-mmlimp.hub.arcgis.com",
+      "type": "government/planning",
+      "format": "GeoJSON/Shapefile",
+      "access": "FREE",
+      "coverage": "Lima Metropolitana",
+      "verdict": "PHASE_3 — zoning, not parcels",
+      "confidence": "high"
+    },
+    {
+      "name": "MunLima Open Data",
+      "url": "datosabiertos.munlima.gob.pe",
+      "type": "government/open_data",
+      "format": "API/CSV",
+      "access": "FREE",
+      "coverage": "Cercado de Lima only",
+      "verdict": "LIMITED — low marginal impact",
+      "confidence": "medium"
+    },
+    {
+      "name": "SIGRID/CENEPRED",
+      "url": "sigrid.cenepred.gob.pe",
+      "type": "government/risk",
+      "format": "Viewer/PDF",
+      "access": "RESTRICTED",
+      "coverage": "Risk assessment focus",
+      "verdict": "DISCARDED — not cadastral",
+      "confidence": "n/a"
+    },
+    {
+      "name": "OpenStreetMap",
+      "url": "download.geofabrik.de/south-america/peru.html",
+      "type": "community/open",
+      "format": "PBF/Shapefile",
+      "access": "FREE",
+      "coverage": "Variable",
+      "verdict": "VALIDATION_ONLY — buildings, not parcels",
+      "confidence": "variable"
+    }
+  ],
+  "pilot_districts": [
+    {"distrito": "MIRAFLORES", "ubigeo": "150122", "scenario": "high_value_low_coverage", "current_parcels": 668, "current_coverage_pct": 4.7},
+    {"distrito": "LA VICTORIA", "ubigeo": "150115", "scenario": "zero_coverage_urban_dense", "current_parcels": 0, "current_coverage_pct": 0},
+    {"distrito": "SURQUILLO", "ubigeo": "150141", "scenario": "ls_dominant_conversion", "current_parcels": 399, "current_coverage_pct": 74.4},
+    {"distrito": "CHORRILLOS", "ubigeo": "150108", "scenario": "zero_coverage_large_mixed", "current_parcels": 0, "current_coverage_pct": 0},
+    {"distrito": "SAN JUAN DE LURIGANCHO", "ubigeo": "150132", "scenario": "zero_coverage_largest", "current_parcels": 0, "current_coverage_pct": 0}
+  ],
+  "recommendation": "GO_CONDITIONAL",
+  "go_conditions": [
+    "3/5 pilot districts pass acceptance (score >= 50)",
+    "Multi-source ETL pipeline works end-to-end",
+    "Miraflores coverage improves from 4.7% to >30%",
+    "SJL file under 5MB gzip, loads in <3s",
+    "No regressions in existing 22 districts"
+  ],
+  "strategy": "multi_source_with_primary",
+  "primary_source": "GEO GPS Perú",
+  "complementary_sources": ["COFOPRI REST", "GEOIDEP WFS", "Municipal WFS"]
+}
