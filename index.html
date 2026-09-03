@@ -7462,15 +7462,10 @@ function _crFormatDate(ts){
   return d.toLocaleDateString('es-PE', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
 }
 async function renderSolicitudes(el){
+  if(!auth.currentUser){ closeUserSection(); openAuthModal('login', function(){ navigateUserSection('solicitudes'); }); return; }
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">📨 Solicitudes de contacto</div>'
     + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
-  if(!auth.currentUser){
-    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
-      + '<div class="us-title">📨 Solicitudes de contacto</div>'
-      + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>Inicia sesión para ver las solicitudes de tus publicaciones.</p></div></div>';
-    return;
-  }
   let reqs = [];
   let queryError = null;
   try {
@@ -7941,6 +7936,7 @@ function removeFav(id) {
 
 // ── LLAVES ──
 function renderLlaves(el) {
+  if (!auth.currentUser) { closeUserSection(); openAuthModal('login', function(){ navigateUserSection('llaves'); }); return; }
   var hist = _getKeyHistory();
   var usedKeys = hist.filter(function(h) { return h.type === 'use' && h.propId; });
   var buyKeys = hist.filter(function(h) { return h.type === 'buy'; });
@@ -8017,15 +8013,10 @@ function _pubStatusBadge(status){
   return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏳ En revisión</span>';
 }
 async function renderPublicaciones(el) {
+  if(!auth.currentUser){ closeUserSection(); openAuthModal('login', function(){ navigateUserSection('publicaciones'); }); return; }
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">📋 Mis publicaciones</div>'
     + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
-  if(!auth.currentUser){
-    el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
-      + '<div class="us-title">📋 Mis publicaciones</div>'
-      + '<div class="us-card"><div class="us-empty"><div class="us-empty-icon">🔒</div><p>Inicia sesión para ver tus publicaciones.</p></div></div>';
-    return;
-  }
   let pubs = [];
   let queryError = null;
   try {
