@@ -207,6 +207,13 @@ def check_mock_values(r, html, landing_html):
     else:
         r.ok_(area, "Mock valuation _SUGG removed")
 
+    if "_VALUATION_ENABLED = true" in html or "_VALUATION_ENABLED=true" in html:
+        r.warn(area, "_VALUATION_ENABLED is true — valuation module is active (verify engine is ready)")
+    elif "_VALUATION_ENABLED" in html:
+        r.ok_(area, "_VALUATION_ENABLED toggle present and set to false")
+    else:
+        r.fail(area, "_VALUATION_ENABLED toggle not found in index.html")
+
     if "6.2, 8.4, 7.8, 7.1" in html or "score 7.5/10" in html.lower():
         r.fail(area, "Hardcoded investment scores still present")
     else:
