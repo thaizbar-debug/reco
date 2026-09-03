@@ -140,7 +140,7 @@ header .spacer{flex:1}
 .pub-geo-wrap{position:relative}
 .pub-geo-drop{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--sh2);z-index:50;max-height:220px;overflow-y:auto;display:none}
 .pub-geo-drop:not(:empty){display:block}
-.pub-geo-item{padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.4}
+.pub-geo-item{padding:10px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);line-height:1.4;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .pub-geo-item:hover{background:var(--light)}
 .pub-geo-item:last-child{border-bottom:none}
 .pub-stp-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:8px}
@@ -232,6 +232,7 @@ header .spacer{flex:1}
 .sg-item{
   display:flex;align-items:center;gap:12px;
   padding:10px 16px;cursor:pointer;transition:background .1s;
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
 }
 .sg-item:hover{background:var(--light)}
 .sg-item+.sg-item{border-top:1px solid var(--border)}
@@ -4178,7 +4179,8 @@ function boldMatch(text,q){
   return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
 }
 function _sgItemHtml(s,val){
-  return `<div class="sg-item" onmousedown="pickSuggestion('${s.label.replace(/'/g,"\\'")}')">
+  return `<div class="sg-item" ${_tapAttrs(`pickSuggestion('${s.label.replace(/'/g,"\\'")}')`)}>
+
     <span class="sg-ico">${s.icon}</span>
     <span class="sg-txt">
       <span class="sg-main">${boldMatch(s.label,val)}</span>
@@ -4206,6 +4208,38 @@ function showSuggestions(val){
   el.style.display=(body||showGeoLoading)?'block':'none';
 }
 // ─── Geocodificación: HERE (principal) → Google (opcional) → Photon (fallback) ───
+
+let _tapPt=null, _tapLast=0;
+function _tapStart(ev){
+  const t=ev.touches&&ev.touches[0];
+  _tapPt=t?{x:t.clientX,y:t.clientY}:null;
+}
+function _tapFire(ev,fn){
+  if(ev&&ev.type==='touchend'){
+    const t=ev.changedTouches&&ev.changedTouches[0];
+    if(t&&_tapPt&&(Math.abs(t.clientX-_tapPt.x)>10||Math.abs(t.clientY-_tapPt.y)>10)) return;
+  }
+  const now=Date.now();
+  if(now-_tapLast<500) return;
+  _tapLast=now;
+  if(ev&&ev.cancelable) ev.preventDefault();
+  try{ fn(); }catch(e){ console.warn('[reco] selección de sugerencia falló:',e); }
+}
+function _tapAttrs(call){
+  const c=String(call).replace(/"/g,'&quot;');
+  return `ontouchstart="_tapStart(event)" ontouchend="_tapFire(event,()=>{${c}})" onpointerdown="_tapFire(event,()=>{${c}})" onmousedown="_tapFire(event,()=>{${c}})" onclick="_tapFire(event,()=>{${c}})"`;
+}
+
+async function _revGeoPhoton(lat,lng){
+  try{
+    const res=await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&lang=default`);
+    if(!res.ok) return null;
+    const data=await res.json();
+    const pr=(data.features&&data.features[0]&&data.features[0].properties)||null;
+    if(!pr) return null;
+    return { district: pr.city||pr.district||pr.county||'', urbanizacion: pr.district||'' , label: pr.name||'' };
+  }catch(e){ console.warn('[reco] Photon revgeo error:',e.message); return null; }
+}
 
 // HERE Autosuggest — devuelve sugerencias CON coordenadas (1 sola llamada)
 async function _fetchHere(q){
@@ -4270,7 +4304,7 @@ function _geocodePlaceId(placeId){
 // Photon (Komoot) — fallback gratuito sin key
 async function _fetchPhoton(q){
   try{
-    const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=es&lat=-12.05&lon=-77.04`;
+    const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(q+', Perú')}&limit=5&lang=default&lat=-12.05&lon=-77.04`;
     const res=await fetch(url);
     const data=await res.json();
     if(!data.features||!data.features.length) return [];
@@ -4323,18 +4357,18 @@ async function _fetchGeo(q){
     const secHtml=`<div class="sg-section">Direcciones</div>`
       +items.map(r=>{
         if(r.src==='here'){
-          return `<div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
+          return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')`)}>
             <span class="sg-ico">📍</span>
             <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
           </div>`;
         }
         if(r.src==='google'){
-          return `<div class="sg-item sg-geo" onmousedown="pickGoogleResult('${r.placeId}','${r.label.replace(/'/g,"\\'")}')">
+          return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGoogleResult('${r.placeId}','${r.label.replace(/'/g,"\\'")}')`)}>
             <span class="sg-ico">📍</span>
             <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
           </div>`;
         }
-        return `<div class="sg-item sg-geo" onmousedown="pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')">
+        return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGeoResult(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')`)}>
           <span class="sg-ico">🗺️</span>
           <span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span>
         </div>`;
@@ -4405,7 +4439,7 @@ async function _flyToDistrictGeo(district){
         }
       }catch(e){ console.warn('[reco] HERE geocode error:',e.message); }
     }
-    const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=es&lat=-12.05&lon=-77.04`;
+    const url=`https://photon.komoot.io/api/?q=${encodeURIComponent(district+', Lima, Perú')}&limit=1&lang=default&lat=-12.05&lon=-77.04`;
     const res=await fetch(url);
     const data=await res.json();
     if(!data.features||!data.features.length) return;
@@ -5913,17 +5947,24 @@ async function _pubRevGeoHere(lat,lng){
   if(!HERE_API_KEY) return null;
   const url=`https://revgeocode.search.hereapi.com/v1/revgeocode?at=${lat},${lng}&lang=es&limit=1&apiKey=${HERE_API_KEY}`;
   const res=await fetch(url);
-  if(!res.ok) return null;
+  if(!res.ok){ console.warn('[reco] HERE revgeocode HTTP',res.status); return null; }
   const data=await res.json();
   const it=(data.items||[])[0]; if(!it) return null;
   const a=it.address||{};
-  return { district: a.district || a.subdistrict || a.city || a.county || '', label: it.title || a.label || '' };
+  return {
+    district: a.city || a.district || a.subdistrict || a.county || '',
+    urbanizacion: a.district || a.subdistrict || '',
+    label: it.title || a.label || ''
+  };
 }
 function _pubApplyReverse(fallbackDistrict){
   return async (lat,lng)=>{
-    const r=await _pubRevGeoHere(lat,lng).catch(()=>null);
+    let r=await _pubRevGeoHere(lat,lng).catch(()=>null);
+    if(!r||!r.district) r=await _revGeoPhoton(lat,lng).catch(()=>null);
     _pd.district=(r&&r.district)||fallbackDistrict||_pd.district||'';
+    if(r&&r.urbanizacion) _pd.urbanizacion=r.urbanizacion;
     const el=document.getElementById('pubDistrict');if(el)el.value=_pd.district;
+    if(!_pd.district) console.warn('[reco] no se pudo resolver el distrito para',lat,lng);
   };
 }
 function _pubMapInit(){
@@ -5954,23 +5995,32 @@ function _pubGeoInput(val){
   _pubGeoTimer=setTimeout(async ()=>{
     const d=document.getElementById('pubGeoDrop');if(!d)return;
     try {
-      const items = await _fetchHere(val);
+      const items = await _fetchGeoResults(val);
       if(!items.length){
         d.innerHTML='<div class="pub-geo-empty">No encontramos esa dirección. Prueba con calle + número + distrito, o arrastra el marcador en el mapa.</div>';
         return;
       }
       d.innerHTML=items.map(it=>{
-        const payload=encodeURIComponent(JSON.stringify({lat:it.lat,lng:it.lng,label:it.label,sub:it.sub}));
-        return `<div class="pub-geo-item" onmousedown="_pubGeoPick('${payload}')">📍 <strong>${it.label}</strong>${it.sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${it.sub}</div>`:''}</div>`;
+        const payload=encodeURIComponent(JSON.stringify({lat:it.lat,lng:it.lng,label:it.label,sub:it.sub,placeId:it.placeId||'',src:it.src||''}));
+        return `<div class="pub-geo-item" ${_tapAttrs(`_pubGeoPick('${payload}')`)}>📍 <strong>${it.label}</strong>${it.sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${it.sub}</div>`:''}</div>`;
       }).join('');
     } catch(e){
       console.warn('[reco] publish autosuggest failed:', e);
-      d.innerHTML='<div class="pub-geo-empty">No pudimos consultar la ubicación. Reintenta o arrastra el marcador en el mapa.</div>';
+      d.innerHTML='<div class="pub-geo-empty">No pudimos consultar la ubicación. Escribe la dirección y ajusta el marcador en el mapa.</div>';
     }
   },380);
 }
-function _pubGeoPick(payload){
+async function _pubGeoPick(payload){
   let p; try { p = JSON.parse(decodeURIComponent(payload)); } catch(e){ return; }
+  if((p.lat==null||p.lng==null)&&p.placeId){
+    const g=await _geocodePlaceId(p.placeId).catch(()=>null);
+    if(g){ p.lat=g.lat; p.lng=g.lng; }
+  }
+  if(p.lat==null||p.lng==null){
+    const drop0=document.getElementById('pubGeoDrop');
+    if(drop0) drop0.innerHTML='<div class="pub-geo-empty">No pudimos ubicar esa dirección. Ajusta el marcador en el mapa.</div>';
+    return;
+  }
   _pd.lat=Number(p.lat); _pd.lng=Number(p.lng);
   _pd.address=p.label||_pd.address;
   const ai=document.getElementById('pubAddrInput');if(ai)ai.value=_pd.address;
@@ -6581,7 +6631,7 @@ function toggleMobileMap(){
     return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
   }
   function _sgItemHtmlLanding(s,val){
-    return `<div class="sg-item" onmousedown="pickLanding('${s.label.replace(/'/g,"\\'")}')"><span class="sg-ico">${s.icon}</span><span class="sg-txt"><span class="sg-main">${boldMatch(s.label,val)}</span><span class="sg-sub">${s.sub}</span></span></div>`;
+    return `<div class="sg-item" ${_tapAttrs(`pickLanding('${s.label.replace(/'/g,"\\'")}')`)}><span class="sg-ico">${s.icon}</span><span class="sg-txt"><span class="sg-main">${boldMatch(s.label,val)}</span><span class="sg-sub">${s.sub}</span></span></div>`;
   }
   function onSearchLanding(v){
     _lastGeoL=null;
@@ -6618,12 +6668,12 @@ function toggleMobileMap(){
       const secHtml=`<div class="sg-section">Direcciones</div>`
         +items.map(r=>{
           if(r.src==='here'){
-            return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
+            return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')`)}><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
           }
           if(r.src==='google'){
-            return `<div class="sg-item sg-geo" onmousedown="pickGoogleLanding('${r.placeId}','${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
+            return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGoogleLanding('${r.placeId}','${r.label.replace(/'/g,"\\'")}')`)}><span class="sg-ico">📍</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
           }
-          return `<div class="sg-item sg-geo" onmousedown="pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')"><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
+          return `<div class="sg-item sg-geo" ${_tapAttrs(`pickGeoLanding(${r.lat},${r.lng},'${r.label.replace(/'/g,"\\'")}')`)}><span class="sg-ico">🗺️</span><span class="sg-txt"><span class="sg-main">${r.label}</span><span class="sg-sub">${r.sub}</span></span></div>`;
         }).join('');
       if(el) el.outerHTML=secHtml; else drop.insertAdjacentHTML('beforeend',secHtml);
       drop.style.display='block';
