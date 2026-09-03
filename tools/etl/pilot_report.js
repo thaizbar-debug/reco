@@ -117,13 +117,13 @@ function buildMarkdownReport(results) {
   // District Results
   w('## District Results');
   w('');
-  w('| District | Existing | External | Coverage Existing | Coverage New | Score | Verdict |');
-  w('|----------|----------|----------|-------------------|--------------|-------|---------|');
+  w('| District | Source | Semantic | Coverage | Score | Hard Gates | Final Status | Action |');
+  w('|----------|--------|----------|----------|-------|------------|--------------|--------|');
 
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
     if (!d) {
-      w(`| ${slug} | — | — | — | — | — | NO_DATA |`);
+      w(`| ${slug} | — | — | — | — | — | NO_DATA | — |`);
       continue;
     }
     const existing = getExistingData(d) || {};
@@ -135,13 +135,15 @@ function buildMarkdownReport(results) {
       if (data && data.analysis) extCount += (data.analysis.feature_count || data.analysis.total_features || 0);
     }
 
-    const covExist = existing.district_comparison ? existing.district_comparison.coverage_pct + '%' : '0%';
+    const source = existCount > 0 ? `existing(${existCount})` : (extCount > 0 ? `external(${extCount})` : '—');
+    const semantic = d.semantic_classification || '—';
+    const coverage = d.coverage_pct ? d.coverage_pct + '%' : '—';
     const acc = d.acceptance_score || {};
-    const bestExtCov = d.merge_simulation && d.merge_simulation.coverage_change_pct
-      ? d.merge_simulation.coverage_change_pct + '%'
-      : '—';
+    const hardGates = d.hard_gates ? d.hard_gates.overall : '—';
+    const finalStatus = d.final_status || 'NO_DATA';
+    const action = d.final_status || 'NO_DATA';
 
-    w(`| ${d.name || slug} | ${existCount.toLocaleString()} | ${extCount.toLocaleString()} | ${covExist} | ${bestExtCov} | ${acc.total || 0} | ${acc.verdict || 'N/A'} |`);
+    w(`| ${d.name || slug} | ${source} | ${semantic} | ${coverage} | ${acc.total || 0} | ${hardGates} | ${finalStatus} | ${action} |`);
   }
   w('');
 
@@ -243,10 +245,41 @@ function buildMarkdownReport(results) {
       w('');
     }
 
-    // Acceptance score
+    // Hard Gates
+    if (d.hard_gates && d.hard_gates.gates) {
+      const hg = d.hard_gates;
+      w('**Hard Gates:**');
+      w(`- Overall: **${hg.overall}**`);
+      w('');
+      w('| Gate | Status | Detail |');
+      w('|------|--------|--------|');
+      for (const [name, gate] of Object.entries(hg.gates)) {
+        w(`| ${name.toUpperCase()} | ${gate.status} | ${gate.reason} |`);
+      }
+      if (hg.failed_gates.length > 0) w(`\n- **Failed:** ${hg.failed_gates.join(', ')}`);
+      if (hg.conditional_gates.length > 0) w(`- **Conditional:** ${hg.conditional_gates.join(', ')}`);
+      w('');
+    }
+
+    // Final Status
+    if (d.final_status) {
+      w(`**Final Status:** **${d.final_status}**`);
+      w('');
+    }
+
+    // Dataset Utility
+    if (d.dataset_utility && d.dataset_utility.length > 0) {
+      w('**Dataset Utility:**');
+      for (const u of d.dataset_utility) {
+        w(`- ${u.type}: ${u.count} features → ${u.usable_for}`);
+      }
+      w('');
+    }
+
+    // Acceptance score (soft)
     if (d.acceptance_score) {
       const acc = d.acceptance_score;
-      w(`**Acceptance score:** ${acc.total}/100 — ${acc.verdict}`);
+      w(`**Soft Score (quality metric):** ${acc.total}/100`);
       if (acc.breakdown) w(`- Breakdown: ${typeof acc.breakdown === 'string' ? acc.breakdown : JSON.stringify(acc.breakdown)}`);
       w('');
     }
@@ -293,7 +326,8 @@ function buildMarkdownReport(results) {
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
     if (!d) continue;
-    const a = (d.existing || d.published || {}).analysis;
+    const existD = getExistingData(d);
+    const a = existD ? existD.analysis : null;
     if (a) {
       const sem = a.semantic_breakdown
         ? Object.entries(a.semantic_breakdown).filter(([, v]) => v && v.count > 0).map(([k, v]) => `${k}:${v.count}`).join(' ')
@@ -338,6 +372,42 @@ function buildMarkdownReport(results) {
   }
   w('');
 
+  // Hard Gates & Criteria Classification
+  w('## Acceptance Framework');
+  w('');
+  w('### Hard Gates (blocking — any FAIL prevents PASS for parcel_master)');
+  w('');
+  w('| Gate | Criteria Covered | Threshold |');
+  w('|------|-----------------|-----------|');
+  w('| **A: Semantic** | NEW — entity type | >=60% PARCEL polygons; BLOCK >50% → NOT_USABLE_FOR_PARCEL_MASTER |');
+  w('| **B: Geometry** | geometry (20pt) + CRS (15pt) | >=95% valid + >=30% polygon; CRS=EPSG:4326 |');
+  w('| **C: Coverage** | coverage (15pt) | >=20% PASS; 5-20% CONDITIONAL; <5% FAIL |');
+  w('| **D: Data Identity** | NEW — classification method | Must be area-based geometric analysis, not layer name |');
+  w('');
+  w('### Soft Score (quality gradient, 0-100, does NOT override hard gates)');
+  w('');
+  w('| Criterion | Weight | Category | Rationale |');
+  w('|-----------|--------|----------|-----------|');
+  w('| geometry | 20 | also Hard Gate B | Polygon %, geometry type distribution |');
+  w('| CRS | 15 | also Hard Gate B | Always WGS84 after normalization |');
+  w('| topology | 15 | Soft only | Quality metric; partial data still usable |');
+  w('| duplicates | 10 | Soft only | Cleanable in post-processing |');
+  w('| area | 10 | Soft only | Indicator, not binary requirement |');
+  w('| coverage | 15 | also Hard Gate C | Area coverage of district |');
+  w('| attribution | 10 | Soft only | Missing provenance ≠ invalid geometry |');
+  w('| freshness | 5 | Soft only | Old data can still be correct |');
+  w('');
+  w('### Source Hierarchy (authority tier, must still pass hard gates)');
+  w('');
+  w('| Tier | Category | Examples |');
+  w('|------|----------|----------|');
+  w('| 1 | OFFICIAL_CATASTRAL | COFOPRI, GEOIDEP, Municipal |');
+  w('| 2 | DERIVED_DOCUMENTED | GEO GPS Peru |');
+  w('| 3 | OTHER_GOVERNMENTAL | SEDAPAL, INEI |');
+  w('| 4 | SECONDARY | Unknown/undocumented |');
+  w('| 5 | OSM | NOT valid as catastro substitute |');
+  w('');
+
   // Risks
   w('## Risks');
   w('');
@@ -345,25 +415,27 @@ function buildMarkdownReport(results) {
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
     if (!d) continue;
-    if (!d.existing && !d.published && Object.keys(d.external_sources || {}).every(k => {
-      const s = d.external_sources[k];
-      return !s || !s.analysis || (s.analysis.feature_count || s.analysis.total_features || 0) === 0;
-    })) {
+    if (d.final_status === 'NO_DATA') {
       risks.push(`- **${d.name}:** No data from any source. Cannot evaluate this district.`);
     }
-    if (slug === 'surquillo') {
-      risks.push('- **SURQUILLO:** Existing polygons are manzanas (median 6720m²), not individual parcels. All 5813 LineStrings are open (frontage). LS→Polygon conversion NOT viable.');
+    if (d.final_status === 'NOT_USABLE_FOR_PARCEL_MASTER') {
+      const sem = d.semantic_classification || 'UNKNOWN';
+      const utility = (d.dataset_utility || []).filter(u => u.type !== 'parcel_candidate').map(u => `${u.type}(${u.count})`).join(', ');
+      risks.push(`- **${d.name}:** Data classified as ${sem} — NOT usable for parcel_master. ${utility ? `Potentially useful as: ${utility}.` : ''} Need parcel-level source.`);
+    }
+    if (d.final_status === 'CONDITIONAL' && d.hard_gates && d.hard_gates.failed_gates.includes('coverage')) {
+      risks.push(`- **${d.name}:** Coverage ${d.coverage_pct}% below 20% production threshold. Data quality is good but insufficient extent.`);
     }
     if (slug === 'san-juan-de-lurigancho' && d.performance) {
       const perfSjl = d.performance.published || d.performance;
-      const est = perfSjl.estimated_browser_ms;
+      const est = perfSjl && perfSjl.estimated_browser_ms;
       if (est > 3000) {
         risks.push(`- **SJL:** Estimated browser render time ${est}ms exceeds 3s target. May need lazy loading or tile splitting.`);
       }
     }
   }
   if (risks.length === 0) risks.push('- No critical risks identified.');
-  risks.forEach(r => w(r));
+  risks.forEach(rk => w(rk));
   w('');
 
   // GO / NO-GO
@@ -467,8 +539,8 @@ function main() {
   console.log('');
 
   const districtResults = results.districts || {};
-  console.log(`  ${'District'.padEnd(30)} ${'Existing'.padStart(10)} ${'External'.padStart(10)} ${'Score'.padStart(7)} ${'Verdict'.padStart(12)}`);
-  console.log(`  ${'─'.repeat(30)} ${'─'.repeat(10)} ${'─'.repeat(10)} ${'─'.repeat(7)} ${'─'.repeat(12)}`);
+  console.log(`  ${'District'.padEnd(25)} ${'Exist'.padStart(6)} ${'Ext'.padStart(5)} ${'Semantic'.padEnd(10)} ${'Cov'.padStart(6)} ${'Score'.padStart(5)} ${'Gates'.padEnd(8)} ${'Final Status'.padEnd(30)}`);
+  console.log(`  ${'─'.repeat(25)} ${'─'.repeat(6)} ${'─'.repeat(5)} ${'─'.repeat(10)} ${'─'.repeat(6)} ${'─'.repeat(5)} ${'─'.repeat(8)} ${'─'.repeat(30)}`);
 
   for (const slug of PILOT_SLUGS) {
     const d = districtResults[slug];
@@ -480,7 +552,11 @@ function main() {
       if (data && data.analysis) extCount += (data.analysis.feature_count || data.analysis.total_features || 0);
     }
     const acc = d.acceptance_score || {};
-    console.log(`  ${(d.name || slug).padEnd(30)} ${String(existCount).padStart(10)} ${String(extCount).padStart(10)} ${String(acc.total || 0).padStart(7)} ${(acc.verdict || 'N/A').padStart(12)}`);
+    const sem = (d.semantic_classification || '—').padEnd(10);
+    const cov = d.coverage_pct ? (d.coverage_pct + '%').padStart(6) : '    —'.padStart(6);
+    const gates = (d.hard_gates ? d.hard_gates.overall : '—').padEnd(8);
+    const fs = (d.final_status || 'NO_DATA').padEnd(30);
+    console.log(`  ${(d.name || slug).padEnd(25)} ${String(existCount).padStart(6)} ${String(extCount).padStart(5)} ${sem} ${cov} ${String(acc.total || 0).padStart(5)} ${gates} ${fs}`);
   }
   console.log('');
 }

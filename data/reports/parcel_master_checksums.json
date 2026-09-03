@@ -1,0 +1,29 @@
+{
+  "created": "2026-09-03T20:41:24.858Z",
+  "phase": "2B-0.5",
+  "file_count": 22,
+  "checksums": {
+    "ate.geojson.gz": "5f38fdaf0d6cb60c9f079aad4e5c31d03a78366f5b09dd1c3f1868cb4e995141",
+    "barranco.geojson.gz": "4bcf62fc9538643b6f653dc27f74a36078dfe679b9e374c584cefef11231c9f2",
+    "brena.geojson.gz": "c872dd1ed43ff471fba2a608489eab7d8604953ecf741c6720cf21bb0f9d65c7",
+    "callao.geojson.gz": "0331433d45ff4d417925aa6c6b49d15ed7a9ad76b6c91253bdb67d319d546630",
+    "cercado-de-lima.geojson.gz": "3a1b4bd9e61d4a79e5dd334f2045eda8545555fa2d31b4c5df2cc748820b66d9",
+    "el-agustino.geojson.gz": "b0a1af6e517c03bb811876b61e3973c4916ba75dd5cadda576bc4a0904bad482",
+    "independencia.geojson.gz": "ded59e8633173631bc0bf7969a321e7af27aa6275e7e743d766bdb1380fc30a6",
+    "jesus-maria.geojson.gz": "cece1ced6216927357be0bd690c046ea6fd85d20698b118903c819ffcafc11ac",
+    "lince.geojson.gz": "5b7ecfebf5234416d34f1a95128a499dd03cd2c11c3b949174f0f7ca0847ccec",
+    "magdalena-del-mar.geojson.gz": "9e74fb2cf29a8a49c90eff0e8499c8600bcf717001c1183a52fcbf60747d4900",
+    "miraflores.geojson.gz": "1a80361270bd782a6dc976a3b58263a8a1f0e015053204cca437d17ecf245230",
+    "pueblo-libre.geojson.gz": "184bbd4f74b710d24fbf23c1af0cacadea3a01702afcefd924af3190f346b60d",
+    "punta-hermosa.geojson.gz": "cf4a7b3be5a6f6e82ee4cd9a4b82588eb5516cb8d07f9f31f890e65cc089470a",
+    "punta-negra.geojson.gz": "0ad6ca24b154af8fc15a31c54f5c288917c67c41c4f6ca3ca930a0015accaf35",
+    "rimac.geojson.gz": "1fd1ed6e64dfa4c4a67f0377693c2f39996f55977ef9183817162582ce9fe9c9",
+    "san-bartolo.geojson.gz": "25974cf38cd8fd4cb62422e3585269c251d929a8c9be32c1b6be40092232111c",
+    "san-borja.geojson.gz": "d5e122e21a1bfc5fbaabc2a543f38160a1a556bf87a142e11b417fa7e5f49800",
+    "san-isidro.geojson.gz": "11b74bf038e7149c5714f2ff877e04524efe131df94e5343a417e48b2b55632b",
+    "san-luis.geojson.gz": "da4739a04a8e60099203d7f7184eeab77dc97df1b3b56a6a61840042f2b30070",
+    "san-miguel.geojson.gz": "07e1350668e85b0252991bc4b44a02afc1a33b1b8614edff345054dacd9fd38c",
+    "santiago-de-surco.geojson.gz": "cd952ac636171d491a857e3bf5e23086662d67b222960c6a664a1ff65122f267",
+    "surquillo.geojson.gz": "7bca591fcf50fc479dd1384eb5f5bee864feeca501d521511752f934a60b52fc"
+  }
+}

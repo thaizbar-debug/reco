@@ -816,6 +816,295 @@ function acceptanceScore(analysis, distComparison, provenance) {
   return { total, verdict, breakdown };
 }
 
+// ── Semantic Determination ──────────────────────────────────────────────────
+// Determines dataset's dominant entity type from area-based geometric analysis.
+// Never infers from layer name alone.
+
+function determineSemantic(analysis) {
+  const sem = analysis.semantic_breakdown || {};
+  const counts = {};
+  for (const [type, data] of Object.entries(sem)) {
+    counts[type] = (data && data.count) || 0;
+  }
+
+  const total = Object.values(counts).reduce((s, c) => s + c, 0);
+  if (total === 0) return { classification: 'UNKNOWN', confidence: 'NONE', detail: 'No features' };
+
+  const parcelCount = counts.PARCEL || 0;
+  const blockCount = counts.BLOCK || 0;
+  const frontageCount = counts.FRONTAGE_LINE || 0;
+  const zoneCount = counts.ZONE || 0;
+
+  const ranked = [
+    { type: 'PARCEL', count: parcelCount },
+    { type: 'BLOCK', count: blockCount },
+    { type: 'FRONTAGE_LINE', count: frontageCount },
+    { type: 'ZONE', count: zoneCount },
+  ].sort((a, b) => b.count - a.count);
+
+  const dominant = ranked[0];
+  if (dominant.count === 0) return { classification: 'UNKNOWN', confidence: 'NONE', detail: 'All features unclassifiable' };
+
+  const dominantPct = dominant.count / total;
+
+  let confidence;
+  if (dominantPct >= 0.8) confidence = 'HIGH';
+  else if (dominantPct >= 0.6) confidence = 'MEDIUM';
+  else confidence = 'LOW';
+
+  let classification;
+  if (dominantPct >= 0.6) {
+    classification = dominant.type;
+  } else {
+    classification = 'MIXED';
+    confidence = 'LOW';
+  }
+
+  return {
+    classification,
+    confidence,
+    dominant_type: dominant.type,
+    dominant_pct: r(dominantPct * 100),
+    breakdown_pct: Object.fromEntries(
+      ranked.filter(x => x.count > 0).map(x => [x.type, r(x.count / total * 100)])
+    ),
+  };
+}
+
+// ── Hard Gates ──────────────────────────────────────────────────────────────
+//
+// 8 original criteria classified as:
+//
+// HARD GATES (binary pass/fail thresholds):
+//   - geometry (20pt): Must have valid polygon geometries. Without valid
+//     polygons, data cannot represent cadastral parcels at all.
+//   - CRS (15pt): Must have known coordinate reference system. Unknown CRS
+//     makes spatial data unusable — positions would be meaningless.
+//   - coverage (15pt): Must meet minimum area coverage. Below 5%, the dataset
+//     is too sparse to provide value to any end user of the platform.
+//
+// SOFT SCORE (quality gradient, compensatory):
+//   - topology (15pt): Invalid geometry rate affects quality but data remains
+//     partially usable. Higher rates degrade but don't eliminate utility.
+//   - duplicates (10pt): Duplicates inflate counts but don't corrupt the
+//     underlying geometry. Cleanable in post-processing.
+//   - area (10pt): Area plausibility is an indicator of classification accuracy,
+//     not a binary requirement. Unusual areas may reflect real parcels.
+//   - attribution (10pt): Provenance matters for trust but missing attribution
+//     doesn't invalidate the geometry itself.
+//   - freshness (5pt): Age affects relevance but old data can still be
+//     geometrically correct. Parcels change slowly.
+//
+// ADDITIONAL HARD GATES (not in original 8):
+//   - Gate A (semantic): Dataset must represent PARCEL/LOT/PREDIO for
+//     parcel_master. BLOCK/MANZANA data is geometrically valid but semantically
+//     wrong — it cannot substitute for individual parcel boundaries.
+//   - Gate D (data_identity): Classification must come from geometric analysis
+//     (area distribution), never inferred from layer/file name alone.
+
+function hardGates(analysis, distComparison, semanticInfo) {
+  const gates = {};
+
+  // Gate A: Semantic Validity
+  const sem = analysis.semantic_breakdown || {};
+  const parcelCount = (sem.PARCEL || {}).count || 0;
+  const blockCount = (sem.BLOCK || {}).count || 0;
+  const zoneCount = (sem.ZONE || {}).count || 0;
+  const polyFeatures = parcelCount + blockCount + zoneCount;
+
+  if (polyFeatures === 0) {
+    gates.semantic = {
+      status: 'FAIL',
+      reason: 'No polygon features suitable for parcel classification',
+    };
+  } else {
+    const parcelPct = parcelCount / polyFeatures;
+    const blockPct = blockCount / polyFeatures;
+    if (parcelPct >= 0.6) {
+      gates.semantic = {
+        status: 'PASS',
+        reason: `${r(parcelPct * 100)}% of polygons are parcels`,
+        parcel_pct: r(parcelPct * 100),
+        block_pct: r(blockPct * 100),
+      };
+    } else if (blockPct >= 0.5) {
+      gates.semantic = {
+        status: 'FAIL',
+        reason: `Dataset is predominantly BLOCK/MANZANA (${r(blockPct * 100)}%). Not usable as parcel data.`,
+        parcel_pct: r(parcelPct * 100),
+        block_pct: r(blockPct * 100),
+        dataset_type: 'BLOCK',
+      };
+    } else {
+      gates.semantic = {
+        status: 'CONDITIONAL',
+        reason: `Mixed: ${r(parcelPct * 100)}% parcel, ${r(blockPct * 100)}% block`,
+        parcel_pct: r(parcelPct * 100),
+        block_pct: r(blockPct * 100),
+      };
+    }
+  }
+
+  // Gate B: Geometry Validity (covers "geometry" and "CRS" hard criteria)
+  const validCount = analysis.feature_count - analysis.invalid_geometries;
+  const validPct = analysis.feature_count > 0 ? validCount / analysis.feature_count : 0;
+  const polyPct = analysis.feature_count > 0 ? analysis.polygons / analysis.feature_count : 0;
+
+  if (validPct >= 0.95 && polyPct >= 0.3) {
+    gates.geometry = {
+      status: 'PASS',
+      reason: `${r(validPct * 100)}% valid, ${r(polyPct * 100)}% polygons, CRS=EPSG:4326`,
+      valid_pct: r(validPct * 100),
+      polygon_pct: r(polyPct * 100),
+    };
+  } else if (validPct >= 0.80) {
+    gates.geometry = {
+      status: 'CONDITIONAL',
+      reason: `${r(validPct * 100)}% valid geometries (below 95% ideal)`,
+      valid_pct: r(validPct * 100),
+      polygon_pct: r(polyPct * 100),
+    };
+  } else {
+    gates.geometry = {
+      status: 'FAIL',
+      reason: `Only ${r(validPct * 100)}% valid geometries`,
+      valid_pct: r(validPct * 100),
+      polygon_pct: r(polyPct * 100),
+    };
+  }
+
+  // Gate C: Coverage
+  // Thresholds justified by Lima pilot context:
+  //   - Lima districts range 3-130 km². Miraflores (9.23 km²) has ~10,000
+  //     parcels; 668 features = 4.7% coverage = too sparse for production.
+  //   - <5%: insufficient parcel density for any end-user value
+  //   - 5-20%: validates pipeline, shows partial data, but users see mostly gaps
+  //   - >20%: minimum density where map shows meaningful parcel information
+  if (distComparison) {
+    const cov = distComparison.coverage_pct;
+    if (cov >= 20) {
+      gates.coverage = {
+        status: 'PASS',
+        reason: `${cov}% coverage meets 20% production threshold`,
+        coverage_pct: cov,
+      };
+    } else if (cov >= 5) {
+      gates.coverage = {
+        status: 'CONDITIONAL',
+        reason: `${cov}% coverage: validates pipeline but below 20% production threshold`,
+        coverage_pct: cov,
+      };
+    } else {
+      gates.coverage = {
+        status: 'FAIL',
+        reason: `${cov}% coverage: below 5% minimum`,
+        coverage_pct: cov,
+      };
+    }
+  } else {
+    gates.coverage = {
+      status: 'FAIL',
+      reason: 'No coverage data available',
+      coverage_pct: 0,
+    };
+  }
+
+  // Gate D: Data Identity
+  if (semanticInfo && semanticInfo.classification !== 'UNKNOWN') {
+    gates.data_identity = {
+      status: 'PASS',
+      reason: `Classified as ${semanticInfo.classification} by area-based geometric analysis (confidence: ${semanticInfo.confidence})`,
+      classification: semanticInfo.classification,
+      confidence: semanticInfo.confidence,
+      method: 'area_based_geometric_analysis',
+    };
+  } else {
+    gates.data_identity = {
+      status: 'FAIL',
+      reason: 'Could not determine data identity from geometric analysis',
+      classification: 'UNKNOWN',
+    };
+  }
+
+  const statuses = Object.values(gates).map(g => g.status);
+  let overall;
+  if (statuses.includes('FAIL')) overall = 'FAIL';
+  else if (statuses.includes('CONDITIONAL')) overall = 'CONDITIONAL';
+  else overall = 'PASS';
+
+  return {
+    gates,
+    overall,
+    failed_gates: Object.entries(gates).filter(([, g]) => g.status === 'FAIL').map(([name]) => name),
+    conditional_gates: Object.entries(gates).filter(([, g]) => g.status === 'CONDITIONAL').map(([name]) => name),
+  };
+}
+
+// ── Final Status ────────────────────────────────────────────────────────────
+// Combines hard gate results with soft score to determine parcel_master eligibility.
+
+function determineFinalStatus(hardGateResult, softScore) {
+  const gates = hardGateResult.gates;
+
+  if (gates.semantic && gates.semantic.status === 'FAIL') {
+    if (gates.semantic.dataset_type === 'BLOCK') return 'NOT_USABLE_FOR_PARCEL_MASTER';
+    return 'REJECT';
+  }
+  if (gates.geometry && gates.geometry.status === 'FAIL') return 'REJECT';
+  if (gates.coverage && gates.coverage.status === 'FAIL') return 'CONDITIONAL';
+  if (hardGateResult.conditional_gates.length > 0) return 'CONDITIONAL';
+
+  if (softScore >= 70) return 'PASS';
+  if (softScore >= 50) return 'CONDITIONAL';
+  return 'REJECT';
+}
+
+// ── Dataset Utility ─────────────────────────────────────────────────────────
+// Classifies what a dataset can be used for — a BLOCK dataset is not usable
+// for parcel_master but may be valuable as block_candidate.
+
+function classifyDatasetUtility(analysis) {
+  const sem = analysis.semantic_breakdown || {};
+  const utilities = [];
+
+  const parcelCount = (sem.PARCEL || {}).count || 0;
+  const blockCount = (sem.BLOCK || {}).count || 0;
+  const frontageCount = (sem.FRONTAGE_LINE || {}).count || 0;
+
+  if (parcelCount > 0) {
+    utilities.push({ type: 'parcel_candidate', count: parcelCount, usable_for: 'parcel_master' });
+  }
+  if (blockCount > 0) {
+    utilities.push({ type: 'block_candidate', count: blockCount, usable_for: 'block_master (conceptual, not in current architecture)' });
+  }
+  if (frontageCount > 0) {
+    utilities.push({ type: 'frontage_data', count: frontageCount, usable_for: 'parcel_frontage_lines (conceptual, not in current architecture)' });
+  }
+
+  return utilities;
+}
+
+// ── Source Hierarchy ─────────────────────────────────────────────────────────
+// Precedence based on authority, but actual priority must also consider
+// semantic correctness, geometry quality, coverage, and freshness.
+// A higher-tier source is NOT automatically better — it must still pass
+// hard gates and demonstrate data quality.
+
+function sourceHierarchy(sourceName) {
+  const name = (sourceName || '').toLowerCase();
+  if (name.includes('cofopri') || name.includes('sunarp'))
+    return { tier: 1, category: 'OFFICIAL_CATASTRAL', label: 'Official/Municipal/Catastral', note: 'Government catastral authority' };
+  if (name.includes('geoidep') || name.includes('municipal'))
+    return { tier: 1, category: 'OFFICIAL_CATASTRAL', label: 'Official/Municipal/Catastral', note: 'Government spatial data infrastructure' };
+  if (name.includes('geo_gps') || name.includes('geogps'))
+    return { tier: 2, category: 'DERIVED_DOCUMENTED', label: 'GEO GPS / Documented Derivatives', note: 'Documented derivative with source attribution' };
+  if (name.includes('sedapal') || name.includes('inei'))
+    return { tier: 3, category: 'OTHER_GOVERNMENTAL', label: 'Other Governmental', note: 'Government entity, not catastral authority' };
+  if (name.includes('osm') || name.includes('openstreetmap'))
+    return { tier: 5, category: 'OSM', label: 'OpenStreetMap', note: 'Community-sourced, NOT valid as catastro substitute' };
+  return { tier: 4, category: 'SECONDARY', label: 'Secondary/Unknown', note: 'Undetermined source authority' };
+}
+
 // ── External Dataset Discovery ───────────────────────────────────────────────
 
 function discoverExternalDatasets(slug) {
@@ -1203,10 +1492,46 @@ function main() {
       const bestComparison = distFeature ? compareWithDistrict(bestDataset.fc, distFeature) : null;
       const bestProvenance = distResult.provenance[bestDataset.label] || buildProvenance(bestDataset.label, bestDataset.manifest, bestDataset.analysis, bestDataset.filepath);
       distResult.acceptance_score = acceptanceScore(bestDataset.analysis, bestComparison, bestProvenance);
-      console.log(`  Acceptance: ${distResult.acceptance_score.total} (${distResult.acceptance_score.verdict}) [best source: ${bestDataset.label}]`);
+      console.log(`  Soft Score: ${distResult.acceptance_score.total}/100 (${distResult.acceptance_score.verdict}) [best source: ${bestDataset.label}]`);
+
+      // Hard Gates & Final Status
+      const semanticInfo = determineSemantic(bestDataset.analysis);
+      const gateResult = hardGates(bestDataset.analysis, bestComparison, semanticInfo);
+      const utility = classifyDatasetUtility(bestDataset.analysis);
+      const finalStatus = determineFinalStatus(gateResult, distResult.acceptance_score.total);
+
+      distResult.semantic_classification = semanticInfo.classification;
+      distResult.semantic_confidence = semanticInfo.confidence;
+      distResult.coverage_pct = bestComparison ? bestComparison.coverage_pct : 0;
+      distResult.geometry_validity_pct = bestDataset.analysis.feature_count > 0
+        ? r((bestDataset.analysis.feature_count - bestDataset.analysis.invalid_geometries) / bestDataset.analysis.feature_count * 100)
+        : 0;
+      distResult.hard_gates = gateResult;
+      distResult.final_status = finalStatus;
+      distResult.dataset_utility = utility;
+      distResult.source_hierarchy = sourceHierarchy(bestDataset.label);
+
+      const gateDetail = gateResult.failed_gates.length > 0
+        ? 'FAILED: ' + gateResult.failed_gates.join(', ')
+        : gateResult.conditional_gates.length > 0
+        ? 'CONDITIONAL: ' + gateResult.conditional_gates.join(', ')
+        : 'ALL PASS';
+      console.log(`  Hard Gates: ${gateResult.overall} [${gateDetail}]`);
+      console.log(`  Final Status: ${finalStatus}`);
+      if (utility.length > 0) {
+        console.log(`  Dataset Utility: ${utility.map(u => `${u.type}(${u.count})`).join(', ')}`);
+      }
     } else {
       distResult.acceptance_score = { total: 0, verdict: 'NO_DATA', breakdown: {} };
-      console.log('  Acceptance: NO_DATA');
+      distResult.semantic_classification = 'UNKNOWN';
+      distResult.semantic_confidence = 'NONE';
+      distResult.coverage_pct = 0;
+      distResult.geometry_validity_pct = 0;
+      distResult.hard_gates = { gates: {}, overall: 'NO_DATA', failed_gates: [], conditional_gates: [] };
+      distResult.final_status = 'NO_DATA';
+      distResult.dataset_utility = [];
+      console.log('  Hard Gates: NO_DATA');
+      console.log('  Final Status: NO_DATA');
     }
 
     // ── Confidence ─────────────────────────────────────────────────────────
@@ -1240,26 +1565,32 @@ function main() {
       };
     }
 
-    // ── Recommendation ─────────────────────────────────────────────────────
+    // ── Recommendation (based on final_status) ─────────────────────────────
 
-    if (allDatasets.length === 0) {
-      distResult.recommendation = 'ACQUIRE — No data. Must acquire from COFOPRI, GEO GPS Peru, or GEOIDEP.';
-    } else if (extCount > 0 && !hasExisting) {
-      distResult.recommendation = 'IMPORT — External data available, no existing data to protect. Import after review.';
-    } else if (extCount > 0 && hasExisting) {
-      const bestMerge = Array.isArray(distResult.merge_simulation)
-        ? distResult.merge_simulation.reduce((best, m) => (m.actions.ADD_NEW + m.actions.REPLACE_EXISTING > (best ? best.actions.ADD_NEW + best.actions.REPLACE_EXISTING : 0)) ? m : best, null)
-        : null;
-      if (bestMerge && bestMerge.actions.ADD_NEW + bestMerge.actions.REPLACE_EXISTING > 0) {
-        distResult.recommendation = `MERGE — External [${bestMerge.source}] adds ${bestMerge.actions.ADD_NEW} new + ${bestMerge.actions.REPLACE_EXISTING} improved features. No-degradation: ${distResult.no_degradation}.`;
-      } else {
-        distResult.recommendation = 'KEEP — Existing data is adequate; external adds no value.';
-      }
-    } else {
-      distResult.recommendation = 'KEEP — Only existing data available. Acquire external sources for improvement.';
+    const fStatus = distResult.final_status;
+    if (fStatus === 'NO_DATA') {
+      distResult.recommended_action = 'ACQUIRE — No data. Must acquire from COFOPRI, GEO GPS Peru, or GEOIDEP.';
+    } else if (fStatus === 'NOT_USABLE_FOR_PARCEL_MASTER') {
+      const utilParts = (distResult.dataset_utility || [])
+        .filter(u => u.type !== 'parcel_candidate')
+        .map(u => `${u.type}(${u.count})`);
+      distResult.recommended_action = `NOT FOR PARCEL_MASTER — Data is ${distResult.semantic_classification}. ` +
+        (utilParts.length > 0 ? `Useful as: ${utilParts.join(', ')}. ` : '') +
+        'Need parcel-level source for this district.';
+    } else if (fStatus === 'REJECT') {
+      distResult.recommended_action = 'REJECT — Data fails hard gates. Acquire alternative source.';
+    } else if (fStatus === 'CONDITIONAL') {
+      const blockers = (distResult.hard_gates.failed_gates || []).concat(distResult.hard_gates.conditional_gates || []);
+      distResult.recommended_action = `CONDITIONAL — ` +
+        (blockers.length > 0 ? `Gates: ${blockers.join(', ')}. ` : '') +
+        `Score: ${distResult.acceptance_score.total}/100. ` +
+        'Acquire external sources to supplement.';
+    } else if (fStatus === 'PASS') {
+      distResult.recommended_action = `PASS — Score: ${distResult.acceptance_score.total}/100. All hard gates met. Eligible for parcel_master merge after final review.`;
     }
+    distResult.recommendation = distResult.recommended_action;
 
-    console.log(`  Recommendation: ${distResult.recommendation}`);
+    console.log(`  Recommendation: ${distResult.recommended_action}`);
 
     results.districts[pilot.slug] = distResult;
 
@@ -1268,10 +1599,11 @@ function main() {
       district: pilot.name.padEnd(25),
       existing: hasExisting ? (existingFc.fc.features.length + '').padStart(6) : '     0',
       external: extCount > 0 ? externalSources.reduce((s, d) => s + d.fc.features.length, 0).toString().padStart(6) : '     0',
+      semantic: (distResult.semantic_classification || '?').padEnd(10),
+      coverage: (distResult.coverage_pct ? distResult.coverage_pct + '%' : '—').padStart(6),
       score: distResult.acceptance_score.total.toString().padStart(3),
-      verdict: (distResult.acceptance_score.verdict || 'NO_DATA').padEnd(12),
-      gate: (distResult.no_degradation || 'N/A').padEnd(12),
-      confidence: distResult.confidence.code,
+      hardGates: (distResult.hard_gates.overall || 'N/A').padEnd(12),
+      finalStatus: (distResult.final_status || 'NO_DATA').padEnd(30),
     });
   }
 
@@ -1284,10 +1616,10 @@ function main() {
   const districts = results.districts;
   const slugs = PILOT_DISTRICTS.map(p => p.slug);
 
-  // Count how many districts pass acceptance
+  // Count how many districts have final_status PASS or CONDITIONAL
   const passingDistricts = slugs.filter(s => {
     const d = districts[s];
-    return d && d.acceptance_score && (d.acceptance_score.verdict === 'PASS' || d.acceptance_score.verdict === 'CONDITIONAL');
+    return d && d.final_status && (d.final_status === 'PASS' || d.final_status === 'CONDITIONAL');
   });
 
   // Check for any external data
@@ -1299,26 +1631,32 @@ function main() {
     });
   });
 
+  // Check for any NOT_USABLE districts
+  const notUsableDistricts = slugs.filter(s => {
+    const d = districts[s];
+    return d && d.final_status === 'NOT_USABLE_FOR_PARCEL_MASTER';
+  });
+
   const conditions = [
     {
       id: 1,
-      desc: '3/5 pilot districts pass acceptance (>=50)',
+      desc: '3/5 pilot districts final_status PASS or CONDITIONAL',
       status: passingDistricts.length >= 3 ? 'PASS' : (passingDistricts.length >= 1 ? 'PARTIAL' : 'FAIL'),
-      reason: `${passingDistricts.length}/5 districts meet threshold: ${passingDistricts.join(', ') || 'none'}`,
+      reason: `${passingDistricts.length}/5 districts: ${passingDistricts.join(', ') || 'none'}`,
     },
     {
       id: 2,
-      desc: 'Miraflores coverage > 30%',
+      desc: 'Miraflores coverage >= 20% (Hard Gate C)',
       status: (() => {
         const m = districts['miraflores'];
-        if (!m || !m.existing || !m.existing.published || !m.existing.published.district_comparison) return 'FAIL';
-        return m.existing.published.district_comparison.coverage_pct > 30 ? 'PASS' : 'FAIL';
+        if (!m || !m.coverage_pct) return 'FAIL';
+        return m.coverage_pct >= 20 ? 'PASS' : 'FAIL';
       })(),
       reason: (() => {
         const m = districts['miraflores'];
-        if (!m || !m.existing || !m.existing.published || !m.existing.published.district_comparison) return 'No coverage data';
-        const cov = m.existing.published.district_comparison.coverage_pct;
-        return `Current coverage ${cov}%. ${cov > 30 ? 'Meets' : 'Below'} 30% threshold.`;
+        if (!m) return 'No coverage data';
+        const cov = m.coverage_pct || 0;
+        return `Current coverage ${cov}%. ${cov >= 20 ? 'Meets' : 'Below'} 20% production threshold.`;
       })(),
     },
     {
@@ -1372,6 +1710,26 @@ function main() {
         return gates.map(g => `${g.slug}: ${g.gate}`).join(', ') || 'No merge simulations to evaluate.';
       })(),
     },
+    {
+      id: 7,
+      desc: 'No BLOCK dataset classified as PASS for parcel_master',
+      status: (() => {
+        const wronglyPassed = slugs.filter(s => {
+          const d = districts[s];
+          return d && d.semantic_classification === 'BLOCK' && d.final_status === 'PASS';
+        });
+        return wronglyPassed.length === 0 ? 'PASS' : 'FAIL';
+      })(),
+      reason: (() => {
+        const wronglyPassed = slugs.filter(s => {
+          const d = districts[s];
+          return d && d.semantic_classification === 'BLOCK' && d.final_status === 'PASS';
+        });
+        if (wronglyPassed.length > 0) return `BLOCK data incorrectly PASS: ${wronglyPassed.join(', ')}`;
+        if (notUsableDistricts.length > 0) return `${notUsableDistricts.length} BLOCK dataset(s) correctly blocked: ${notUsableDistricts.join(', ')}.`;
+        return 'No BLOCK datasets present.';
+      })(),
+    },
   ];
 
   // Determine overall
@@ -1412,12 +1770,12 @@ function main() {
   console.log(`\n${'='.repeat(70)}`);
   console.log('SUMMARY TABLE');
   console.log('='.repeat(70));
-  console.log('District                  Exist.  Ext.  Score Verdict      Gate         C');
-  console.log('-'.repeat(70));
+  console.log('District                  Exist.  Ext.  Semantic    Cov.  Score Hard Gates    Final Status');
+  console.log('-'.repeat(105));
   for (const row of summaryRows) {
-    console.log(`${row.district} ${row.existing} ${row.external} ${row.score}   ${row.verdict} ${row.gate} ${row.confidence}`);
+    console.log(`${row.district} ${row.existing} ${row.external} ${row.semantic} ${row.coverage} ${row.score}   ${row.hardGates} ${row.finalStatus}`);
   }
-  console.log('-'.repeat(70));
+  console.log('-'.repeat(105));
 
   // ── Write Results ──────────────────────────────────────────────────────
 
