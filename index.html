@@ -5697,6 +5697,7 @@ const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PU
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
   _ps=1;_pubTab='single';
+  if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
        beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
@@ -5713,6 +5714,8 @@ function closePublish(){
   document.getElementById('pubOverlay').classList.remove('open');
   document.getElementById('pubModal').classList.remove('open');
   _unlockScroll();
+  if(typeof recalcBody==='function') recalcBody();
+  if(typeof _refreshMainMap==='function') _refreshMainMap();
 }
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
@@ -5926,9 +5929,16 @@ function _pubApplyReverse(fallbackDistrict){
     const el=document.getElementById('pubDistrict');if(el)el.value=_pd.district;
   };
 }
-function _pubMapInit(){
+function _pubMapInit(tries){
   const container=document.getElementById('pubMapEl');
   if(!container||pubMap)return;
+  const n=Number(tries)||0;
+  const ready=(typeof L!=='undefined')&&container.offsetWidth>0&&container.offsetHeight>0;
+  if(!ready){
+    if(n<20){setTimeout(function(){_pubMapInit(n+1);},120);}
+    else{console.warn('[reco] mapa de publicar no pudo inicializarse (Leaflet o contenedor no disponible)');}
+    return;
+  }
   const center=(_pd.lat&&_pd.lng)?[_pd.lat,_pd.lng]:[-12.046374,-77.042793];
   pubMap=L.map('pubMapEl',{zoomControl:true}).setView(center,14);
   _createTileLayer().addTo(pubMap);
@@ -5943,6 +5953,9 @@ function _pubMapInit(){
     applyReverse(e.latlng.lat,e.latlng.lng);
   });
   if(_pd.lat&&_pd.lng)pubMap.setView([_pd.lat,_pd.lng],16);
+  [60,240,600].forEach(function(t){
+    setTimeout(function(){try{if(pubMap)pubMap.invalidateSize();}catch(e){}},t);
+  });
 }
 function _pubGeoInput(val){
   _pd.address=val;
@@ -6374,6 +6387,11 @@ function goHome(){
   try{history.pushState({view:'home'},'',location.pathname+location.search);}catch(e){}
   window.scrollTo(0,0);
 }
+function _refreshMainMap(){
+  [60,240,600].forEach(function(t){
+    setTimeout(function(){try{if(leafletMap)leafletMap.invalidateSize();}catch(e){}},t);
+  });
+}
 function goToApp(hash){
   hash = hash || '';
   hideLegalPages();
@@ -6381,6 +6399,9 @@ function goToApp(hash){
   document.body.classList.remove('show-user');
   if(hash==='#publish'){
     try{history.pushState({view:'publish'},'',location.pathname+location.search);}catch(e){}
+    window._hashNav = '';
+    if(typeof recalcBody==='function') recalcBody();
+    _refreshMainMap();
     if(typeof openPublish==='function') openPublish();
     return;
   }
@@ -6388,7 +6409,7 @@ function goToApp(hash){
   else { try{history.pushState({view:'app'},'',location.pathname+location.search);}catch(e){} }
   window._hashNav = hash;
   if(typeof recalcBody==='function') recalcBody();
-  try{ if(leafletMap) setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60); }catch(e){}
+  _refreshMainMap();
   if(typeof applyHashNav==='function') applyHashNav();
   if(typeof _applyLandingHash==='function') _applyLandingHash();
 }
@@ -6401,7 +6422,7 @@ window.addEventListener('popstate',function(e){
   } else {
     document.body.classList.remove('show-home');
     if(typeof recalcBody==='function') recalcBody();
-    try{if(leafletMap)setTimeout(function(){try{leafletMap.invalidateSize();}catch(e){}},60);}catch(e){}
+    _refreshMainMap();
     if(h){
       window._hashNav=h;
       if(typeof applyHashNav==='function') applyHashNav();
@@ -6761,7 +6782,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(LEGAL_PAGES[initHash]){showLegalPage(initHash);}
   else if(!window.location.hash){document.body.classList.add('show-home');}
   window._hashNav = window.location.hash;
-  if(window._hashNav === '#publish') openPublish();
+  if(window._hashNav === '#publish'){ openPublish(); _refreshMainMap(); }
   loadData(); // applyHashNav called inside loadData after data ready
   initWhyRotator();
   window.addEventListener('hashchange',function(){
@@ -7369,6 +7390,8 @@ function navigateUserSection(section) {
 function closeUserSection() {
   document.body.classList.remove('show-user');
   history.replaceState(null, '', location.pathname + location.search);
+  if(typeof recalcBody==='function') recalcBody();
+  _refreshMainMap();
 }
 
 function renderUserSection(section) {
@@ -8111,6 +8134,8 @@ window.addEventListener('popstate', function() {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
+    if(typeof recalcBody==='function') recalcBody();
+    _refreshMainMap();
   }
 });
 
