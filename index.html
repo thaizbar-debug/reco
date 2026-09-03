@@ -5887,7 +5887,7 @@ function _rps(){
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
         <div style="margin-top:16px;padding:14px;background:var(--light);border-radius:10px;border:1px solid var(--border)">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Costo de publicación</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${_PUB_COST>0?'Costo de publicación':'Publicación'}</div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             ${_PUB_COST>0
               ?`<div style="font-size:22px;font-weight:700">🔑 ${_PUB_COST} llave${_PUB_COST!==1?'s':''}</div>
@@ -6134,9 +6134,13 @@ async function _ppub(){
       toast('⚠️ Debes iniciar sesión para publicar');
       openAuthModal('login',{notice:'✅ Sesión iniciada. Pulsá "Publicar ahora" para enviar tu anuncio.'});
     } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
-      S.pendingPublish = true;
-      toast('⚠️ Sin llaves suficientes. Comprá más y reintenta.');
-      openModal();
+      if(_PUB_COST>0){
+        S.pendingPublish = true;
+        toast('⚠️ Sin llaves suficientes. Comprá más y reintenta.');
+        openModal();
+      } else {
+        toast('⚠️ No se pudo publicar: '+(e.message||'precondición no cumplida'));
+      }
     } else if(code === 'functions/invalid-argument' || code === 'invalid-argument'){
       toast('⚠️ Datos inválidos: '+(e.message||'revisa el formulario'));
     } else {
@@ -6336,10 +6340,7 @@ async function _pubBulkSubmit(){
       console.error('[reco] bulk publish row failed:', i, e);
       const code = (e && e.code) || '';
       failed.push({ idx: i+1, address: r.direccion, error: (e && e.message) || 'error' });
-      // Out of keys mid-batch: further rows will fail the same way, so
-      // stop early. The rows we already committed have their charges
-      // reflected in S.keysLeft from the last successful response.
-      if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
+      if(_PUB_BULK_COST_PER>0 && (code === 'functions/failed-precondition' || code === 'failed-precondition')){
         aborted = true;
       }
     }
@@ -6354,7 +6355,7 @@ async function _pubBulkSubmit(){
     if(!failed.length){
       prog.innerHTML=`<span style="color:var(--green)">✅ ${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}. Las revisaremos en 24h.</span>`;
     } else {
-      const abortedNote = aborted ? `<div style="margin-top:4px;font-size:11px;color:var(--muted)">Se detuvo el lote cuando se acabaron las llaves${skipped>0?`; ${skipped} filas quedaron sin procesar`:''}.</div>` : '';
+      const abortedNote = aborted ? `<div style="margin-top:4px;font-size:11px;color:var(--muted)">Se detuvo el lote (llaves insuficientes)${skipped>0?`; ${skipped} fila${skipped!==1?'s':''} quedaron sin procesar`:''}.</div>` : '';
       prog.innerHTML=`<div><span style="color:${ok?'var(--green)':'var(--red)'}">${ok} exitosas</span> · <span style="color:var(--red)">${failed.length} fallidas</span></div>${abortedNote}
         <details style="margin-top:6px;font-size:11px"><summary style="cursor:pointer">Ver errores</summary><ul style="margin:6px 0 0 18px;padding:0">${failed.slice(0,20).map(f=>`<li>Fila ${esc(f.idx)} (${esc((f.address||'').slice(0,30))}): ${esc(f.error)}</li>`).join('')}</ul></details>`;
     }
