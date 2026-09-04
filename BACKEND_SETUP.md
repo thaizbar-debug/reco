@@ -30,15 +30,22 @@ themselves live in your Google Cloud / Firebase / Resend accounts.
   Firebase marks Google-provider emails as verified on first login;
   password sign-ups have to click the link Firebase sends before they
   can spend keys.
-- The verification email is sent by Firebase Auth directly (SMTP
-  configured in Firebase Console → Authentication → Templates). If you
-  want to customise the sender / template, edit it there rather than in
-  the codebase.
-- If a user reports they never got the email, the app has a "Reenviar
-  link" button on the top-of-page banner (`resendVerificationEmail`),
-  and a "Ya lo verifiqué" button (`refreshVerificationStatus`) that
-  forces a token refresh so the new `email_verified: true` reaches the
-  callables without a full re-login.
+- **Verification and password-reset emails go through Resend.** Instead
+  of Firebase Auth's built-in SMTP (which sends from
+  `noreply@PROJECT.firebaseapp.com` and often lands in spam), the app
+  uses two Cloud Functions — `sendVerificationViaResend` and
+  `sendPasswordResetViaResend` — that generate Firebase Auth action
+  links with the Admin SDK and queue branded emails through the `/mail`
+  collection (→ Resend SMTP from `no-reply@recosac.com`). This ensures
+  all transactional emails share the same verified domain with proper
+  SPF/DKIM/DMARC and are monitored by the `onMailWrite` trigger.
+- The Firebase Console email templates (Authentication → Templates) are
+  no longer the primary delivery path. They remain as a fallback if a
+  user triggers a password reset from a Firebase-hosted action page.
+- The app has a "Reenviar link" button on the top-of-page banner
+  (`resendVerificationEmail`), and a "Ya lo verifiqué" button
+  (`refreshVerificationStatus`) that forces a token refresh so the new
+  `email_verified: true` reaches the callables without a full re-login.
 
 ## 4. Email notifications (Phase 5)
 
@@ -151,10 +158,29 @@ Only for local dev. Never commit those lines.
   (propertyId, kind, fromName, fromEmail, message, …), enforces the
   same "one contact per (uid, property, kind)" invariant the old
   Firestore rule enforced, PLUS a rolling per-user rate limit
-  (`CONTACT_RATE_LIMIT_PER_HOUR = 15`). Firestore rules deny direct
-  writes to `/contactRequests` — this callable is the sole creation
-  path. Needs the composite index in `firestore.indexes.json` (auto-
-  deployed on `firebase deploy --only firestore`).
+  (`CONTACT_RATE_LIMIT_PER_HOUR = 15`). After creating the contact
+  request, looks up the publication owner and queues a notification
+  email via `/mail` (→ Resend) if the owner has an email. Firestore
+  rules deny direct writes to `/contactRequests` — this callable is
+  the sole creation path. Needs the composite index in
+  `firestore.indexes.json` (auto-deployed on
+  `firebase deploy --only firestore`).
+- `sendPasswordResetViaResend` — takes `{ email }`, generates a
+  Firebase Auth password-reset link with the Admin SDK, and queues a
+  branded email via the `/mail` collection (→ Resend SMTP). Does NOT
+  require authentication (the user forgot their password). Always
+  returns `{ ok: true }` regardless of whether the email is registered
+  (anti-enumeration). App Check is enforced.
+- `sendVerificationViaResend` — takes no params (uses the caller's
+  auth token), generates a Firebase Auth email-verification link with
+  the Admin SDK, and queues a branded email via `/mail` (→ Resend).
+  Returns early with `alreadyVerified: true` if the email is already
+  verified. Requires authentication.
+- `onPublicationModerated` — Firestore trigger on
+  `/publications/{pubId}`. When a publication's status transitions to
+  `approved` or `rejected`, automatically queues a notification email
+  to the publisher via `/mail` (→ Resend). Replaces the old client-
+  side `_queueModerationEmail()` for reliability.
 - `onMailWrite` — Firestore trigger on `/mail/{mailId}`. Watches the
   `delivery` subfield the Trigger Email extension writes as it
   processes each queued email. When `delivery.state` transitions to

@@ -165,13 +165,17 @@ service cloud.firestore {
     // The extension reads docs from this collection and dispatches the
     // emails over SMTP (Resend in our setup).
     //
+    // Most email queueing now happens server-side via Cloud Functions
+    // (sendPasswordResetViaResend, sendVerificationViaResend,
+    // onPublicationModerated, and the contact-owner flow inside
+    // submitContactRequest). Those use the Admin SDK and bypass these
+    // rules. The client-side create rules remain as a safety net.
+    //
     // - read: always denied from clients; the extension writes
     //         delivery.state / delivery.error via the Admin SDK.
-    // - create: admins can queue any email (moderation notices); other
-    //           authenticated users can also queue mail, but only if
-    //           the doc records fromUserId == their uid — this lets the
-    //           "contact owner" flow email the publication owner while
-    //           keeping a paper trail per sender in case of abuse.
+    // - create: admins can queue any email; other authenticated users
+    //           can also queue mail if the doc records
+    //           fromUserId == their uid.
     match /mail/{docId} {
       allow read: if false;
       allow create: if isAdmin()

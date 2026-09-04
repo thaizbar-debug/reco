@@ -7743,7 +7743,6 @@ async function _adminApprove(id){
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
     _adminAudit('publication.approve', 'publication', id, pub ? { userId: pub.userId||null } : null);
-    if(pub) _queueModerationEmail(pub, 'approved');
     toast('✓ Publicación aprobada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] approve failed:', e); toast('⚠️ Error al aprobar: '+e.message); }
@@ -7763,7 +7762,6 @@ async function _adminReject(id){
       moderatedBy: auth.currentUser.uid
     });
     _adminAudit('publication.reject', 'publication', id, { reason: reason || '', userId: (pub && pub.userId) || null });
-    if(pub) _queueModerationEmail(pub, 'rejected', reason);
     toast('✕ Publicación rechazada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] reject failed:', e); toast('⚠️ Error al rechazar: '+e.message); }
@@ -8210,15 +8208,12 @@ function registerWithEmail() {
   auth.createUserWithEmailAndPassword(email, pass)
     .then(cred => { createdUser = cred.user; return cred.user.updateProfile({ displayName: name }); })
     .then(() => {
-      // Fire the verification email best-effort. If Firebase's SMTP
-      // hits a snag we still close the auth modal — the "Verificá tu
-      // email" banner offers a resend button, so a transient send
-      // failure does not leave the user stranded.
-      if (createdUser && typeof createdUser.sendEmailVerification === 'function') {
-        return createdUser.sendEmailVerification().catch(err => {
-          console.warn('[reco] sendEmailVerification failed:', err && err.message);
-        });
-      }
+      // Send verification via the Cloud Function so it goes through
+      // Resend (verified domain) instead of Firebase Auth's built-in
+      // SMTP. Best-effort: the banner offers a resend button.
+      return _getFunctions().httpsCallable('sendVerificationViaResend')({}).catch(err => {
+        console.warn('[reco] sendVerificationViaResend failed:', err && err.message);
+      });
     })
     .then(() => closeAuthModal())
     .catch(e => showAuthError(friendlyError(e.code)))
@@ -8228,15 +8223,16 @@ function sendPasswordReset() {
   const email = document.getElementById('forgotEmail').value.trim();
   if (!email) return showAuthError('Ingresa tu email.');
   setAuthLoading('forgotBtn', true);
-  // Silently swallow auth/user-not-found so a third party can't use the
-  // "forgot password" form to enumerate registered emails. The success
-  // message is phrased neutrally ("if the email is registered…") so the
-  // response looks identical whether the account exists or not. Other
-  // failures (invalid-email, too-many-requests, network) still surface.
-  auth.sendPasswordResetEmail(email)
-    .catch(e => { if (e.code !== 'auth/user-not-found') throw e; })
-    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña.'))
-    .catch(e => showAuthError(friendlyError(e.code)))
+  // Route through the Cloud Function so the email goes via Resend
+  // (verified domain, SPF/DKIM/DMARC) instead of Firebase Auth's
+  // built-in SMTP which has deliverability issues.
+  // The callable always returns ok:true to prevent email enumeration.
+  _getFunctions().httpsCallable('sendPasswordResetViaResend')({ email })
+    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña. Revisá tu bandeja de entrada y spam.'))
+    .catch(e => {
+      console.warn('[reco] sendPasswordResetViaResend failed:', e && e.message);
+      showAuthError('No pudimos procesar tu solicitud. Intentá de nuevo en unos minutos.');
+    })
     .finally(() => setAuthLoading('forgotBtn', false));
 }
 function friendlyError(code) {
@@ -8499,22 +8495,8 @@ async function submitContactRequest() {
       fromPhone:           phone || null,
       message,
     });
-    // If it's a user-published property, also email the owner via the
-    // Trigger Email extension. For the 2,663 static properties there is
-    // no ownerEmail — Reco team picks these up from the admin console.
-    if (_contactCtx.publicationOwnerEmail) {
-      _queueContactEmailToOwner({
-        ownerEmail:  _contactCtx.publicationOwnerEmail,
-        ownerName:   _contactCtx.publicationOwnerName,
-        propertyAddress:  _contactCtx.propertyAddress,
-        propertyDistrict: _contactCtx.propertyDistrict,
-        kind:        _contactCtx.kind,
-        fromName:    name,
-        fromEmail:   email,
-        fromPhone:   phone,
-        message
-      });
-    }
+    // Contact-owner email is now queued server-side inside the
+    // submitContactRequest Cloud Function (via Resend SMTP).
     document.getElementById('contactForm').style.display = 'none';
     _showContactSuccess('✅ ¡Solicitud enviada! Te responderemos pronto al email registrado.');
     toast('✅ Solicitud enviada');
@@ -8581,9 +8563,7 @@ function _adjustHeadersForBanner() {
 window.addEventListener('resize', _adjustHeadersForBanner);
 document.addEventListener('DOMContentLoaded', _adjustHeadersForBanner);
 
-// Resend the verification email. Firebase rate-limits this server-side
-// so we don't add a hand-rolled cooldown — the "requests-blocked"
-// error simply surfaces as a toast.
+// Resend the verification email via the Cloud Function (Resend SMTP).
 let _verifyResendPending = false;
 async function resendVerificationEmail() {
   if (_verifyResendPending) return;
@@ -8595,15 +8575,17 @@ async function resendVerificationEmail() {
   const originalLabel = btn ? btn.textContent : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   try {
-    await user.sendEmailVerification();
-    toast('✉️ Te reenviamos el link. Revisá tu bandeja de entrada y spam.');
+    const result = await _getFunctions().httpsCallable('sendVerificationViaResend')({});
+    if (result.data && result.data.alreadyVerified) {
+      toast('Tu email ya está verificado.');
+      await user.reload();
+      _renderVerifyBanner(auth.currentUser);
+    } else {
+      toast('Te reenviamos el link. Revisá tu bandeja de entrada.');
+    }
   } catch (e) {
     console.warn('[reco] resend verification failed:', e && e.code, e && e.message);
-    if (e && e.code === 'auth/too-many-requests') {
-      toast('Demasiados intentos. Esperá unos minutos e intentá de nuevo.');
-    } else {
-      toast('No pudimos enviar el link: ' + ((e && e.message) || 'error desconocido'));
-    }
+    toast('No pudimos enviar el link. Intentá de nuevo en un momento.');
   } finally {
     _verifyResendPending = false;
     if (btn && originalLabel) { btn.disabled = false; btn.textContent = originalLabel; }
