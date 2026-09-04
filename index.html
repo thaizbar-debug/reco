@@ -1455,6 +1455,28 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .us-prop-specs{font-size:.75rem;color:var(--muted);margin-top:2px}
 .us-prop-remove{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px 8px;border-radius:6px;align-self:flex-start;flex-shrink:0}
 .us-prop-remove:hover{background:#fee2e2;color:#dc2626}
+.us-pub-status-detail{font-size:.78rem;line-height:1.45;padding:8px 10px;border-radius:8px;margin-top:6px}
+.us-pub-status-detail.pending{background:#fffbeb;border:1px solid #fcd34d;color:#78350f}
+.us-pub-status-detail.rejected{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+.us-pub-status-detail.approved{background:#f0fdf4;border:1px solid #86efac;color:#065f46}
+.us-pub-status-detail strong{font-weight:700}
+.us-pub-status-detail .us-pub-hint{margin-top:4px;font-size:.72rem;color:#64748b}
+.notif-bell{position:relative;background:none;border:none;font-size:1.25rem;cursor:pointer;padding:4px 8px;line-height:1;display:none}
+.notif-bell .notif-badge{position:absolute;top:-2px;right:0;background:#ef4444;color:#fff;font-size:.6rem;font-weight:800;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;pointer-events:none}
+.us-notif-list{margin-bottom:16px}
+.us-notif-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;font-size:.82rem;line-height:1.4;position:relative}
+.us-notif-card.approved{background:#f0fdf4;border:1px solid #86efac}
+.us-notif-card.rejected{background:#fef2f2;border:1px solid #fca5a5}
+.us-notif-card .notif-icon{font-size:1.3rem;flex-shrink:0;margin-top:1px}
+.us-notif-card .notif-body{flex:1;min-width:0}
+.us-notif-card .notif-body strong{font-weight:700}
+.us-notif-card .notif-time{font-size:.7rem;color:#94a3b8;margin-top:3px}
+.us-notif-card .notif-reason{margin-top:4px;font-size:.78rem;color:#991b1b;font-style:italic}
+.us-notif-dismiss{position:absolute;top:8px;right:8px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:.8rem;padding:2px 6px;border-radius:4px}
+.us-notif-dismiss:hover{background:rgba(0,0,0,.06);color:#475569}
+.us-notif-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.us-notif-header span{font-size:.82rem;font-weight:700;color:var(--txt)}
+.us-notif-header button{background:none;border:none;font-size:.75rem;color:var(--blue);cursor:pointer;text-decoration:underline}
 .us-keys-balance{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:14px;padding:20px 24px;margin-bottom:20px}
 .us-keys-count{font-size:2rem;font-weight:800;color:var(--blue)}
 .us-keys-label{font-size:.9rem;color:var(--txt);font-weight:600}
@@ -1540,6 +1562,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <div class="spacer"></div>
   <button class="btn-pub" onclick="goToApp('#publish')">Publicar inmueble</button>
   <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="homeKeyCount">0</span></button>
+  <button class="notif-bell" id="homeNotifBell" onclick="goToApp('#publicaciones')" title="Notificaciones">🔔</button>
   <button class="btn-ingresar" id="homeIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
   <div id="homeUserWrap" style="display:none;align-items:center;position:relative"></div>
 </header>
@@ -2135,6 +2158,8 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <button class="btn-publish" onclick="openPublish()">Publicar inmueble</button>
 
   <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="keyCount">0</span></button>
+
+  <button class="notif-bell" id="appNotifBell" onclick="navigateUserSection('publicaciones')" title="Notificaciones">🔔</button>
 
   <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
@@ -6125,8 +6150,8 @@ async function _ppub(){
     if(_PUB_COST>0 && typeof addKeyHistoryEntry === 'function'){
       addKeyHistoryEntry('use', _PUB_COST, null, 'Publicación: '+_pd.title);
     }
-    toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
-    setTimeout(()=>closePublish(),1800);
+    toast('🚀 ¡Publicación enviada!');
+    _pubShowSentScreen();
   } catch(e){
     console.error('[reco] publish failed:', e);
     const code = (e && e.code) || '';
@@ -6144,6 +6169,21 @@ async function _ppub(){
     }
     if(btn) btn.disabled = false;
   }
+}
+var _PUB_REVIEW_NOTE = 'Cada anuncio pasa por una revisión manual: verificamos dirección, precio y fotos antes de publicarlo. El plazo habitual es de 24 horas hábiles y recibirás un correo con el resultado.';
+function _pubShowSentScreen(){
+  var body = document.getElementById('pb');
+  if(!body){ setTimeout(function(){closePublish();},1800); return; }
+  body.innerHTML = '<div class="pub-card" style="max-width:620px;margin:0 auto;text-align:center">'
+    + '<div style="font-size:2.4rem;line-height:1;margin-bottom:10px">🚀</div>'
+    + '<h3 style="margin:0 0 8px">¡Publicación enviada!</h3>'
+    + '<div style="display:inline-block;margin-bottom:14px">'+_pubStatusBadge('pending')+'</div>'
+    + '<p style="font-size:.86rem;color:var(--muted);line-height:1.6;margin:0 0 18px">'+_PUB_REVIEW_NOTE+'</p>'
+    + '<div class="pub-tip" style="text-align:left"><span>📋</span><div>Puedes seguir el estado en <strong>Mi cuenta → Mis publicaciones</strong>. Si la rechazamos, ahí verás el motivo.</div></div>'
+    + '<div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">'
+    + '<button class="pub-btn ghost" onclick="closePublish()">Cerrar</button>'
+    + '<button class="pub-btn primary" onclick="closePublish();navigateUserSection(\'publicaciones\')">Ver mis publicaciones</button>'
+    + '</div></div>';
 }
 // ── Carga masiva ──
 function _pubBulkHTML(){
@@ -7729,6 +7769,19 @@ function _queueModerationEmail(pub, kind, reason){
     message: { subject, html, text }
   }).catch(e => console.warn('[reco] mail queue failed:', e.message));
 }
+function _queueNotification(pub, kind, reason){
+  if(!pub || !pub.userId) return;
+  db.collection('notifications').add({
+    userId: pub.userId,
+    type: kind === 'approved' ? 'publication_approved' : 'publication_rejected',
+    publicationId: pub.id || '',
+    address: pub.address || pub.title || 'Publicación',
+    district: pub.district || '',
+    reason: (kind === 'rejected' && reason) ? reason : '',
+    read: false,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(e => console.warn('[reco] notification queue failed:', e.message));
+}
 
 async function _adminApprove(id){
   if(!_isAdmin()) return;
@@ -7743,7 +7796,7 @@ async function _adminApprove(id){
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
     _adminAudit('publication.approve', 'publication', id, pub ? { userId: pub.userId||null } : null);
-    if(pub) _queueModerationEmail(pub, 'approved');
+    if(pub){ _queueModerationEmail(pub, 'approved'); _queueNotification(pub, 'approved'); }
     toast('✓ Publicación aprobada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] approve failed:', e); toast('⚠️ Error al aprobar: '+e.message); }
@@ -7763,7 +7816,7 @@ async function _adminReject(id){
       moderatedBy: auth.currentUser.uid
     });
     _adminAudit('publication.reject', 'publication', id, { reason: reason || '', userId: (pub && pub.userId) || null });
-    if(pub) _queueModerationEmail(pub, 'rejected', reason);
+    if(pub){ _queueModerationEmail(pub, 'rejected', reason); _queueNotification(pub, 'rejected', reason); }
     toast('✕ Publicación rechazada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] reject failed:', e); toast('⚠️ Error al rechazar: '+e.message); }
@@ -8010,11 +8063,136 @@ function renderLlaves(el) {
   el.innerHTML = html;
 }
 
+// ── NOTIFICACIONES DE PUBLICACIONES ──
+var _notifUnsub = null;
+var _notifCache = [];
+function _startNotifListener(){
+  _stopNotifListener();
+  if(!auth.currentUser) return;
+  var uid = auth.currentUser.uid;
+  _notifUnsub = db.collection('notifications')
+    .where('userId','==',uid)
+    .where('read','==',false)
+    .orderBy('createdAt','desc')
+    .limit(20)
+    .onSnapshot(function(snap){
+      _notifCache = snap.docs.map(function(d){ return {id:d.id, ...d.data()}; });
+      _renderNotifBell();
+    }, function(err){
+      console.warn('[reco] notif listener error, trying fallback:', err);
+      _notifUnsub = db.collection('notifications')
+        .where('userId','==',uid)
+        .where('read','==',false)
+        .limit(20)
+        .onSnapshot(function(snap){
+          _notifCache = snap.docs.map(function(d){ return {id:d.id, ...d.data()}; })
+            .sort(function(a,b){
+              var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+              var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+              return tb - ta;
+            });
+          _renderNotifBell();
+        }, function(err2){
+          console.warn('[reco] notif fallback also failed:', err2);
+          _notifCache = [];
+          _renderNotifBell();
+        });
+    });
+}
+function _stopNotifListener(){
+  if(_notifUnsub){ _notifUnsub(); _notifUnsub = null; }
+  _notifCache = [];
+  _renderNotifBell();
+}
+function _renderNotifBell(){
+  var count = _notifCache.length;
+  document.querySelectorAll('.notif-bell').forEach(function(el){
+    if(count > 0){
+      el.style.display = '';
+      var badge = el.querySelector('.notif-badge');
+      if(!badge){ badge = document.createElement('span'); badge.className='notif-badge'; el.appendChild(badge); }
+      badge.textContent = count > 9 ? '9+' : count;
+    } else {
+      el.style.display = auth.currentUser ? '' : 'none';
+      var badge = el.querySelector('.notif-badge');
+      if(badge) badge.remove();
+    }
+  });
+}
+function _markNotifRead(notifId){
+  db.collection('notifications').doc(notifId).update({read:true})
+    .catch(function(e){ console.warn('[reco] mark notif read failed:', e.message); });
+}
+function _markAllNotifsRead(){
+  _notifCache.forEach(function(n){ _markNotifRead(n.id); });
+}
+function _renderNotifCards(){
+  if(!_notifCache.length) return '';
+  var html = '<div class="us-notif-list">'
+    + '<div class="us-notif-header"><span>Notificaciones</span>'
+    + (_notifCache.length > 1 ? '<button onclick="_markAllNotifsRead()">Marcar todas como leídas</button>' : '')
+    + '</div>';
+  html += _notifCache.map(function(n){
+    var isApproved = n.type === 'publication_approved';
+    var icon = isApproved ? '✅' : '❌';
+    var cls = isApproved ? 'approved' : 'rejected';
+    var msg = isApproved
+      ? 'Tu publicación de <strong>'+esc(n.address)+'</strong>'+(n.district?' en '+esc(n.district):'')+' fue <strong>aprobada</strong> y ya está visible en Reco.'
+      : 'Tu publicación de <strong>'+esc(n.address)+'</strong>'+(n.district?' en '+esc(n.district):'')+' <strong>no pudo ser aprobada</strong>.';
+    var time = n.createdAt ? _timeAgo(n.createdAt) : '';
+    var reasonHtml = (!isApproved && n.reason) ? '<div class="notif-reason">Motivo: '+esc(n.reason)+'</div>' : '';
+    return '<div class="us-notif-card '+cls+'">'
+      + '<span class="notif-icon">'+icon+'</span>'
+      + '<div class="notif-body">'+msg+reasonHtml+(time?'<div class="notif-time">'+esc(time)+'</div>':'')+'</div>'
+      + '<button class="us-notif-dismiss" onclick="event.stopPropagation();_markNotifRead(\''+esc(n.id)+'\')" title="Marcar como leída">✕</button>'
+      + '</div>';
+  }).join('');
+  html += '</div>';
+  return html;
+}
+
 // ── PUBLICACIONES ──
 function _pubStatusBadge(status){
   if(status==='approved') return '<span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✓ Publicado</span>';
   if(status==='rejected') return '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✕ Rechazado</span>';
   return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏳ En revisión</span>';
+}
+function _pubStatusDetail(pub){
+  if(pub.status==='approved'){
+    var when = pub.moderatedAt ? _timeAgo(pub.moderatedAt) : '';
+    return '<div class="us-pub-status-detail approved">'
+      + '✅ Tu inmueble ya está visible en los resultados de búsqueda de Reco.'
+      + (when ? ' <span style="opacity:.7">Aprobado '+esc(when)+'.</span>' : '')
+      + '</div>';
+  }
+  if(pub.status==='rejected'){
+    var reason = pub.rejectionReason ? esc(pub.rejectionReason) : 'No se especificó un motivo.';
+    return '<div class="us-pub-status-detail rejected">'
+      + '<strong>Motivo:</strong> '+reason
+      + '<div class="us-pub-hint">Puedes corregir lo indicado y volver a publicar desde "+ Publicar inmueble". También te enviamos los detalles por correo.</div>'
+      + '</div>';
+  }
+  var submitted = pub.createdAt ? _timeAgo(pub.createdAt) : '';
+  return '<div class="us-pub-status-detail pending">'
+    + 'Tu publicación está siendo revisada por nuestro equipo. Este proceso suele demorar <strong>hasta 24 horas hábiles</strong>.'
+    + (submitted ? ' <span style="opacity:.7">Enviada '+esc(submitted)+'.</span>' : '')
+    + '<div class="us-pub-hint">Te notificaremos por correo electrónico cuando sea aprobada o si necesita ajustes.</div>'
+    + '</div>';
+}
+function _timeAgo(ts){
+  var d;
+  if(ts && ts.toDate) d = ts.toDate();
+  else if(ts && ts.seconds) d = new Date(ts.seconds * 1000);
+  else if(typeof ts === 'string') d = new Date(ts);
+  else return '';
+  var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if(diff < 60) return 'hace un momento';
+  if(diff < 3600) return 'hace '+Math.floor(diff/60)+' min';
+  if(diff < 86400) return 'hace '+Math.floor(diff/3600)+'h';
+  var days = Math.floor(diff/86400);
+  if(days === 1) return 'hace 1 día';
+  if(days < 30) return 'hace '+days+' días';
+  return d.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'});
 }
 async function renderPublicaciones(el) {
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
@@ -8053,13 +8231,22 @@ async function renderPublicaciones(el) {
     }
   }
   let html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
-    + '<div class="us-title">📋 Mis publicaciones</div>';
+    + '<div class="us-title">📋 Mis publicaciones</div>'
+    + _renderNotifCards();
+  if (pubs.length && pubs.some(function(p){ return !p.status || p.status==='pending'; })) {
+    html += '<div class="us-card" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">'
+      + '<div style="font-size:1.1rem;line-height:1">⏳</div>'
+      + '<div><div style="font-weight:700;font-size:.85rem;margin-bottom:3px">¿Qué significa "En revisión"?</div>'
+      + '<div style="font-size:.78rem;color:var(--muted);line-height:1.5">'+_PUB_REVIEW_NOTE+'</div></div>'
+      + '</div>';
+  }
   if (pubs.length) {
     html += pubs.map(function(pub) {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
         ? `<div class="us-prop-img" style="background:url('${esc(pub.photoUrls[0])}') center/cover"></div>`
         : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>';
-      return '<div class="us-prop-card">'
+      return '<div class="us-prop-card" style="flex-wrap:wrap">'
+        + '<div style="display:flex;gap:14px;width:100%">'
         + thumb
         + '<div class="us-prop-info">'
         + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'+_pubStatusBadge(pub.status)+'</div>'
@@ -8068,6 +8255,9 @@ async function renderPublicaciones(el) {
         + '<div class="us-prop-price">'+esc(pub.currency||'USD')+' '+esc(typeof pub.price==='number' ? pub.price.toLocaleString() : (pub.price||'—'))+'</div>'
         + '</div>'
         + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+esc(pub.id)+'\')" title="Eliminar">✕</button>'
+        + '</div>'
+        + _pubStatusDetail(pub)
+        + (pub.photosPending ? '<div style="font-size:.74rem;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 9px;margin-top:6px">⚠️ Las fotos no se subieron. Vuelve a publicar el inmueble con las imágenes para que pase la revisión.</div>' : '')
         + '</div>';
     }).join('');
   } else if(queryError){
@@ -8693,10 +8883,12 @@ auth.onAuthStateChanged(function(user) {
     // needing to logout (the callable returns and we refresh here).
     refreshAdminClaim();
     _pullUserDataFromFirestore();
+    _startNotifListener();
     _checkUserHash();
   } else {
     _adminClaimCache = false;
     _clearUserCache();
+    _stopNotifListener();
     if (document.body.classList.contains('show-user')) closeUserSection();
   }
 });
