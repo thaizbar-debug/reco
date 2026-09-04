@@ -1455,6 +1455,12 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .us-prop-specs{font-size:.75rem;color:var(--muted);margin-top:2px}
 .us-prop-remove{background:none;border:none;color:var(--muted);font-size:.9rem;cursor:pointer;padding:4px 8px;border-radius:6px;align-self:flex-start;flex-shrink:0}
 .us-prop-remove:hover{background:#fee2e2;color:#dc2626}
+.us-pub-status-detail{font-size:.78rem;line-height:1.45;padding:8px 10px;border-radius:8px;margin-top:6px}
+.us-pub-status-detail.pending{background:#fffbeb;border:1px solid #fcd34d;color:#78350f}
+.us-pub-status-detail.rejected{background:#fef2f2;border:1px solid #fca5a5;color:#991b1b}
+.us-pub-status-detail.approved{background:#f0fdf4;border:1px solid #86efac;color:#065f46}
+.us-pub-status-detail strong{font-weight:700}
+.us-pub-status-detail .us-pub-hint{margin-top:4px;font-size:.72rem;color:#64748b}
 .us-keys-balance{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1.5px solid #bae6fd;border-radius:14px;padding:20px 24px;margin-bottom:20px}
 .us-keys-count{font-size:2rem;font-weight:800;color:var(--blue)}
 .us-keys-label{font-size:.9rem;color:var(--txt);font-weight:600}
@@ -6125,7 +6131,7 @@ async function _ppub(){
     if(_PUB_COST>0 && typeof addKeyHistoryEntry === 'function'){
       addKeyHistoryEntry('use', _PUB_COST, null, 'Publicación: '+_pd.title);
     }
-    toast('🚀 ¡Publicación enviada! La revisaremos en 24h.');
+    toast('🚀 ¡Publicación enviada! La revisaremos en un plazo de 24h hábiles y te avisaremos por correo.');
     setTimeout(()=>closePublish(),1800);
   } catch(e){
     console.error('[reco] publish failed:', e);
@@ -8016,6 +8022,43 @@ function _pubStatusBadge(status){
   if(status==='rejected') return '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✕ Rechazado</span>';
   return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏳ En revisión</span>';
 }
+function _pubStatusDetail(pub){
+  if(pub.status==='approved'){
+    var when = pub.moderatedAt ? _timeAgo(pub.moderatedAt) : '';
+    return '<div class="us-pub-status-detail approved">'
+      + '✅ Tu inmueble ya está visible en los resultados de búsqueda de Reco.'
+      + (when ? ' <span style="opacity:.7">Aprobado '+esc(when)+'.</span>' : '')
+      + '</div>';
+  }
+  if(pub.status==='rejected'){
+    var reason = pub.rejectionReason ? esc(pub.rejectionReason) : 'No se especificó un motivo.';
+    return '<div class="us-pub-status-detail rejected">'
+      + '<strong>Motivo:</strong> '+reason
+      + '<div class="us-pub-hint">Puedes corregir lo indicado y volver a publicar desde "+ Publicar inmueble". También te enviamos los detalles por correo.</div>'
+      + '</div>';
+  }
+  var submitted = pub.createdAt ? _timeAgo(pub.createdAt) : '';
+  return '<div class="us-pub-status-detail pending">'
+    + 'Tu publicación está siendo revisada por nuestro equipo. Este proceso suele demorar <strong>hasta 24 horas hábiles</strong>.'
+    + (submitted ? ' <span style="opacity:.7">Enviada '+esc(submitted)+'.</span>' : '')
+    + '<div class="us-pub-hint">Te notificaremos por correo electrónico cuando sea aprobada o si necesita ajustes.</div>'
+    + '</div>';
+}
+function _timeAgo(ts){
+  var d;
+  if(ts && ts.toDate) d = ts.toDate();
+  else if(ts && ts.seconds) d = new Date(ts.seconds * 1000);
+  else if(typeof ts === 'string') d = new Date(ts);
+  else return '';
+  var diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if(diff < 60) return 'hace un momento';
+  if(diff < 3600) return 'hace '+Math.floor(diff/60)+' min';
+  if(diff < 86400) return 'hace '+Math.floor(diff/3600)+'h';
+  var days = Math.floor(diff/86400);
+  if(days === 1) return 'hace 1 día';
+  if(days < 30) return 'hace '+days+' días';
+  return d.toLocaleDateString('es-PE',{day:'numeric',month:'short',year:'numeric'});
+}
 async function renderPublicaciones(el) {
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">📋 Mis publicaciones</div>'
@@ -8059,7 +8102,8 @@ async function renderPublicaciones(el) {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
         ? `<div class="us-prop-img" style="background:url('${esc(pub.photoUrls[0])}') center/cover"></div>`
         : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>';
-      return '<div class="us-prop-card">'
+      return '<div class="us-prop-card" style="flex-wrap:wrap">'
+        + '<div style="display:flex;gap:14px;width:100%">'
         + thumb
         + '<div class="us-prop-info">'
         + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">'+_pubStatusBadge(pub.status)+'</div>'
@@ -8068,6 +8112,8 @@ async function renderPublicaciones(el) {
         + '<div class="us-prop-price">'+esc(pub.currency||'USD')+' '+esc(typeof pub.price==='number' ? pub.price.toLocaleString() : (pub.price||'—'))+'</div>'
         + '</div>'
         + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+esc(pub.id)+'\')" title="Eliminar">✕</button>'
+        + '</div>'
+        + _pubStatusDetail(pub)
         + '</div>';
     }).join('');
   } else if(queryError){
