@@ -88,9 +88,9 @@ header .spacer{flex:1}
 
 /* ── Publish modal ── */
 .pub-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;opacity:0;pointer-events:none;transition:opacity .25s}
-.pub-modal-overlay.open{opacity:1;pointer-events:all}
+.pub-modal-overlay.open{opacity:1;pointer-events:auto}
 .pub-modal{position:fixed;inset:0;z-index:401;overflow-y:auto;background:#fff;transform:translateY(18px);opacity:0;pointer-events:none;transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s}
-.pub-modal.open{transform:translateY(0);opacity:1;pointer-events:all}
+.pub-modal.open{transform:translateY(0);opacity:1;pointer-events:auto}
 .pub-modal-close{position:fixed;top:14px;right:16px;z-index:402;background:#fff;border:1.5px solid var(--border);border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;box-shadow:var(--sh)}
 .pub-wrap{padding:36px 28px 72px;min-height:100vh}
 .pub-title{font-weight:700;font-size:30px;text-align:center;margin:0 0 6px;letter-spacing:-.02em}
@@ -153,7 +153,7 @@ header .spacer{flex:1}
 .pub-feat-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);cursor:pointer;padding:5px 8px;border-radius:6px;transition:background .1s}
 .pub-feat-item:hover{background:var(--light)}
 .pub-feat-item input{accent-color:var(--blue);width:14px;height:14px;flex-shrink:0}
-.pub-drop-zone{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
+.pub-drop-zone{display:block;border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .15s;background:#fff}
 .pub-drop-zone:hover,.pub-drop-zone.drag{border-color:var(--blue);background:#ecfeff}
 .pub-drop-zone .dz-icon{font-size:2.5rem;margin-bottom:8px}
 .pub-drop-zone .dz-lbl{font-size:14px;font-weight:600;color:var(--txt)}
@@ -5850,16 +5850,15 @@ function _rps(){
     <div class="pub-grid">
       <div class="pub-card">
         <h3>📸 Fotos del inmueble</h3>
-        <div class="pub-drop-zone" id="pubDropZone"
-          onclick="document.getElementById('pubFileInput').click()"
+        <label for="pubFileInput" class="pub-drop-zone" id="pubDropZone"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="event.preventDefault();this.classList.remove('drag');_pubHandleFiles(event.dataTransfer.files)">
           <div class="dz-icon">📷</div>
           <div class="dz-lbl">Arrastra tus fotos aquí o haz clic</div>
           <div class="dz-sub">JPG, PNG, HEIC y más · Mínimo 3 fotos (máx ${_PUB_MAX_PHOTOS}) · La primera será portada</div>
-        </div>
-        <input type="file" id="pubFileInput" accept="image/*" multiple style="display:none" onchange="_pubHandleFiles(this.files)">
+        </label>
+        <input type="file" id="pubFileInput" accept="image/*" multiple style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubHandleFiles(this.files)">
         <div class="pub-photos" id="pubPhotoPreview" style="margin-top:12px">
           ${_pd.photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button onclick="_pubRemovePhoto(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:22px;padding:0" title="Quitar foto">✕</button>${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}</div>`).join('')}
         </div>
@@ -6027,7 +6026,10 @@ function _pubRenderPhotos(){
   if(cnt)cnt.innerHTML=`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`;
 }
 async function _pubHandleFiles(files){
-  for(const file of Array.from(files)){
+  const fileArr=Array.from(files);
+  const inp=document.getElementById('pubFileInput');
+  if(inp)inp.value='';
+  for(const file of fileArr){
     if(!_isImageFile(file))continue;
     if(_pd.photos.length>=_PUB_MAX_PHOTOS){toast('⚠️ Máximo '+_PUB_MAX_PHOTOS+' fotos por publicación.');break;}
     try{
@@ -6161,16 +6163,15 @@ function _pubBulkHTML(){
       <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla CSV</button>
     </div>
     <div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla, rellena una fila por inmueble y súbela aquí. Cada inmueble tiene un costo de 3 llaves.</div></div>
-    <div class="pub-drop-zone" id="pubBulkDrop"
-      onclick="document.getElementById('pubBulkInput').click()"
+    <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFile(event.dataTransfer.files[0])">
       <div class="dz-icon">📁</div>
       <div class="dz-lbl">Arrastra tu archivo aquí o haz clic para seleccionar</div>
       <div class="dz-sub">Formatos soportados: .csv · .xlsx · .xls</div>
-    </div>
-    <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="_pubBulkFile(this.files[0])">
+    </label>
+    <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFile(this.files[0])">
     <div id="pubBulkPreview"></div>
   </div>`;
 }
