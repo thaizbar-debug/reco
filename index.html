@@ -6150,8 +6150,8 @@ async function _ppub(){
     if(_PUB_COST>0 && typeof addKeyHistoryEntry === 'function'){
       addKeyHistoryEntry('use', _PUB_COST, null, 'Publicación: '+_pd.title);
     }
-    toast('🚀 ¡Publicación enviada! La revisaremos en un plazo de 24h hábiles y te avisaremos por correo.');
-    setTimeout(()=>closePublish(),1800);
+    toast('🚀 ¡Publicación enviada!');
+    _pubShowSentScreen();
   } catch(e){
     console.error('[reco] publish failed:', e);
     const code = (e && e.code) || '';
@@ -6169,6 +6169,21 @@ async function _ppub(){
     }
     if(btn) btn.disabled = false;
   }
+}
+var _PUB_REVIEW_NOTE = 'Cada anuncio pasa por una revisión manual: verificamos dirección, precio y fotos antes de publicarlo. El plazo habitual es de 24 horas hábiles y recibirás un correo con el resultado.';
+function _pubShowSentScreen(){
+  var body = document.getElementById('pb');
+  if(!body){ setTimeout(function(){closePublish();},1800); return; }
+  body.innerHTML = '<div class="pub-card" style="max-width:620px;margin:0 auto;text-align:center">'
+    + '<div style="font-size:2.4rem;line-height:1;margin-bottom:10px">🚀</div>'
+    + '<h3 style="margin:0 0 8px">¡Publicación enviada!</h3>'
+    + '<div style="display:inline-block;margin-bottom:14px">'+_pubStatusBadge('pending')+'</div>'
+    + '<p style="font-size:.86rem;color:var(--muted);line-height:1.6;margin:0 0 18px">'+_PUB_REVIEW_NOTE+'</p>'
+    + '<div class="pub-tip" style="text-align:left"><span>📋</span><div>Puedes seguir el estado en <strong>Mi cuenta → Mis publicaciones</strong>. Si la rechazamos, ahí verás el motivo.</div></div>'
+    + '<div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">'
+    + '<button class="pub-btn ghost" onclick="closePublish()">Cerrar</button>'
+    + '<button class="pub-btn primary" onclick="closePublish();navigateUserSection(\'publicaciones\')">Ver mis publicaciones</button>'
+    + '</div></div>';
 }
 // ── Carga masiva ──
 function _pubBulkHTML(){
@@ -8218,6 +8233,13 @@ async function renderPublicaciones(el) {
   let html = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">📋 Mis publicaciones</div>'
     + _renderNotifCards();
+  if (pubs.length && pubs.some(function(p){ return !p.status || p.status==='pending'; })) {
+    html += '<div class="us-card" style="display:flex;gap:10px;align-items:flex-start;margin-bottom:14px">'
+      + '<div style="font-size:1.1rem;line-height:1">⏳</div>'
+      + '<div><div style="font-weight:700;font-size:.85rem;margin-bottom:3px">¿Qué significa "En revisión"?</div>'
+      + '<div style="font-size:.78rem;color:var(--muted);line-height:1.5">'+_PUB_REVIEW_NOTE+'</div></div>'
+      + '</div>';
+  }
   if (pubs.length) {
     html += pubs.map(function(pub) {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
@@ -8235,6 +8257,7 @@ async function renderPublicaciones(el) {
         + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+esc(pub.id)+'\')" title="Eliminar">✕</button>'
         + '</div>'
         + _pubStatusDetail(pub)
+        + (pub.photosPending ? '<div style="font-size:.74rem;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 9px;margin-top:6px">⚠️ Las fotos no se subieron. Vuelve a publicar el inmueble con las imágenes para que pase la revisión.</div>' : '')
         + '</div>';
     }).join('');
   } else if(queryError){
