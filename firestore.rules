@@ -256,6 +256,28 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // /notifications/{notifId}
+    //
+    // In-app notifications sent to users when their publication is
+    // approved or rejected. Each doc targets one userId.
+    // - read: only the target user (userId == auth.uid) or an admin.
+    // - create: admins only (written from the moderation panel).
+    // - update: the target user can only flip `read` to true;
+    //           admins can update any field.
+    // - delete: target user or admin.
+    match /notifications/{notifId} {
+      allow read: if request.auth != null
+                  && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAdmin();
+      allow update: if isAdmin()
+                    || (request.auth != null
+                        && resource.data.userId == request.auth.uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+                        && request.resource.data.read == true);
+      allow delete: if (request.auth != null && resource.data.userId == request.auth.uid)
+                    || isAdmin();
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;
