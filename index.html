@@ -7689,47 +7689,6 @@ async function renderAdminPanel(el){
   el.innerHTML = html;
 }
 
-// Drop a document in /mail for the "Trigger Email from Firestore"
-// extension to pick up and dispatch via SMTP. We don't await this —
-// email delivery is fire-and-forget and shouldn't block the moderation
-// UI. If the write fails we just log; the publication status update is
-// the source of truth.
-function _queueModerationEmail(pub, kind, reason){
-  if(!pub || !pub.userEmail){ console.warn('[reco] no userEmail on pub; skipping email'); return; }
-  const isApproved = kind === 'approved';
-  const subject = isApproved
-    ? '🚀 Tu publicación en Reco fue aprobada'
-    : 'Tu publicación en Reco no pudo ser aprobada';
-  const greeting = pub.userName ? `Hola ${esc(pub.userName.split(' ')[0])},` : 'Hola,';
-  const html = isApproved
-    ? `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-         <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
-         <p>${greeting}</p>
-         <p>Acabamos de aprobar tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>.
-         Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
-         <p style="margin-top:24px">
-           <a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
-         </p>
-         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-       </div>`
-    : `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-         <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
-         <p>${greeting}</p>
-         <p>Revisamos tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>
-         y, por el momento, no podemos publicarla en Reco.</p>
-         ${reason ? `<p><strong>Razón:</strong> ${esc(reason)}</p>` : ''}
-         <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones" → "+ Publicar inmueble".</p>
-         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-       </div>`;
-  const text = isApproved
-    ? `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} fue aprobada y ya está visible en Reco.\n\n— Equipo Reco`
-    : `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} no pudo ser aprobada.${reason ? '\nRazón: ' + reason : ''}\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco`;
-  db.collection('mail').add({
-    to: pub.userEmail,
-    message: { subject, html, text }
-  }).catch(e => console.warn('[reco] mail queue failed:', e.message));
-}
-
 async function _adminApprove(id){
   if(!_isAdmin()) return;
   try {
@@ -8424,43 +8383,6 @@ function _showContactSuccess(msg) {
   el.style.display = 'block';
   document.getElementById('contactError').style.display = 'none';
 }
-// Queue an email to the publication owner via /mail. Fire-and-forget:
-// if the mail write fails we log and let the UI carry on — the
-// contactRequest itself already succeeded.
-function _queueContactEmailToOwner(o){
-  if (!o || !o.ownerEmail) return;
-  const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || '—';
-  const kindLabel = o.kind === 'arrendador' ? 'alquilar' : 'comprar';
-  const greeting = o.ownerName ? `Hola ${esc(o.ownerName.split(' ')[0])},` : 'Hola,';
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-    <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
-    <p>${greeting}</p>
-    <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${esc(propLine)}</strong>.</p>
-    <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
-      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${esc(o.fromName || '—')}</p>
-      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${esc(o.fromEmail)}">${esc(o.fromEmail)}</a></p>
-      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${esc(o.fromPhone)}</p>` : ''}
-      <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
-      <p style="margin:4px 0 0;white-space:pre-wrap">${esc(o.message)}</p>
-    </div>
-    <p>Responde directamente al email del interesado para coordinar.</p>
-    <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-  </div>`;
-  const text = `${o.ownerName ? 'Hola '+o.ownerName.split(' ')[0]+',' : 'Hola,'}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\n`
-    + `Nombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
-    + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
-    + `\nMensaje:\n${o.message}\n\n— Equipo Reco`;
-  db.collection('mail').add({
-    to: o.ownerEmail,
-    replyTo: o.fromEmail || null,
-    fromUserId: auth.currentUser.uid,
-    message: {
-      subject: `📩 Nuevo interesado en tu inmueble (${propLine})`,
-      html, text
-    }
-  }).catch(e => console.warn('[reco] contact-owner mail queue failed:', e.message));
-}
-
 async function submitContactRequest() {
   if (!auth.currentUser) { openAuthModal('login', {notice:'✅ Sesión iniciada. Pulsá "Enviar" para mandar tu consulta.'}); return; }
   if (!_contactCtx) return;

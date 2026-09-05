@@ -53,6 +53,7 @@ const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
 // dataset. Hitting the cap throws resource-exhausted (client shows
 // "demasiadas consultas, espera un momento").
 const HIST_DETAIL_RATE_LIMIT_PER_HOUR = 500;
+const RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR = 3;
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -533,8 +534,20 @@ exports.submitContactRequest = onCall(
         }
       } catch (e) {
         logger.warn('[submitContactRequest] contact-owner email failed', {
-          reqId, err: e && e.message,
+          reqId, ownerEmail: (e && e.code === 'auth/user-not-found') ? null : pubOwnerId,
+          err: e && e.message,
         });
+        try {
+          await db.collection('adminAuditLog').add({
+            adminUid: 'system',
+            adminEmail: null,
+            action: 'mail.contactOwnerFailed',
+            targetType: 'contactRequest',
+            targetId: reqId,
+            extras: { pubOwnerId, err: (e && e.message || '').slice(0, 300) },
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        } catch (_) { /* best effort */ }
       }
     }
 
@@ -992,10 +1005,33 @@ exports.sendPasswordResetViaResend = onCall(
     if (!/.+@.+\..+/.test(email)) {
       throw new HttpsError('invalid-argument', 'Email inválido.');
     }
+
+    // Rate limit: at most RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR reset
+    // emails per address per rolling hour. Uses /mail docs with
+    // _resetFor == email as the counter — the same docs the extension
+    // picks up, so no extra collection needed. The response is always
+    // { ok: true } regardless of whether the limit was hit, preserving
+    // anti-enumeration (caller cannot tell if the email exists or was
+    // throttled).
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    const recentResets = await db.collection('mail')
+      .where('_resetFor', '==', email)
+      .where('_queuedAt', '>', oneHourAgo)
+      .count().get();
+    if (recentResets.data().count >= RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR) {
+      logger.warn('[sendPasswordResetViaResend] rate-limit hit', {
+        email, recent: recentResets.data().count,
+        limit: RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR,
+      });
+      return { ok: true };
+    }
+
     try {
       const link = await getAuth().generatePasswordResetLink(email, { url: CONTINUE_URL });
       await db.collection('mail').add({
         to: email,
+        _resetFor: email,
+        _queuedAt: new Date(),
         message: {
           subject: 'Restablecé tu contraseña en Reco',
           html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
@@ -1110,19 +1146,49 @@ exports.onPublicationModerated = onDocumentWritten(
     const before = event.data && event.data.before && event.data.before.data();
     const newStatus = after.status;
     const oldStatus = before && before.status;
+    const pubId = event.params && event.params.pubId;
 
     if (newStatus === oldStatus) return;
     if (newStatus !== 'approved' && newStatus !== 'rejected') return;
 
-    const userEmail = after.userEmail;
-    if (!userEmail) {
-      logger.warn('[onPublicationModerated] no userEmail on publication', {
-        pubId: event.params && event.params.pubId,
+    // Idempotency: skip if we already notified the user about this exact
+    // status. Prevents duplicate emails on approve → unapprove → approve
+    // cycles. A re-approval after rejection IS a new event and sends a
+    // new email (the _lastNotifiedStatus would be 'rejected', not
+    // 'approved'). We write _lastNotifiedStatus after queuing the email.
+    if (after._lastNotifiedStatus === newStatus) {
+      logger.info('[onPublicationModerated] already notified, skipping', {
+        pubId, status: newStatus,
       });
       return;
     }
 
-    const name = (after.userName || '').split(' ')[0];
+    // Resolve the recipient email. Prefer the publication's userEmail
+    // field (set at publish time), but fall back to Firebase Auth as
+    // the authoritative source. This handles edge cases where the
+    // publication was created before userEmail was stored, or where the
+    // user changed their email after publishing.
+    let userEmail = after.userEmail;
+    let userName = after.userName;
+    if (!userEmail && after.userId) {
+      try {
+        const authUser = await getAuth().getUser(after.userId);
+        userEmail = authUser.email;
+        userName = userName || authUser.displayName;
+      } catch (e) {
+        logger.warn('[onPublicationModerated] Auth lookup failed', {
+          pubId, userId: after.userId, err: e.message,
+        });
+      }
+    }
+    if (!userEmail) {
+      logger.warn('[onPublicationModerated] no email for publication owner', {
+        pubId, userId: after.userId,
+      });
+      return;
+    }
+
+    const name = (userName || '').split(' ')[0];
     const greeting = name ? `Hola ${_esc(name)},` : 'Hola,';
     const address = after.address || '—';
     const district = after.district || '—';
@@ -1161,9 +1227,12 @@ exports.onPublicationModerated = onDocumentWritten(
         to: userEmail,
         message: { subject, html, text },
       });
+      // Mark the notification status so re-transitions to the same
+      // status don't send duplicate emails.
+      await event.data.after.ref.update({ _lastNotifiedStatus: newStatus });
     } catch (e) {
       logger.warn('[onPublicationModerated] mail queue failed', {
-        pubId: event.params && event.params.pubId, err: e.message,
+        pubId, err: e.message,
       });
     }
   }
