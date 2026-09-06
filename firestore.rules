@@ -256,6 +256,46 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // /reclamaciones/{recId}
+    //
+    // Libro de Reclamaciones submissions (required by Peruvian consumer
+    // protection law, Ley 29571 and DS 006-2014-PCM). Anyone can create
+    // a complaint — authenticated or not (guests fill in their contact
+    // info manually). Admins can read all complaints and update their
+    // status (e.g. 'pendiente' → 'atendido'). The submitter cannot
+    // read back or modify their own complaint from the client — they
+    // receive confirmation via the UI and email.
+    match /reclamaciones/{recId} {
+      allow read: if isAdmin();
+      allow create: if true
+                    && request.resource.data.keys().hasOnly([
+                      'codigo','tipo','docTipo','docNum','nombre','email',
+                      'telefono','direccion','descripcion','status',
+                      'createdAt','userAgent','url','userId','userEmail'
+                    ])
+                    && request.resource.data.status == 'pendiente'
+                    && request.resource.data.tipo in ['reclamo', 'queja']
+                    && request.resource.data.nombre is string
+                    && request.resource.data.email is string
+                    && request.resource.data.descripcion is string;
+      allow update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // /cookieConsent/{docId}
+    //
+    // Audit log of cookie consent decisions for regulatory compliance
+    // (Ley 29733, DS 016-2024-JUS). Each entry records the user's
+    // decision ('accepted' or 'rejected'), timestamp, and user agent.
+    // Write-only from the client; read-only for admins. Immutable
+    // once created.
+    match /cookieConsent/{docId} {
+      allow read: if isAdmin();
+      allow create: if true
+                    && request.resource.data.decision in ['accepted', 'rejected'];
+      allow update, delete: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

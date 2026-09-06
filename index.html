@@ -1365,6 +1365,23 @@ body.show-legal .global-legal-bar{display:none}
 body.show-legal .cookie-banner{display:none !important}
 @media(max-width:600px){.cookie-banner{bottom:40px;padding:14px 16px}.cookie-btns{flex-direction:column}.cookie-btns button{width:100%}}
 
+/* RECLAMACIONES FORM */
+.reclamo-form{max-width:600px;margin:0 auto 48px}
+.reclamo-form label{display:block;font-size:.82rem;font-weight:600;color:var(--txt);margin-bottom:4px;margin-top:16px}
+.reclamo-form label span{color:#ef4444}
+.reclamo-form input,.reclamo-form select,.reclamo-form textarea{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;font-family:inherit;background:#fff;color:var(--txt);outline:none;transition:border-color .15s}
+.reclamo-form input:focus,.reclamo-form select:focus,.reclamo-form textarea:focus{border-color:var(--blue)}
+.reclamo-form textarea{resize:vertical;min-height:100px}
+.reclamo-form .form-row{display:flex;gap:12px}
+.reclamo-form .form-row>div{flex:1}
+@media(max-width:600px){.reclamo-form .form-row{flex-direction:column;gap:0}}
+.reclamo-form .btn-submit{display:block;width:100%;margin-top:24px;padding:14px;border:none;border-radius:var(--r);background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+.reclamo-form .btn-submit:hover{opacity:.88}
+.reclamo-form .btn-submit:disabled{opacity:.5;cursor:not-allowed}
+.reclamo-success{text-align:center;padding:32px 16px;display:none}
+.reclamo-success h3{font-size:1.2rem;color:var(--green,#10b981);margin-bottom:8px}
+.reclamo-success p{color:var(--muted);font-size:.88rem}
+
 /* FOOTER */
 #homeView footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 #homeView .footer-inner{max-width:1160px;margin:0 auto}
@@ -2080,7 +2097,8 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <section><h2>6. Base legal y consentimiento</h2>
         <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma (artículo 14, numeral 1 de la Ley 29733).</p>
         <p>Para las cookies de analítica, funcionalidad y de terceros, la base legal es el <strong>consentimiento expreso, previo e informado</strong> de EL USUARIO, otorgado a través del banner de cookies que se muestra al acceder a la Plataforma por primera vez. EL USUARIO puede aceptar o rechazar las cookies no esenciales mediante los botones habilitados en dicho banner.</p>
-        <p>El consentimiento puede ser revocado en cualquier momento eliminando las cookies del navegador, lo que provocará la reaparición del banner de consentimiento en la siguiente visita. Las cookies no esenciales no se instalan hasta que EL USUARIO otorgue su consentimiento expreso.</p>
+        <p>Si EL USUARIO cierra el banner sin realizar una elección o continúa navegando sin interactuar con él, <strong>no se instalarán cookies no esenciales</strong> y el banner volverá a mostrarse en la siguiente visita. Al continuar utilizando la Plataforma sin haber aceptado las cookies no esenciales, EL USUARIO navega exclusivamente con cookies estrictamente necesarias.</p>
+        <p>El consentimiento puede ser revocado en cualquier momento eliminando las cookies del navegador o la preferencia almacenada en su dispositivo, lo que provocará la reaparición del banner de consentimiento en la siguiente visita.</p>
       </section>
       <section><h2>7. Actualizaciones</h2>
         <p>RECO podrá actualizar esta Política de Cookies para reflejar cambios en las prácticas de tratamiento o por motivos operativos, legales o regulatorios. Se recomienda revisar esta página periódicamente.</p>
@@ -2106,9 +2124,54 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <div><strong>Reclamo:</strong> disconformidad relacionada con los servicios prestados.</div>
       </div>
     </div>
-    <div style="text-align:center;margin:32px 0 48px">
-      <a href="https://docs.google.com/forms/d/1P-E6fiv1T44dp_LwndcPtP6KCBfjZAutw0BkaBl3X0c/viewform" target="_blank" rel="noopener" class="btn-primary" style="display:inline-block;padding:16px 40px;font-size:16px;text-decoration:none;border-radius:10px">Registrar queja o reclamo</a>
-      <p style="margin-top:16px;color:#666;font-size:13px">Se abrirá el formulario oficial de Reco en una nueva pestaña.</p>
+    <div class="reclamo-form" id="reclamoFormWrap">
+      <form id="reclamoForm" onsubmit="submitReclamo(event)">
+        <div class="form-row">
+          <div>
+            <label>Tipo <span>*</span></label>
+            <select id="recTipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="reclamo">Reclamo</option>
+              <option value="queja">Queja</option>
+            </select>
+          </div>
+          <div>
+            <label>Documento <span>*</span></label>
+            <select id="recDocTipo" required>
+              <option value="">Tipo...</option>
+              <option value="DNI">DNI</option>
+              <option value="CE">Carné de Extranjería</option>
+              <option value="Pasaporte">Pasaporte</option>
+              <option value="RUC">RUC</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Número de documento <span>*</span></label>
+            <input type="text" id="recDocNum" required placeholder="Ej: 12345678" maxlength="20"/>
+          </div>
+          <div>
+            <label>Teléfono</label>
+            <input type="tel" id="recTelefono" placeholder="Ej: 987654321" maxlength="15"/>
+          </div>
+        </div>
+        <label>Nombre completo <span>*</span></label>
+        <input type="text" id="recNombre" required placeholder="Nombres y apellidos" maxlength="200"/>
+        <label>Correo electrónico <span>*</span></label>
+        <input type="email" id="recEmail" required placeholder="tucorreo@ejemplo.com" maxlength="200"/>
+        <label>Dirección</label>
+        <input type="text" id="recDireccion" placeholder="Dirección (opcional)" maxlength="300"/>
+        <label>Descripción del reclamo o queja <span>*</span></label>
+        <textarea id="recDescripcion" required placeholder="Describe detalladamente tu reclamo o queja..." maxlength="2000"></textarea>
+        <button type="submit" class="btn-submit" id="recSubmitBtn">Enviar reclamo</button>
+      </form>
+    </div>
+    <div class="reclamo-success" id="reclamoSuccess">
+      <h3>Reclamo registrado exitosamente</h3>
+      <p>Tu reclamo ha sido registrado con el código <strong id="reclamoCodigo"></strong>.</p>
+      <p>Recibirás una respuesta en un plazo máximo de 30 días calendario al correo proporcionado.</p>
+      <p style="margin-top:16px"><button onclick="resetReclamoForm()" style="padding:10px 24px;border:1.5px solid var(--border);border-radius:var(--r);background:#fff;cursor:pointer;font-weight:600">Registrar otro</button></p>
     </div>
     <div class="legal-foot">
       <p><strong>Razón social:</strong> VANET DATA S.A.C. &nbsp;|&nbsp; <strong>RUC:</strong> 20553966800</p>
@@ -8831,6 +8894,51 @@ function enviarContacto(){
   document.getElementById('ctMensaje').value='';
 }
 
+// ── Libro de Reclamaciones (Firestore) ──────────────────────
+function submitReclamo(e){
+  e.preventDefault();
+  var btn=document.getElementById('recSubmitBtn');
+  btn.disabled=true;btn.textContent='Enviando...';
+  var tipo=document.getElementById('recTipo').value;
+  var docTipo=document.getElementById('recDocTipo').value;
+  var docNum=document.getElementById('recDocNum').value.trim();
+  var nombre=document.getElementById('recNombre').value.trim();
+  var email=document.getElementById('recEmail').value.trim();
+  var telefono=document.getElementById('recTelefono').value.trim();
+  var direccion=document.getElementById('recDireccion').value.trim();
+  var descripcion=document.getElementById('recDescripcion').value.trim();
+  if(!tipo||!docTipo||!docNum||!nombre||!email||!descripcion){
+    alert('Completa todos los campos obligatorios.');
+    btn.disabled=false;btn.textContent='Enviar reclamo';return;
+  }
+  var codigo='REC-'+Date.now().toString(36).toUpperCase();
+  var data={
+    codigo:codigo,tipo:tipo,docTipo:docTipo,docNum:docNum,
+    nombre:nombre,email:email,telefono:telefono,direccion:direccion,
+    descripcion:descripcion,status:'pendiente',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    userAgent:navigator.userAgent,
+    url:window.location.href
+  };
+  var user=auth.currentUser;
+  if(user){data.userId=user.uid;data.userEmail=user.email;}
+  db.collection('reclamaciones').add(data).then(function(){
+    document.getElementById('reclamoCodigo').textContent=codigo;
+    document.getElementById('reclamoFormWrap').style.display='none';
+    document.getElementById('reclamoSuccess').style.display='block';
+    btn.disabled=false;btn.textContent='Enviar reclamo';
+  }).catch(function(err){
+    console.error('Error al enviar reclamo:',err);
+    alert('Error al enviar. Por favor intenta de nuevo o escríbenos a webmaster@recosac.com.');
+    btn.disabled=false;btn.textContent='Enviar reclamo';
+  });
+}
+function resetReclamoForm(){
+  document.getElementById('reclamoForm').reset();
+  document.getElementById('reclamoFormWrap').style.display='block';
+  document.getElementById('reclamoSuccess').style.display='none';
+}
+
 // ── Cookie Consent ──────────────────────────────────────────
 (function initCookieConsent(){
   var banner=document.getElementById('cookieBanner');
@@ -8847,11 +8955,13 @@ function enviarContacto(){
     try{localStorage.setItem('reco_cookie_consent','accepted');}catch(e){}
     banner.style.display='none';
     enableAnalytics();
+    logCookieConsent('accepted');
   });
   document.getElementById('cookieReject').addEventListener('click',function(){
     try{localStorage.setItem('reco_cookie_consent','rejected');}catch(e){}
     banner.style.display='none';
     disableAnalytics();
+    logCookieConsent('rejected');
   });
   function enableAnalytics(){
     if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'granted'});
@@ -8864,6 +8974,19 @@ function enviarContacto(){
         document.cookie=name+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
       }
     });
+  }
+  function logCookieConsent(decision){
+    try{
+      var data={
+        decision:decision,
+        timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        userAgent:navigator.userAgent,
+        url:window.location.href
+      };
+      var user=auth.currentUser;
+      if(user){data.userId=user.uid;data.userEmail=user.email;}
+      db.collection('cookieConsent').add(data).catch(function(){});
+    }catch(e){}
   }
 })();
 </script>
