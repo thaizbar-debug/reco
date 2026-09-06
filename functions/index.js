@@ -46,7 +46,8 @@ const WELCOME_KEYS = 1;
 // A legit user contacting 15 property owners in 60 minutes is already
 // aggressive; anything much beyond that is scraper behaviour.
 const CONTACT_RATE_LIMIT_PER_HOUR = 15;
-const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
+const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco', 'demanda_insatisfecha'];
+const UNMET_DEMAND_PROPERTY_TYPES = ['Departamento', 'Casa', 'Terreno', 'Oficina', 'Otro'];
 // Max getHistoricoDetail calls per authenticated user per rolling hour.
 // A user browsing 500 histórico cards in one hour is already very
 // intense; beyond that suggests a script trying to pull the full
@@ -429,9 +430,23 @@ exports.submitContactRequest = onCall(
     if (!/.+@.+\..+/.test(fromEmail)) {
       throw new HttpsError('invalid-argument', 'fromEmail inválido.');
     }
-    const message = str(raw.message, 'message', 2000);
-    if (message.length < 10) {
+    const isUnmetDemand = kind === 'demanda_insatisfecha';
+    const message = isUnmetDemand ? optStr(raw.message, 2000) || '' : str(raw.message, 'message', 2000);
+    if (!isUnmetDemand && message.length < 10) {
       throw new HttpsError('invalid-argument', 'El mensaje debe tener al menos 10 caracteres.');
+    }
+
+    let unmetFields = {};
+    if (isUnmetDemand) {
+      const referenceZone = str(raw.referenceZone, 'referenceZone', 500);
+      const propertyTypeWanted = raw.propertyTypeWanted;
+      if (!UNMET_DEMAND_PROPERTY_TYPES.includes(propertyTypeWanted)) {
+        throw new HttpsError('invalid-argument', 'propertyTypeWanted inválido.');
+      }
+      const budgetReference = optStr(raw.budgetReference, 200);
+      const viewType = optStr(raw.viewType, 40);
+      const source = optStr(raw.source, 40);
+      unmetFields = { referenceZone, propertyTypeWanted, budgetReference, viewType, source };
     }
 
     const reqId = `${uid}_${propertyId}_${kind}`;
@@ -476,8 +491,8 @@ exports.submitContactRequest = onCall(
       propertyOp:          optStr(raw.propertyOp, 40),
       propertyPrice:       (typeof raw.propertyPrice === 'number' && isFinite(raw.propertyPrice)) ? raw.propertyPrice : null,
       propertyCurrency:    optStr(raw.propertyCurrency, 10),
-      publicationOwnerId:    optStr(raw.publicationOwnerId, 128),
-      publicationOwnerEmail: optStr(raw.publicationOwnerEmail, 200),
+      publicationOwnerId:    isUnmetDemand ? null : optStr(raw.publicationOwnerId, 128),
+      publicationOwnerEmail: isUnmetDemand ? null : optStr(raw.publicationOwnerEmail, 200),
       kind,
       source:              optStr(raw.source, 40),
       fromUserId:          uid,
@@ -485,6 +500,7 @@ exports.submitContactRequest = onCall(
       fromEmail,
       fromPhone:           optStr(raw.fromPhone, 40),
       message,
+      ...unmetFields,
       status:              'new',
       createdAt:           FieldValue.serverTimestamp(),
     });

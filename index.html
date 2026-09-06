@@ -5696,6 +5696,7 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
+          <button class="fr-cta-unmet" onclick="openUnmetDemandModal('${p.id}','${isHist ? 'historico' : isAlq ? 'alquilar' : 'comprar'}')">¿No encontraste lo que buscabas?</button>
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
             <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
@@ -7274,6 +7275,8 @@ function _applyLandingHash(){
 .fr-cta-main:hover{background:#0a6076}
 .fr-cta-sec{display:block;width:100%;background:none;color:#0E1117;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;}
 .fr-cta-sec:hover{background:#F5F3EF}
+.fr-cta-unmet{display:block;width:100%;text-align:center;background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:8px 0 2px;text-decoration:underline;text-decoration-color:rgba(14,17,23,.2);text-underline-offset:2px;}
+.fr-cta-unmet:hover{color:var(--blue-dark);text-decoration-color:var(--blue-dark);}
 .fr-agent-row{display:flex;align-items:center;gap:12px;padding-top:14px;border-top:1px solid rgba(14,17,23,.1);margin-top:14px;}
 .fr-agent-av{width:36px;height:36px;border-radius:50%;background:#ecfeff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--blue-dark);}
 .fr-agent-name{font-size:13px;font-weight:500;}
@@ -7427,6 +7430,49 @@ function _applyLandingHash(){
         <textarea class="auth-input" id="contactMessage" rows="4" placeholder="Cuéntanos qué necesitas: visita, información adicional, condiciones…" style="resize:vertical;min-height:90px"></textarea>
         <button class="auth-submit" id="contactSubmitBtn" onclick="submitContactRequest()">Enviar solicitud</button>
         <button id="contactWhatsAppBtn" style="display:none;width:100%;margin-top:10px;padding:12px;border:1.5px solid #25d366;border-radius:var(--r);background:transparent;color:#25d366;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;transition:all .12s" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#25d366'" onclick="_contactWhatsApp()">💬 Contactar por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UNMET DEMAND MODAL -->
+<div class="auth-overlay" id="unmetDemandOverlay" onclick="if(event.target===this)closeUnmetDemandModal()">
+  <div class="auth-box" role="dialog" aria-modal="true" aria-labelledby="unmetDemandTitle" style="max-width:460px">
+    <button class="auth-close" onclick="closeUnmetDemandModal()">✕</button>
+    <div class="auth-head">
+      <h3 id="unmetDemandTitle" style="margin:22px 24px 0;font-size:1.05rem">🔍 ¿No encontraste lo que buscabas?</h3>
+      <p class="auth-panel-sub" style="margin:8px 24px 0;color:var(--muted);font-size:.85rem">Cuéntanos qué estás buscando y te ayudamos a encontrarlo.</p>
+    </div>
+    <div class="auth-body">
+      <div class="auth-error" id="unmetDemandError"></div>
+      <div class="auth-success" id="unmetDemandSuccess"></div>
+      <div id="unmetDemandForm">
+        <div style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:14px;font-size:.82rem;color:var(--muted)">
+          <div><strong style="color:var(--txt)">Viendo:</strong> <span id="unmetDemandPropAddress">—</span></div>
+          <div style="margin-top:2px"><strong style="color:var(--txt)">Código:</strong> <span id="unmetDemandPropId">—</span></div>
+        </div>
+        <label class="auth-label">Nombre</label>
+        <input class="auth-input" type="text" id="unmetDemandName" placeholder="Tu nombre" autocomplete="name"/>
+        <label class="auth-label">Email</label>
+        <input class="auth-input" type="email" id="unmetDemandEmail" placeholder="tucorreo@ejemplo.pe" autocomplete="email"/>
+        <label class="auth-label">Teléfono <span style="text-transform:none;font-weight:500;color:var(--muted)">(opcional)</span></label>
+        <input class="auth-input" type="tel" id="unmetDemandPhone" placeholder="+51 999 999 999" autocomplete="tel"/>
+        <label class="auth-label">Dirección o zona de referencia</label>
+        <input class="auth-input" type="text" id="unmetDemandZone" placeholder="Ej: Miraflores, San Isidro, Av. Javier Prado…"/>
+        <label class="auth-label">Tipo de propiedad buscada</label>
+        <select class="auth-input" id="unmetDemandPropertyType" style="appearance:auto;cursor:pointer">
+          <option value="">— Seleccionar —</option>
+          <option value="Departamento">Departamento</option>
+          <option value="Casa">Casa</option>
+          <option value="Terreno">Terreno</option>
+          <option value="Oficina">Oficina</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <label class="auth-label" id="unmetDemandBudgetLabel">Presupuesto aproximado</label>
+        <input class="auth-input" type="text" id="unmetDemandBudget" placeholder="Ej: USD 150,000 — USD 200,000"/>
+        <label class="auth-label">Mensaje <span style="text-transform:none;font-weight:500;color:var(--muted)">(opcional)</span></label>
+        <textarea class="auth-input" id="unmetDemandMessage" rows="3" placeholder="Cuéntanos más detalles sobre lo que necesitas…" style="resize:vertical;min-height:70px"></textarea>
+        <button class="auth-submit" id="unmetDemandSubmitBtn" onclick="submitUnmetDemandRequest()">Enviar solicitud</button>
       </div>
     </div>
   </div>
@@ -7753,9 +7799,10 @@ function _crStatusBadge(status){
   return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">📨 Nuevo</span>';
 }
 function _crKindLabel(kind){
-  return kind==='arrendador' ? 'Interés en alquilar'
-       : kind==='vendedor'   ? 'Interés en comprar'
-       : kind==='asesor_reco'? 'Solicitud de asesoría'
+  return kind==='arrendador'          ? 'Interés en alquilar'
+       : kind==='vendedor'            ? 'Interés en comprar'
+       : kind==='asesor_reco'         ? 'Solicitud de asesoría'
+       : kind==='demanda_insatisfecha'? 'Demanda insatisfecha'
        : 'Contacto';
 }
 function _crFormatDate(ts){
@@ -8798,6 +8845,12 @@ function _getInitials(name) {
 
 // ─────────────────────── CONTACT OWNER MODAL ───────────────────────
 const _RECO_SUPPORT_WSP   = '51949350314';
+// TODO temporal: este email se usa como destino de TODOS los contactos
+// mientras se valida el flujo (ver TEMP_CONTACT_EMAIL_OVERRIDE abajo).
+// También es el destino permanente de las solicitudes de demanda
+// insatisfecha (BUG-16). Al revertir el override temporal de contacto
+// a propietarios reales, NO eliminar esta constante — sigue siendo
+// necesaria para demanda insatisfecha.
 const _RECO_SUPPORT_EMAIL = 'sebastiand@recosac.com';
 const _CONTACT_LABEL = {
   arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario.' },
@@ -8932,6 +8985,46 @@ function _queueContactEmailToOwner(o){
     }
   }).catch(e => console.warn('[reco] contact-owner mail queue failed:', e.message));
 }
+function _queueUnmetDemandEmail(o) {
+  if (!o) return;
+  const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || o.propertyId;
+  const viewLabel = o.viewType === 'alquilar' ? 'Alquilar'
+                  : o.viewType === 'historico' ? 'Histórico' : 'Comprar';
+  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+    <h2 style="color:#0891b2">Demanda insatisfecha</h2>
+    <p>Un usuario reportó que no encontró lo que buscaba.</p>
+    <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
+      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${esc(o.fromName || '—')}</p>
+      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${esc(o.fromEmail)}">${esc(o.fromEmail)}</a></p>
+      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${esc(o.fromPhone)}</p>` : ''}
+      <p style="margin:0 0 6px"><strong>Zona de referencia:</strong> ${esc(o.referenceZone)}</p>
+      <p style="margin:0 0 6px"><strong>Tipo de propiedad:</strong> ${esc(o.propertyTypeWanted)}</p>
+      ${o.budgetReference ? `<p style="margin:0 0 6px"><strong>Presupuesto:</strong> ${esc(o.budgetReference)}</p>` : ''}
+      ${o.message ? `<p style="margin:12px 0 0"><strong>Mensaje:</strong></p><p style="margin:4px 0 0;white-space:pre-wrap">${esc(o.message)}</p>` : ''}
+    </div>
+    <div style="background:#fef3c7;border-radius:10px;padding:14px 16px;margin:16px 0">
+      <p style="margin:0 0 6px"><strong>Vista:</strong> ${esc(viewLabel)}</p>
+      <p style="margin:0 0 6px"><strong>Propiedad de origen:</strong> ${esc(propLine)}</p>
+      <p style="margin:0"><strong>ID:</strong> ${esc(o.propertyId)}</p>
+    </div>
+    <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Reco (notificación automática)</p>
+  </div>`;
+  const text = `Demanda insatisfecha\n\nNombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
+    + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
+    + `Zona: ${o.referenceZone}\nTipo: ${o.propertyTypeWanted}\n`
+    + (o.budgetReference ? `Presupuesto: ${o.budgetReference}\n` : '')
+    + (o.message ? `\nMensaje:\n${o.message}\n` : '')
+    + `\nVista: ${viewLabel}\nPropiedad: ${propLine} (${o.propertyId})\n\n— Reco`;
+  db.collection('mail').add({
+    to: _RECO_SUPPORT_EMAIL,
+    replyTo: o.fromEmail || null,
+    fromUserId: auth.currentUser.uid,
+    message: {
+      subject: `🔍 Demanda insatisfecha — ${o.propertyTypeWanted} en ${o.referenceZone}`,
+      html, text
+    }
+  }).catch(e => console.warn('[reco] unmet-demand mail queue failed:', e.message));
+}
 
 async function submitContactRequest() {
   if (!auth.currentUser) { openAuthModal('login', {notice:'✅ Sesión iniciada. Pulsá "Enviar" para mandar tu consulta.'}); return; }
@@ -9031,6 +9124,161 @@ function _contactWhatsApp() {
   } catch (e) { console.warn('[reco] analytics event failed:', e.message); }
   window.open(url, '_blank', 'noopener,noreferrer');
 }
+// ─────────────────────── UNMET DEMAND MODAL ───────────────────────
+const _UNMET_BUDGET_LABEL = {
+  comprar:   'Presupuesto aproximado de compra',
+  alquilar:  'Presupuesto mensual aproximado',
+  historico: 'Valor de propiedad o valor por m² de referencia'
+};
+let _unmetCtx = null;
+
+async function openUnmetDemandModal(propertyId, viewType) {
+  if (!auth.currentUser) {
+    toast('⚠️ Debes iniciar sesión');
+    openAuthModal('login', function(){ openUnmetDemandModal(propertyId, viewType); });
+    return;
+  }
+  const p = (typeof properties !== 'undefined') ? properties.find(x => x.id === propertyId) : null;
+  _unmetCtx = {
+    propertyId,
+    viewType,
+    propertyAddress: p ? (p.address || '') : '',
+    propertyDistrict: p ? (p.district || '') : '',
+    propertyOp: p ? (p.op || '') : '',
+    propertyPrice: p ? (p.price || null) : null,
+    propertyCurrency: p ? (p.cur || null) : null
+  };
+  document.getElementById('unmetDemandPropAddress').textContent = _unmetCtx.propertyAddress || '—';
+  document.getElementById('unmetDemandPropId').textContent = propertyId;
+  document.getElementById('unmetDemandBudgetLabel').textContent = _UNMET_BUDGET_LABEL[viewType] || 'Presupuesto aproximado';
+  _clearUnmetMessages();
+  document.getElementById('unmetDemandOverlay').classList.add('open');
+  const reqId = auth.currentUser.uid + '_' + propertyId + '_demanda_insatisfecha';
+  try {
+    const existing = await db.collection('contactRequests').doc(reqId).get();
+    if (existing.exists) {
+      document.getElementById('unmetDemandForm').style.display = 'none';
+      const when = _formatContactDate(existing.data().createdAt);
+      _showUnmetSuccess('Ya enviaste una solicitud desde este inmueble' + (when ? ' el ' + when : '') + '. Nuestro equipo la revisará pronto.');
+      return;
+    }
+  } catch (e) {
+    console.warn('[reco] prior unmet-demand check failed:', e);
+  }
+  const u = auth.currentUser;
+  document.getElementById('unmetDemandName').value = u.displayName || '';
+  document.getElementById('unmetDemandEmail').value = u.email || '';
+  document.getElementById('unmetDemandPhone').value = '';
+  document.getElementById('unmetDemandZone').value = '';
+  document.getElementById('unmetDemandPropertyType').value = '';
+  document.getElementById('unmetDemandBudget').value = '';
+  document.getElementById('unmetDemandMessage').value = '';
+  const submitBtn = document.getElementById('unmetDemandSubmitBtn');
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Enviar solicitud';
+  document.getElementById('unmetDemandForm').style.display = 'block';
+}
+function closeUnmetDemandModal() {
+  document.getElementById('unmetDemandOverlay').classList.remove('open');
+  _clearUnmetMessages();
+  _unmetCtx = null;
+}
+function _clearUnmetMessages() {
+  const err = document.getElementById('unmetDemandError');
+  const ok  = document.getElementById('unmetDemandSuccess');
+  if (err) err.style.display = 'none';
+  if (ok)  ok.style.display  = 'none';
+}
+function _showUnmetError(msg) {
+  const el = document.getElementById('unmetDemandError');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('unmetDemandSuccess').style.display = 'none';
+}
+function _showUnmetSuccess(msg) {
+  const el = document.getElementById('unmetDemandSuccess');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('unmetDemandError').style.display = 'none';
+}
+
+async function submitUnmetDemandRequest() {
+  if (!auth.currentUser) { openAuthModal('login'); return; }
+  if (!_unmetCtx) return;
+  const name    = document.getElementById('unmetDemandName').value.trim();
+  const email   = document.getElementById('unmetDemandEmail').value.trim();
+  const phone   = document.getElementById('unmetDemandPhone').value.trim();
+  const zone    = document.getElementById('unmetDemandZone').value.trim();
+  const propType = document.getElementById('unmetDemandPropertyType').value;
+  const budget  = document.getElementById('unmetDemandBudget').value.trim();
+  const message = document.getElementById('unmetDemandMessage').value.trim();
+  if (!name)               { _showUnmetError('Ingresa tu nombre.'); return; }
+  if (!email || !/.+@.+\..+/.test(email)) { _showUnmetError('Ingresa un email válido.'); return; }
+  if (!zone)               { _showUnmetError('Ingresa la zona o dirección de referencia.'); return; }
+  if (!propType)           { _showUnmetError('Selecciona el tipo de propiedad.'); return; }
+  const btn = document.getElementById('unmetDemandSubmitBtn');
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.textContent = 'Enviando…';
+  try {
+    const call = _getFunctions().httpsCallable('submitContactRequest');
+    await call({
+      propertyId:       _unmetCtx.propertyId,
+      propertyAddress:  _unmetCtx.propertyAddress || null,
+      propertyDistrict: _unmetCtx.propertyDistrict || null,
+      propertyOp:       _unmetCtx.propertyOp || null,
+      propertyPrice:    _unmetCtx.propertyPrice,
+      propertyCurrency: _unmetCtx.propertyCurrency,
+      publicationOwnerId: null,
+      kind:             'demanda_insatisfecha',
+      fromName:         name,
+      fromEmail:        email,
+      fromPhone:        phone || null,
+      message:          message || '',
+      referenceZone:    zone,
+      propertyTypeWanted: propType,
+      budgetReference:  budget || null,
+      viewType:         _unmetCtx.viewType,
+      source:           'preview_panel'
+    });
+    _queueUnmetDemandEmail({
+      fromName: name, fromEmail: email, fromPhone: phone,
+      referenceZone: zone, propertyTypeWanted: propType,
+      budgetReference: budget, message,
+      propertyAddress: _unmetCtx.propertyAddress,
+      propertyDistrict: _unmetCtx.propertyDistrict,
+      propertyId: _unmetCtx.propertyId,
+      viewType: _unmetCtx.viewType
+    });
+    document.getElementById('unmetDemandForm').style.display = 'none';
+    _showUnmetSuccess('✅ ¡Solicitud enviada! Nuestro equipo revisará tu búsqueda y te contactará.');
+    toast('✅ Solicitud enviada');
+    if (typeof gtag === 'function') {
+      gtag('event', 'unmet_demand_form_submitted', { source: _unmetCtx.viewType });
+    }
+    setTimeout(closeUnmetDemandModal, 1800);
+  } catch (e) {
+    console.error('[reco] unmetDemand failed:', e);
+    const code = (e && e.code) || '';
+    if (code === 'functions/already-exists' || code === 'already-exists') {
+      _showUnmetError('Ya enviaste esta solicitud desde este inmueble.');
+    } else if (code === 'functions/resource-exhausted' || code === 'resource-exhausted') {
+      _showUnmetError('Alcanzaste el límite de solicitudes por hora. Reintentá en un rato.');
+    } else if (code === 'functions/unauthenticated' || code === 'unauthenticated') {
+      _showUnmetError('Debes iniciar sesión.');
+      openAuthModal('login');
+    } else if (code === 'functions/failed-precondition' || code === 'failed-precondition') {
+      _showUnmetError('Verificá tu email antes de continuar.');
+    } else if (code === 'functions/invalid-argument' || code === 'invalid-argument') {
+      _showUnmetError('Datos inválidos: ' + (e.message || 'revisa el formulario'));
+    } else {
+      _showUnmetError('No se pudo enviar: ' + ((e && e.message) || 'error desconocido'));
+    }
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
+}
+
 // Client-side pre-flight before any callable / paid action. Returns
 // true when the caller can proceed. When they cannot, drops a toast
 // and scrolls to the top so the banner (which is already visible via
