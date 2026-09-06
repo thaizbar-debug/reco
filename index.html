@@ -8154,7 +8154,9 @@ function signInWithEmail() {
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
+let _registerPending = false;
 function registerWithEmail() {
+  if (_registerPending) return;
   const name  = document.getElementById('registerName').value.trim();
   const email = document.getElementById('registerEmail').value.trim();
   const pass  = document.getElementById('registerPassword').value;
@@ -8162,21 +8164,23 @@ function registerWithEmail() {
   if (!name || !email || !pass) return showAuthError('Completa todos los campos.');
   if (pass !== pass2) return showAuthError('Las contraseñas no coinciden.');
   if (pass.length < 8) return showAuthError('La contraseña debe tener al menos 8 caracteres.');
+  _registerPending = true;
   setAuthLoading('registerBtn', true);
-  let createdUser = null;
   auth.createUserWithEmailAndPassword(email, pass)
-    .then(cred => { createdUser = cred.user; return cred.user.updateProfile({ displayName: name }); })
-    .then(() => {
-      // Send verification via the Cloud Function so it goes through
-      // Resend (verified domain) instead of Firebase Auth's built-in
-      // SMTP. Best-effort: the banner offers a resend button.
-      return _getFunctions().httpsCallable('sendVerificationViaResend')({}).catch(err => {
-        console.warn('[reco] sendVerificationViaResend failed:', err && err.message);
+    .then(cred => {
+      // Auth user created — point of no return. From here, the account
+      // EXISTS and any subsequent failure is a setup issue, not a
+      // registration failure. Close the modal immediately.
+      closeAuthModal();
+      cred.user.updateProfile({ displayName: name }).catch(err => {
+        console.warn('[reco] updateProfile failed (account created, display name pending):', err && err.message);
+      });
+      _getFunctions().httpsCallable('sendVerificationViaResend')({}).catch(err => {
+        console.warn('[reco] sendVerificationViaResend failed (account created, verification pending):', err && err.message);
       });
     })
-    .then(() => closeAuthModal())
     .catch(e => showAuthError(friendlyError(e.code)))
-    .finally(() => setAuthLoading('registerBtn', false));
+    .finally(() => { _registerPending = false; setAuthLoading('registerBtn', false); });
 }
 function sendPasswordReset() {
   const email = document.getElementById('forgotEmail').value.trim();
@@ -8214,10 +8218,11 @@ function friendlyError(code) {
     'auth/user-not-found':        'Email o contraseña incorrectos.',
     'auth/wrong-password':        'Email o contraseña incorrectos.',
     'auth/invalid-credential':    'Email o contraseña incorrectos.',
-    'auth/email-already-in-use':  'No se pudo crear la cuenta. Si ya tienes una, inicia sesión.',
+    'auth/email-already-in-use':  'Ese correo ya está registrado. Iniciá sesión o recuperá tu contraseña.',
     'auth/invalid-email':         'El email no es válido.',
     'auth/weak-password':         'La contraseña es muy débil (mínimo 8 caracteres).',
     'auth/too-many-requests':     'Demasiados intentos. Intenta más tarde.',
+    'auth/operation-not-allowed': 'El registro con email no está habilitado en este momento.',
     'auth/popup-closed-by-user':  'Cerraste la ventana de Google.',
     'auth/network-request-failed':'Error de conexión. Verifica tu internet.',
     'auth/requires-recent-login': 'Por seguridad, confirma tu contraseña actual para continuar.',
