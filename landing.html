@@ -23,7 +23,7 @@ button{cursor:pointer;font-family:inherit}
 ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
 
 /* HEADER */
-header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-cyan);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px}
+header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,255,255,.97);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-cyan);display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 24px}
 .nav-left{display:flex;align-items:center;gap:2px}
 .nav-link{padding:8px 13px;border-radius:8px;font-size:.82rem;font-weight:600;color:var(--muted);border:none;background:transparent;transition:background .12s,color .12s;white-space:nowrap;cursor:pointer}
 .nav-link:hover{background:var(--light);color:var(--txt)}
@@ -149,7 +149,7 @@ header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,2
 .prop-img{height:168px;display:flex;align-items:center;justify-content:center;font-size:2.8rem;position:relative;overflow:hidden}
 .prop-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.32));pointer-events:none}
 .prop-badges{position:absolute;bottom:9px;left:9px;display:flex;gap:5px;z-index:1}
-.pbadge{padding:2px 8px;border-radius:99px;font-size:.65rem;font-weight:700;backdrop-filter:blur(4px)}
+.pbadge{padding:2px 8px;border-radius:99px;font-size:.65rem;font-weight:700;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .pb-venta{background:rgba(8,145,178,.88);color:#fff}
 .pb-alq{background:rgba(6,182,212,.88);color:#fff}
 .pb-hist{background:rgba(245,158,11,.9);color:#fff}
@@ -186,7 +186,7 @@ header{position:sticky;top:0;z-index:200;height:var(--nav);background:rgba(255,2
 
 /* MODAL ANUNCIARSE */
 .anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
-.anun-overlay.open{opacity:1;pointer-events:all}
+.anun-overlay.open{opacity:1;pointer-events:auto}
 .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
 .anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
 .anun-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
@@ -603,7 +603,7 @@ function slideImg(cardIdx, dir) {
 function scrollCarousel(gridId, dir) {
   const grid = document.getElementById(gridId);
   const cardWidth = grid.querySelector('.prop-card').offsetWidth + 16;
-  grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });
+  try{grid.scrollBy({ left: dir * cardWidth, behavior: 'smooth' });}catch(e){grid.scrollLeft+=dir*cardWidth;}
 }
 function initCarouselArrows(gridId, leftId, rightId) {
   const grid = document.getElementById(gridId);
@@ -651,7 +651,7 @@ function setTab(tab,el){
 function goTab(tab){
   const el=document.getElementById('tab-'+tab);
   if(el)setTab(tab,el);
-  document.querySelector('.hero').scrollIntoView({behavior:'smooth'});
+  try{document.querySelector('.hero').scrollIntoView({behavior:'smooth'});}catch(e){window.scrollTo(0,0);}
   setTimeout(()=>document.getElementById('heroQ').focus(),400);
 }
 
