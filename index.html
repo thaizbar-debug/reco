@@ -2658,6 +2658,22 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   </div>
 </div>
 
+<div class="modal-bg" id="welcomeModal" onclick="if(event.target===this)closeWelcomeModal()">
+  <div class="modal">
+    <div class="modal-top">
+      <button class="modal-close" onclick="closeWelcomeModal()">✕</button>
+      <h2>🎁 ¡Tenés una llave de regalo!</h2>
+      <p>Te regalamos una llave de bienvenida para que puedas ver el detalle completo de tu primera propiedad.</p>
+    </div>
+    <div class="modal-body">
+      <div class="key-info-box" style="background:#f0fdf4;border:1px solid #86efac;color:#166534;font-size:.9rem">
+        🔑 <span>Tu llave ya está disponible en tu cuenta. Úsala para desbloquear precio exacto, datos del propietario e historial de cualquier inmueble.</span>
+      </div>
+      <button class="auth-submit" style="margin-top:16px" onclick="closeWelcomeModal()">¡Empezar a explorar!</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -5187,6 +5203,15 @@ function closeModal(){
   S.pendingPublish = false;
   S.pendingUnlockId = null;
 }
+function _showWelcomeModal(uid) {
+  var key = 'reco_welcome_seen_' + uid;
+  if (localStorage.getItem(key)) return;
+  localStorage.setItem(key, '1');
+  document.getElementById('welcomeModal').classList.add('open');
+}
+function closeWelcomeModal() {
+  document.getElementById('welcomeModal').classList.remove('open');
+}
 
 function selectPlan(el,name,price,qty){
   document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel'));
@@ -7310,6 +7335,11 @@ async function _pullUserDataFromFirestore(){
     if(typeof data.keysLeft === 'number'){
       S.keysLeft = data.keysLeft;
       if(typeof updateKeyCount === 'function') updateKeyCount();
+    }
+    var _u = auth.currentUser;
+    if (_u && _u.emailVerified && Array.isArray(data.keyHistory)) {
+      var _hasBonus = data.keyHistory.some(function(h){ return h.type === 'bonus'; });
+      if (_hasBonus) _showWelcomeModal(_u.uid);
     }
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
