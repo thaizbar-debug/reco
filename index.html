@@ -1853,7 +1853,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
     <div class="anun-cta">
       <div class="anun-cta-text"><strong>¿Te interesa?</strong> Escríbenos y armamos una propuesta a tu medida. Sin tarifas fijas — cada campaña se cotiza según el formato, duración y zona.</div>
       <div class="anun-btns">
-        <a class="btn-wsp" href="https://wa.me/51987654321?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>
+        <a class="btn-wsp" href="https://wa.me/51949350314?text=Hola%2C%20quisiera%20cotizar%20publicidad%20en%20Reco" target="_blank" rel="noopener noreferrer">💬 WhatsApp</a>
         <a class="btn-mail" href="mailto:anuncios@reco.pe?subject=Cotización%20publicidad%20Reco">✉️ anuncios@reco.pe</a>
       </div>
     </div>
@@ -8797,7 +8797,8 @@ function _getInitials(name) {
 }
 
 // ─────────────────────── CONTACT OWNER MODAL ───────────────────────
-const _RECO_SUPPORT_WSP = '51987654321';
+const _RECO_SUPPORT_WSP   = '51949350314';
+const _RECO_SUPPORT_EMAIL = 'sebastiand@recosac.com';
 const _CONTACT_LABEL = {
   arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario.' },
   vendedor:    { title: 'Contactar vendedor',   sub: 'Enviamos tu mensaje al propietario.' },
@@ -8965,22 +8966,21 @@ async function submitContactRequest() {
       fromPhone:           phone || null,
       message,
     });
-    // If it's a user-published property, also email the owner via the
-    // Trigger Email extension. For the 2,663 static properties there is
-    // no ownerEmail — Reco team picks these up from the admin console.
-    if (_contactCtx.publicationOwnerEmail) {
-      _queueContactEmailToOwner({
-        ownerEmail:  _contactCtx.publicationOwnerEmail,
-        ownerName:   _contactCtx.publicationOwnerName,
-        propertyAddress:  _contactCtx.propertyAddress,
-        propertyDistrict: _contactCtx.propertyDistrict,
-        kind:        _contactCtx.kind,
-        fromName:    name,
-        fromEmail:   email,
-        fromPhone:   phone,
-        message
-      });
-    }
+    // Email the property owner (community publications) or the Reco
+    // support team (static/historical properties) via the Trigger Email
+    // extension so no contact request goes unnotified.
+    const _ownerEmail = _contactCtx.publicationOwnerEmail || _RECO_SUPPORT_EMAIL;
+    _queueContactEmailToOwner({
+      ownerEmail:  _ownerEmail,
+      ownerName:   _contactCtx.publicationOwnerEmail ? _contactCtx.publicationOwnerName : 'Equipo Reco',
+      propertyAddress:  _contactCtx.propertyAddress,
+      propertyDistrict: _contactCtx.propertyDistrict,
+      kind:        _contactCtx.kind,
+      fromName:    name,
+      fromEmail:   email,
+      fromPhone:   phone,
+      message
+    });
     document.getElementById('contactForm').style.display = 'none';
     _showContactSuccess('✅ ¡Solicitud enviada! Te responderemos pronto al email registrado.');
     toast('✅ Solicitud enviada');
