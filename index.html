@@ -8797,6 +8797,7 @@ function _getInitials(name) {
 }
 
 // ─────────────────────── CONTACT OWNER MODAL ───────────────────────
+const _RECO_SUPPORT_WSP = '51987654321';
 const _CONTACT_LABEL = {
   arrendador:  { title: 'Contactar arrendador', sub: 'Enviamos tu mensaje al propietario.' },
   vendedor:    { title: 'Contactar vendedor',   sub: 'Enviamos tu mensaje al propietario.' },
@@ -8824,7 +8825,8 @@ async function openContactModal(propertyId, kind, source) {
     propertyOp:         p ? (p.op || '') : '',
     propertyPrice:      p ? (p.price || null) : null,
     propertyCurrency:   p ? (p.cur || null) : null,
-    whatsapp:           (p && p.whatsapp) ? p.whatsapp : null
+    whatsapp:           kind === 'asesor_reco' ? _RECO_SUPPORT_WSP
+                        : (p && p.whatsapp) ? p.whatsapp : null
   };
   document.getElementById('contactTitleText').textContent = label.title;
   document.getElementById('contactSubtitle').textContent  = label.sub;
@@ -9007,12 +9009,15 @@ async function submitContactRequest() {
 function _contactWhatsApp() {
   if (!_contactCtx || !_contactCtx.whatsapp) return;
   const addr = [_contactCtx.propertyAddress, _contactCtx.propertyDistrict].filter(Boolean).join(', ') || '—';
-  const msg = `Hola, estoy interesado en ${addr}, código ${_contactCtx.propertyId}`;
+  const isAdvisory = _contactCtx.kind === 'asesor_reco';
+  const msg = isAdvisory
+    ? `Hola, quisiera asesoría sobre el inmueble ${addr}, código ${_contactCtx.propertyId}`
+    : `Hola, estoy interesado en ${addr}, código ${_contactCtx.propertyId}`;
   const num = _contactCtx.whatsapp.replace(/[^0-9]/g, '');
   const url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
   try {
     db.collection('analyticsEvents').add({
-      event: 'whatsapp_click_from_contact_modal',
+      event: isAdvisory ? 'whatsapp_click_from_advisory_modal' : 'whatsapp_click_from_contact_modal',
       propertyId: _contactCtx.propertyId,
       source: _contactCtx.source || 'full_detail',
       userId: auth.currentUser ? auth.currentUser.uid : null,
