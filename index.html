@@ -4671,26 +4671,8 @@ function onPriceInputBlur(){
 }
 
 function clearFilters(){
-  document.getElementById('typeSel').value='all';
-  document.getElementById('bankOnly').checked=false;
-  document.getElementById('minArea').value='';
-  const minATel=document.getElementById('minAreaTerr');if(minATel)minATel.value='';
-  const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
-  const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
-  const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
-  _priceTab='precio'; _priceCur='soles';
-  document.getElementById('tabPrecio').classList.add('active');
-  document.getElementById('tabSqm').classList.remove('active');
-  document.getElementById('curSoles').classList.add('active');
-  document.getElementById('curDolar').classList.remove('active');
-  _resetPriceSliders();
-  buildPriceHistogram();
-  document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
-  advFeats.clear();
-  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
-  applyFilters();
+  _deactivateAllTools();
+  resetAll();
 }
 
 function buildPriceHistogram(){
