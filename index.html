@@ -8826,8 +8826,10 @@ async function openContactModal(propertyId, kind, source) {
     propertyOp:         p ? (p.op || '') : '',
     propertyPrice:      p ? (p.price || null) : null,
     propertyCurrency:   p ? (p.cur || null) : null,
-    whatsapp:           kind === 'asesor_reco' ? _RECO_SUPPORT_WSP
-                        : (p && p.whatsapp) ? p.whatsapp : null
+    // TODO: remover fallback temporal a _RECO_SUPPORT_WSP para vendedor/arrendador.
+    // Cuando las propiedades tengan su propio p.whatsapp, ese dato tiene prioridad.
+    // Lógica original: kind === 'asesor_reco' ? _RECO_SUPPORT_WSP : (p && p.whatsapp) ? p.whatsapp : null
+    whatsapp:           (p && p.whatsapp) ? p.whatsapp : _RECO_SUPPORT_WSP
   };
   document.getElementById('contactTitleText').textContent = label.title;
   document.getElementById('contactSubtitle').textContent  = label.sub;
@@ -8966,13 +8968,15 @@ async function submitContactRequest() {
       fromPhone:           phone || null,
       message,
     });
-    // Email the property owner (community publications) or the Reco
-    // support team (static/historical properties) via the Trigger Email
-    // extension so no contact request goes unnotified.
-    const _ownerEmail = _contactCtx.publicationOwnerEmail || _RECO_SUPPORT_EMAIL;
+    // TODO: remover TEMP_CONTACT_EMAIL_OVERRIDE y volver a usar
+    // publicationOwnerEmail cuando se confirme el flujo definitivo.
+    // Lógica original:
+    //   const _ownerEmail = _contactCtx.publicationOwnerEmail || _RECO_SUPPORT_EMAIL;
+    //   ownerName: _contactCtx.publicationOwnerEmail ? _contactCtx.publicationOwnerName : 'Equipo Reco',
+    const TEMP_CONTACT_EMAIL_OVERRIDE = 'sebastiand@recosac.com';
     _queueContactEmailToOwner({
-      ownerEmail:  _ownerEmail,
-      ownerName:   _contactCtx.publicationOwnerEmail ? _contactCtx.publicationOwnerName : 'Equipo Reco',
+      ownerEmail:  TEMP_CONTACT_EMAIL_OVERRIDE,
+      ownerName:   'Equipo Reco',
       propertyAddress:  _contactCtx.propertyAddress,
       propertyDistrict: _contactCtx.propertyDistrict,
       kind:        _contactCtx.kind,
