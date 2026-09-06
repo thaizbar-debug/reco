@@ -2772,7 +2772,8 @@ function _pubDocToProperty(id, p){
     // them to know where to route the contact email.
     userId: p.userId || null,
     userEmail: p.userEmail || null,
-    userName: p.userName || null
+    userName: p.userName || null,
+    whatsapp: p.whatsapp || null
   };
 }
 
@@ -5220,14 +5221,16 @@ function openDetail(id){
 
       <button style="display:block;width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:#0891b2;color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openFullReport('${esc(p.id)}')">Ver Más Detalles</button>
 
+      ${p.op==='Histórico'
+        ?`<button style="display:block;width:100%;margin-top:10px;padding:13px;border:none;border-radius:10px;background:#0d9488;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openContactModal('${esc(p.id)}','asesor_reco','preview_panel')">📋 Solicitar asesoría</button>`
+        :p.op==='Alquiler'
+        ?`<button style="display:block;width:100%;margin-top:10px;padding:13px;border:none;border-radius:10px;background:#0d9488;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openContactModal('${esc(p.id)}','arrendador','preview_panel')">📞 Contactar arrendador</button>`
+        :`<button style="display:block;width:100%;margin-top:10px;padding:13px;border:none;border-radius:10px;background:#0d9488;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;letter-spacing:.02em" onclick="openContactModal('${esc(p.id)}','vendedor','preview_panel')">📞 Contactar vendedor</button>`
+      }
+
       <div style="display:flex;gap:10px;margin-top:10px">
         <button id="favBtn-${esc(p.id)}" style="flex:1;background:${isFavorite(p.id)?'#fef2f2':'var(--bg)'};border:1.5px solid ${isFavorite(p.id)?'#fca5a5':'var(--border)'};padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toggleFavorite('${esc(p.id)}');var b=this;b.style.background=isFavorite('${esc(p.id)}')?'#fef2f2':'var(--bg)';b.style.borderColor=isFavorite('${esc(p.id)}')?'#fca5a5':'var(--border)';b.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'🤍 Guardar'">${isFavorite(p.id)?'❤️ Guardado':'🤍 Guardar'}</button>
         <button style="flex:1;background:var(--bg);border:1.5px solid var(--border);padding:10px;border-radius:var(--r);font-size:.82rem;font-weight:600;color:var(--txt)" onclick="toast('Enlace copiado 🔗')">🔗 Compartir</button>
-      </div>
-
-      <div class="det-loc-row">
-        <button class="det-loc-btn" onclick="detailStreetView('${esc(p.id)}')">👁️ Street View</button>
-        <button class="det-loc-btn" onclick="detailNearby('${esc(p.id)}')">📍 Cerca de</button>
       </div>
 
       <div class="detail-ad-wrap">
@@ -5686,12 +5689,12 @@ function openFullReport(id){
       <div class="fr-sidebar">
         <div class="fr-sidebar-card fr-sidebar-cta">
           ${isHist
-            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','asesor_reco')">📋 Solicitar asesoría</button>
+            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','asesor_reco','full_detail')">📋 Solicitar asesoría</button>
                <button class="fr-cta-sec" onclick="closeFullReport()">← Volver a resultados</button>`
             : isAlq
-            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','arrendador')">📞 Contactar arrendador</button>
+            ? `<button class="fr-cta-main" onclick="openContactModal('${p.id}','arrendador','full_detail')">📞 Contactar arrendador</button>
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
-            : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor')">📞 Contactar vendedor</button>`
+            : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
@@ -7423,6 +7426,7 @@ function _applyLandingHash(){
         <label class="auth-label">Mensaje</label>
         <textarea class="auth-input" id="contactMessage" rows="4" placeholder="Cuéntanos qué necesitas: visita, información adicional, condiciones…" style="resize:vertical;min-height:90px"></textarea>
         <button class="auth-submit" id="contactSubmitBtn" onclick="submitContactRequest()">Enviar solicitud</button>
+        <button id="contactWhatsAppBtn" style="display:none;width:100%;margin-top:10px;padding:12px;border:1.5px solid #25d366;border-radius:var(--r);background:transparent;color:#25d366;font-size:.88rem;font-weight:700;cursor:pointer;text-align:center;transition:all .12s" onmouseover="this.style.background='#25d366';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#25d366'" onclick="_contactWhatsApp()">💬 Contactar por WhatsApp</button>
       </div>
     </div>
   </div>
@@ -8800,10 +8804,10 @@ const _CONTACT_LABEL = {
 };
 let _contactCtx = null; // {propertyId, kind, publicationOwnerId}
 
-async function openContactModal(propertyId, kind) {
+async function openContactModal(propertyId, kind, source) {
   if (!auth.currentUser) {
     toast('⚠️ Debes iniciar sesión para contactar al propietario');
-    openAuthModal('login', function(){ openContactModal(propertyId, kind); });
+    openAuthModal('login', function(){ openContactModal(propertyId, kind, source); });
     return;
   }
   const p = (typeof properties !== 'undefined') ? properties.find(x => x.id === propertyId) : null;
@@ -8811,6 +8815,7 @@ async function openContactModal(propertyId, kind) {
   _contactCtx = {
     propertyId,
     kind,
+    source:                source || 'full_detail',
     publicationOwnerId:    (p && p.userId)    ? p.userId    : null,
     publicationOwnerEmail: (p && p.userEmail) ? p.userEmail : null,
     publicationOwnerName:  (p && p.userName)  ? p.userName  : null,
@@ -8818,7 +8823,8 @@ async function openContactModal(propertyId, kind) {
     propertyDistrict:   p ? (p.district || '') : '',
     propertyOp:         p ? (p.op || '') : '',
     propertyPrice:      p ? (p.price || null) : null,
-    propertyCurrency:   p ? (p.cur || null) : null
+    propertyCurrency:   p ? (p.cur || null) : null,
+    whatsapp:           (p && p.whatsapp) ? p.whatsapp : null
   };
   document.getElementById('contactTitleText').textContent = label.title;
   document.getElementById('contactSubtitle').textContent  = label.sub;
@@ -8852,6 +8858,8 @@ async function openContactModal(propertyId, kind) {
   const submitBtn = document.getElementById('contactSubmitBtn');
   submitBtn.disabled = false;
   submitBtn.textContent = 'Enviar solicitud';
+  const wBtn = document.getElementById('contactWhatsAppBtn');
+  if (wBtn) wBtn.style.display = _contactCtx.whatsapp ? 'block' : 'none';
   document.getElementById('contactForm').style.display = 'block';
 }
 function _formatContactDate(ts) {
@@ -8949,6 +8957,7 @@ async function submitContactRequest() {
       propertyCurrency:    _contactCtx.propertyCurrency,
       publicationOwnerId:  _contactCtx.publicationOwnerId,
       kind:                _contactCtx.kind,
+      source:              _contactCtx.source || 'full_detail',
       fromName:            name,
       fromEmail:           email,
       fromPhone:           phone || null,
@@ -8994,6 +9003,23 @@ async function submitContactRequest() {
     btn.disabled = false;
     btn.textContent = originalLabel;
   }
+}
+function _contactWhatsApp() {
+  if (!_contactCtx || !_contactCtx.whatsapp) return;
+  const addr = [_contactCtx.propertyAddress, _contactCtx.propertyDistrict].filter(Boolean).join(', ') || '—';
+  const msg = `Hola, estoy interesado en ${addr}, código ${_contactCtx.propertyId}`;
+  const num = _contactCtx.whatsapp.replace(/[^0-9]/g, '');
+  const url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+  try {
+    db.collection('analyticsEvents').add({
+      event: 'whatsapp_click_from_contact_modal',
+      propertyId: _contactCtx.propertyId,
+      source: _contactCtx.source || 'full_detail',
+      userId: auth.currentUser ? auth.currentUser.uid : null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (e) { console.warn('[reco] analytics event failed:', e.message); }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 // Client-side pre-flight before any callable / paid action. Returns
 // true when the caller can proceed. When they cannot, drops a toast

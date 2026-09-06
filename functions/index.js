@@ -478,6 +478,7 @@ exports.submitContactRequest = onCall(
       propertyCurrency:    optStr(raw.propertyCurrency, 10),
       publicationOwnerId:  optStr(raw.publicationOwnerId, 128),
       kind,
+      source:              optStr(raw.source, 40),
       fromUserId:          uid,
       fromName,
       fromEmail,
