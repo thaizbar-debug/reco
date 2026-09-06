@@ -1341,6 +1341,30 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 #homeView .btn-mail{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);color:var(--txt);padding:11px 22px;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;transition:background .12s}
 #homeView .btn-mail:hover{background:var(--light)}
 
+/* GLOBAL LEGAL BAR (visible in all views) */
+.global-legal-bar{position:fixed;bottom:0;left:0;right:0;z-index:9000;background:rgba(15,23,42,.92);backdrop-filter:blur(8px);padding:6px 16px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;font-size:.68rem;border-top:1px solid rgba(255,255,255,.08)}
+.global-legal-bar a{color:rgba(255,255,255,.5);text-decoration:none;transition:color .15s;white-space:nowrap}
+.global-legal-bar a:hover{color:#fff}
+.global-legal-bar .glb-sep{color:rgba(255,255,255,.15)}
+.global-legal-bar .glb-reclamaciones{color:rgba(255,255,255,.7);font-weight:600}
+body.show-home .global-legal-bar{display:none}
+body.show-legal .global-legal-bar{display:none}
+@media(max-width:600px){.global-legal-bar{gap:10px;padding:8px 12px;font-size:.62rem}}
+
+/* COOKIE CONSENT BANNER */
+.cookie-banner{position:fixed;bottom:36px;left:50%;transform:translateX(-50%);z-index:9500;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 24px;max-width:520px;width:calc(100% - 32px);box-shadow:0 12px 40px rgba(0,0,0,.15);display:none;animation:cookieSlideUp .3s ease}
+@keyframes cookieSlideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.cookie-banner h3{font-size:.9rem;font-weight:700;margin-bottom:6px;color:var(--txt)}
+.cookie-banner p{font-size:.78rem;line-height:1.6;color:var(--muted);margin-bottom:14px}
+.cookie-banner p a{color:var(--blue);text-decoration:underline}
+.cookie-btns{display:flex;gap:8px;flex-wrap:wrap}
+.cookie-btns button{padding:9px 20px;border-radius:var(--r);font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .12s}
+.cookie-accept{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
+.cookie-reject{background:var(--light);color:var(--muted);border:1.5px solid var(--border) !important}
+.cookie-accept:hover,.cookie-reject:hover{opacity:.85}
+body.show-legal .cookie-banner{display:none !important}
+@media(max-width:600px){.cookie-banner{bottom:40px;padding:14px 16px}.cookie-btns{flex-direction:column}.cookie-btns button{width:100%}}
+
 /* FOOTER */
 #homeView footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 #homeView .footer-inner{max-width:1160px;margin:0 auto}
@@ -1929,33 +1953,48 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <p>VANET DATA S.A.C., en adelante "RECO", con domicilio en Avenida Manuel Olguín No. 327, Santiago de Surco, Lima, Perú, y representada legalmente por Ricardo Ramon Barthelmess Saco, identificado con DNI No. 09868361, según consta en la partida electrónica No. 12927369 del Registro de Personas Jurídicas de Lima, actúa como responsable del tratamiento de los datos personales, en estricto cumplimiento de la normativa vigente de protección de datos.</p>
         <p>Este Aviso de Privacidad es aplicable a los servicios (en adelante, "USUARIO") proporcionados por RECO. EL USUARIO debe leer, comprender y aceptar todas las condiciones establecidas en este documento, antes de su registro como Usuario de la Plataforma. Asimismo, es requisito que EL USUARIO sea mayor de edad para poder utilizar la Plataforma y realizar compras en la misma.</p>
       </section>
-      <section><h2>2. Finalidad del tratamiento de datos</h2>
-        <p>Los datos personales proporcionados por EL USUARIO serán tratados por RECO con las siguientes finalidades:</p>
+      <section><h2>2. Banco de datos personales</h2>
+        <p>Los datos personales de EL USUARIO serán almacenados en el banco de datos personales denominado <strong>"Base de datos de clientes y usuarios de RECO"</strong>, de titularidad de VANET DATA S.A.C., inscrito ante la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos, conforme a lo dispuesto por el artículo 29 de la Ley 29733 y el artículo 51 del DS 003-2013-JUS.</p>
+      </section>
+      <section><h2>3. Finalidad del tratamiento de datos</h2>
+        <h3>3.1 Finalidades esenciales (necesarias para la prestación del servicio)</h3>
+        <p>Los datos personales serán tratados para las siguientes finalidades, respecto de las cuales no es posible prescindir del tratamiento:</p>
         <ul>
-          <li>Gestión y mantenimiento de la relación comercial y contractual.</li>
-          <li>Prestación de servicios y productos ofrecidos por RECO.</li>
+          <li>Gestión y mantenimiento de la relación comercial y contractual con EL USUARIO.</li>
+          <li>Prestación de los servicios y productos ofrecidos por RECO a través de la Plataforma.</li>
           <li>Procesamiento de pagos y transacciones relacionadas con nuestros servicios.</li>
-          <li>Cumplimiento de obligaciones legales y normativas aplicables.</li>
+          <li>Verificación de identidad y prevención de fraude.</li>
+          <li>Cumplimiento de obligaciones legales y normativas aplicables, incluyendo la atención de requerimientos de autoridades competentes.</li>
+          <li>Atención de consultas, solicitudes y reclamos de EL USUARIO.</li>
         </ul>
+        <h3>3.2 Finalidades adicionales (requieren consentimiento expreso)</h3>
+        <p>Adicionalmente, con el consentimiento expreso de EL USUARIO, sus datos podrán ser tratados para las siguientes finalidades:</p>
+        <ul>
+          <li>Envío de comunicaciones comerciales, promociones y ofertas de RECO y/o de terceros aliados.</li>
+          <li>Elaboración de perfiles de consumo y preferencias para personalización de servicios.</li>
+          <li>Realización de estudios de mercado, encuestas de satisfacción y análisis estadísticos.</li>
+          <li>Transferencia a socios comerciales para fines publicitarios.</li>
+        </ul>
+        <p>EL USUARIO puede revocar su consentimiento para las finalidades adicionales en cualquier momento, sin afectar la prestación de los servicios esenciales, dirigiendo su solicitud a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
       </section>
-      <section><h2>3. Tipos de datos recopilados</h2>
-        <p>RECO podrá recopilar y tratar datos personales de EL USUARIO como nombre, apellidos, dirección, correo electrónico, número de teléfono, datos bancarios, entre otros, necesarios para cumplir con las finalidades establecidas.</p>
+      <section><h2>4. Tipos de datos recopilados</h2>
+        <p>RECO podrá recopilar y tratar datos personales de EL USUARIO como nombre, apellidos, documento de identidad, dirección, correo electrónico, número de teléfono, datos bancarios, datos de navegación e información de uso de la Plataforma, entre otros necesarios para cumplir con las finalidades establecidas.</p>
       </section>
-      <section><h2>4. Base legal del tratamiento</h2>
+      <section><h2>5. Base legal del tratamiento</h2>
         <p>La recopilación y tratamiento de sus datos personales se basa en el consentimiento otorgado por EL USUARIO al utilizar los servicios y/o al proporcionar sus datos de manera directa. Asimismo, el tratamiento puede fundamentarse en la ejecución de un contrato o en el cumplimiento de obligaciones legales.</p>
       </section>
-      <section><h2>5. Medidas de seguridad</h2>
+      <section><h2>6. Medidas de seguridad</h2>
         <p>RECO implementa medidas técnicas, administrativas y físicas para garantizar la seguridad, confidencialidad e integridad de los datos personales de EL USUARIO, evitando su alteración, pérdida, tratamiento no autorizado o acceso no permitido.</p>
       </section>
-      <section><h2>6. Transferencia y almacenamiento de datos</h2>
+      <section><h2>7. Transferencia y almacenamiento de datos</h2>
         <p>Los datos personales de EL USUARIO podrán ser almacenados en servidores ubicados fuera del territorio peruano, operados por proveedores de servicios en la nube que cumplen con estándares internacionales de seguridad de la información. RECO garantiza que dichas transferencias internacionales de datos se realizan en cumplimiento del artículo 15 de la Ley 29733 y su Reglamento, asegurando un nivel de protección adecuado.</p>
         <p>Asimismo, RECO podrá compartir datos personales con los siguientes terceros, exclusivamente para las finalidades descritas en este Aviso: (i) procesadores de pago, para la gestión de transacciones; (ii) la Superintendencia Nacional de los Registros Públicos (SUNARP), para la obtención de información registral; y (iii) proveedores de servicios tecnológicos que asisten en la operación de la Plataforma. En todos los casos, RECO exige a estos terceros el cumplimiento de medidas de seguridad equivalentes a las propias.</p>
       </section>
-      <section><h2>7. Periodo de conservación de datos</h2>
+      <section><h2>8. Periodo de conservación de datos</h2>
         <p>Los datos personales de EL USUARIO serán conservados mientras se mantenga vigente la relación comercial o contractual. Una vez finalizada dicha relación, los datos serán conservados durante un periodo máximo de cinco (5) años para el cumplimiento de obligaciones legales, contables y tributarias, o para la atención de posibles reclamaciones. Transcurrido dicho plazo, los datos serán eliminados o anonimizados de forma irreversible.</p>
         <p>EL USUARIO podrá solicitar la eliminación anticipada de sus datos en cualquier momento, sin perjuicio de la obligación de RECO de conservar la información que sea legalmente exigible.</p>
       </section>
-      <section><h2>8. Derechos del titular de datos (derechos ARCO)</h2>
+      <section><h2>9. Derechos del titular de datos (derechos ARCO)</h2>
         <p>EL USUARIO puede ejercer los siguientes derechos respecto de sus datos personales, conforme a la Ley 29733:</p>
         <ul>
           <li><strong>Acceso:</strong> conocer qué datos personales suyos están siendo tratados por RECO.</li>
@@ -1967,13 +2006,13 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <p>Para ejercer estos derechos, EL USUARIO deberá enviar una solicitud escrita a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>, indicando: nombre completo, número de documento de identidad, descripción del derecho que desea ejercer y documentación de respaldo cuando corresponda. RECO atenderá la solicitud en un plazo máximo de veinte (20) días hábiles, conforme a lo establecido por la normativa vigente.</p>
         <p>Puede presentar reclamaciones ante la Autoridad Nacional de Protección de Datos Personales: Calle Scipión Llona 350, Miraflores, Lima.</p>
       </section>
-      <section><h2>9. Cookies y tecnologías similares</h2>
+      <section><h2>10. Cookies y tecnologías similares</h2>
         <p>Este sitio web utiliza cookies y tecnologías similares para mejorar la experiencia del usuario. Para obtener información detallada sobre qué cookies utilizamos, sus finalidades y cómo gestionar sus preferencias, consulte nuestra <a href="#cookies">Política de Cookies</a>.</p>
       </section>
-      <section><h2>10. Comunicaciones comerciales</h2>
+      <section><h2>11. Comunicaciones comerciales</h2>
         <p>RECO podrá enviar comunicaciones comerciales, promociones y novedades a EL USUARIO a través de correo electrónico u otros canales, siempre que EL USUARIO haya otorgado su consentimiento previo. EL USUARIO podrá revocar dicho consentimiento en cualquier momento mediante el enlace de desuscripción incluido en cada comunicación, o enviando una solicitud a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
       </section>
-      <section><h2>11. Modificaciones al Aviso de Privacidad</h2>
+      <section><h2>12. Modificaciones al Aviso de Privacidad</h2>
         <p>RECO se reserva el derecho de modificar el presente Aviso de Privacidad. Cualquier cambio será notificado a través de nuestros canales de comunicación habituales y entrará en vigencia después de su publicación.</p>
       </section>
       <footer class="legal-foot"><p>Contacto: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> · VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
@@ -2038,8 +2077,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         </ul>
         <p>Tenga en cuenta que la desactivación de cookies puede afectar la funcionalidad de la Plataforma e impedir el uso de algunos servicios.</p>
       </section>
-      <section><h2>6. Base legal</h2>
-        <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma. Para las cookies de analítica, funcionalidad y terceros, la base legal es el consentimiento de EL USUARIO, otorgado al continuar navegando en la Plataforma tras ser informado de su uso.</p>
+      <section><h2>6. Base legal y consentimiento</h2>
+        <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma (artículo 14, numeral 1 de la Ley 29733).</p>
+        <p>Para las cookies de analítica, funcionalidad y de terceros, la base legal es el <strong>consentimiento expreso, previo e informado</strong> de EL USUARIO, otorgado a través del banner de cookies que se muestra al acceder a la Plataforma por primera vez. EL USUARIO puede aceptar o rechazar las cookies no esenciales mediante los botones habilitados en dicho banner.</p>
+        <p>El consentimiento puede ser revocado en cualquier momento eliminando las cookies del navegador, lo que provocará la reaparición del banner de consentimiento en la siguiente visita. Las cookies no esenciales no se instalan hasta que EL USUARIO otorgue su consentimiento expreso.</p>
       </section>
       <section><h2>7. Actualizaciones</h2>
         <p>RECO podrá actualizar esta Política de Cookies para reflejar cambios en las prácticas de tratamiento o por motivos operativos, legales o regulatorios. Se recomienda revisar esta página periódicamente.</p>
@@ -8738,10 +8779,15 @@ var FAQS=[
     {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos el plan Oro con API de valorización, integraciones SUNARP en vivo y reportes en lote. Escríbenos a webmaster@recosac.com.'},
     {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
   ]},
+  {cat:'Servicio y disponibilidad',items:[
+    {q:'¿Cuál es la disponibilidad de la plataforma?',a:'Reco opera las 24 horas del día, los 7 días de la semana, con un compromiso de disponibilidad continua. Las ventanas de mantenimiento programado se realizan entre las 12:00 a. m. y las 4:00 a. m. (hora de Lima), y se notifican con al menos 24 horas de anticipación.'},
+    {q:'¿En cuánto tiempo responden consultas o incidencias?',a:'El tiempo máximo de primera respuesta para cualquier consulta o incidencia reportada es de 24 horas. Para incidencias críticas que afecten la disponibilidad del servicio, la atención es prioritaria e inmediata.'},
+    {q:'¿Reco actúa como intermediario inmobiliario?',a:'No. Reco es una plataforma de información y análisis. No interviene como intermediario, corredor ni asesor en transacciones de compraventa o alquiler de inmuebles. La responsabilidad de las decisiones de inversión recae exclusivamente en el usuario.'},
+  ]},
   {cat:'Privacidad y soporte',items:[
     {q:'¿Necesito crear cuenta para usar Reco?',a:'Para el veredicto básico y el mapa de calor, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
-    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733). Revisa el Aviso de Privacidad en el pie de página.'},
-    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página. Respondemos en máximo 30 días calendario.'},
+    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733) y su nuevo reglamento (DS 016-2024-JUS). Revisa el Aviso de Privacidad en el pie de página.'},
+    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página y en la barra legal de todas las vistas. Respondemos en máximo 30 días calendario, conforme al Código de Protección al Consumidor.'},
     {q:'¿Cómo contacto al equipo?',a:'Escríbenos a webmaster@recosac.com. Para temas legales: webmaster@recosac.com.'},
   ]},
 ];
@@ -8784,8 +8830,64 @@ function enviarContacto(){
   document.getElementById('ctAsunto').value='';
   document.getElementById('ctMensaje').value='';
 }
+
+// ── Cookie Consent ──────────────────────────────────────────
+(function initCookieConsent(){
+  var banner=document.getElementById('cookieBanner');
+  if(!banner)return;
+  var consent=null;
+  try{consent=localStorage.getItem('reco_cookie_consent');}catch(e){}
+  if(consent==='accepted'||consent==='rejected'){
+    banner.style.display='none';
+    if(consent==='accepted')enableAnalytics();
+    return;
+  }
+  banner.style.display='block';
+  document.getElementById('cookieAccept').addEventListener('click',function(){
+    try{localStorage.setItem('reco_cookie_consent','accepted');}catch(e){}
+    banner.style.display='none';
+    enableAnalytics();
+  });
+  document.getElementById('cookieReject').addEventListener('click',function(){
+    try{localStorage.setItem('reco_cookie_consent','rejected');}catch(e){}
+    banner.style.display='none';
+    disableAnalytics();
+  });
+  function enableAnalytics(){
+    if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'granted'});
+  }
+  function disableAnalytics(){
+    if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'denied'});
+    document.cookie.split(';').forEach(function(c){
+      var name=c.split('=')[0].trim();
+      if(name.indexOf('_ga')===0||name.indexOf('_gid')===0){
+        document.cookie=name+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      }
+    });
+  }
+})();
 </script>
 
+<!-- GLOBAL LEGAL BAR (visible in search/map view) -->
+<div class="global-legal-bar" id="globalLegalBar">
+  <a href="#terminos" onclick="showLegalPage('terminos');return false;">Términos y Condiciones</a>
+  <span class="glb-sep">|</span>
+  <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">Aviso de Privacidad</a>
+  <span class="glb-sep">|</span>
+  <a href="#cookies" onclick="showLegalPage('cookies');return false;">Política de Cookies</a>
+  <span class="glb-sep">|</span>
+  <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;" class="glb-reclamaciones">📖 Libro de Reclamaciones</a>
+</div>
+
+<!-- COOKIE CONSENT BANNER -->
+<div class="cookie-banner" id="cookieBanner">
+  <h3>Uso de cookies</h3>
+  <p>Utilizamos cookies esenciales para el funcionamiento de la plataforma y cookies de analítica (Google Analytics) para mejorar nuestros servicios. Puedes aceptar o rechazar las cookies no esenciales. Más información en nuestra <a href="#cookies" onclick="showLegalPage('cookies');return false;">Política de Cookies</a>.</p>
+  <div class="cookie-btns">
+    <button class="cookie-accept" id="cookieAccept">Aceptar todas</button>
+    <button class="cookie-reject" id="cookieReject">Solo esenciales</button>
+  </div>
+</div>
 
 </body>
 </html>
