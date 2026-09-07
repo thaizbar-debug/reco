@@ -7258,6 +7258,27 @@ function _applyLandingHash(){
   </div>
 </div>
 
+<!-- GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) -->
+<div class="global-legal-bar" id="globalLegalBar">
+  <span class="glb-copy">&copy; 2026 Reco &middot; Lima, Per&uacute; &middot; VANET DATA S.A.C. RUC 20553966800</span>
+  <div class="glb-links">
+    <a href="#terminos" onclick="showLegalPage('terminos');return false;">T&eacute;rminos de uso</a>
+    <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">Privacidad</a>
+    <a href="#cookies" onclick="showLegalPage('cookies');return false;">Cookies</a>
+    <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;">Libro de Reclamaciones</a>
+  </div>
+</div>
+
+<!-- COOKIE CONSENT BANNER -->
+<div class="cookie-banner" id="cookieBanner">
+  <h3>Uso de cookies</h3>
+  <p>Utilizamos cookies esenciales para el funcionamiento de la plataforma y cookies de anal&iacute;tica (Google Analytics) para mejorar nuestros servicios. Puedes aceptar o rechazar las cookies no esenciales. M&aacute;s informaci&oacute;n en nuestra <a href="#cookies" onclick="showLegalPage('cookies');return false;">Pol&iacute;tica de Cookies</a>.</p>
+  <div class="cookie-btns">
+    <button class="cookie-accept" id="cookieAccept">Aceptar todas</button>
+    <button class="cookie-reject" id="cookieReject">Solo esenciales</button>
+  </div>
+</div>
+
 <script>
 const firebaseConfig = {
   apiKey:            "AIzaSyCri1KjwpUKfYMhjYf0nPU9KD1LipVbh3M",
@@ -9022,27 +9043,6 @@ function resetReclamoForm(){
   }
 })();
 </script>
-
-<!-- GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) -->
-<div class="global-legal-bar" id="globalLegalBar">
-  <span class="glb-copy">&copy; 2026 Reco &middot; Lima, Per&uacute; &middot; VANET DATA S.A.C. RUC 20553966800</span>
-  <div class="glb-links">
-    <a href="#terminos" onclick="showLegalPage('terminos');return false;">T&eacute;rminos de uso</a>
-    <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">Privacidad</a>
-    <a href="#cookies" onclick="showLegalPage('cookies');return false;">Cookies</a>
-    <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;">Libro de Reclamaciones</a>
-  </div>
-</div>
-
-<!-- COOKIE CONSENT BANNER -->
-<div class="cookie-banner" id="cookieBanner">
-  <h3>Uso de cookies</h3>
-  <p>Utilizamos cookies esenciales para el funcionamiento de la plataforma y cookies de analítica (Google Analytics) para mejorar nuestros servicios. Puedes aceptar o rechazar las cookies no esenciales. Más información en nuestra <a href="#cookies" onclick="showLegalPage('cookies');return false;">Política de Cookies</a>.</p>
-  <div class="cookie-btns">
-    <button class="cookie-accept" id="cookieAccept">Aceptar todas</button>
-    <button class="cookie-reject" id="cookieReject">Solo esenciales</button>
-  </div>
-</div>
 
 </body>
 </html>
