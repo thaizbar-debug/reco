@@ -270,14 +270,16 @@ service cloud.firestore {
       allow create: if true
                     && request.resource.data.keys().hasOnly([
                       'codigo','tipo','docTipo','docNum','nombre','email',
-                      'telefono','direccion','descripcion','status',
-                      'createdAt','userAgent','url','userId','userEmail'
+                      'telefono','direccion','bien','descripcion','pedido','monto',
+                      'status','createdAt','userAgent','url','userId','userEmail'
                     ])
                     && request.resource.data.status == 'pendiente'
                     && request.resource.data.tipo in ['reclamo', 'queja']
                     && request.resource.data.nombre is string
                     && request.resource.data.email is string
-                    && request.resource.data.descripcion is string;
+                    && request.resource.data.bien is string
+                    && request.resource.data.descripcion is string
+                    && request.resource.data.pedido is string;
       allow update: if isAdmin();
       allow delete: if false;
     }
