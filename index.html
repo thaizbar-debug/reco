@@ -3005,6 +3005,9 @@ async function fetchPremium(propertyId){
 
 // ─────────────────────── FILTERS ───────────────────────
 function getFiltered(){
+  const _mapEl=leafletMap&&leafletMap.getContainer();
+  const _boundsValid=!!(_mapEl&&_mapEl.offsetWidth>0&&_mapEl.offsetHeight>0);
+  const _cachedBounds=_boundsValid?leafletMap.getBounds():null;
   let list = properties.filter(p=>{
     if(S.query){
       const q=S.query.toLowerCase();
@@ -3040,8 +3043,8 @@ function getFiltered(){
     if(S.commute && S.commute.maxMin && GEO[p.id]){
       if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
     }
-    if(S.mapMode==='browse' && _noSpatialToolActive() && leafletMap && GEO[p.id]){
-      if(!leafletMap.getBounds().contains(GEO[p.id])) return false;
+    if(S.mapMode==='browse' && _noSpatialToolActive() && _boundsValid && GEO[p.id]){
+      if(!_cachedBounds.contains(GEO[p.id])) return false;
     }
     return true;
   });
@@ -3340,12 +3343,14 @@ function initMap(){
         renderPins(list);
       } else {
         renderPins(getFiltered());
-        if(S.mapMode==='text'){ S.mapDiverged=true; _updateMapSearchBtn(); }
+        if(S.mapMode==='text' && !_programmaticMove){ S.mapDiverged=true; _updateMapSearchBtn(); }
       }
+      _programmaticMove=false;
       if(S.catastroOn) _catastroAuto();
     },150);
   });
 }
+let _programmaticMove=false;
 
 function _noSpatialToolActive(){
   return !S.radiusCenter && !S.polyFinished && !(S.commute && S.commute.maxMin);
@@ -4410,7 +4415,7 @@ function _activateRadiusAt(lat,lng,label){
 function _flyToLocation(lat,lng,label){
   _deactivateAllTools();
   S.query='';
-  S.mapMode='browse'; S.mapDiverged=false; _updateMapSearchBtn();
+  S.mapMode='browse'; S.mapDiverged=false; _programmaticMove=true; _updateMapSearchBtn();
   const input=document.getElementById('searchQ');
   if(input){ input.value=''; input.placeholder='📍 '+(label||''); }
   if(leafletMap) leafletMap.setView([lat,lng],14,{animate:true,duration:.6});
@@ -4436,6 +4441,7 @@ function pickSuggestion(val){
 
 async function _flyToDistrictGeo(district){
   if(!leafletMap) return;
+  _programmaticMove=true;
   try{
     if(HERE_API_KEY){
       try{
