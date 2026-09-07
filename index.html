@@ -1351,19 +1351,22 @@ body.show-home .global-legal-bar{display:none}
 body.show-legal .global-legal-bar{display:none}
 @media(max-width:600px){.global-legal-bar{flex-direction:column;text-align:center;padding:10px 12px}}
 
-/* COOKIE CONSENT BANNER */
-.cookie-banner{position:fixed;bottom:46px;left:50%;transform:translateX(-50%);z-index:9500;background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:18px 24px;max-width:520px;width:calc(100% - 32px);box-shadow:0 12px 40px rgba(0,0,0,.15);display:none;animation:cookieSlideUp .3s ease}
-@keyframes cookieSlideUp{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-.cookie-banner h3{font-size:.9rem;font-weight:700;margin-bottom:6px;color:var(--txt)}
-.cookie-banner p{font-size:.78rem;line-height:1.6;color:var(--muted);margin-bottom:14px}
+/* COOKIE CONSENT BANNER — slim full-width bar */
+.cookie-banner{position:fixed;bottom:34px;left:0;right:0;z-index:9500;background:#f5f5f5;border-top:1px solid #ddd;padding:10px 5%;display:none;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;animation:cookieSlideUp .25s ease}
+@keyframes cookieSlideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+.cookie-banner p{font-size:.82rem;line-height:1.4;color:#444;margin:0}
 .cookie-banner p a{color:var(--blue);text-decoration:underline}
-.cookie-btns{display:flex;gap:8px;flex-wrap:wrap}
-.cookie-btns button{padding:9px 20px;border-radius:var(--r);font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .12s}
-.cookie-accept{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff}
-.cookie-reject{background:var(--light);color:var(--muted);border:1.5px solid var(--border) !important}
-.cookie-accept:hover,.cookie-reject:hover{opacity:.85}
+.cookie-btns{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.cookie-btns button{padding:7px 20px;border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .12s}
+.cookie-accept{background:#334155;color:#fff}
+.cookie-reject{background:transparent;color:#666;font-size:.85rem;padding:7px 10px;text-decoration:underline;font-weight:400}
+.cookie-accept:hover{opacity:.85}
+.cookie-reject:hover{color:#222}
+.cookie-close{background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;padding:4px 8px;line-height:1}
+.cookie-close:hover{color:#333}
+body.show-home .cookie-banner{bottom:0}
 body.show-legal .cookie-banner{display:none !important}
-@media(max-width:600px){.cookie-banner{bottom:40px;padding:14px 16px}.cookie-btns{flex-direction:column}.cookie-btns button{width:100%}}
+@media(max-width:600px){.cookie-banner{padding:10px 12px;gap:10px;text-align:center}.cookie-btns{justify-content:center}}
 
 /* RECLAMACIONES FORM */
 .reclamo-form{max-width:600px;margin:0 auto 48px}
@@ -7278,11 +7281,10 @@ function _applyLandingHash(){
 
 <!-- COOKIE CONSENT BANNER -->
 <div class="cookie-banner" id="cookieBanner">
-  <h3>Uso de cookies</h3>
-  <p>Utilizamos cookies esenciales para el funcionamiento de la plataforma y cookies de anal&iacute;tica (Google Analytics) para mejorar nuestros servicios. Puedes aceptar o rechazar las cookies no esenciales. M&aacute;s informaci&oacute;n en nuestra <a href="#cookies" onclick="showLegalPage('cookies');return false;">Pol&iacute;tica de Cookies</a>.</p>
+  <p>Usamos cookies para mejorar tu experiencia. Revisa nuestras <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">pol&iacute;tica de privacidad</a> y de <a href="#cookies" onclick="showLegalPage('cookies');return false;">cookies</a>.</p>
   <div class="cookie-btns">
-    <button class="cookie-accept" id="cookieAccept">Aceptar todas</button>
-    <button class="cookie-reject" id="cookieReject">Solo esenciales</button>
+    <button class="cookie-accept" id="cookieAccept">Aceptar</button>
+    <button class="cookie-close" id="cookieReject" aria-label="Cerrar">&times;</button>
   </div>
 </div>
 
@@ -9010,7 +9012,7 @@ function resetReclamoForm(){
     return;
   }
   try{localStorage.setItem('reco_cookie_banner_seen','1');}catch(e){}
-  banner.style.display='block';
+  banner.style.display='flex';
   document.getElementById('cookieAccept').addEventListener('click',function(){
     try{localStorage.setItem('reco_cookie_consent','accepted');}catch(e){}
     banner.style.display='none';
@@ -9018,10 +9020,10 @@ function resetReclamoForm(){
     logCookieConsent('accepted');
   });
   document.getElementById('cookieReject').addEventListener('click',function(){
-    try{localStorage.setItem('reco_cookie_consent','rejected');}catch(e){}
+    try{localStorage.setItem('reco_cookie_consent','implicit');}catch(e){}
     banner.style.display='none';
-    disableAnalytics();
-    logCookieConsent('rejected');
+    enableAnalytics();
+    logCookieConsent('accepted');
   });
   function enableAnalytics(){
     if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'granted'});
