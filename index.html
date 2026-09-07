@@ -8998,20 +8998,10 @@ function resetReclamoForm(){
   var consent=null;
   try{consent=localStorage.getItem('reco_cookie_consent');}catch(e){}
   if(consent==='accepted'||consent==='rejected'||consent==='implicit'){
-    banner.style.display='none';
     if(consent==='rejected')disableAnalytics();
     else enableAnalytics();
     return;
   }
-  var bannerSeen=null;
-  try{bannerSeen=localStorage.getItem('reco_cookie_banner_seen');}catch(e){}
-  if(bannerSeen){
-    try{localStorage.setItem('reco_cookie_consent','implicit');}catch(e){}
-    enableAnalytics();
-    logCookieConsent('accepted');
-    return;
-  }
-  try{localStorage.setItem('reco_cookie_banner_seen','1');}catch(e){}
   banner.style.display='flex';
   document.getElementById('cookieAccept').addEventListener('click',function(){
     try{localStorage.setItem('reco_cookie_consent','accepted');}catch(e){}
