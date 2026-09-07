@@ -3004,10 +3004,11 @@ async function fetchPremium(propertyId){
 }
 
 // ─────────────────────── FILTERS ───────────────────────
+const _LIMA_BOUNDS=typeof L!=='undefined'?L.latLngBounds([[-12.30,-77.22],[-11.75,-76.70]]):null;
 function getFiltered(){
   const _mapEl=leafletMap&&leafletMap.getContainer();
   const _boundsValid=!!(_mapEl&&_mapEl.offsetWidth>0&&_mapEl.offsetHeight>0);
-  const _cachedBounds=_boundsValid?leafletMap.getBounds():null;
+  const _cachedBounds=_boundsValid?leafletMap.getBounds():_LIMA_BOUNDS;
   let list = properties.filter(p=>{
     if(S.query){
       const q=S.query.toLowerCase();
@@ -3043,7 +3044,7 @@ function getFiltered(){
     if(S.commute && S.commute.maxMin && GEO[p.id]){
       if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
     }
-    if(S.mapMode==='browse' && _noSpatialToolActive() && _boundsValid && GEO[p.id]){
+    if(S.mapMode==='browse' && _noSpatialToolActive() && _cachedBounds && GEO[p.id]){
       if(!_cachedBounds.contains(GEO[p.id])) return false;
     }
     return true;
@@ -3333,6 +3334,9 @@ function initMap(){
   _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
+  const _mapC=leafletMap.getContainer();
+  _mapC.addEventListener('mousedown',()=>{_programmaticMove=false;});
+  _mapC.addEventListener('touchstart',()=>{_programmaticMove=false;});
   let _mapMoveTimer=null;
   leafletMap.on('zoomend moveend',()=>{
     clearTimeout(_mapMoveTimer);
