@@ -1,5 +1,9 @@
 {
   "dependencies": {
     "playwright": "^1.60.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "serve": "^14.2.6"
   }
 }
