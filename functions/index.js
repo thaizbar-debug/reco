@@ -14,6 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret } = require('firebase-functions/params');
 const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
@@ -23,6 +24,8 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 const db = getFirestore();
+
+const openaiKey = defineSecret('OPENAI_API_KEY');
 
 // Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
 // Used by setAdminClaim to accept the current caller as admin even if
@@ -952,5 +955,102 @@ exports.grantKeys = onCall(
       added: qty,
       newBalance: result.newBalance,
     };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEJ-04: generateListingCopy — AI-powered listing description
+// ─────────────────────────────────────────────────────────────────────────────
+const AI_COPY_RATE_LIMIT = 30;
+const AI_COPY_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+exports.generateListingCopy = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    secrets: [openaiKey],
+  },
+  async (request) => {
+    const caller = request.auth;
+    if (!caller) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+
+    const { district, area, type, op, beds, baths, features } = request.data;
+    if (!district || !area) {
+      throw new HttpsError('invalid-argument', 'Distrito y área son obligatorios.');
+    }
+
+    // ── Rate limiting via Firestore transaction ──
+    const usageRef = db.collection('aiCopyUsage').doc(caller.uid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(usageRef);
+      const data = snap.data() || {};
+      const now = Date.now();
+      const windowStart = now - AI_COPY_RATE_WINDOW_MS;
+      const timestamps = (data.timestamps || []).filter(t => t > windowStart);
+
+      if (timestamps.length >= AI_COPY_RATE_LIMIT) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `Límite de ${AI_COPY_RATE_LIMIT} generaciones por hora alcanzado. Intenta más tarde.`
+        );
+      }
+
+      timestamps.push(now);
+      tx.set(usageRef, { timestamps }, { merge: true });
+    });
+
+    // ── Build prompt ──
+    const featureList = (features || []).join(', ');
+    const prompt = `Eres un redactor inmobiliario profesional en Perú. Genera un título corto (máx 80 caracteres) y una descripción atractiva (150-250 palabras) para un anuncio de ${type || 'propiedad'} en ${op || 'venta'}.
+
+Datos:
+- Distrito: ${district}
+- Área techada: ${area} m²
+${beds ? `- Dormitorios: ${beds}` : ''}
+${baths ? `- Baños: ${baths}` : ''}
+${featureList ? `- Características: ${featureList}` : ''}
+
+Responde en JSON exacto: {"titulo":"...","descripcion":"..."}
+No uses markdown ni bloques de código. Solo el JSON.`;
+
+    // ── Call OpenAI ──
+    const key = openaiKey.value();
+    if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
+
+    const { default: OpenAI } = await import('openai');
+    const client = new OpenAI({ apiKey: key });
+
+    let completion;
+    try {
+      completion = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: 600,
+      });
+    } catch (e) {
+      logger.error('[generateListingCopy] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
+    }
+
+    const raw = (completion.choices[0]?.message?.content || '').trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      const titleMatch = raw.match(/"titulo"\s*:\s*"([^"]+)"/);
+      const descMatch = raw.match(/"descripcion"\s*:\s*"([^"]+)"/);
+      parsed = {
+        titulo: titleMatch ? titleMatch[1] : '',
+        descripcion: descMatch ? descMatch[1] : '',
+      };
+    }
+
+    if (!parsed.titulo && !parsed.descripcion) {
+      throw new HttpsError('internal', 'La IA no generó contenido válido.');
+    }
+
+    return { titulo: parsed.titulo, descripcion: parsed.descripcion };
   }
 );
