@@ -6533,13 +6533,59 @@ function _pubShowSentScreen(){
     + '</div></div>';
 }
 // ── Carga masiva ──
+// MEJ-03 — Recorrido en cuatro pasos: 1 Archivo · 2 Validar · 3 Fotos · 4 Enviar
+let _pubBulkStep = 1;
+let _pubBulkFileName = '';
+const _PUB_BULK_STEPS = ['Archivo','Validar y corregir','Fotos','Enviar'];
+
+function _pubBulkGo(step){
+  _pubBulkStep = step;
+  renderPublish();
+  const el=document.getElementById('pubBulkStepBody');
+  if(el && el.scrollIntoView) try{ el.scrollIntoView({block:'nearest'}); }catch(_){ }
+}
+function _pubBulkReset(){
+  _pubBulkRows=[]; _pubBulkFileName='';
+  if(typeof _pubBulkRaw!=='undefined'){ _pubBulkRaw=[]; _pubBulkHeaders=[]; _pubBulkMap={}; }
+  _pubBulkGo(1);
+}
+function _pubBulkStepNum(){ return _pubBulkStep==='map' ? 1 : _pubBulkStep; }
+function _pubBulkStepperHTML(){
+  const cur=_pubBulkStepNum();
+  return `<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:18px">
+    ${_PUB_BULK_STEPS.map((lbl,i)=>{
+      const n=i+1, done=cur>n, active=cur===n;
+      const bg=done?'var(--green)':active?'var(--blue)':'#fff';
+      const col=(done||active)?'#fff':'var(--muted)';
+      return `<div style="display:flex;align-items:center;gap:6px">
+        <div style="width:26px;height:26px;border-radius:50%;border:1px solid ${done?'var(--green)':active?'var(--blue)':'var(--border)'};background:${bg};color:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${done?'✓':n}</div>
+        <div style="font-size:12px;font-weight:${active?'700':'500'};color:${active?'var(--txt)':'var(--muted)'}">${lbl}</div>
+      </div>${n<_PUB_BULK_STEPS.length?'<div style="width:26px;height:2px;background:var(--border)"></div>':''}`;
+    }).join('')}
+  </div>`;
+}
 function _pubBulkHTML(){
-  return `<div class="pub-card" style="max-width:820px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+  return `<div class="pub-card" style="max-width:900px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <h3 style="margin:0">📊 Subir varios inmuebles</h3>
-      <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla CSV</button>
+      ${_pubBulkStep===1?`<div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla Excel</button>
+        <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px;opacity:.8" onclick="_pubDownloadTemplateCSV()">⬇ CSV</button>
+      </div>`:`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkReset()">↺ Empezar de nuevo</button>`}
     </div>
-    <div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla, rellena una fila por inmueble y súbela aquí. Cada inmueble tiene un costo de 3 llaves.</div></div>
+    ${_pubBulkStepperHTML()}
+    <div id="pubBulkStepBody">${_pubBulkStepBodyHTML()}</div>
+  </div>`;
+}
+function _pubBulkStepBodyHTML(){
+  if(_pubBulkStep==='map') return _pubBulkMapHTML();
+  if(_pubBulkStep===2) return _pubBulkValidateHTML();
+  if(_pubBulkStep===3) return _pubBulkPhotosHTML();
+  if(_pubBulkStep===4) return _pubBulkSendHTML();
+  return _pubBulkUploadHTML();
+}
+function _pubBulkUploadHTML(){
+  return `<div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla en Excel, rellena una fila por inmueble y súbela aquí. La hoja <em>Instrucciones</em> explica qué va en cada columna y qué valores admite.<br><strong>¿Ya tienes tu propio Excel?</strong> Súbelo igual: te preguntaremos a qué corresponde cada columna.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
@@ -6549,33 +6595,284 @@ function _pubBulkHTML(){
       <div class="dz-sub">Formatos soportados: .csv · .xlsx · .xls</div>
     </label>
     <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFile(this.files[0])">
-    <div id="pubBulkPreview"></div>
-  </div>`;
+    <div id="pubBulkPreview"></div>`;
+}
+// ── Paso 2: tabla editable ──
+const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propiedad','tipo_moneda','precio','area_techada','titulo','descripcion'];
+function _pubBulkEdit(i,key,val){
+  const a=_pubBulkRows[i]; if(!a) return;
+  a.row[key]=String(val==null?'':val).trim();
+  const v=_pubBulkValidateRow(a.row);
+  a.valid=v.valid; a.errors=v.errors; a.warnings=v.warnings||[];
+  _pubBulkRefresh();
+}
+function _pubBulkRemoveRow(i){
+  _pubBulkRows.splice(i,1);
+  if(!_pubBulkRows.length){ _pubBulkReset(); return; }
+  _pubBulkRefresh();
+}
+function _pubBulkDropInvalid(){
+  _pubBulkRows=_pubBulkRows.filter(a=>a.valid);
+  if(!_pubBulkRows.length){ toast('⚠️ No quedó ninguna fila válida'); _pubBulkReset(); return; }
+  _pubBulkRefresh();
+}
+function _pubBulkRefresh(){
+  const el=document.getElementById('pubBulkStepBody');
+  if(el) el.innerHTML=_pubBulkStepBodyHTML();
+}
+function _pubBulkCounts(){
+  const valid=_pubBulkRows.filter(a=>a.valid).length;
+  return { total:_pubBulkRows.length, valid, invalid:_pubBulkRows.length-valid };
+}
+function _pubBulkValidateHTML(){
+  const c=_pubBulkCounts();
+  if(!c.total) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay filas cargadas.</div>';
+  const cost=c.valid*_PUB_BULK_COST_PER;
+  const shortKeys=cost>0 && cost>S.keysLeft;
+  const warnRows=_pubBulkRows.filter(a=>a.warnings&&a.warnings.length);
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600">${esc(_pubBulkFileName||'Archivo cargado')} · ${c.total} fila${c.total!==1?'s':''} · <span style="color:var(--green)">${c.valid} lista${c.valid!==1?'s':''}</span>${c.invalid?` · <span style="color:var(--red)">${c.invalid} con errores</span>`:''}</div>
+      <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
+    </div>
+    ${c.invalid?`<div class="pub-tip" style="margin-top:10px"><span>✏️</span><div>Corrige las celdas marcadas en rojo directamente en la tabla. También puedes eliminar una fila o descartar todas las que tienen errores.</div></div>`:''}
+    ${warnRows.length?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⚠️ ${warnRows.length} fila${warnRows.length!==1?'s':''} con advertencias (no bloquean): ${warnRows.slice(0,3).map((a,i)=>'fila '+(i+1)+': '+a.warnings[0]).join('; ')}${warnRows.length>3?' ...':''}</div>`:''}
+    <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
+      <table class="pub-preview-table">
+        <thead><tr><th style="width:30px">#</th>${_PUB_BULK_EDIT_COLS.map(k=>`<th>${k}</th>`).join('')}<th>estado</th><th style="width:32px"></th></tr></thead>
+        <tbody>${_pubBulkRows.map((a,i)=>{
+          const bad=k=>!a.valid && a.errors.some(e=>e.toLowerCase().indexOf(_pubBulkErrKey(k))===0);
+          return `<tr style="background:${a.valid?'transparent':'#fff8f8'}">
+            <td>${i+1}</td>
+            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border:1px solid ${bad(k)?'var(--red)':'var(--border)'};border-radius:5px;padding:4px 6px;font-size:11px;background:#fff"></td>`).join('')}
+            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}</td>
+            <td><button onclick="_pubBulkRemoveRow(${i})" title="Eliminar fila" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+    <div class="pub-actions" style="margin-top:18px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="pub-btn ghost" onclick="_pubBulkGo(1)">← Cambiar archivo</button>
+        ${c.invalid?`<button class="pub-btn ghost" onclick="_pubBulkDropInvalid()">Descartar ${c.invalid} con errores</button>`:''}
+      </div>
+      <button class="pub-btn primary" ${(!c.valid||c.invalid||shortKeys)?'disabled':''} onclick="_pubBulkGo(3)">
+        ${c.invalid?`Corrige ${c.invalid} fila${c.invalid!==1?'s':''} para continuar`:shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:`Continuar a fotos → ${c.valid} inmueble${c.valid!==1?'s':''}`}
+      </button>
+    </div>`;
+}
+function _pubBulkErrKey(k){
+  return ({direccion:'dirección',distrito:'distrito',titulo:'título',descripcion:'descripción',
+           precio:'precio',area_techada:'área',tipo_propiedad:'tipo',tipo_publicacion:'operacion',tipo_moneda:'moneda'})[k]||k;
+}
+// ── MEJ-01: Asistente de fotos por inmueble ──
+let _pubBulkPhotoIdx = 0;
+const _PUB_BULK_PHOTO_MAX = 12;
+function _pubBulkValidRows(){ return _pubBulkRows.filter(a=>a.valid); }
+function _pubBulkCurrentRow(){
+  const list=_pubBulkValidRows();
+  if(_pubBulkPhotoIdx>=list.length) _pubBulkPhotoIdx=Math.max(0,list.length-1);
+  return list[_pubBulkPhotoIdx];
+}
+function _pubBulkPhotoNav(delta){
+  const list=_pubBulkValidRows();
+  _pubBulkPhotoIdx=Math.min(list.length-1,Math.max(0,_pubBulkPhotoIdx+delta));
+  _pubBulkRefresh();
+}
+function _pubBulkOpenPhotoPicker(){
+  const inp=document.getElementById('pubBulkPhotoInput');
+  if(!inp) return;
+  inp.value='';
+  inp.click();
+}
+async function _pubBulkPhotoFiles(files){
+  const a=_pubBulkCurrentRow();
+  if(!a) return;
+  if(!a.photos) a.photos=[];
+  for(const file of Array.from(files||[])){
+    if(a.photos.length>=_PUB_BULK_PHOTO_MAX){ toast(`⚠️ Máximo ${_PUB_BULK_PHOTO_MAX} fotos por inmueble`); break; }
+    if(!file.type.startsWith('image/') && !/\.(heic|heif)$/i.test(file.name)) continue;
+    try{
+      a.photos.push(await _pubToJpegDataUrl(file));
+      _pubBulkRefresh();
+    }catch(err){
+      console.warn('[reco] foto de carga masiva descartada:', file.name, err);
+      toast('⚠️ '+(err.message||('No se pudo procesar '+file.name)));
+    }
+  }
+  const inp=document.getElementById('pubBulkPhotoInput'); if(inp) inp.value='';
+}
+function _pubBulkPhotoRemove(i){
+  const a=_pubBulkCurrentRow();
+  if(!a||!a.photos) return;
+  a.photos.splice(i,1);
+  _pubBulkRefresh();
+}
+function _pubBulkPhotosHTML(){
+  const list=_pubBulkValidRows();
+  if(!list.length) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay inmuebles válidos.</div>';
+  const a=_pubBulkCurrentRow();
+  const photos=a.photos||[];
+  const done=list.filter(x=>x.photos&&x.photos.length).length;
+  return `<div class="pub-tip"><span>📸</span><div><strong>Agrega las fotos, inmueble por inmueble.</strong> Los anuncios con fotos reciben muchos más contactos. Puedes saltar los que quieras y agregarlas después desde "Mis publicaciones".</div></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px">
+      <div style="font-size:13px;font-weight:700">Inmueble ${_pubBulkPhotoIdx+1} de ${list.length}</div>
+      <div style="font-size:12px;color:var(--muted)">${done} de ${list.length} con fotos</div>
+    </div>
+    <div style="height:6px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden">
+      <div style="height:100%;width:${Math.round(((_pubBulkPhotoIdx+1)/list.length)*100)}%;background:var(--blue)"></div>
+    </div>
+    <div style="margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--light)">
+      <div style="font-size:13px;font-weight:600">${esc(a.row.direccion||'')}</div>
+      <div style="font-size:12px;color:var(--muted)">${esc(a.row.distrito||'')} · ${esc(a.row.tipo_propiedad||'')} · ${esc(a.row.tipo_publicacion||'')} · ${esc(a.row.tipo_moneda||'')} ${esc(String(a.row.precio||''))}</div>
+    </div>
+    <div class="pub-drop-zone" style="margin-top:12px"
+      onclick="_pubBulkOpenPhotoPicker()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkPhotoFiles(event.dataTransfer.files)">
+      <div class="dz-icon">📷</div>
+      <div class="dz-lbl">Arrastra las fotos de este inmueble o haz clic para elegirlas</div>
+      <div class="dz-sub">JPG, PNG o fotos de iPhone · hasta ${_PUB_BULK_PHOTO_MAX} por inmueble</div>
+    </div>
+    <input type="file" id="pubBulkPhotoInput" accept="image/*,.heic,.heif" multiple
+      style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"
+      onchange="_pubBulkPhotoFiles(this.files)">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      ${photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden;width:84px;height:84px">
+        <img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
+        ${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}
+        <button onclick="event.stopPropagation();_pubBulkPhotoRemove(${i})" title="Quitar" style="position:absolute;top:3px;right:3px;border:none;border-radius:50%;width:18px;height:18px;line-height:1;cursor:pointer;background:rgba(0,0,0,.55);color:#fff;font-size:11px">✕</button>
+      </div>`).join('')||'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
+    </div>
+    <div class="pub-actions" style="margin-top:18px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="pub-btn ghost" onclick="${_pubBulkPhotoIdx===0?'_pubBulkGo(2)':'_pubBulkPhotoNav(-1)'}">← ${_pubBulkPhotoIdx===0?'Volver a revisar':'Anterior'}</button>
+        <button class="pub-btn ghost" onclick="_pubBulkGo(4)">Omitir fotos y continuar</button>
+      </div>
+      <button class="pub-btn primary" onclick="${_pubBulkPhotoIdx>=list.length-1?'_pubBulkGo(4)':'_pubBulkPhotoNav(1)'}">
+        ${_pubBulkPhotoIdx>=list.length-1?'Continuar →':(photos.length?'Siguiente inmueble →':'Saltar este →')}
+      </button>
+    </div>`;
+}
+function _pubBulkSendHTML(){
+  const c=_pubBulkCounts();
+  const cost=c.valid*_PUB_BULK_COST_PER;
+  const withPhotos=_pubBulkRows.filter(a=>a.valid && a.photos && a.photos.length).length;
+  return `<div class="pub-tip"><span>🚀</span><div><strong>Todo listo.</strong> Al enviar, cada inmueble entra en revisión. Nuestro equipo valida los datos y te avisamos por correo al aprobarlos.</div></div>
+    <div style="margin-top:12px;font-size:13px;line-height:1.9">
+      <div>• Inmuebles a enviar: <strong>${c.valid}</strong></div>
+      <div>• Con fotos adjuntas: <strong>${withPhotos}</strong>${withPhotos<c.valid?` <span style="color:var(--muted)">(${c.valid-withPhotos} se enviarán sin fotos)</span>`:''}</div>
+      <div>• Costo: <strong>${cost>0?`🔑 ${cost} llaves`:'gratuito'}</strong></div>
+    </div>
+    <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
+    <div class="pub-actions" style="margin-top:18px">
+      <button class="pub-btn ghost" onclick="_pubBulkGo(3)">← Volver a fotos</button>
+      <button class="pub-btn primary" id="pubBulkSubmitBtn" ${!c.valid?'disabled':''} onclick="_pubBulkSubmit()">Enviar ${c.valid} a revisión</button>
+    </div>`;
+}
+// ── BUG-15: Plantilla XLSX real + CSV con BOM/punto y coma ──
+// Esquema definitivo de 30 columnas para la carga masiva.
+const _PUB_TPL_COLS=['direccion','departamento','provincia','distrito','latitud','longitud',
+  'mostrar_direccion','tipo_publicacion','tipo_propiedad','nro_dormitorios','nro_banos',
+  'nro_estacionamientos','nro_pisos','piso','niveles','antiguedad','estado','ascensor',
+  'amoblado','pet_friendly','tipo_moneda','precio','area_terreno','area_techada',
+  'etiquetas_generales','etiquetas_ambientes','etiquetas_vista','etiquetas_acceso',
+  'etiquetas_zonas','titulo','descripcion'];
+const _PUB_TPL_EXAMPLE=['Av. Larco 1150 Dpto 801','Lima','Lima','Miraflores','-12.1195','-77.0305',
+  'Sí','Venta','Departamento',3,2,1,15,8,2,5,'Construido','No','No','Sí',
+  'USD',185000,0,85,
+  'Piscina propia;Terraza propia','Piscina del edificio;Gimnasio','Vista a parque','Avenida','Residencial',
+  'Dúplex moderno con vista al parque','Ubicado en el corazón de Miraflores, a una cuadra del parque…'];
+const _PUB_TPL_HELP=[
+  ['direccion','Obligatorio','Texto','Dirección completa, con número y número de departamento si aplica.'],
+  ['departamento','Opcional','Texto','Departamento (ej. Lima). Se usa para ubicar mejor el punto en el mapa, no se guarda como dato aparte.'],
+  ['provincia','Opcional','Texto','Provincia (ej. Lima). Se usa para ubicar mejor el punto en el mapa, no se guarda como dato aparte.'],
+  ['distrito','Obligatorio','Texto','Distrito tal como se escribe (Miraflores, San Isidro…).'],
+  ['latitud','Opcional','Número','Latitud GPS. Si se deja vacío, se geocodifica a partir de la dirección.'],
+  ['longitud','Opcional','Número','Longitud GPS. Si se deja vacío, se geocodifica a partir de la dirección.'],
+  ['mostrar_direccion','Opcional','Sí / No','Sí = la dirección exacta se muestra al público. No = solo se muestra el distrito. Por defecto: Sí.'],
+  ['tipo_publicacion','Obligatorio','Venta / Alquiler','Escribe exactamente uno de esos valores.'],
+  ['tipo_propiedad','Obligatorio','Departamento / Casa / Oficina / Local comercial / Terreno / Otros','Escribe exactamente uno de esos valores.'],
+  ['nro_dormitorios','Opcional','Número','0 si no aplica.'],
+  ['nro_banos','Opcional','Número','0 si no aplica.'],
+  ['nro_estacionamientos','Opcional','Número','0 si no aplica.'],
+  ['nro_pisos','Opcional','Número','Pisos totales del edificio o casa.'],
+  ['piso','Opcional','Número','Piso en que está el inmueble. 0 si está a nivel de calle.'],
+  ['niveles','Opcional','Número','Niveles que ocupa el inmueble (1 = un nivel, 2 = dúplex, 3 = tríplex). Por defecto: 1. Requiere que PR C (unitFloors) esté desplegado en la Cloud Function; hasta entonces el valor se envía pero el servidor lo ignora.'],
+  ['antiguedad','Opcional','Número','Años de antigüedad. 0 = a estrenar.'],
+  ['estado','Opcional','Construido / En planos / En construcción','Por defecto: Construido.'],
+  ['ascensor','Opcional','Sí / No','Por defecto: No.'],
+  ['amoblado','Opcional','Sí / No','Por defecto: No.'],
+  ['pet_friendly','Opcional','Sí / No','Por defecto: No.'],
+  ['tipo_moneda','Obligatorio','USD / PEN','USD = dólares, PEN = soles.'],
+  ['precio','Obligatorio','Número','Sin símbolo de moneda ni separadores de miles.'],
+  ['area_terreno','Opcional','Número','Área del terreno en m². 0 si no aplica.'],
+  ['area_techada','Obligatorio','Número','Área techada en metros cuadrados.'],
+  ['etiquetas_generales','Opcional','Texto','Etiquetas separadas por punto y coma (;). Valores válidos: '+_PUB_FEATS_GEN.join(', ')+'. También se aceptan nombres anteriores.'],
+  ['etiquetas_ambientes','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_AMB.join(', ')+'.'],
+  ['etiquetas_vista','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_VISTA.join(', ')+'.'],
+  ['etiquetas_acceso','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_ACCESO.join(', ')+'.'],
+  ['etiquetas_zonas','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_ZONA.join(', ')+'.'],
+  ['titulo','Obligatorio','Texto (máx. 200)','Título del anuncio.'],
+  ['descripcion','Obligatorio','Texto','Descripción del inmueble.'],
+];
+function _pubLoadXLSX(cb){
+  if(typeof XLSX!=='undefined'){cb();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  s.onload=cb;
+  s.onerror=()=>toast('⚠️ No se pudo cargar el generador de Excel. Usa la plantilla CSV.');
+  document.head.appendChild(s);
 }
 function _pubDownloadTemplate(){
-  const cols=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','dormitorios','banos','estacionamientos','piso','niveles_ocupa','pisos_edificio','antiguedad_anos','etiquetas','titulo','descripcion'];
-  const ex=['Av. Larco 1150 Dpto 801','Miraflores','Departamento','Venta','USD','185000','85','3','2','1','8','2','15','5','Piscina propia|Terraza propia','Dúplex moderno con vista al parque','Ubicado en el corazón de Miraflores...'];
-  const csv=[cols.join(','),ex.join(',')].join('\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  _pubLoadXLSX(()=>{
+    try{
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.aoa_to_sheet([_PUB_TPL_COLS,_PUB_TPL_EXAMPLE]);
+      ws['!cols']=_PUB_TPL_COLS.map(()=>({wch:18}));
+      ws['!freeze']={xSplit:0,ySplit:1};
+      XLSX.utils.book_append_sheet(wb,ws,'Inmuebles');
+      const help=XLSX.utils.aoa_to_sheet([
+        ['Cómo llenar esta plantilla'],
+        ['1. Escribe un inmueble por fila en la hoja "Inmuebles".'],
+        ['2. No cambies ni traduzcas los nombres de las columnas.'],
+        ['3. La fila de ejemplo puede borrarse antes de subir el archivo.'],
+        ['4. Sube el archivo en Publicar inmueble → Subir varios.'],
+        ['5. "departamento" y "provincia" se usan para ubicar mejor el punto en el mapa, no se guardan como dato aparte.'],
+        ['6. "niveles" indica cuántos pisos ocupa el inmueble por dentro (1 = un solo nivel, 2 = dúplex). Depende del despliegue de PR C (unitFloors en publishProperty).'],
+        [],
+        ['Columna','Obligatoriedad','Valores admitidos','Detalle'],
+        ..._PUB_TPL_HELP,
+      ]);
+      help['!cols']=[{wch:22},{wch:16},{wch:52},{wch:70}];
+      XLSX.utils.book_append_sheet(wb,help,'Instrucciones');
+      XLSX.writeFile(wb,'reco_plantilla.xlsx');
+    }catch(e){
+      console.error('[reco] template xlsx failed:',e);
+      toast('⚠️ No se pudo generar el Excel. Descargando la versión CSV.');
+      _pubDownloadTemplateCSV();
+    }
+  });
+}
+function _pubDownloadTemplateCSV(){
+  const rows=[_PUB_TPL_COLS,_PUB_TPL_EXAMPLE.map(v=>String(v))];
+  const csv=rows.map(r=>r.map(v=>/[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v).join(';')).join('\r\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reco_plantilla.csv';a.click();
 }
 function _pubBulkFile(file){
   const _bi=document.getElementById('pubBulkInput');
   if(_bi){ try{ _bi.value=''; }catch(_){} }
   if(!file)return;
+  _pubBulkFileName=file.name;
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='csv'){
     const reader=new FileReader();
     reader.onload=e=>_pubShowBulkPreview(_pubParseCSV(e.target.result));
     reader.readAsText(file,'UTF-8');
   } else if(ext==='xlsx'||ext==='xls'){
-    const loadXLSX=cb=>{
-      if(typeof XLSX!=='undefined'){cb();return;}
-      const s=document.createElement('script');
-      s.src='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload=cb;document.head.appendChild(s);
-    };
-    loadXLSX(()=>{
+    _pubLoadXLSX(()=>{
       const reader=new FileReader();
       reader.onload=e=>{
         const wb=XLSX.read(e.target.result,{type:'array'});
@@ -6587,9 +6884,12 @@ function _pubBulkFile(file){
   } else { toast('⚠️ Formato no soportado. Usa CSV, XLSX o XLS.'); }
 }
 function _pubParseCSV(text){
-  // Small RFC-4180-ish parser: supports "quoted fields with, commas" and "" escapes.
+  // RFC-4180 parser; BUG-15: acepta punto y coma (Excel en español) y
+  // descarta BOM + sep= header.
   const rows=[]; let row=[], field='', inQ=false;
-  const src=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const src=text.replace(/^﻿/,'').replace(/^sep=.\r?\n/i,'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const firstLine=src.split('\n')[0]||'';
+  const SEP=(firstLine.split(';').length>firstLine.split(',').length)?';':',';
   for(let i=0;i<src.length;i++){
     const c=src[i];
     if(inQ){
@@ -6597,7 +6897,7 @@ function _pubParseCSV(text){
       else field+=c;
     } else {
       if(c==='"') inQ=true;
-      else if(c===','){ row.push(field); field=''; }
+      else if(c===SEP){ row.push(field); field=''; }
       else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
       else field+=c;
     }
@@ -6610,58 +6910,107 @@ function _pubParseCSV(text){
   });
 }
 const _PUB_BULK_MAX = 200;
-// Costo en llaves de publicar un inmueble. En 0 mientras la pasarela de
-// pagos no esté conectada: publicar es gratuito. Para volver a cobrar,
-// poner el número acá y el mismo valor en PUBLISH_COST (functions/index.js).
 const _PUB_COST = 0;
 const _PUB_BULK_COST_PER = _PUB_COST;
 const _PUB_BULK_TYPES = ['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
 const _PUB_BULK_OPS = ['Venta','Alquiler'];
 const _PUB_BULK_CURRENCIES = ['USD','PEN'];
+const _PUB_BULK_ESTADOS = ['Construido','En planos','En construcción'];
 let _pubBulkRows = [];
 
+function _pubParseBool(v){
+  if(v===true||v===1) return true;
+  if(v===false||v===0) return false;
+  const s=String(v||'').trim().toLowerCase();
+  return /^(s[ií]|yes|true|verdadero|1)$/i.test(s);
+}
+function _pubParseBoolInvert(v){
+  const s=String(v||'').trim().toLowerCase();
+  if(!s) return false;
+  return !_pubParseBool(v);
+}
+function _pubParseTagCol(raw, validList){
+  const warnings=[];
+  const tags=(String(raw||'')).split(';').map(s=>s.trim()).filter(Boolean);
+  const mapped=tags.map(t=>{
+    const n=_PUB_FEAT_LEGACY_MAP[t]; if(n) return n;
+    if(validList.includes(t)) return t;
+    warnings.push('Etiqueta no reconocida: '+t);
+    return null;
+  }).filter(Boolean);
+  return { tags:mapped, warnings };
+}
+function _pubValidateCoords(lat,lng){
+  const warnings=[];
+  if(lat!==null && lng!==null){
+    if(lat<-18.5||lat>0||lng<-81.5||lng>-68) warnings.push('Coordenadas lejos de Perú — revisa latitud/longitud');
+  }
+  return warnings;
+}
+
 function _pubBulkValidateRow(r){
-  const errs=[];
+  const errs=[], warns=[];
   const need=(k,label)=>{ if(!r[k]||!String(r[k]).trim()) errs.push(label+' vacío'); };
   need('direccion','dirección'); need('distrito','distrito');
   need('titulo','título'); need('descripcion','descripción');
   const price=Number(r.precio); if(!isFinite(price)||price<=0) errs.push('precio inválido');
-  const area=Number(r.area_m2); if(!isFinite(area)||area<=0) errs.push('área inválida');
-  if(r.tipo && !_PUB_BULK_TYPES.includes(r.tipo)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
-  if(r.operacion && !_PUB_BULK_OPS.includes(r.operacion)) errs.push('operacion debe ser Venta o Alquiler');
-  if(r.moneda && !_PUB_BULK_CURRENCIES.includes(r.moneda)) errs.push('moneda debe ser USD o PEN');
-  return { valid: errs.length===0, errors: errs };
+  const area=Number(r.area_techada); if(!isFinite(area)||area<=0) errs.push('área inválida');
+  if(r.tipo_propiedad && !_PUB_BULK_TYPES.includes(r.tipo_propiedad)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
+  if(r.tipo_publicacion && !_PUB_BULK_OPS.includes(r.tipo_publicacion)) errs.push('operacion debe ser Venta o Alquiler');
+  if(r.tipo_moneda && !_PUB_BULK_CURRENCIES.includes(r.tipo_moneda)) errs.push('moneda debe ser USD o PEN');
+  const floor=Number(r.piso)||0;
+  const niveles=Math.max(1,Number(r.niveles)||1);
+  const nroPisos=Number(r.nro_pisos)||0;
+  if(nroPisos>0 && floor>0 && (floor+niveles-1)>nroPisos) warns.push('Piso + niveles supera la altura del edificio');
+  const lat=r.latitud?Number(r.latitud):null;
+  const lng=r.longitud?Number(r.longitud):null;
+  if(lat!==null && lng!==null) warns.push(..._pubValidateCoords(lat,lng));
+  const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN); warns.push(...tgG.warnings);
+  const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB); warns.push(...tgA.warnings);
+  const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA); warns.push(...tgV.warnings);
+  const tgAc=_pubParseTagCol(r.etiquetas_acceso,_PUB_FEATS_ACCESO); warns.push(...tgAc.warnings);
+  const tgZ=_pubParseTagCol(r.etiquetas_zonas,_PUB_FEATS_ZONA); warns.push(...tgZ.warnings);
+  return { valid: errs.length===0, errors: errs, warnings: warns };
 }
 
-// Shape sent to the publishProperty callable. userId / userEmail /
-// userName / status / createdAt / listedAt / photoUrls are all filled
-// in server-side; the client should not send them.
+// departamento y provincia se usan para geocoding, NO se persisten.
 function _pubBulkRowToPubData(r){
-  const uF=Math.max(1,Number(r.niveles_ocupa)||1);
-  const rawFeats=(r.etiquetas||'').split('|').map(s=>s.trim()).filter(Boolean);
-  const feats=rawFeats.map(f=>_PUB_FEAT_LEGACY_MAP[f]||f).filter(f=>_PUB_FEATS.includes(f));
+  const uF=Math.max(1,Number(r.niveles)||1);
+  const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN).tags;
+  const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB).tags;
+  const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA).tags;
+  const tgAc=_pubParseTagCol(r.etiquetas_acceso,_PUB_FEATS_ACCESO).tags;
+  const tgZ=_pubParseTagCol(r.etiquetas_zonas,_PUB_FEATS_ZONA).tags;
+  const feats=[...tgG,...tgA,...tgV,...tgAc,...tgZ];
   const lvlTag=uF===2?'Dúplex':uF===3?'Tríplex':uF>3?uF+' niveles':'';
   if(lvlTag && !feats.includes(lvlTag)) feats.push(lvlTag);
+  const lat=r.latitud?Number(r.latitud):null;
+  const lng=r.longitud?Number(r.longitud):null;
+  const hideExact=_pubParseBoolInvert(r.mostrar_direccion);
   return {
     source: 'bulk',
     address: String(r.direccion).trim(),
     district: String(r.distrito).trim(),
-    lat: null, lng: null,
-    type: r.tipo || 'Departamento',
-    op: r.operacion || 'Venta',
-    currency: r.moneda || 'USD',
+    lat: (lat!==null && isFinite(lat)) ? lat : null,
+    lng: (lng!==null && isFinite(lng)) ? lng : null,
+    hideExact,
+    type: r.tipo_propiedad || 'Departamento',
+    op: r.tipo_publicacion || 'Venta',
+    currency: r.tipo_moneda || 'USD',
     price: Number(r.precio)||0,
-    areaTerr: 0,
-    area: Number(r.area_m2)||0,
-    beds: Number(r.dormitorios)||0,
-    baths: Number(r.banos)||0,
-    parking: Number(r.estacionamientos)||0,
+    areaTerr: Number(r.area_terreno)||0,
+    area: Number(r.area_techada)||0,
+    beds: Number(r.nro_dormitorios)||0,
+    baths: Number(r.nro_banos)||0,
+    parking: Number(r.nro_estacionamientos)||0,
     floor: Number(r.piso)||0,
     unitFloors: uF,
-    floors: Number(r.pisos_edificio)||0,
-    age: Number(r.antiguedad_anos)||0,
-    estado: 'Construido',
-    ascensor: false, amoblado: false, petFriendly: false,
+    floors: Number(r.nro_pisos)||0,
+    age: Number(r.antiguedad)||0,
+    estado: _PUB_BULK_ESTADOS.includes(r.estado)?r.estado:'Construido',
+    ascensor: _pubParseBool(r.ascensor),
+    amoblado: _pubParseBool(r.amoblado),
+    petFriendly: _pubParseBool(r.pet_friendly),
     features: feats,
     title: String(r.titulo).trim(),
     desc: String(r.descripcion).trim(),
@@ -6669,38 +7018,168 @@ function _pubBulkRowToPubData(r){
 }
 
 function _pubShowBulkPreview(rows){
-  const prev=document.getElementById('pubBulkPreview');
-  if(!prev)return;
-  if(!rows.length){ prev.innerHTML='<div style="padding:14px;color:var(--muted);font-size:13px">No se encontraron filas válidas.</div>'; _pubBulkRows=[]; return; }
+  if(!rows || !rows.length){
+    const prev=document.getElementById('pubBulkPreview');
+    if(prev) prev.innerHTML='<div style="padding:14px;color:var(--red);font-size:13px">No se encontraron filas con datos. Revisa que el archivo tenga las cabeceras de la plantilla.</div>';
+    _pubBulkRows=[]; return;
+  }
   const capped = rows.length > _PUB_BULK_MAX;
   const workRows = capped ? rows.slice(0, _PUB_BULK_MAX) : rows;
-  const annotated = workRows.map(r => ({ row:r, ...(_pubBulkValidateRow(r)) }));
-  _pubBulkRows = annotated;
-  const validCount = annotated.filter(a=>a.valid).length;
-  const invalidCount = annotated.length - validCount;
-  const cost = validCount * _PUB_BULK_COST_PER;
-  const shortKeys = cost > 0 && cost > S.keysLeft;
-  const keys=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','titulo'];
-  prev.innerHTML=`
-    <div style="margin-top:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:13px;font-weight:600">${annotated.length} fila${annotated.length!==1?'s':''} · <span style="color:var(--green)">${validCount} válida${validCount!==1?'s':''}</span>${invalidCount?` · <span style="color:var(--red)">${invalidCount} con errores</span>`:''}</div>
-      <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
-    </div>
-    ${capped?`<div style="margin-top:8px;padding:8px 12px;background:#fff4e5;border:1px solid #f5b342;border-radius:6px;font-size:12px;color:#8a5a00">⚠️ Archivo tiene ${rows.length} filas. Solo se procesarán las primeras ${_PUB_BULK_MAX}.</div>`:''}
+  if(capped) toast(`⚠️ El archivo tiene ${rows.length} filas. Solo se procesarán las primeras ${_PUB_BULK_MAX}.`);
+  _pubBulkRaw = workRows;
+  _pubBulkHeaders = Object.keys(workRows[0]||{}).filter(h=>String(h).trim()!=='');
+  _pubBulkPhotoIdx=0;
+  if(_pubBulkNeedsMapping(_pubBulkHeaders)){
+    _pubBulkMap = _pubBulkGuessMap(_pubBulkHeaders);
+    _pubBulkGo('map');
+    return;
+  }
+  _pubBulkLoadRows(workRows);
+}
+
+// ── MEJ-02: Equivalencia de columnas para Excel propio ──
+let _pubBulkRaw = [];
+let _pubBulkHeaders = [];
+let _pubBulkMap = {};
+const _PUB_MAP_REQUIRED=['direccion','distrito','precio','area_techada','titulo','descripcion'];
+const _PUB_MAP_LABELS={
+  direccion:'Dirección', departamento:'Departamento', provincia:'Provincia',
+  distrito:'Distrito', latitud:'Latitud', longitud:'Longitud',
+  mostrar_direccion:'Mostrar dirección', tipo_publicacion:'Tipo publicación',
+  tipo_propiedad:'Tipo propiedad', nro_dormitorios:'Dormitorios',
+  nro_banos:'Baños', nro_estacionamientos:'Estacionamientos',
+  nro_pisos:'Pisos edificio', piso:'Piso', niveles:'Niveles que ocupa',
+  antiguedad:'Antigüedad', estado:'Estado', ascensor:'Ascensor',
+  amoblado:'Amoblado', pet_friendly:'Pet-friendly',
+  tipo_moneda:'Moneda', precio:'Precio', area_terreno:'Área terreno',
+  area_techada:'Área techada',
+  etiquetas_generales:'Etiquetas generales', etiquetas_ambientes:'Etiquetas ambientes',
+  etiquetas_vista:'Etiquetas vista', etiquetas_acceso:'Etiquetas acceso',
+  etiquetas_zonas:'Etiquetas zonas', titulo:'Título', descripcion:'Descripción'
+};
+const _PUB_MAP_SYNONYMS={
+  direccion:['direccion','dir','domicilio','calle','ubicacion','address','direccion completa'],
+  departamento:['departamento','depto','region','department'],
+  provincia:['provincia','province'],
+  distrito:['distrito','district','zona','sector','ubigeo'],
+  latitud:['latitud','lat','latitude'],
+  longitud:['longitud','lng','lon','longitude'],
+  mostrar_direccion:['mostrar_direccion','mostrar direccion','show address','visible'],
+  tipo_publicacion:['tipo_publicacion','operacion','operación','tipo de operacion','venta alquiler','modalidad','op'],
+  tipo_propiedad:['tipo_propiedad','tipo','tipo de inmueble','tipo inmueble','categoria','propiedad','type'],
+  tipo_moneda:['tipo_moneda','moneda','currency','divisa'],
+  precio:['precio','valor','monto','price','precio venta','precio de venta','precio alquiler'],
+  area_techada:['area_techada','area','area m2','area techada','m2','metraje','superficie','area construida'],
+  area_terreno:['area_terreno','area terreno','terreno'],
+  nro_dormitorios:['nro_dormitorios','dormitorios','habitaciones','cuartos','dorm','beds','n dormitorios'],
+  nro_banos:['nro_banos','banos','baños','bano','baño','ss hh','sshh','baths'],
+  nro_estacionamientos:['nro_estacionamientos','estacionamientos','cocheras','cochera','garaje','parking','estacionamiento'],
+  piso:['piso','nivel','floor'],
+  niveles:['niveles','niveles_ocupa','niveles ocupa','levels'],
+  nro_pisos:['nro_pisos','pisos_edificio','pisos edificio','pisos del edificio','total pisos','pisos'],
+  antiguedad:['antiguedad','antigüedad','anos','años','antiguedad_anos','antiguedad anos','edad'],
+  estado:['estado','state','status','condicion'],
+  ascensor:['ascensor','elevador','elevator','lift'],
+  amoblado:['amoblado','amueblado','furnished'],
+  pet_friendly:['pet_friendly','pet friendly','mascotas','pets'],
+  etiquetas_generales:['etiquetas_generales','etiquetas generales','tags generales'],
+  etiquetas_ambientes:['etiquetas_ambientes','etiquetas ambientes','tags ambientes'],
+  etiquetas_vista:['etiquetas_vista','etiquetas vista','tags vista'],
+  etiquetas_acceso:['etiquetas_acceso','etiquetas acceso','tags acceso'],
+  etiquetas_zonas:['etiquetas_zonas','etiquetas zonas','tags zonas'],
+  titulo:['titulo','título','nombre','encabezado','title','nombre del anuncio'],
+  descripcion:['descripcion','descripción','detalle','observaciones','comentarios','description'],
+};
+function _pubNormHeader(h){
+  return String(h||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-z0-9]+/g,' ').trim();
+}
+function _pubBulkNeedsMapping(headers){
+  const norm=headers.map(_pubNormHeader);
+  return _PUB_MAP_REQUIRED.some(k=>norm.indexOf(_pubNormHeader(k))===-1);
+}
+function _pubBulkGuessMap(headers){
+  const used={}, map={};
+  Object.keys(_PUB_MAP_LABELS).forEach(key=>{
+    const cands=[_pubNormHeader(key)].concat((_PUB_MAP_SYNONYMS[key]||[]).map(_pubNormHeader));
+    let hit=headers.find(h=>!used[h] && cands.indexOf(_pubNormHeader(h))!==-1);
+    if(!hit) hit=headers.find(h=>!used[h] && cands.some(c=>c.length>3 && _pubNormHeader(h).indexOf(c)!==-1));
+    if(hit){ used[hit]=1; map[key]=hit; }
+  });
+  return map;
+}
+function _pubBulkSetMap(key,header){
+  if(header) _pubBulkMap[key]=header; else delete _pubBulkMap[key];
+  _pubBulkRefresh();
+}
+function _pubBulkMapHTML(){
+  const sample=_pubBulkRaw[0]||{};
+  const missing=_PUB_MAP_REQUIRED.filter(k=>!_pubBulkMap[k]);
+  const guessed=Object.keys(_pubBulkMap).length;
+  return `<div class="pub-tip"><span>🔀</span><div><strong>Tu archivo usa otros nombres de columna.</strong> Indícanos a qué corresponde cada uno y lo importamos tal cual está: no necesitas rehacer tu Excel.</div></div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px">${esc(_pubBulkFileName||'Archivo')} · ${_pubBulkRaw.length} fila${_pubBulkRaw.length!==1?'s':''} · reconocimos ${guessed} de ${Object.keys(_PUB_MAP_LABELS).length} columnas automáticamente.</div>
     <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
       <table class="pub-preview-table">
-        <thead><tr><th style="width:32px">#</th>${keys.map(k=>`<th>${k}</th>`).join('')}<th>estado</th></tr></thead>
-        <tbody>${annotated.slice(0,10).map((a,i)=>`<tr style="background:${a.valid?'transparent':'#ffe7e7'}"><td>${i+1}</td>${keys.map(k=>`<td title="${(a.row[k]||'').replace(/"/g,'&quot;')}">${a.row[k]||'—'}</td>`).join('')}<td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ OK</span>':`<span style="color:var(--red)" title="${a.errors.join('; ')}">✗ ${a.errors[0]}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}</td></tr>`).join('')}</tbody>
+        <thead><tr><th>Campo de ReCo</th><th>Columna de tu archivo</th><th>Ejemplo (primera fila)</th></tr></thead>
+        <tbody>${Object.keys(_PUB_MAP_LABELS).map(key=>{
+          const sel=_pubBulkMap[key]||'';
+          const req=_PUB_MAP_REQUIRED.indexOf(key)!==-1;
+          const val=sel?String(sample[sel]==null?'':sample[sel]).slice(0,40):'—';
+          return `<tr>
+            <td style="font-size:12px">${_PUB_MAP_LABELS[key]}${req?' <span style="color:var(--red)">*</span>':''}</td>
+            <td><select onchange="_pubBulkSetMap('${key}',this.value)" style="width:100%;min-width:170px;border:1px solid ${req&&!sel?'var(--red)':'var(--border)'};border-radius:5px;padding:4px 6px;font-size:11px;background:#fff">
+              <option value="">— no usar —</option>
+              ${_pubBulkHeaders.map(h=>`<option value="${esc(h)}" ${h===sel?'selected':''}>${esc(h)}</option>`).join('')}
+            </select></td>
+            <td style="font-size:11px;color:var(--muted)">${esc(val)}</td>
+          </tr>`;
+        }).join('')}</tbody>
       </table>
     </div>
-    ${annotated.length>10?`<div style="font-size:11px;color:var(--muted);margin-top:6px">Mostrando 10 de ${annotated.length} filas.</div>`:''}
-    <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
-    <div class="pub-actions" style="margin-top:20px">
-      <div style="font-size:12px;color:var(--muted)">${_PUB_BULK_COST_PER>0?`Cada publicación cuesta ${_PUB_BULK_COST_PER} llaves.`:'Publicar es gratuito por ahora.'} Las inválidas se saltan.</div>
-      <button class="pub-btn primary" id="pubBulkSubmitBtn" ${(!validCount||shortKeys)?'disabled':''} onclick="_pubBulkSubmit()">
-        ${shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:validCount?(cost>0?`Publicar ${validCount} · 🔑 ${cost} llaves`:`Publicar ${validCount} inmueble${validCount!==1?'s':''}`):'Sin filas válidas para publicar'}
+    <div class="pub-actions" style="margin-top:18px">
+      <button class="pub-btn ghost" onclick="_pubBulkGo(1)">← Cambiar archivo</button>
+      <button class="pub-btn primary" ${missing.length?'disabled':''} onclick="_pubBulkApplyMap()">
+        ${missing.length?`Falta indicar: ${missing.map(k=>_PUB_MAP_LABELS[k]).join(', ')}`:'Continuar a revisar →'}
       </button>
     </div>`;
+}
+function _pubBulkApplyMap(){
+  const rows=_pubBulkRaw.map(src=>{
+    const out={};
+    Object.keys(_PUB_MAP_LABELS).forEach(key=>{
+      const h=_pubBulkMap[key];
+      out[key]=h?String(src[h]==null?'':src[h]).trim():'';
+    });
+    out.precio=_pubCleanNumber(out.precio);
+    out.area_techada=_pubCleanNumber(out.area_techada);
+    out.area_terreno=_pubCleanNumber(out.area_terreno);
+    ['nro_dormitorios','nro_banos','nro_estacionamientos','piso','niveles','nro_pisos','antiguedad'].forEach(k=>{ out[k]=_pubCleanNumber(out[k]); });
+    out.tipo_propiedad=_pubMatchOption(out.tipo_propiedad,_PUB_BULK_TYPES)||out.tipo_propiedad;
+    out.tipo_publicacion=_pubMatchOption(out.tipo_publicacion,_PUB_BULK_OPS)||out.tipo_publicacion;
+    out.tipo_moneda=_pubMatchCurrency(out.tipo_moneda);
+    return out;
+  });
+  _pubBulkLoadRows(rows);
+}
+function _pubCleanNumber(v){
+  const s=String(v==null?'':v).replace(/[^0-9,.\-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.');
+  return s;
+}
+function _pubMatchOption(v,list){
+  const n=_pubNormHeader(v);
+  return list.find(o=>_pubNormHeader(o)===n) || list.find(o=>n && _pubNormHeader(o).indexOf(n)===0) || '';
+}
+function _pubMatchCurrency(v){
+  const n=_pubNormHeader(v);
+  if(!n) return 'USD';
+  if(/(usd|dolar|dolares|us|\$)/.test(n)) return 'USD';
+  if(/(pen|sol|soles|s\/)/.test(n)) return 'PEN';
+  return String(v).toUpperCase();
+}
+function _pubBulkLoadRows(rows){
+  _pubBulkRows = rows.map(r => ({ row:r, photos:[], ...(_pubBulkValidateRow(r)) }));
+  _pubBulkPhotoIdx=0;
+  _pubBulkGo(2);
 }
 
 async function _pubBulkSubmit(){
@@ -6708,6 +7187,7 @@ async function _pubBulkSubmit(){
   if(!_ensureEmailVerified()) return;
   const valid = _pubBulkRows.filter(a=>a.valid);
   if(!valid.length){toast('⚠️ No hay filas válidas para publicar');return;}
+  if(_pubBulkRows.some(a=>!a.valid)){toast('⚠️ Corrige o descarta las filas con errores antes de enviar');_pubBulkGo(2);return;}
   const cost = valid.length * _PUB_BULK_COST_PER;
   if(cost>0 && S.keysLeft<cost){toast(`⚠️ Necesitas ${cost} llaves (tienes ${S.keysLeft})`);return;}
   const btn=document.getElementById('pubBulkSubmitBtn'); if(btn) btn.disabled=true;
@@ -6718,10 +7198,23 @@ async function _pubBulkSubmit(){
   for(let i=0;i<valid.length;i++){
     if(aborted) break;
     const r = valid[i].row;
+    const rowPhotos = valid[i].photos || [];
     if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
     try {
       const res = await call(_pubBulkRowToPubData(r));
       ok++;
+      const pubId = res && res.data && res.data.publicationId;
+      if(pubId && rowPhotos.length){
+        try{
+          const urls = await _uploadPublicationPhotos(pubId, rowPhotos);
+          if(urls.length) await db.collection('publications').doc(pubId).update({ photoUrls: urls, photosPending: false });
+        }catch(upErr){
+          console.error('[reco] bulk photo upload failed:', pubId, upErr);
+          try{ await db.collection('publications').doc(pubId).update({ photosPending:true, photoError:String((upErr&&upErr.code)||(upErr&&upErr.message)||'upload-failed').slice(0,200) }); }catch(_){}
+        }
+      } else if(pubId){
+        try{ await db.collection('publications').doc(pubId).update({ photosPending:true }); }catch(_){}
+      }
       if(res && res.data && typeof res.data.keysLeft === 'number'){
         S.keysLeft = res.data.keysLeft;
         updateKeyCount();
@@ -6736,8 +7229,6 @@ async function _pubBulkSubmit(){
     }
   }
   if(ok>0 && _PUB_BULK_COST_PER>0 && typeof addKeyHistoryEntry === 'function'){
-    // Best-effort local history entry — the server appended a per-
-    // publication entry inside each callable call.
     addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);
   }
   if(prog){
@@ -6752,7 +7243,10 @@ async function _pubBulkSubmit(){
   }
   if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
   toast(failed.length ? `⚠️ ${ok} publicadas · ${failed.length} fallaron` : `🚀 ¡${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}!`);
-  if(!failed.length) setTimeout(()=>closePublish(),2200);
+  if(!failed.length){
+    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1;
+    setTimeout(()=>closePublish(),2200);
+  }
 }
 
 
