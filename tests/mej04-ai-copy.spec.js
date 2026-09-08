@@ -137,6 +137,62 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
     expect(violations).toEqual([]);
   });
 
+  // ── Fix #3: hideExact in single-publish payload ──
+
+  test('single-publish payload includes hideExact (source + runtime)', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const src = _ppub.toString();
+      const callBlock = src.slice(src.indexOf('await call('), src.indexOf('const publicationId'));
+      const sourceHasHideExact = callBlock.includes('hideExact') && callBlock.includes('_pd.hideExact');
+      _pd.hideExact = true;
+      const runtimeTrue = !!_pd.hideExact === true;
+      _pd.hideExact = false;
+      const runtimeFalse = !!_pd.hideExact === false;
+      return { sourceHasHideExact, runtimeTrue, runtimeFalse };
+    });
+    expect(result.sourceHasHideExact).toBe(true);
+    expect(result.runtimeTrue).toBe(true);
+    expect(result.runtimeFalse).toBe(true);
+  });
+
+  test('hideExact defaults to false in _pd', async ({ page }) => {
+    const val = await page.evaluate(() => {
+      return _pd.hideExact;
+    });
+    expect(val).toBe(false);
+  });
+
+  // ── Fix #4: search filter legacy tag equivalence ──
+
+  test('filter with canonical tag matches property using legacy name', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const propLegacy = { features: ['Piscina'] };
+      const propNew = { features: ['Piscina propia'] };
+      const propNone = { features: ['Jardín propio'] };
+      const pf1 = propLegacy.features || [];
+      const pf2 = propNew.features || [];
+      const pf3 = propNone.features || [];
+      const f = 'Piscina propia';
+      const matchLegacy = pf1.includes(f) || pf1.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf1.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
+      const matchNew = pf2.includes(f) || pf2.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf2.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
+      const matchNone = pf3.includes(f) || pf3.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf3.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
+      return { matchLegacy, matchNew, matchNone };
+    });
+    expect(result.matchLegacy).toBe(true);
+    expect(result.matchNew).toBe(true);
+    expect(result.matchNone).toBe(false);
+  });
+
+  test('_PUB_FEAT_REVERSE_MAP covers all legacy→canonical pairs', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      const pairs = Object.entries(_PUB_FEAT_LEGACY_MAP);
+      const reverseOk = pairs.every(([legacy, canonical]) => _PUB_FEAT_REVERSE_MAP[canonical] === legacy);
+      return { count: pairs.length, reverseOk };
+    });
+    expect(result.count).toBeGreaterThan(0);
+    expect(result.reverseOk).toBe(true);
+  });
+
   // ── _AI_COPY_ENABLED=false guard (explicit crash safety) ──
 
   test('when flag=false, AI DOM elements absent and AI functions do not crash', async ({ page }) => {
