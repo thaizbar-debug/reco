@@ -322,6 +322,7 @@ exports.publishProperty = onCall(
         baths: numOrZero(raw.baths),
         parking: numOrZero(raw.parking),
         floor: numOrZero(raw.floor),
+        unitFloors: Math.max(1, numOrZero(raw.unitFloors) || 1),
         floors: numOrZero(raw.floors),
         age: numOrZero(raw.age),
         estado,
