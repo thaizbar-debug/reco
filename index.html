@@ -6083,20 +6083,20 @@ function _rps(){
         </div>
         <div id="pubPhotoCount" style="font-size:11px;color:var(--muted);margin-top:6px">${_pd.photos.length>0?`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`:''}</div>
         <h3 style="margin-top:22px">📝 Descripción</h3>
-        ${_AI_COPY_ENABLED ? `<div id="pubAiCopySection" style="margin-bottom:14px">
-          <button id="pubAiCopyBtn" onclick="_pubGenerateCopy()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✨ Redactar con IA</button>
-          <div id="pubAiCopyResult" style="display:none;margin-top:12px;background:var(--light);border:1px solid var(--border);border-radius:10px;padding:16px">
+        ${_AI_COPY_ENABLED ? `<div style="margin-bottom:14px">
+          <button id="pubAiBtn" onclick="_pubAiCopy()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✨ Redactar con IA</button>
+          <div id="pubAiOut" style="display:none;margin-top:12px;background:var(--light);border:1px solid var(--border);border-radius:10px;padding:16px">
             <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Sugerencia de la IA:</div>
-            <div id="pubAiCopyTitle" style="font-weight:600;margin-bottom:6px"></div>
-            <div id="pubAiCopyDesc" style="font-size:13px;white-space:pre-wrap"></div>
+            <div id="pubAiOutTitle" style="font-weight:600;margin-bottom:6px"></div>
+            <div id="pubAiOutDesc" style="font-size:13px;white-space:pre-wrap"></div>
             <div style="margin-top:12px;display:flex;gap:8px">
-              <button onclick="_pubUseAiCopy()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600">Usar este texto</button>
-              <button onclick="_pubGenerateCopy()" style="background:var(--border);color:var(--text);border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px">Regenerar</button>
-              <button onclick="document.getElementById('pubAiCopyResult').style.display='none'" style="background:none;color:var(--muted);border:none;cursor:pointer;font-size:12px">Cerrar</button>
+              <button onclick="_pubAiApply()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600">Usar este texto</button>
+              <button onclick="_pubAiCopy()" style="background:var(--border);color:var(--text);border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px">Regenerar</button>
+              <button onclick="document.getElementById('pubAiOut').style.display='none'" style="background:none;color:var(--muted);border:none;cursor:pointer;font-size:12px">Cerrar</button>
             </div>
           </div>
-          <div id="pubAiCopyLoading" style="display:none;margin-top:8px;font-size:12px;color:var(--muted)">⏳ Generando texto…</div>
-          <div id="pubAiCopyError" style="display:none;margin-top:8px;font-size:12px;color:var(--red)"></div>
+          <div id="pubAiLoading" style="display:none;margin-top:8px;font-size:12px;color:var(--muted)">⏳ Generando texto…</div>
+          <div id="pubAiError" style="display:none;margin-top:8px;font-size:12px;color:var(--red)"></div>
         </div>` : ''}
         <div class="pub-field"><label>Título del anuncio <span style="color:var(--red)">*</span></label><input id="pubTitleInput" value="${esc(_pd.title)}" oninput="_pd.title=this.value" placeholder="Ej: Departamento moderno con vista al parque en Miraflores"></div>
         <div class="pub-field"><label>Descripción <span style="color:var(--red)">*</span></label><textarea id="pubDescInput" rows="5" placeholder="Describe lo que hace especial tu propiedad…" oninput="_pd.desc=this.value">${esc(_pd.desc)}</textarea></div>
@@ -6278,26 +6278,30 @@ function _isImageFile(f){
 function _pubRemovePhoto(i){_pd.photos.splice(i,1);_pubRenderPhotos();}
 
 let _aiCopyLastResult = null;
-async function _pubGenerateCopy(){
-  const btn = document.getElementById('pubAiCopyBtn');
-  const loading = document.getElementById('pubAiCopyLoading');
-  const errEl = document.getElementById('pubAiCopyError');
-  const resultEl = document.getElementById('pubAiCopyResult');
+function _pubAiPrompt(){
+  return {
+    district: _pd.district, area: _pd.area, type: _pd.type,
+    op: _pd.op, beds: _pd.beds, baths: _pd.baths,
+    parking: _pd.parking, features: _pd.features
+  };
+}
+async function _pubAiCopy(){
+  const btn = document.getElementById('pubAiBtn');
+  const loading = document.getElementById('pubAiLoading');
+  const errEl = document.getElementById('pubAiError');
+  const outEl = document.getElementById('pubAiOut');
   if(!btn) return;
   btn.disabled = true;
   if(loading) loading.style.display = '';
   if(errEl) errEl.style.display = 'none';
-  if(resultEl) resultEl.style.display = 'none';
+  if(outEl) outEl.style.display = 'none';
   try {
     const fn = firebase.functions().httpsCallable('generateListingCopy');
-    const res = await fn({
-      district: _pd.district, area: _pd.area, type: _pd.type,
-      op: _pd.op, beds: _pd.beds, baths: _pd.baths, features: _pd.features
-    });
+    const res = await fn(_pubAiPrompt());
     _aiCopyLastResult = res.data;
-    document.getElementById('pubAiCopyTitle').textContent = res.data.titulo;
-    document.getElementById('pubAiCopyDesc').textContent = res.data.descripcion;
-    if(resultEl) resultEl.style.display = '';
+    document.getElementById('pubAiOutTitle').textContent = res.data.titulo;
+    document.getElementById('pubAiOutDesc').textContent = res.data.descripcion;
+    if(outEl) outEl.style.display = '';
   } catch(e) {
     if(errEl){ errEl.textContent = e.message || 'Error al generar texto'; errEl.style.display = ''; }
   } finally {
@@ -6305,7 +6309,7 @@ async function _pubGenerateCopy(){
     if(loading) loading.style.display = 'none';
   }
 }
-function _pubUseAiCopy(){
+function _pubAiApply(){
   if(!_aiCopyLastResult) return;
   _pd.title = _aiCopyLastResult.titulo;
   _pd.desc = _aiCopyLastResult.descripcion;
@@ -6313,8 +6317,8 @@ function _pubUseAiCopy(){
   const di = document.getElementById('pubDescInput');
   if(ti) ti.value = _pd.title;
   if(di) di.value = _pd.desc;
-  const res = document.getElementById('pubAiCopyResult');
-  if(res) res.style.display = 'none';
+  const out = document.getElementById('pubAiOut');
+  if(out) out.style.display = 'none';
   toast('✅ Texto aplicado — puedes editarlo antes de publicar');
 }
 

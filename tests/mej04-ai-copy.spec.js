@@ -16,7 +16,7 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
   test('when _AI_COPY_ENABLED=false, AI copy button is NOT rendered', async ({ page }) => {
     const enabled = await page.evaluate(() => _AI_COPY_ENABLED);
     if (enabled) { test.skip(); return; }
-    const btn = await page.evaluate(() => document.getElementById('pubAiCopyBtn'));
+    const btn = await page.evaluate(() => document.getElementById('pubAiBtn'));
     expect(btn).toBeNull();
   });
 
@@ -34,14 +34,25 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
 
   // ── JS function existence ──
 
-  test('_pubGenerateCopy function exists', async ({ page }) => {
-    const exists = await page.evaluate(() => typeof _pubGenerateCopy === 'function');
+  test('_pubAiCopy function exists', async ({ page }) => {
+    const exists = await page.evaluate(() => typeof _pubAiCopy === 'function');
     expect(exists).toBe(true);
   });
 
-  test('_pubUseAiCopy function exists', async ({ page }) => {
-    const exists = await page.evaluate(() => typeof _pubUseAiCopy === 'function');
+  test('_pubAiApply function exists', async ({ page }) => {
+    const exists = await page.evaluate(() => typeof _pubAiApply === 'function');
     expect(exists).toBe(true);
+  });
+
+  test('_pubAiPrompt function exists and returns district/area', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      _pd.district = 'Miraflores';
+      _pd.area = 120;
+      return _pubAiPrompt();
+    });
+    expect(result.district).toBe('Miraflores');
+    expect(result.area).toBe(120);
+    expect(result).not.toHaveProperty('address');
   });
 
   test('_aiCopyLastResult is initially null', async ({ page }) => {
@@ -49,26 +60,26 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
     expect(val).toBeNull();
   });
 
-  // ── _pubUseAiCopy logic ──
+  // ── _pubAiApply logic ──
 
-  test('_pubUseAiCopy sets _pd.title and _pd.desc from _aiCopyLastResult', async ({ page }) => {
+  test('_pubAiApply sets _pd.title and _pd.desc from _aiCopyLastResult', async ({ page }) => {
     const result = await page.evaluate(() => {
       _aiCopyLastResult = { titulo: 'AI Title Test', descripcion: 'AI Description Test' };
       _pd.title = '';
       _pd.desc = '';
-      _pubUseAiCopy();
+      _pubAiApply();
       return { title: _pd.title, desc: _pd.desc };
     });
     expect(result.title).toBe('AI Title Test');
     expect(result.desc).toBe('AI Description Test');
   });
 
-  test('_pubUseAiCopy does nothing when _aiCopyLastResult is null', async ({ page }) => {
+  test('_pubAiApply does nothing when _aiCopyLastResult is null', async ({ page }) => {
     const result = await page.evaluate(() => {
       _aiCopyLastResult = null;
       _pd.title = 'Original';
       _pd.desc = 'Original desc';
-      _pubUseAiCopy();
+      _pubAiApply();
       return { title: _pd.title, desc: _pd.desc };
     });
     expect(result.title).toBe('Original');
@@ -86,13 +97,24 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
     expect(scripts).toContain("httpsCallable('generateListingCopy')");
   });
 
-  test('_pubGenerateCopy sends district and area from _pd', async ({ page }) => {
-    const scripts = await page.evaluate(() => {
-      const all = [];
-      document.querySelectorAll('script').forEach(s => all.push(s.textContent));
-      return all.join('');
+  test('_pubAiPrompt sends district and area from _pd (no address)', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      _pd.district = 'San Isidro';
+      _pd.area = 85;
+      _pd.address = '123 Calle Secreta';
+      const prompt = _pubAiPrompt();
+      return {
+        hasDistrict: 'district' in prompt,
+        hasArea: 'area' in prompt,
+        hasAddress: 'address' in prompt,
+        district: prompt.district,
+        area: prompt.area,
+      };
     });
-    expect(scripts).toContain('district: _pd.district');
-    expect(scripts).toContain('area: _pd.area');
+    expect(result.hasDistrict).toBe(true);
+    expect(result.hasArea).toBe(true);
+    expect(result.hasAddress).toBe(false);
+    expect(result.district).toBe('San Isidro');
+    expect(result.area).toBe(85);
   });
 });

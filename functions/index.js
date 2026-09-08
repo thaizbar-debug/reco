@@ -960,81 +960,112 @@ exports.grantKeys = onCall(
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MEJ-04: generateListingCopy — AI-powered listing description
+// Uses fetch() instead of the openai SDK to avoid an extra dependency in the
+// Cloud Function bundle; functionally identical (gpt-4o-mini, temperature 0.7,
+// response_format: json_object).
 // ─────────────────────────────────────────────────────────────────────────────
-const AI_COPY_RATE_LIMIT = 30;
-const AI_COPY_RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const AI_COPY_LIMIT_PER_HOUR = 30;
 
 exports.generateListingCopy = onCall(
   {
     region: REGION,
     maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
     secrets: [openaiKey],
   },
   async (request) => {
-    const caller = request.auth;
-    if (!caller) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+    _logAppCheck(request, 'generateListingCopy');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
 
-    const { district, area, type, op, beds, baths, features } = request.data;
+    const d = request.data || {};
+    const district = String(d.district || '').replace(/[\r\n]/g, ' ').trim().slice(0, 60);
+    const area = Number(d.area) || 0;
     if (!district || !area) {
       throw new HttpsError('invalid-argument', 'Distrito y área son obligatorios.');
     }
+    const type  = String(d.type  || '').slice(0, 40);
+    const op    = String(d.op    || '').slice(0, 20);
+    const beds  = Number(d.beds)  || 0;
+    const baths = Number(d.baths) || 0;
+    const parking = Number(d.parking) || 0;
+    const features = Array.isArray(d.features) ? d.features.map(f => String(f).slice(0, 60)) : [];
 
-    // ── Rate limiting via Firestore transaction ──
-    const usageRef = db.collection('aiCopyUsage').doc(caller.uid);
+    // ── Rate limit: hour-bucket in aiCopyUsage/{uid} ──
+    const hour = new Date().toISOString().slice(0, 13); // e.g. "2026-09-08T14"
+    const usageRef = db.collection('aiCopyUsage').doc(uid);
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(usageRef);
       const data = snap.data() || {};
-      const now = Date.now();
-      const windowStart = now - AI_COPY_RATE_WINDOW_MS;
-      const timestamps = (data.timestamps || []).filter(t => t > windowStart);
-
-      if (timestamps.length >= AI_COPY_RATE_LIMIT) {
+      if (data.hour === hour && (data.count || 0) >= AI_COPY_LIMIT_PER_HOUR) {
         throw new HttpsError(
           'resource-exhausted',
-          `Límite de ${AI_COPY_RATE_LIMIT} generaciones por hora alcanzado. Intenta más tarde.`
+          `Límite de ${AI_COPY_LIMIT_PER_HOUR} generaciones por hora alcanzado. Intenta más tarde.`
         );
       }
-
-      timestamps.push(now);
-      tx.set(usageRef, { timestamps }, { merge: true });
+      if (data.hour === hour) {
+        tx.update(usageRef, { count: (data.count || 0) + 1 });
+      } else {
+        tx.set(usageRef, { hour, count: 1 });
+      }
     });
 
-    // ── Build prompt ──
-    const featureList = (features || []).join(', ');
-    const prompt = `Eres un redactor inmobiliario profesional en Perú. Genera un título corto (máx 80 caracteres) y una descripción atractiva (150-250 palabras) para un anuncio de ${type || 'propiedad'} en ${op || 'venta'}.
+    // ── Build ficha (never includes address — only district) ──
+    const ficha = {
+      distrito: district,
+      area_m2: area,
+      ...(type  && { tipo: type }),
+      ...(op    && { operacion: op }),
+      ...(beds  && { dormitorios: beds }),
+      ...(baths && { banos: baths }),
+      ...(parking && { estacionamientos: parking }),
+      ...(features.length && { caracteristicas: features }),
+    };
 
-Datos:
-- Distrito: ${district}
-- Área techada: ${area} m²
-${beds ? `- Dormitorios: ${beds}` : ''}
-${baths ? `- Baños: ${baths}` : ''}
-${featureList ? `- Características: ${featureList}` : ''}
+    const systemPrompt = `Eres un redactor inmobiliario profesional en Perú.
+Genera un título y una descripción para un aviso clasificado a partir de la ficha técnica que te entregará el usuario.
 
-Responde en JSON exacto: {"titulo":"...","descripcion":"..."}
-No uses markdown ni bloques de código. Solo el JSON.`;
+Reglas:
+1. Usa SOLO los datos de la ficha. No inventes metraje, ambientes ni amenities que no aparezcan.
+2. No menciones el precio.
+3. No uses mayúsculas sostenidas ni exclamaciones repetidas.
+4. No prometas rentabilidad ni plusvalía.
+5. No uses lenguaje discriminatorio ni excluyente.
+6. Responde ÚNICAMENTE con un JSON válido (sin bloques de código) con esta forma:
+   {"titulo":"...","descripcion":"..."}
+   donde título ≤ 90 caracteres y descripción tiene entre 500 y 900 caracteres distribuidos en 2 a 3 párrafos separados por \\n\\n.`;
 
-    // ── Call OpenAI ──
+    // ── Call OpenAI via fetch ──
     const key = openaiKey.value();
     if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
 
-    const { default: OpenAI } = await import('openai');
-    const client = new OpenAI({ apiKey: key });
-
-    let completion;
+    let body;
     try {
-      completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 600,
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.7,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: JSON.stringify(ficha) },
+          ],
+        }),
       });
+      body = await res.json();
+      if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
     } catch (e) {
       logger.error('[generateListingCopy] OpenAI error', { err: e && e.message });
       throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
     }
 
-    const raw = (completion.choices[0]?.message?.content || '').trim();
-
+    const raw = (body.choices?.[0]?.message?.content || '').trim();
     let parsed;
     try {
       parsed = JSON.parse(raw);
