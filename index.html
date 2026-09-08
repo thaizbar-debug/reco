@@ -5889,9 +5889,15 @@ function toast(msg){
 
 // ─────────────────────── PUBLISH ───────────────────────
 let _ps=1,_pubTab='single',pubMap=null,pubMarker=null,_pubGeoTimer=null;
+// MEJ-05 — Convivían "Nro pisos" y "Piso del inmueble" sin explicar
+// cuál era cuál. Un dúplex en los pisos 6 y 7 de un edificio de 7 no
+// tenía dónde declararse. Ahora son tres datos distintos y rotulados:
+//   floor      = piso donde empieza el inmueble
+//   unitFloors = cuántos niveles ocupa (1 = un solo nivel, 2 = dúplex…)
+//   floors     = pisos totales del edificio
 let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
          hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-         beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+         beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[],listedAt:null};
 const _VALUATION_ENABLED = false;
@@ -5915,7 +5921,7 @@ function openPublish(){
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-       beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+       beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
        estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
@@ -6015,10 +6021,28 @@ function _rps(){
         <div class="pub-stp-row"><span class="stp-lbl">🛏 Dormitorios</span><div class="stp-ctrl"><button onclick="_pAdj('beds',-1)">−</button><span class="stp-val" id="pub_beds">${_pd.beds}</span><button onclick="_pAdj('beds',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚿 Baños</span><div class="stp-ctrl"><button onclick="_pAdj('baths',-1)">−</button><span class="stp-val" id="pub_baths">${_pd.baths}</span><button onclick="_pAdj('baths',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚗 Estacionamientos</span><div class="stp-ctrl"><button onclick="_pAdj('parking',-1)">−</button><span class="stp-val" id="pub_parking">${_pd.parking}</span><button onclick="_pAdj('parking',1)">+</button></div></div>
-        <div class="pub-field row" style="margin-top:10px">
-          <div><label>Nro pisos</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
-          <div><label>Piso del inmueble</label><input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value)"></div>
+        <div class="pub-field" style="margin-top:10px">
+          <label>🏢 Pisos</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Tres datos distintos: en qué piso está, cuántos niveles ocupa por dentro y cuántos pisos tiene el edificio.</div>
         </div>
+        <div class="pub-field row">
+          <div>
+            <label>${_pd.type==='Casa'?'Piso de ingreso':'Piso en el que está'}</label>
+            <input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 6">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">0 si está a nivel de calle.</div>
+          </div>
+          <div>
+            <label>Niveles que ocupa</label>
+            <input type="number" min="1" value="${_pd.unitFloors||1}" oninput="_pd.unitFloors=Math.max(1,Number(this.value)||1);_pubFloorsSummary()" placeholder="1">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">1 = un solo nivel · 2 = dúplex · 3 = tríplex.</div>
+          </div>
+          <div>
+            <label>${_pd.type==='Casa'?'Pisos de la casa':'Pisos del edificio'}</label>
+            <input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 7">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Altura total de la construcción.</div>
+          </div>
+        </div>
+        <div id="pubFloorsSummary" style="font-size:12px;color:var(--blue);margin:-2px 0 6px">${_pubFloorsText()}</div>
         <div class="pub-field row">
           <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
           <div><label>Estado</label>
@@ -6097,6 +6121,7 @@ function _rps(){
           <div style="font-weight:600">${_pd.op} · ${_pd.type}</div>
           <div style="color:var(--muted);margin-top:2px">📍 ${_pd.address||'—'}${_pd.district?', '+_pd.district:''}</div>
           <div style="color:var(--muted);margin-top:2px">📐 ${_pd.area} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
+          ${_pubFloorsText()?`<div style="color:var(--muted);margin-top:2px">🏢 ${_pubFloorsText()}</div>`:''}
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
@@ -6119,6 +6144,27 @@ function _rps(){
   }
 }
 
+// MEJ-05 — Devuelve la frase que confirma, en lenguaje natural, lo que
+// el corredor acaba de escribir en los tres campos de pisos.
+function _pubFloorsText(){
+  const f=Number(_pd.floor)||0, u=Math.max(1,Number(_pd.unitFloors)||1), t=Number(_pd.floors)||0;
+  if(!f && u<2 && !t) return '';
+  const nivel=u>1?`Ocupa ${u} niveles (pisos ${f||1} al ${(f||1)+u-1})`:(f?`Está en el piso ${f}`:'Está a nivel de calle');
+  const edif=t?` de un edificio de ${t} piso${t!==1?'s':''}.`:'.';
+  const aviso=(t && f && (f+u-1)>t)?' <span style="color:var(--red)">Revisa: supera la altura del edificio.</span>':'';
+  return nivel+edif+aviso;
+}
+function _pubFloorsSummary(){
+  const el=document.getElementById('pubFloorsSummary');
+  if(el) el.innerHTML=_pubFloorsText();
+}
+// El nivel múltiple se guarda además como etiqueta, para que se vea en
+// la ficha del inmueble sin cambiar el modelo de datos del servidor.
+function _pubLevelTag(){
+  const u=Math.max(1,Number(_pd.unitFloors)||1);
+  if(u<2) return '';
+  return u===2?'Dúplex':u===3?'Tríplex':`${u} niveles`;
+}
 function _pdOp(op){
   _pd.op=op;
   document.querySelectorAll('.pub-op-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(op==='Venta'?'Venta':'Alquiler')));
@@ -6336,10 +6382,10 @@ async function _ppub(){
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
-      floor: _pd.floor, floors: _pd.floors, age: _pd.age,
+      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1), age: _pd.age,
       estado: _pd.estado,
       ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
-      features: _pd.features || [],
+      features: (function(){ const tag=_pubLevelTag(); const f=(_pd.features||[]).slice(); if(tag && f.indexOf(tag)===-1) f.push(tag); return f; })() || [],
       title: _pd.title, desc: _pd.desc,
     });
     const publicationId = res && res.data && res.data.publicationId;
