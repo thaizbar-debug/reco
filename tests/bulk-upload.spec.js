@@ -3,8 +3,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3123/');
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
   });
 
   // ── Template columns ────────────────────────────────────────────
