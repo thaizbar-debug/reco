@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -40,12 +40,14 @@ const UNLOCK_COST = 1;
 // escribe movimiento de llaves.
 const PUBLISH_COST = 0;
 const HISTORY_CAP = 200;
+const WELCOME_KEYS = 1;
 // Max contactRequests a single fromUserId can create in the rolling
 // last hour. Above this, submitContactRequest throws resource-exhausted.
 // A legit user contacting 15 property owners in 60 minutes is already
 // aggressive; anything much beyond that is scraper behaviour.
 const CONTACT_RATE_LIMIT_PER_HOUR = 15;
-const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
+const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco', 'demanda_insatisfecha'];
+const UNMET_DEMAND_PROPERTY_TYPES = ['Departamento', 'Casa', 'Terreno', 'Oficina', 'Otro'];
 // Max getHistoricoDetail calls per authenticated user per rolling hour.
 // A user browsing 500 histórico cards in one hour is already very
 // intense; beyond that suggests a script trying to pull the full
@@ -428,9 +430,23 @@ exports.submitContactRequest = onCall(
     if (!/.+@.+\..+/.test(fromEmail)) {
       throw new HttpsError('invalid-argument', 'fromEmail inválido.');
     }
-    const message = str(raw.message, 'message', 2000);
-    if (message.length < 10) {
+    const isUnmetDemand = kind === 'demanda_insatisfecha';
+    const message = isUnmetDemand ? optStr(raw.message, 2000) || '' : str(raw.message, 'message', 2000);
+    if (!isUnmetDemand && message.length < 10) {
       throw new HttpsError('invalid-argument', 'El mensaje debe tener al menos 10 caracteres.');
+    }
+
+    let unmetFields = {};
+    if (isUnmetDemand) {
+      const referenceZone = str(raw.referenceZone, 'referenceZone', 500);
+      const propertyTypeWanted = raw.propertyTypeWanted;
+      if (!UNMET_DEMAND_PROPERTY_TYPES.includes(propertyTypeWanted)) {
+        throw new HttpsError('invalid-argument', 'propertyTypeWanted inválido.');
+      }
+      const budgetReference = optStr(raw.budgetReference, 200);
+      const viewType = optStr(raw.viewType, 40);
+      const source = optStr(raw.source, 40);
+      unmetFields = { referenceZone, propertyTypeWanted, budgetReference, viewType, source };
     }
 
     const reqId = `${uid}_${propertyId}_${kind}`;
@@ -475,13 +491,16 @@ exports.submitContactRequest = onCall(
       propertyOp:          optStr(raw.propertyOp, 40),
       propertyPrice:       (typeof raw.propertyPrice === 'number' && isFinite(raw.propertyPrice)) ? raw.propertyPrice : null,
       propertyCurrency:    optStr(raw.propertyCurrency, 10),
-      publicationOwnerId:  optStr(raw.publicationOwnerId, 128),
+      publicationOwnerId:    isUnmetDemand ? null : optStr(raw.publicationOwnerId, 128),
+      publicationOwnerEmail: isUnmetDemand ? null : optStr(raw.publicationOwnerEmail, 200),
       kind,
+      source:              optStr(raw.source, 40),
       fromUserId:          uid,
       fromName,
       fromEmail,
       fromPhone:           optStr(raw.fromPhone, 40),
       message,
+      ...unmetFields,
       status:              'new',
       createdAt:           FieldValue.serverTimestamp(),
     });
@@ -710,6 +729,43 @@ exports.cleanupHistDetailAccess = onSchedule(
     }
 
     logger.info(`[cleanupHistDetailAccess] deleted ${totalDeleted} old access records in ${round} rounds`);
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grantWelcomeKey — give every new user WELCOME_KEYS free keys.
+//
+// Fires when a /users/{uid} document is first created (by
+// _sanitizedSeed() on the client, which seeds keysLeft: 0). The admin
+// SDK bypasses Firestore rules, so it can set keysLeft to a non-zero
+// value that the client create rule intentionally blocks.
+//
+// Abuse surface: a user cannot re-trigger this by deleting and
+// re-creating their doc — the Firestore rule `allow delete: if false`
+// on /users prevents client-side deletion. Re-creating an existing doc
+// (set without merge) also fails because _pullUserDataFromFirestore
+// only calls set() when snap.exists === false.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.grantWelcomeKey = onDocumentCreated(
+  { region: REGION, document: 'users/{uid}' },
+  async (event) => {
+    const uid = event.params.uid;
+    const userRef = db.collection('users').doc(uid);
+
+    const historyEntry = {
+      type: 'bonus',
+      qty: WELCOME_KEYS,
+      propId: null,
+      propLabel: 'Llave de bienvenida',
+      date: new Date().toISOString(),
+    };
+
+    await userRef.update({
+      keysLeft: WELCOME_KEYS,
+      keyHistory: [historyEntry],
+    });
+
+    logger.info('[grantWelcomeKey] granted welcome key', { uid, keys: WELCOME_KEYS });
   }
 );
 
