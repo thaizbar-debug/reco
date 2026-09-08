@@ -1,21 +1,16 @@
 /**
- * Stress-test for generateListingCopy rate limit logic.
+ * Stress-test for generateListingCopy rate limit — exercises the REAL
+ * handler code from functions/index.js by intercepting Firebase module
+ * requires and supplying mocks for Firestore, Auth, AppCheck, etc.
  *
- * Cannot use the Firebase emulator (no firebase-tools in this env), so we
- * replicate the exact transaction logic from functions/index.js with an
- * in-memory Firestore mock.  The assertions prove the algorithm, not just
- * that "something was called."
+ * The rate-limit logic (hour-bucket, count check, transaction) is NOT
+ * reimplemented here — it runs verbatim from the source file.
  */
 const { test, expect } = require('@playwright/test');
+const Module = require('module');
+const path = require('path');
 
-// ── Replicate the exact rate-limit constants and logic from functions/index.js ──
-const AI_COPY_LIMIT_PER_HOUR = 30;
-
-function makeHourKey(date) {
-  return date.toISOString().slice(0, 13);
-}
-
-// In-memory Firestore doc store
+// ── In-memory Firestore mock ──
 function createMockFirestore() {
   const store = {};
   return {
@@ -26,9 +21,16 @@ function createMockFirestore() {
           const key = `${name}/${id}`;
           return {
             _key: key,
-            get() { return { data: () => store[key] ? { ...store[key] } : undefined, exists: !!store[key] }; },
+            get() {
+              return Promise.resolve({
+                data: () => store[key] ? { ...store[key] } : undefined,
+                exists: !!store[key],
+              });
+            },
+            create(data) { store[key] = { ...data }; return Promise.resolve(); },
           };
         },
+        where() { return { where() { return this; }, count() { return { get() { return Promise.resolve({ data: () => ({ count: 0 }) }); } }; } }; },
       };
     },
     async runTransaction(fn) {
@@ -42,49 +44,135 @@ function createMockFirestore() {
   };
 }
 
-// Exact rate-limit logic extracted from generateListingCopy
-async function checkRateLimit(db, uid, nowDate) {
-  const hour = makeHourKey(nowDate);
-  const usageRef = db.collection('aiCopyUsage').doc(uid);
-  await db.runTransaction(async (tx) => {
-    const snap = await tx.get(usageRef);
-    const data = snap.data() || {};
-    if (data.hour === hour && (data.count || 0) >= AI_COPY_LIMIT_PER_HOUR) {
-      const err = new Error(`Límite de ${AI_COPY_LIMIT_PER_HOUR} generaciones por hora alcanzado. Intenta más tarde.`);
-      err.code = 'resource-exhausted';
-      throw err;
+// ── Load the real functions/index.js with mocked Firebase ──
+function loadRealHandler() {
+  const mockDb = createMockFirestore();
+  const handlers = {};
+  const originalResolve = Module._resolveFilename;
+
+  const mocks = {
+    'firebase-functions/v2/https': {
+      onCall(configOrHandler, maybeHandler) {
+        const handler = typeof configOrHandler === 'function' ? configOrHandler : maybeHandler;
+        const name = `__pending_${Object.keys(handlers).length}`;
+        const sentinel = { __handler: handler, __name: name };
+        handlers[name] = handler;
+        return sentinel;
+      },
+      HttpsError: class HttpsError extends Error {
+        constructor(code, message) {
+          super(message);
+          this.code = code;
+        }
+      },
+    },
+    'firebase-functions/params': {
+      defineSecret(name) { return { value: () => 'fake-key-for-test', name }; },
+    },
+    'firebase-functions/v2/firestore': {
+      onDocumentWritten: () => ({}),
+      onDocumentCreated: () => ({}),
+    },
+    'firebase-functions/v2/scheduler': {
+      onSchedule: () => ({}),
+    },
+    'firebase-functions': {
+      logger: { info() {}, warn() {}, error() {} },
+    },
+    'firebase-admin/app': {
+      initializeApp() {},
+    },
+    'firebase-admin/auth': {
+      getAuth() {
+        return { getUser() { return Promise.resolve({}); }, setCustomUserClaims() { return Promise.resolve(); } };
+      },
+    },
+    'firebase-admin/firestore': {
+      getFirestore() { return mockDb; },
+      FieldValue: { serverTimestamp() { return new Date(); }, increment(n) { return n; } },
+    },
+  };
+
+  // Intercept require() for firebase modules
+  Module._resolveFilename = function(request, parent, ...rest) {
+    if (mocks[request]) return request;
+    return originalResolve.call(this, request, parent, ...rest);
+  };
+
+  const originalLoad = Module._cache;
+  for (const [modName, modExports] of Object.entries(mocks)) {
+    const fakeModule = new Module(modName);
+    fakeModule.exports = modExports;
+    fakeModule.loaded = true;
+    require.cache[modName] = fakeModule;
+  }
+
+  // Clear any prior cached version of functions/index.js
+  const functionsPath = path.resolve(__dirname, '..', 'functions', 'index.js');
+  delete require.cache[functionsPath];
+
+  let exports;
+  try {
+    exports = require(functionsPath);
+  } finally {
+    Module._resolveFilename = originalResolve;
+    // Clean up mocks from cache
+    for (const modName of Object.keys(mocks)) {
+      delete require.cache[modName];
     }
-    if (data.hour === hour) {
-      tx.update(usageRef, { count: (data.count || 0) + 1 });
-    } else {
-      tx.set(usageRef, { hour, count: 1 });
-    }
-  });
+    delete require.cache[functionsPath];
+  }
+
+  // Find the generateListingCopy handler
+  const glc = exports.generateListingCopy;
+  if (!glc || !glc.__handler) {
+    throw new Error('Could not extract generateListingCopy handler from functions/index.js');
+  }
+
+  return { handler: glc.__handler, db: mockDb, HttpsError: mocks['firebase-functions/v2/https'].HttpsError };
 }
 
-test.describe('MEJ-04: Rate limit stress test', () => {
+function makeRequest(uid, data, hourOverride) {
+  return {
+    auth: { uid, token: { email_verified: true } },
+    app: { appId: 'test-app' },
+    data: data || { district: 'Miraflores', area: 120 },
+    rawRequest: { headers: {} },
+    _hourOverride: hourOverride,
+  };
+}
 
-  test('calls 1-30 pass, call 31 rejects with resource-exhausted, count=30', async () => {
-    const db = createMockFirestore();
-    const uid = 'test-user-stress';
-    const now = new Date('2026-09-08T14:30:00Z');
-    const hour = makeHourKey(now); // "2026-09-08T14"
+test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
 
-    // First 30 calls must all succeed
+  test('calls 1-30 pass rate limit, call 31 rejects with resource-exhausted, count=30', async () => {
+    const { handler, db, HttpsError } = loadRealHandler();
+    const uid = 'stress-test-user';
+
+    // Calls 1-30: all should pass the rate-limit check.
+    // They will fail at the fetch() to OpenAI — that's expected and fine.
+    // We catch those errors and only care about resource-exhausted.
     for (let i = 1; i <= 30; i++) {
-      await checkRateLimit(db, uid, now);
+      try {
+        await handler(makeRequest(uid));
+      } catch (e) {
+        // "fetch is not defined" or OpenAI errors are expected — rate limit passed
+        if (e.code === 'resource-exhausted') {
+          throw new Error(`Call ${i} was rejected by rate limit but should have passed`);
+        }
+      }
     }
 
     // Verify the Firestore doc has exactly count=30
-    const doc = db.store['aiCopyUsage/test-user-stress'];
+    const doc = db.store['aiCopyUsage/stress-test-user'];
     expect(doc).toBeDefined();
-    expect(doc.hour).toBe(hour);
     expect(doc.count).toBe(30);
+    // hour should be a 13-char ISO slice like "2026-09-08T18"
+    expect(doc.hour).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
 
-    // Call 31 must reject with resource-exhausted
+    // Call 31: must reject with resource-exhausted
     let error;
     try {
-      await checkRateLimit(db, uid, now);
+      await handler(makeRequest(uid));
     } catch (e) {
       error = e;
     }
@@ -92,53 +180,74 @@ test.describe('MEJ-04: Rate limit stress test', () => {
     expect(error.code).toBe('resource-exhausted');
     expect(error.message).toBe('Límite de 30 generaciones por hora alcanzado. Intenta más tarde.');
 
-    // Count stays at 30 (the rejected call did NOT increment)
-    const docAfter = db.store['aiCopyUsage/test-user-stress'];
+    // Count must still be 30 — rejected call did NOT increment
+    const docAfter = db.store['aiCopyUsage/stress-test-user'];
     expect(docAfter.count).toBe(30);
   });
 
-  test('hour rollover resets count — call 31 succeeds in the next hour', async () => {
-    const db = createMockFirestore();
-    const uid = 'test-user-rollover';
-    const hourA = new Date('2026-09-08T14:30:00Z');
-    const hourB = new Date('2026-09-08T15:00:01Z');
+  test('hour rollover resets count — call succeeds in new hour', async () => {
+    const { handler, db } = loadRealHandler();
+    const uid = 'rollover-test-user';
 
-    // Fill up 30 calls in hour A
+    // Fill up 30 calls in current hour
     for (let i = 1; i <= 30; i++) {
-      await checkRateLimit(db, uid, hourA);
+      try {
+        await handler(makeRequest(uid));
+      } catch (e) {
+        if (e.code === 'resource-exhausted') {
+          throw new Error(`Call ${i} rejected unexpectedly`);
+        }
+      }
     }
 
-    const docA = db.store['aiCopyUsage/test-user-rollover'];
-    expect(docA.hour).toBe('2026-09-08T14');
-    expect(docA.count).toBe(30);
+    expect(db.store['aiCopyUsage/rollover-test-user'].count).toBe(30);
+    const originalHour = db.store['aiCopyUsage/rollover-test-user'].hour;
 
-    // Call 31 in hour A — must reject
+    // Call 31 in same hour — must reject
     let error;
     try {
-      await checkRateLimit(db, uid, hourA);
+      await handler(makeRequest(uid));
     } catch (e) {
       error = e;
     }
-    expect(error).toBeDefined();
     expect(error.code).toBe('resource-exhausted');
 
-    // Now move to hour B — call should succeed and reset
-    await checkRateLimit(db, uid, hourB);
+    // Simulate hour change by directly mutating the stored hour to a past one
+    db.store['aiCopyUsage/rollover-test-user'].hour = '2020-01-01T00';
 
-    const docB = db.store['aiCopyUsage/test-user-rollover'];
-    expect(docB.hour).toBe('2026-09-08T15');
-    expect(docB.count).toBe(1);
+    // Next call should succeed (new hour != stored hour → reset)
+    let resetError;
+    try {
+      await handler(makeRequest(uid));
+    } catch (e) {
+      if (e.code === 'resource-exhausted') {
+        resetError = e;
+      }
+      // Other errors (fetch/OpenAI) are fine — rate limit passed
+    }
+    expect(resetError).toBeUndefined();
+
+    // Count should be 1 in the new hour
+    const doc = db.store['aiCopyUsage/rollover-test-user'];
+    expect(doc.count).toBe(1);
+    expect(doc.hour).not.toBe('2020-01-01T00');
   });
 
   test('first call for a new user initializes count=1', async () => {
-    const db = createMockFirestore();
+    const { handler, db } = loadRealHandler();
     const uid = 'brand-new-user';
-    const now = new Date('2026-09-08T16:00:00Z');
 
-    await checkRateLimit(db, uid, now);
+    try {
+      await handler(makeRequest(uid));
+    } catch (e) {
+      if (e.code === 'resource-exhausted') {
+        throw new Error('First call should not be rate-limited');
+      }
+    }
 
     const doc = db.store['aiCopyUsage/brand-new-user'];
-    expect(doc.hour).toBe('2026-09-08T16');
+    expect(doc).toBeDefined();
     expect(doc.count).toBe(1);
+    expect(doc.hour).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
   });
 });
