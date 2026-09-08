@@ -3,8 +3,7 @@ const { test, expect } = require('@playwright/test');
 test.describe('MEJ-05: Campos de pisos', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3123/');
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
   });
 
   test('publish form source contains 3 floor field labels', async ({ page }) => {
@@ -74,8 +73,7 @@ test.describe('MEJ-05: Campos de pisos', () => {
 test.describe('MEJ-06: Legacy tag mapping', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3123/');
-    await page.waitForLoadState('domcontentloaded');
+    await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
   });
 
   test('_PUB_FEAT_LEGACY_MAP maps old tags to new', async ({ page }) => {
