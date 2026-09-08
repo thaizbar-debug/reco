@@ -5,7 +5,7 @@ module.exports = defineConfig({
   use: {
     headless: true,
     launchOptions: {
-      executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
     },
   },
   webServer: {
