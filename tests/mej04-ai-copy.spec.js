@@ -117,4 +117,42 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
     expect(result.district).toBe('San Isidro');
     expect(result.area).toBe(85);
   });
+
+  // ── _AI_COPY_ENABLED=false guard (explicit crash safety) ──
+
+  test('when flag=false, AI DOM elements absent and AI functions do not crash', async ({ page }) => {
+    const enabled = await page.evaluate(() => _AI_COPY_ENABLED);
+    if (enabled) { test.skip(); return; }
+    const result = await page.evaluate(() => {
+      const checks = {};
+      checks.pubAiBtn = document.getElementById('pubAiBtn');
+      checks.pubAiOut = document.getElementById('pubAiOut');
+      checks.pubAiLoading = document.getElementById('pubAiLoading');
+      checks.pubAiError = document.getElementById('pubAiError');
+      // _pubAiApply must not crash even with missing DOM
+      try {
+        _aiCopyLastResult = { titulo: 'test', descripcion: 'test' };
+        _pubAiApply();
+        checks.applyDidNotCrash = true;
+      } catch (e) {
+        checks.applyDidNotCrash = false;
+        checks.applyError = e.message;
+      }
+      // _pubAiCopy must not crash (it early-returns when btn is null)
+      try {
+        _pubAiCopy();
+        checks.copyDidNotCrash = true;
+      } catch (e) {
+        checks.copyDidNotCrash = false;
+        checks.copyError = e.message;
+      }
+      return checks;
+    });
+    expect(result.pubAiBtn).toBeNull();
+    expect(result.pubAiOut).toBeNull();
+    expect(result.pubAiLoading).toBeNull();
+    expect(result.pubAiError).toBeNull();
+    expect(result.applyDidNotCrash).toBe(true);
+    expect(result.copyDidNotCrash).toBe(true);
+  });
 });
