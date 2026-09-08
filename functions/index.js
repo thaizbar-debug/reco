@@ -1005,9 +1005,9 @@ exports.generateListingCopy = onCall(
         );
       }
       if (data.hour === hour) {
-        tx.update(usageRef, { count: (data.count || 0) + 1 });
+        tx.update(usageRef, { count: (data.count || 0) + 1, updatedAt: FieldValue.serverTimestamp() });
       } else {
-        tx.set(usageRef, { hour, count: 1 });
+        tx.set(usageRef, { hour, count: 1, updatedAt: FieldValue.serverTimestamp() });
       }
     });
 
@@ -1082,6 +1082,9 @@ Reglas:
       throw new HttpsError('internal', 'La IA no generó contenido válido.');
     }
 
-    return { titulo: parsed.titulo, descripcion: parsed.descripcion };
+    return {
+      titulo: String(parsed.titulo || '').trim().slice(0, 200),
+      descripcion: String(parsed.descripcion || '').trim().slice(0, 5000),
+    };
   }
 );

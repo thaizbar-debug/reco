@@ -118,6 +118,25 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
     expect(result.area).toBe(85);
   });
 
+  // ── Cloud Functions region safety ──
+
+  test('all httpsCallable calls use _getFunctions(), never firebase.functions() directly', async ({ page }) => {
+    const violations = await page.evaluate(() => {
+      const scripts = [];
+      document.querySelectorAll('script').forEach(s => scripts.push(s.textContent));
+      const src = scripts.join('\n');
+      const problems = [];
+      const re = /firebase\.functions\(\)\.httpsCallable/g;
+      let m;
+      while ((m = re.exec(src)) !== null) {
+        const ctx = src.slice(Math.max(0, m.index - 40), m.index + m[0].length + 20);
+        problems.push(ctx.trim());
+      }
+      return problems;
+    });
+    expect(violations).toEqual([]);
+  });
+
   // ── _AI_COPY_ENABLED=false guard (explicit crash safety) ──
 
   test('when flag=false, AI DOM elements absent and AI functions do not crash', async ({ page }) => {

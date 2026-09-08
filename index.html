@@ -2342,9 +2342,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Balcón')">Balcón</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Intercomunicador')">Intercomunicador</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Jacuzzi')">Jacuzzi</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jardín')">Jardín</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina')">Piscina</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza')">Terraza</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Jardín propio')">Jardín propio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina propia')">Piscina propia</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Terraza propia')">Terraza propia</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Aire Acondicionado')">Aire Acondicionado</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Lujo o Exclusiva')">Lujo o Exclusiva</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Propiedad de Campo o Rural')">Campo o Rural</span>
@@ -2356,18 +2356,18 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
             <div class="adv-block">
               <label style="cursor:pointer" onclick="this.parentElement.querySelector('.adv-tag-body').classList.toggle('collapsed')">🏢 Etiquetas ambientes <span style="font-size:10px;opacity:.6">▼</span></label>
               <div class="adv-chips adv-tag-body">
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de cafetería')">Área de cafetería</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área de lavandería')">Área de lavandería</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Patio')">Patio</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Área común')">Área común</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Cafetería del edificio')">Cafetería del edificio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Lavandería del edificio')">Lavandería del edificio</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Patio común')">Patio común</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Sala de estar común')">Sala de estar común</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Recepción')">Recepción</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Conserje')">Conserje</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Acceso a parque')">Acceso a parque</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Salida directa a parque')">Salida directa a parque</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Zona de Parrilla (BBQ)')">Zona de Parrilla (BBQ)</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Sala de juegos')">Sala de juegos</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Depósito')">Depósito</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Oficinas/Co-work')">Oficinas/Co-work</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina (edificio)')">Piscina (edificio)</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Piscina del edificio')">Piscina del edificio</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Salón de usos múltiples')">Salón de usos múltiples</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Sauna/Spa')">Sauna/Spa</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Sótano')">Sótano</span>
@@ -2385,7 +2385,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a parque')">Vista a parque</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista al mar')">Vista al mar</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a calle')">Vista a calle</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista interior')">Vista interior</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a área interior')">Vista a área interior</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a campo')">Vista a campo</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Vista a paisaje')">Vista a paisaje</span>
               </div>
@@ -2400,7 +2400,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Carretera')">Carretera</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Alameda')">Alameda</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Boulevard')">Boulevard</span>
-                <span class="adv-chip" onclick="toggleAdvFeat(this,'Privado')">Privado</span>
+                <span class="adv-chip" onclick="toggleAdvFeat(this,'Vía privada')">Vía privada</span>
                 <span class="adv-chip" onclick="toggleAdvFeat(this,'Callejón')">Callejón</span>
               </div>
             </div>
@@ -3081,7 +3081,8 @@ function getFiltered(){
     if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0){
-      if(!S.features.every(f=>(p.features||[]).includes(f))) return false;
+      const pf=p.features||[];
+      if(!S.features.every(f=>pf.includes(f)||pf.includes(_PUB_FEAT_REVERSE_MAP[f]||'')||pf.includes(_PUB_FEAT_LEGACY_MAP[f]||''))) return false;
     }
     if(S.radiusCenter && GEO[p.id]){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
@@ -5897,18 +5898,25 @@ let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null
 const _VALUATION_ENABLED = false;
 const _AI_COPY_ENABLED = false;
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
-  'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
+  'Jacuzzi','Jardín propio','Piscina propia','Terraza propia','Aire Acondicionado',
   'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
   'Propiedad Eco-amigable o Sostenible','Propiedad de Playa'];
-const _PUB_FEATS_AMB=['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje',
-  'Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
-  'Piscina (edificio)','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
+const _PUB_FEATS_AMB=['Cafetería del edificio','Lavandería del edificio','Patio común','Sala de estar común','Recepción','Conserje',
+  'Salida directa a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
+  'Piscina del edificio','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
   'Canchas deportivas','Gimnasio','Juegos infantiles',
   'Acceso para personas con movilidad reducida','Estacionamiento para visitas'];
-const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje'];
-const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón'];
+const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista a área interior','Vista a campo','Vista a paisaje'];
+const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Vía privada','Callejón'];
 const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
-const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
+const _PUB_FEATS_LEGACY=['Jardín','Piscina','Terraza','Área de cafetería','Área de lavandería','Patio',
+  'Área común','Acceso a parque','Piscina (edificio)','Vista interior','Privado'];
+const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA,..._PUB_FEATS_LEGACY];
+const _PUB_FEAT_LEGACY_MAP={'Jardín':'Jardín propio','Piscina':'Piscina propia','Terraza':'Terraza propia',
+  'Área de cafetería':'Cafetería del edificio','Área de lavandería':'Lavandería del edificio','Patio':'Patio común',
+  'Área común':'Sala de estar común','Acceso a parque':'Salida directa a parque',
+  'Piscina (edificio)':'Piscina del edificio','Vista interior':'Vista a área interior','Privado':'Vía privada'};
+const _PUB_FEAT_REVERSE_MAP=Object.fromEntries(Object.entries(_PUB_FEAT_LEGACY_MAP).map(([k,v])=>[v,k]));
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
@@ -6085,15 +6093,17 @@ function _rps(){
         <h3 style="margin-top:22px">📝 Descripción</h3>
         ${_AI_COPY_ENABLED ? `<div style="margin-bottom:14px">
           <button id="pubAiBtn" onclick="_pubAiCopy()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✨ Redactar con IA</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Usamos los datos que ya cargaste (ubicación, área, ambientes y etiquetas) para proponerte un texto. Puedes editarlo antes de publicar.</div>
           <div id="pubAiOut" style="display:none;margin-top:12px;background:var(--light);border:1px solid var(--border);border-radius:10px;padding:16px">
-            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Sugerencia de la IA:</div>
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px">Propuesta de la IA:</div>
             <div id="pubAiOutTitle" style="font-weight:600;margin-bottom:6px"></div>
             <div id="pubAiOutDesc" style="font-size:13px;white-space:pre-wrap"></div>
             <div style="margin-top:12px;display:flex;gap:8px">
               <button onclick="_pubAiApply()" style="background:var(--green);color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600">Usar este texto</button>
-              <button onclick="_pubAiCopy()" style="background:var(--border);color:var(--text);border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px">Regenerar</button>
-              <button onclick="document.getElementById('pubAiOut').style.display='none'" style="background:none;color:var(--muted);border:none;cursor:pointer;font-size:12px">Cerrar</button>
+              <button onclick="_pubAiCopy()" style="background:var(--border);color:var(--text);border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:12px">Probar otra versión</button>
+              <button onclick="document.getElementById('pubAiOut').style.display='none'" style="background:none;color:var(--muted);border:none;cursor:pointer;font-size:12px">Descartar</button>
             </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:8px">Revisa el texto antes de publicar: la IA puede describir algo que no corresponde al inmueble.</div>
           </div>
           <div id="pubAiLoading" style="display:none;margin-top:8px;font-size:12px;color:var(--muted)">⏳ Generando texto…</div>
           <div id="pubAiError" style="display:none;margin-top:8px;font-size:12px;color:var(--red)"></div>
@@ -6296,7 +6306,7 @@ async function _pubAiCopy(){
   if(errEl) errEl.style.display = 'none';
   if(outEl) outEl.style.display = 'none';
   try {
-    const fn = firebase.functions().httpsCallable('generateListingCopy');
+    const fn = _getFunctions().httpsCallable('generateListingCopy');
     const res = await fn(_pubAiPrompt());
     _aiCopyLastResult = res.data;
     document.getElementById('pubAiOutTitle').textContent = res.data.titulo;
@@ -6393,7 +6403,7 @@ async function _ppub(){
     const call = _getFunctions().httpsCallable('publishProperty');
     const res = await call({
       source: 'single',
-      address: _pd.address, district: _pd.district, lat: _pd.lat, lng: _pd.lng,
+      address: _pd.address, district: _pd.district, lat: _pd.lat, lng: _pd.lng, hideExact: !!_pd.hideExact,
       type: _pd.type, op: _pd.op, currency: _pd.currency,
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,

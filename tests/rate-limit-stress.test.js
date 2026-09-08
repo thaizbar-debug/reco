@@ -250,4 +250,47 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
     expect(doc.count).toBe(1);
     expect(doc.hour).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}$/);
   });
+
+  test('output truncation: 500-char title is trimmed to 200', async () => {
+    const { handler, db } = loadRealHandler();
+    const uid = 'truncation-test-user';
+    const longTitle = 'A'.repeat(500);
+    const longDesc = 'B'.repeat(6000);
+    const fakeResponse = JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({ titulo: longTitle, descripcion: longDesc }) } }],
+    });
+
+    const origFetch = global.fetch;
+    global.fetch = async () => ({
+      ok: true,
+      json: async () => JSON.parse(fakeResponse),
+    });
+
+    try {
+      const result = await handler(makeRequest(uid, { district: 'Miraflores', area: 120 }));
+      expect(result.titulo.length).toBeLessThanOrEqual(200);
+      expect(result.titulo).toBe(longTitle.slice(0, 200));
+      expect(result.descripcion.length).toBeLessThanOrEqual(5000);
+      expect(result.descripcion).toBe(longDesc.slice(0, 5000));
+    } finally {
+      if (origFetch) global.fetch = origFetch; else delete global.fetch;
+    }
+  });
+
+  test('updatedAt serverTimestamp is written on rate-limit doc', async () => {
+    const { handler, db } = loadRealHandler();
+    const uid = 'timestamp-test-user';
+
+    try {
+      await handler(makeRequest(uid));
+    } catch (e) {
+      if (e.code === 'resource-exhausted') {
+        throw new Error('First call should not be rate-limited');
+      }
+    }
+
+    const doc = db.store['aiCopyUsage/timestamp-test-user'];
+    expect(doc).toBeDefined();
+    expect(doc.updatedAt).toBeDefined();
+  });
 });
