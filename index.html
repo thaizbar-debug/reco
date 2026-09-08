@@ -5901,19 +5901,79 @@ let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[],listedAt:null};
 const _VALUATION_ENABLED = false;
+// MEJ-06 — Revisión de la taxonomía de etiquetas. Las listas mezclaban
+// lo que está DENTRO del inmueble con lo que es del edificio, y varias
+// etiquetas ("Piscina", "Patio", "Área común", "Calle") no dejaban
+// claro a qué se referían. Cambios:
+//   · los nombres ambiguos quedan explícitos (Piscina propia / del edificio),
+//   · cada grupo dice en una línea qué se marca ahí,
+//   · cada etiqueta lleva una descripción que se ve al pasar el cursor,
+//   · las etiquetas antiguas siguen reconociéndose (_PUB_FEATS_LEGACY),
+//     para no romper los anuncios ya publicados ni los filtros.
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
-  'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
+  'Jacuzzi','Jardín propio','Piscina propia','Terraza propia','Aire Acondicionado',
   'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
   'Propiedad Eco-amigable o Sostenible','Propiedad de Playa'];
-const _PUB_FEATS_AMB=['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje',
-  'Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
-  'Piscina (edificio)','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
+const _PUB_FEATS_AMB=['Cafetería del edificio','Lavandería del edificio','Patio común','Sala de estar común','Recepción','Conserje',
+  'Salida directa a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
+  'Piscina del edificio','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
   'Canchas deportivas','Gimnasio','Juegos infantiles',
   'Acceso para personas con movilidad reducida','Estacionamiento para visitas'];
-const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje'];
-const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón'];
+const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista a área interior','Vista a campo','Vista a paisaje'];
+const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Vía privada','Callejón'];
 const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
-const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
+// Nombres anteriores: siguen siendo válidos para los anuncios que ya
+// los tienen guardados, pero no se ofrecen al publicar.
+const _PUB_FEATS_LEGACY=['Jardín','Piscina','Terraza','Área de cafetería','Área de lavandería','Patio',
+  'Área común','Acceso a parque','Piscina (edificio)','Vista interior','Privado'];
+const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA,..._PUB_FEATS_LEGACY];
+// Qué significa cada grupo, en una línea, arriba de sus casillas.
+const _PUB_FEAT_GROUP_HELP={
+  gen:'Lo que está dentro del inmueble y se entrega con él.',
+  amb:'Áreas del edificio o del condominio, compartidas con los demás propietarios.',
+  vista:'Lo que se ve desde las ventanas principales. Marca solo lo que se ve de verdad.',
+  acceso:'Tipo de vía por la que se llega a la puerta del inmueble.',
+  zona:'Carácter predominante de la zona donde está el inmueble.'
+};
+// Descripción de las etiquetas que generaban dudas en las pruebas.
+const _PUB_FEAT_HELP={
+  'Piscina propia':'Piscina de uso exclusivo del inmueble.',
+  'Piscina del edificio':'Piscina compartida del edificio o condominio.',
+  'Jardín propio':'Jardín de uso exclusivo, no las áreas verdes comunes.',
+  'Terraza propia':'Terraza de uso exclusivo del inmueble.',
+  'Patio común':'Patio compartido por los vecinos del edificio.',
+  'Sala de estar común':'Ambiente común de estar o espera, distinto de la recepción.',
+  'Cafetería del edificio':'Espacio de cafetería dentro del edificio o condominio.',
+  'Lavandería del edificio':'Lavandería compartida del edificio.',
+  'Salida directa a parque':'El edificio da directamente a un parque, sin cruzar pista.',
+  'Recepción':'Mostrador de recepción en el ingreso.',
+  'Conserje':'Personal permanente de conserjería o portería.',
+  'Depósito':'Depósito propio en el edificio (no el sótano común).',
+  'Áreas verdes':'Jardines comunes del edificio o condominio.',
+  'Vista a área interior':'Las ventanas dan a un patio o ducto interior del edificio.',
+  'Vista a calle':'Las ventanas dan a la vía pública.',
+  'Calle':'Vía local de tránsito bajo.',
+  'Avenida':'Vía principal de tránsito alto.',
+  'Jirón':'Vía urbana de varias cuadras, típica del centro.',
+  'Pasaje':'Vía corta y angosta, muchas veces peatonal.',
+  'Alameda':'Vía con paseo arbolado.',
+  'Boulevard':'Vía ancha con separador central o paseo.',
+  'Vía privada':'Calle interior de un condominio, con control de ingreso.',
+  'Callejón':'Vía muy angosta, generalmente sin salida.',
+  'Carretera':'Acceso por vía interurbana.',
+  'Mixta':'Conviven vivienda y comercio en la misma zona.',
+  'Semi-urbana':'Zona en consolidación, con servicios parciales.',
+  'Conservación':'Zona protegida o con restricciones de edificación.'
+};
+function _pubFeatGrid(list){
+  return list.map(f=>{
+    const h=_PUB_FEAT_HELP[f]||'';
+    return `<label class="pub-feat-item"${h?` title="${esc(h)}"`:''}><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f.replace(/'/g,"\\'")}',this.checked)"> ${f}${h?' <span style="color:var(--muted);cursor:help">ⓘ</span>':''}</label>`;
+  }).join('');
+}
+function _pubFeatGroupHelp(k){
+  return `<div style="font-size:11px;color:var(--muted);margin:2px 0 6px">${_PUB_FEAT_GROUP_HELP[k]}</div>`;
+}
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
@@ -6059,25 +6119,30 @@ function _rps(){
           <label class="pub-check"><input type="checkbox" ${_pd.petFriendly?'checked':''} onchange="_pd.petFriendly=this.checked"> Pet friendly</label>
         </div>
 
-        <h3 style="margin-top:18px">🏷️ Etiquetas generales</h3>
+        <h3 style="margin-top:18px">🏷️ Características del inmueble</h3>
+        ${_pubFeatGroupHelp('gen')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_GEN.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_GEN)}
         </div>
-        <h3 style="margin-top:14px">🏢 Etiquetas ambientes</h3>
+        <h3 style="margin-top:14px">🏢 Áreas comunes del edificio</h3>
+        ${_pubFeatGroupHelp('amb')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_AMB.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_AMB)}
         </div>
-        <h3 style="margin-top:14px">👁️ Etiquetas vistas</h3>
+        <h3 style="margin-top:14px">👁️ Vistas</h3>
+        ${_pubFeatGroupHelp('vista')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_VISTA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_VISTA)}
         </div>
-        <h3 style="margin-top:14px">🛣️ Etiquetas accesos</h3>
+        <h3 style="margin-top:14px">🛣️ Tipo de vía de acceso</h3>
+        ${_pubFeatGroupHelp('acceso')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ACCESO.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ACCESO)}
         </div>
-        <h3 style="margin-top:14px">📍 Etiquetas zonas</h3>
+        <h3 style="margin-top:14px">📍 Carácter de la zona</h3>
+        ${_pubFeatGroupHelp('zona')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ZONA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ZONA)}
         </div>
       </div>
     </div>
