@@ -860,7 +860,7 @@ function determineSemantic(analysis) {
     confidence = 'LOW';
   }
 
-  return {
+  const result = {
     classification,
     confidence,
     dominant_type: dominant.type,
@@ -869,6 +869,18 @@ function determineSemantic(analysis) {
       ranked.filter(x => x.count > 0).map(x => [x.type, r(x.count / total * 100)])
     ),
   };
+
+  // Dataset coherence: when dataset is BLOCK but has features area-classified
+  // as PARCEL, flag them as likely small manzanas (false positives from
+  // area-only classification). Evidence: vertex density, area distribution
+  // continuity, and dataset-level median area.
+  if (classification === 'BLOCK' && parcelCount > 0) {
+    result.coherence_warning = `${parcelCount} features classified as PARCEL by area alone are likely small manzanas in a BLOCK dataset. ` +
+      `Area-only classification cannot distinguish small blocks from large parcels without additional evidence (source metadata, subdivision patterns).`;
+    result.reclassified_as_block = parcelCount;
+  }
+
+  return result;
 }
 
 // ── Hard Gates ──────────────────────────────────────────────────────────────
@@ -1060,23 +1072,46 @@ function determineFinalStatus(hardGateResult, softScore) {
 }
 
 // ── Dataset Utility ─────────────────────────────────────────────────────────
-// Classifies what a dataset can be used for — a BLOCK dataset is not usable
-// for parcel_master but may be valuable as block_candidate.
+// Classifies what a dataset can be used for.
+// Respects the dataset-level semantic classification: when the dataset is
+// classified as BLOCK, per-feature area-only classifications of "PARCEL"
+// are overridden — small manzanas are not individual parcels.
 
-function classifyDatasetUtility(analysis) {
+function classifyDatasetUtility(analysis, semanticInfo) {
   const sem = analysis.semantic_breakdown || {};
   const utilities = [];
 
-  const parcelCount = (sem.PARCEL || {}).count || 0;
-  const blockCount = (sem.BLOCK || {}).count || 0;
+  const rawParcelCount = (sem.PARCEL || {}).count || 0;
+  const rawBlockCount = (sem.BLOCK || {}).count || 0;
   const frontageCount = (sem.FRONTAGE_LINE || {}).count || 0;
+  const zoneCount = (sem.ZONE || {}).count || 0;
 
-  if (parcelCount > 0) {
-    utilities.push({ type: 'parcel_candidate', count: parcelCount, usable_for: 'parcel_master' });
+  const datasetClass = semanticInfo ? semanticInfo.classification : null;
+
+  if (datasetClass === 'BLOCK') {
+    // Dataset is predominantly BLOCK: area-only "PARCEL" features are
+    // small manzanas, not individual parcels. All polygon features
+    // become block_candidate.
+    const totalPolygons = rawParcelCount + rawBlockCount + zoneCount;
+    if (totalPolygons > 0) {
+      utilities.push({
+        type: 'block_candidate',
+        count: totalPolygons,
+        usable_for: 'block_master (conceptual, not in current architecture)',
+        note: rawParcelCount > 0
+          ? `Includes ${rawParcelCount} small polygons reclassified from area-only PARCEL to BLOCK (dataset is manzana-level)`
+          : undefined,
+      });
+    }
+  } else {
+    if (rawParcelCount > 0) {
+      utilities.push({ type: 'parcel_candidate', count: rawParcelCount, usable_for: 'parcel_master' });
+    }
+    if (rawBlockCount > 0) {
+      utilities.push({ type: 'block_candidate', count: rawBlockCount, usable_for: 'block_master (conceptual, not in current architecture)' });
+    }
   }
-  if (blockCount > 0) {
-    utilities.push({ type: 'block_candidate', count: blockCount, usable_for: 'block_master (conceptual, not in current architecture)' });
-  }
+
   if (frontageCount > 0) {
     utilities.push({ type: 'frontage_data', count: frontageCount, usable_for: 'parcel_frontage_lines (conceptual, not in current architecture)' });
   }
@@ -1497,7 +1532,7 @@ function main() {
       // Hard Gates & Final Status
       const semanticInfo = determineSemantic(bestDataset.analysis);
       const gateResult = hardGates(bestDataset.analysis, bestComparison, semanticInfo);
-      const utility = classifyDatasetUtility(bestDataset.analysis);
+      const utility = classifyDatasetUtility(bestDataset.analysis, semanticInfo);
       const finalStatus = determineFinalStatus(gateResult, distResult.acceptance_score.total);
 
       distResult.semantic_classification = semanticInfo.classification;

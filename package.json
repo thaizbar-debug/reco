@@ -7,6 +7,7 @@
     "pilot:shapefiles": "node tools/etl/process_external_shapefiles.js",
     "pilot:analyze": "node tools/etl/pilot_analysis.js",
     "pilot:report": "node tools/etl/pilot_report.js",
-    "pilot:all": "npm run pilot:acquire && npm run pilot:shapefiles && npm run pilot:analyze && npm run pilot:report"
+    "pilot:test": "node tools/etl/pilot_regression_tests.js",
+    "pilot:all": "npm run pilot:acquire && npm run pilot:shapefiles && npm run pilot:analyze && npm run pilot:report && npm run pilot:test"
   }
 }

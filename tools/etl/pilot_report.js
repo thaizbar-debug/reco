@@ -272,6 +272,7 @@ function buildMarkdownReport(results) {
       w('**Dataset Utility:**');
       for (const u of d.dataset_utility) {
         w(`- ${u.type}: ${u.count} features → ${u.usable_for}`);
+        if (u.note) w(`  - ⚠ ${u.note}`);
       }
       w('');
     }
@@ -406,6 +407,27 @@ function buildMarkdownReport(results) {
   w('| 3 | OTHER_GOVERNMENTAL | SEDAPAL, INEI |');
   w('| 4 | SECONDARY | Unknown/undocumented |');
   w('| 5 | OSM | NOT valid as catastro substitute |');
+  w('');
+  w('### Coverage Definition');
+  w('');
+  w('`coverage_pct = (sum of polygon areas inside district boundary) / (district total area) × 100`');
+  w('');
+  w('This is **territorial area coverage**, not feature count ratio. It measures what fraction of');
+  w('the district\'s land area is covered by dataset polygons. Limitations: overlapping polygons');
+  w('can inflate coverage; gaps between parcels (streets, parks) reduce it. A district fully');
+  w('covered by parcel data will not reach 100% because streets and public spaces have no parcels.');
+  w('');
+  w('### PARCEL_LEVEL_USABLE Definition');
+  w('');
+  w('A dataset is considered PARCEL_LEVEL_USABLE only if ALL of:');
+  w('');
+  w('1. Represents individual predios (parcels), not manzanas (blocks) or zones');
+  w('2. Geometry is valid (Hard Gate B passes)');
+  w('3. Semantic classification has sufficient confidence (area distribution consistent with parcels)');
+  w('4. Coverage is measurable (Hard Gate C evaluated)');
+  w('5. Provenance is traceable (source identified, acquisition documented)');
+  w('6. Does not contradict higher-authority sources');
+  w('7. Does not degrade existing parcel_master data');
   w('');
 
   // Risks

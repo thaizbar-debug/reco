@@ -1,6 +1,6 @@
 {
   "phase": "2B-0.5",
-  "analysis_date": "2026-09-03T20:43:54.116Z",
+  "analysis_date": "2026-09-09T04:43:58.615Z",
   "districts": {
     "miraflores": {
       "name": "MIRAFLORES",
@@ -204,10 +204,10 @@
             "raw_bytes": 152680
           },
           "read_ms": 0,
-          "decompress_ms": 0,
+          "decompress_ms": 1,
           "parse_ms": 1,
-          "total_ms": 1,
-          "estimated_browser_ms": 2
+          "total_ms": 2,
+          "estimated_browser_ms": 4
         }
       },
       "recommendation": "CONDITIONAL — Gates: coverage. Score: 80/100. Acquire external sources to supplement.",
@@ -539,10 +539,10 @@
             "gz_bytes": 18797,
             "raw_bytes": 231373
           },
-          "read_ms": 1,
+          "read_ms": 0,
           "decompress_ms": 0,
           "parse_ms": 1,
-          "total_ms": 2,
+          "total_ms": 1,
           "estimated_browser_ms": 2
         },
         "raw": {
@@ -550,14 +550,14 @@
             "gz_bytes": 67820,
             "raw_bytes": 840458
           },
-          "read_ms": 0,
-          "decompress_ms": 1,
-          "parse_ms": 5,
-          "total_ms": 6,
-          "estimated_browser_ms": 12
+          "read_ms": 1,
+          "decompress_ms": 2,
+          "parse_ms": 6,
+          "total_ms": 9,
+          "estimated_browser_ms": 16
         }
       },
-      "recommendation": "NOT FOR PARCEL_MASTER — Data is BLOCK. Useful as: block_candidate(255). Need parcel-level source for this district.",
+      "recommendation": "NOT FOR PARCEL_MASTER — Data is BLOCK. Useful as: block_candidate(399). Need parcel-level source for this district.",
       "semantic_classification": "BLOCK",
       "semantic_confidence": "MEDIUM",
       "coverage_pct": 72.5,
@@ -599,14 +599,10 @@
       "final_status": "NOT_USABLE_FOR_PARCEL_MASTER",
       "dataset_utility": [
         {
-          "type": "parcel_candidate",
-          "count": 140,
-          "usable_for": "parcel_master"
-        },
-        {
           "type": "block_candidate",
-          "count": 255,
-          "usable_for": "block_master (conceptual, not in current architecture)"
+          "count": 399,
+          "usable_for": "block_master (conceptual, not in current architecture)",
+          "note": "Includes 140 small polygons reclassified from area-only PARCEL to BLOCK (dataset is manzana-level)"
         }
       ],
       "source_hierarchy": {
@@ -615,7 +611,7 @@
         "label": "Secondary/Unknown",
         "note": "Undetermined source authority"
       },
-      "recommended_action": "NOT FOR PARCEL_MASTER — Data is BLOCK. Useful as: block_candidate(255). Need parcel-level source for this district."
+      "recommended_action": "NOT FOR PARCEL_MASTER — Data is BLOCK. Useful as: block_candidate(399). Need parcel-level source for this district."
     },
     "chorrillos": {
       "name": "CHORRILLOS",
