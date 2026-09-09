@@ -139,20 +139,76 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
 
   // ── Fix #3: hideExact in single-publish payload ──
 
-  test('single-publish payload includes hideExact (source + runtime)', async ({ page }) => {
+  test('_ppub() payload object extracted from source includes hideExact: !!_pd.hideExact and evaluates correctly', async ({ page }) => {
     const result = await page.evaluate(() => {
+      // Extract the exact payload object literal from _ppub's real source code.
+      // If someone removes hideExact from the call, the regex or the field check fails.
       const src = _ppub.toString();
-      const callBlock = src.slice(src.indexOf('await call('), src.indexOf('const publicationId'));
-      const sourceHasHideExact = callBlock.includes('hideExact') && callBlock.includes('_pd.hideExact');
-      _pd.hideExact = true;
-      const runtimeTrue = !!_pd.hideExact === true;
+      // Match the object literal passed to call({...}) — starts after 'await call(' and ends at the matching ')'
+      const callStart = src.indexOf('await call(');
+      if (callStart === -1) return { error: 'await call( not found in _ppub source' };
+      // Find the opening '{' after 'await call('
+      const objStart = src.indexOf('{', callStart);
+      // Count braces to find the matching '}'
+      let depth = 0;
+      let objEnd = -1;
+      for (let i = objStart; i < src.length; i++) {
+        if (src[i] === '{') depth++;
+        if (src[i] === '}') { depth--; if (depth === 0) { objEnd = i; break; } }
+      }
+      if (objEnd === -1) return { error: 'could not find matching } for payload object' };
+      const payloadSrc = src.slice(objStart, objEnd + 1);
+
+      // Evaluate the extracted fragment with _pd set to test values
+      const origPd = { ..._pd };
+
+      // Test with hideExact = true
+      _pd.address = '123 Test St'; _pd.district = 'TestDistrict';
+      _pd.lat = -12; _pd.lng = -77; _pd.hideExact = true;
+      _pd.type = 'Departamento'; _pd.op = 'Venta'; _pd.currency = 'USD';
+      _pd.price = 100000; _pd.areaTerr = 0; _pd.area = 80;
+      _pd.beds = 2; _pd.baths = 1; _pd.parking = 1;
+      _pd.floor = 5; _pd.floors = 10; _pd.age = 3;
+      _pd.estado = 'Bueno'; _pd.ascensor = false; _pd.amoblado = false;
+      _pd.petFriendly = false; _pd.features = ['Balcón'];
+      _pd.title = 'Test Title'; _pd.desc = 'Test Desc';
+
+      let payloadTrue;
+      try {
+        payloadTrue = eval('(' + payloadSrc + ')');
+      } catch (e) {
+        return { error: 'eval failed for hideExact=true: ' + e.message, payloadSrc };
+      }
+
+      // Test with hideExact = false
       _pd.hideExact = false;
-      const runtimeFalse = !!_pd.hideExact === false;
-      return { sourceHasHideExact, runtimeTrue, runtimeFalse };
+      let payloadFalse;
+      try {
+        payloadFalse = eval('(' + payloadSrc + ')');
+      } catch (e) {
+        return { error: 'eval failed for hideExact=false: ' + e.message, payloadSrc };
+      }
+
+      // Restore _pd
+      Object.assign(_pd, origPd);
+
+      return {
+        payloadSrc,
+        hasHideExactKey: 'hideExact' in payloadTrue,
+        hideExactTrue: payloadTrue.hideExact,
+        hideExactFalse: payloadFalse.hideExact,
+        source: payloadTrue.source,
+        title: payloadTrue.title,
+        district: payloadTrue.district,
+      };
     });
-    expect(result.sourceHasHideExact).toBe(true);
-    expect(result.runtimeTrue).toBe(true);
-    expect(result.runtimeFalse).toBe(true);
+    expect(result.error).toBeUndefined();
+    expect(result.hasHideExactKey).toBe(true);
+    expect(result.hideExactTrue).toBe(true);
+    expect(result.hideExactFalse).toBe(false);
+    expect(result.source).toBe('single');
+    expect(result.title).toBe('Test Title');
+    expect(result.district).toBe('TestDistrict');
   });
 
   test('hideExact defaults to false in _pd', async ({ page }) => {
@@ -164,23 +220,55 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
 
   // ── Fix #4: search filter legacy tag equivalence ──
 
-  test('filter with canonical tag matches property using legacy name', async ({ page }) => {
+  test('getFiltered() with canonical tag finds properties with legacy name and vice versa', async ({ page }) => {
     const result = await page.evaluate(() => {
-      const propLegacy = { features: ['Piscina'] };
-      const propNew = { features: ['Piscina propia'] };
-      const propNone = { features: ['Jardín propio'] };
-      const pf1 = propLegacy.features || [];
-      const pf2 = propNew.features || [];
-      const pf3 = propNone.features || [];
-      const f = 'Piscina propia';
-      const matchLegacy = pf1.includes(f) || pf1.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf1.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
-      const matchNew = pf2.includes(f) || pf2.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf2.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
-      const matchNone = pf3.includes(f) || pf3.includes(_PUB_FEAT_REVERSE_MAP[f] || '') || pf3.includes(_PUB_FEAT_LEGACY_MAP[f] || '');
-      return { matchLegacy, matchNew, matchNone };
+      // Save original state
+      const origProperties = properties.slice();
+      const origFeatures = [...S.features];
+      const origOp = S.op;
+      const origType = S.type;
+      const origQuery = S.query;
+
+      // Inject test properties — photoUrls lets them pass the driveAssets check
+      const base = {
+        address: 'Av Test 100', district: 'Miraflores', op: 'Venta', type: 'Departamento',
+        price: 100000, area: 80, beds: 2, baths: 1, park: 1, age: 5, photoUrls: ['x'],
+      };
+      properties = [
+        { ...base, id: 'legacy-1', features: ['Piscina'] },
+        { ...base, id: 'canonical-1', features: ['Piscina propia'] },
+        { ...base, id: 'unrelated-1', features: ['Jardín propio'] },
+      ];
+
+      // Reset filter state to neutral
+      S.query = ''; S.op = 'Venta'; S.type = 'all'; S.beds = 0; S.baths = 0;
+      S.minPrice = 0; S.maxPrice = Infinity; S.minArea = 0; S.minAreaTerr = 0;
+      S.minSqm = 0; S.maxSqm = Infinity; S.minPark = 0; S.minFloors = 0;
+      S.minFloor = 0; S.maxAge = Infinity; S.bankOnly = false;
+
+      // Filter by canonical name "Piscina propia"
+      S.features = ['Piscina propia'];
+      const byCanonical = getFiltered().map(p => p.id);
+
+      // Filter by legacy name "Piscina"
+      S.features = ['Piscina'];
+      const byLegacy = getFiltered().map(p => p.id);
+
+      // Restore
+      properties = origProperties;
+      S.features = origFeatures;
+      S.op = origOp; S.type = origType; S.query = origQuery;
+
+      return { byCanonical, byLegacy };
     });
-    expect(result.matchLegacy).toBe(true);
-    expect(result.matchNew).toBe(true);
-    expect(result.matchNone).toBe(false);
+    // Canonical filter "Piscina propia" matches both legacy and canonical properties
+    expect(result.byCanonical).toContain('legacy-1');
+    expect(result.byCanonical).toContain('canonical-1');
+    expect(result.byCanonical).not.toContain('unrelated-1');
+    // Legacy filter "Piscina" matches both directions too
+    expect(result.byLegacy).toContain('legacy-1');
+    expect(result.byLegacy).toContain('canonical-1');
+    expect(result.byLegacy).not.toContain('unrelated-1');
   });
 
   test('_PUB_FEAT_REVERSE_MAP covers all legacy→canonical pairs', async ({ page }) => {
