@@ -5259,10 +5259,11 @@ function openDetail(id){
 }
 
 function closeDetail(){
+  var wasOpen = document.getElementById('detailPanel').classList.contains('open');
   S.selectedId=null;
   document.getElementById('detailOverlay').classList.remove('open');
   document.getElementById('detailPanel').classList.remove('open');
-  applyFilters();
+  if(wasOpen) applyFilters();
 }
 
 function showGatePanel(p){
@@ -6641,6 +6642,7 @@ async function _pubBulkSubmit(){
 
 // ─────────────────────── HOME / ROUTER ───────────────────────
 function goHome(){
+  closeDetail();
   document.body.classList.remove('show-user');
   hideLegalPages();
   document.body.classList.add('show-home');
@@ -6654,6 +6656,7 @@ function _refreshMainMap(){
 }
 function goToApp(hash){
   hash = hash || '';
+  closeDetail();
   hideLegalPages();
   document.body.classList.remove('show-home');
   document.body.classList.remove('show-user');
@@ -6674,6 +6677,7 @@ function goToApp(hash){
   if(typeof _applyLandingHash==='function') _applyLandingHash();
 }
 window.addEventListener('popstate',function(e){
+  closeDetail();
   const h=window.location.hash;
   const state=e.state;
   if(state&&state.view==='home'||(!h&&!state)){
@@ -7021,6 +7025,7 @@ function applyHashNav(){
 // ── Legal page routing (declared here so DOMContentLoaded can use it) ──
 var LEGAL_PAGES={terminos:'pageTerminos',privacidad:'pagePrivacidad',cookies:'pageCookies',reclamaciones:'pageReclamaciones',faqs:'pageFaqs',contacto:'pageContacto'};
 function showLegalPage(page){
+  closeDetail();
   document.body.classList.remove('show-home');
   document.body.classList.add('show-legal');
   document.querySelectorAll('.legal-page-view').forEach(function(el){el.classList.remove('active');});
@@ -7661,6 +7666,7 @@ function addKeyHistoryEntry(type, qty, propId, propLabel) {
 // ─────────────────────── USER SECTION NAVIGATION ───────────────────────
 function navigateUserSection(section) {
   event && event.preventDefault();
+  closeDetail();
   document.querySelectorAll('.user-wrap.open').forEach(function(w) { w.classList.remove('open'); });
   document.body.classList.remove('show-home');
   document.body.classList.add('show-user');
@@ -7668,6 +7674,7 @@ function navigateUserSection(section) {
   renderUserSection(section);
 }
 function closeUserSection() {
+  closeDetail();
   document.body.classList.remove('show-user');
   history.replaceState(null, '', location.pathname + location.search);
   if(typeof recalcBody==='function') recalcBody();
@@ -8552,6 +8559,7 @@ function _checkUserHash() {
   }
 }
 window.addEventListener('popstate', function() {
+  closeDetail();
   var h = window.location.hash.replace('#','');
   if (['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0) {
     _checkUserHash();
