@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       district:
-        description: 'District to acquire (leave empty for all 5 pilot districts)'
+        description: 'District to acquire'
         required: false
-        default: ''
+        default: 'all'
         type: choice
         options:
-          - ''
+          - all
           - miraflores
           - la-victoria
           - surquillo
@@ -46,7 +46,7 @@ jobs:
       - name: Run COFOPRI acquisition
         run: |
           ARGS="--source=cofopri --verbose"
-          if [ -n "${{ inputs.district }}" ]; then
+          if [ "${{ inputs.district }}" != "all" ]; then
             ARGS="$ARGS --district=${{ inputs.district }}"
           fi
           if [ "${{ inputs.dry_run }}" = "true" ]; then
@@ -69,7 +69,7 @@ jobs:
           find data/raw/external/ -type f | head -200
 
       - name: Commit acquired data
-        if: inputs.dry_run == false
+        if: ${{ inputs.dry_run != true }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -81,7 +81,7 @@ jobs:
 
 Automated acquisition from geoportal.cofopri.gob.pe
 Source: COFOPRI ArcGIS REST API (CATASTRO_URBANO MapServer)
-District filter: ${{ inputs.district || 'all 5 pilot districts' }}
+District filter: ${{ inputs.district }}
 
 Raw data only — no analysis or parcel_master modification.
 
