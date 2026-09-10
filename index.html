@@ -2667,7 +2667,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <button class="mtool-btn" id="radiusToggle" onclick="toggleRadiusMode()">⬤ Radio<span class="mtool-sub">Dibuja un área en el mapa</span></button>
       <button class="mtool-btn" id="polyToggle" onclick="togglePolyMode()">⬟ Área<span class="mtool-sub">Dibuja un polígono libre</span></button>
       <button class="mtool-btn" id="commuteToggle" onclick="toggleCommuteMode()">🚗 Traslado<span class="mtool-sub">Tiempo de viaje al destino</span></button>
-      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Colegios, bancos, parques…</span></button>
+      <button class="mtool-btn" id="poiToggle" onclick="togglePoiPanel()">📍 Cerca de ti<span class="mtool-sub">Educación, salud, parques…</span></button>
       <button class="mtool-btn" id="svToggle" onclick="toggleSVMode()">👁️ Street View<span class="mtool-sub">Vista de calle de Google</span></button>
       <button class="mtool-btn" id="trafficToggle" onclick="toggleTraffic()">🚦 Tráfico<span class="mtool-sub">Flujo vehicular en vivo</span></button>
       <button class="mtool-btn" id="catastroToggle" onclick="toggleCatastro()">📐 Catastro<span class="mtool-sub">Lotes por distrito en Lima</span></button>
@@ -4041,14 +4041,14 @@ function clearCommute(){
 
 // ── Cerca de ti — POIs via HERE Browse API ─────────
 const POI_CATS={
-  colegios:{l:'Colegios',e:'🏫',c:'#2563EB',here:'600-6200-0062,600-6200-0061,600-6200-0063'},
-  supermercados:{l:'Supermercados',e:'🛒',c:'#16A34A',here:'600-6300-0066,600-6300-0067,600-6300-0068'},
-  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510-0202,550-5510-0204,550-5510-0205,550-5510-0000'},
-  clinicas:{l:'Clínicas',e:'🏥',c:'#DC2626',here:'800-8000-0159,800-8000-0158,800-8000-0160'},
+  educacion:{l:'Educación',e:'🎓',c:'#2563EB',here:'800-8200-0174,800-8200-0173,800-8200-0000'},
+  comida:{l:'Comida',e:'🛒',c:'#16A34A',here:'600-6300-0066,600-6200-0063,600-6300-0067'},
+  parques:{l:'Parques',e:'🌳',c:'#15803D',here:'550-5510-0202,550-5510-0204,550-5510-0000'},
+  salud:{l:'Salud',e:'🏥',c:'#DC2626',here:'800-8000-0159,800-8000-0158,800-8000-0000'},
   farmacias:{l:'Farmacias',e:'💊',c:'#0891B2',here:'600-6400-0000,600-6400-0058'},
   restaurantes:{l:'Restaurantes',e:'🍽️',c:'#EA580C',here:'100-1000-0000,100-1000-0001,100-1100-0000'},
-  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7010-0108,700-7010-0109,700-7010-0103'},
-  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100-0035,400-4100-0036,400-4100-0000'}
+  bancos:{l:'Bancos',e:'🏦',c:'#7C3AED',here:'700-7000-0107'},
+  transporte:{l:'Transporte',e:'🚌',c:'#0D9488',here:'400-4100-0035,400-4100-0036,400-4100-0000,400-4000-4581'}
 };
 let poiMarkers={};
 let _poiLoading={};
