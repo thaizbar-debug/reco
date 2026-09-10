@@ -1369,6 +1369,13 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 .global-legal-bar .glb-links a:hover{color:#fff}
 body.show-home .global-legal-bar{display:none}
 body.show-legal .global-legal-bar{display:none}
+
+/* FLOATING ADVISOR BUTTON */
+.floating-advisor-btn{position:fixed;bottom:56px;right:20px;z-index:160;display:flex;align-items:center;gap:7px;padding:10px 18px;background:var(--blue);color:#fff;border:none;border-radius:50px;font-size:.82rem;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 4px 16px rgba(8,145,178,.35);transition:opacity .15s,transform .15s;white-space:nowrap}
+.floating-advisor-btn:hover{opacity:.9;transform:translateY(-1px)}
+body.show-home .floating-advisor-btn{display:none}
+body.show-legal .floating-advisor-btn{display:none}
+@media(max-width:600px){.floating-advisor-btn{bottom:80px;right:14px;font-size:.78rem;padding:9px 14px}}
 @media(max-width:600px){.global-legal-bar{flex-direction:column;text-align:center;padding:10px 12px}}
 
 /* COOKIE CONSENT BANNER — slim full-width bar */
@@ -2389,7 +2396,6 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
-      <button class="clear-filters-btn" style="border-color:transparent;opacity:.7" onclick="openUnmetDemandModal(null,S.op==='Alquiler'?'alquilar':S.op==='Histórico'?'historico':'comprar')">¿No lo encontraste?</button>
       <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()" style="margin-left:0">
         Más filtros <span class="adv-arrow">▼</span>
       </button>
@@ -8344,6 +8350,11 @@ function _applyLandingHash(){
     </div>
   </div>
 </div>
+
+<!-- FLOATING ADVISOR BUTTON -->
+<button class="floating-advisor-btn" onclick="openUnmetDemandModal(null,S.op==='Alquiler'?'alquilar':S.op==='Histórico'?'historico':'comprar')">
+  💬 Buscar con asesor
+</button>
 
 <!-- GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) -->
 <div class="global-legal-bar" id="globalLegalBar">
