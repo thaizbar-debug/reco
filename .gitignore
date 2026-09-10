@@ -8,3 +8,4 @@ ui-debug.log
 .firebase/
 *.local
 test-results/
+functions/test-results/
