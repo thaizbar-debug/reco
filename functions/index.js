@@ -26,6 +26,7 @@ initializeApp();
 const db = getFirestore();
 
 const openaiKey = defineSecret('OPENAI_API_KEY');
+const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
 
 // Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
 // Used by setAdminClaim to accept the current caller as admin even if
@@ -973,6 +974,113 @@ exports.setAdminClaim = onCall(
     }
 
     return { targetUid: targetUser.uid, admin };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// chargeWithCulqi — charges the user via Culqi and grants keys on success.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('chargeWithCulqi');
+//   const { data } = await fn({ tokenId, planName, amount });
+//   // data = { success: true, keysLeft: N, chargeId: '...' }
+//
+// Errors (HttpsError):
+//   unauthenticated    — no auth / AppCheck failed
+//   invalid-argument   — bad plan name or amount mismatch
+//   aborted            — Culqi rejected the charge (card declined, etc.)
+//   internal           — network error reaching Culqi API
+//
+// Secret CULQI_SECRET_KEY must be set before deploying to production:
+//   firebase functions:secrets:set CULQI_SECRET_KEY
+// ─────────────────────────────────────────────────────────────────────────────
+const CULQI_PLANS = {
+  Individual: { amount: 1000,  qty: 1   },
+  Bronce:     { amount: 4500,  qty: 5   },
+  Plata:      { amount: 8000,  qty: 10  },
+  Oro:        { amount: 35000, qty: 50  },
+  Diamante:   { amount: 60000, qty: 100 },
+};
+
+exports.chargeWithCulqi = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+    secrets: [culqiSecretKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'chargeWithCulqi');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+
+    const uid   = request.auth.uid;
+    const email = request.auth.token.email || '';
+
+    const tokenId  = request.data && request.data.tokenId;
+    const planName = request.data && request.data.planName;
+    const amount   = request.data && request.data.amount;
+
+    if (!tokenId || typeof tokenId !== 'string') {
+      throw new HttpsError('invalid-argument', 'tokenId requerido.');
+    }
+    const plan = CULQI_PLANS[planName];
+    if (!plan) throw new HttpsError('invalid-argument', 'Plan inválido.');
+    if (plan.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con el plan.');
+
+    // Charge via Culqi REST API
+    let charge;
+    try {
+      const res = await fetch('https://api.culqi.com/v2/charges', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${culqiSecretKey.value()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: plan.amount,
+          currency_code: 'PEN',
+          email,
+          source_id: tokenId,
+        }),
+      });
+      charge = await res.json();
+      if (!res.ok) {
+        logger.warn('[chargeWithCulqi] Culqi API error', { uid, planName, charge });
+        throw new HttpsError('aborted', charge.user_message || 'El pago no pudo procesarse.');
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[chargeWithCulqi] fetch error', { uid, err: e.message });
+      throw new HttpsError('internal', 'Error al conectar con la pasarela de pago.');
+    }
+
+    if (charge.outcome && charge.outcome.type !== 'venta_exitosa') {
+      throw new HttpsError('aborted', charge.user_message || 'El cargo fue rechazado.');
+    }
+
+    // Grant keys inside a transaction to avoid race conditions
+    const userRef = db.collection('users').doc(uid);
+    const newBalance = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      const data = snap.exists ? snap.data() : {};
+      const current = Number(data.keysLeft) || 0;
+      const newTotal = current + plan.qty;
+      const histEntry = {
+        type: 'purchase',
+        label: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
+        delta: plan.qty,
+        balance: newTotal,
+        chargeId: charge.id,
+        date: new Date().toISOString(),
+      };
+      const nextHistory = [histEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
+      tx.set(userRef, { keysLeft: newTotal, keyHistory: nextHistory }, { merge: true });
+      return newTotal;
+    });
+
+    logger.info('[chargeWithCulqi] success', { uid, planName, qty: plan.qty, chargeId: charge.id });
+    return { success: true, keysLeft: newBalance, chargeId: charge.id };
   }
 );
 

@@ -14,6 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
+<script src="https://checkout.culqi.com/js/v4"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 // HERE API key. Owned by the thaizbar@gmail.com account on
@@ -1098,7 +1099,9 @@ header .spacer{flex:1}
   background:var(--amber);color:#fff;font-size:.65rem;font-weight:700;
   padding:2px 10px;border-radius:99px;white-space:nowrap;
 }
+.plan-icon{font-size:1.8rem;margin-bottom:6px;line-height:1}
 .plan-name{font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:4px}
+.plan.diamante{grid-column:1/-1}
 .plan-was{font-size:.75rem;color:var(--muted);text-decoration:line-through}
 .plan-price{font-size:1.3rem;font-weight:900;color:var(--blue)}
 .plan-qty{font-size:.75rem;color:var(--muted);margin-top:3px}
@@ -2812,14 +2815,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <p>Cada llave desbloquea el detalle completo de un inmueble: datos del propietario, precio exacto, historial y contacto directo.</p>
     </div>
     <div class="modal-body">
-      <div class="key-info-box" style="background:#fff4e5;border:1px solid #f5b342;color:#8a5a00">
-        🚧 <span><strong>Compra de llaves en construcción.</strong> Estamos conectando la pasarela de pagos. Muy pronto vas a poder comprar tus llaves acá.</span>
-      </div>
       <div class="key-info-box">
-        ℹ️ <span>Una llave se consume al abrir el detalle completo de una propiedad. Explorar resultados en lista y mapa siempre es <strong>gratuito</strong>.</span>
+        ℹ️ <span>Una llave desbloquea el detalle completo de una propiedad: datos del propietario, precio exacto e historial. Explorar resultados siempre es <strong>gratuito</strong>.</span>
       </div>
       <div class="plans-grid">
         <div class="plan" onclick="selectPlan(this,'Individual',10,1)">
+          <div class="plan-icon">🔑</div>
           <div class="plan-name">Individual</div>
           <div class="plan-price">S/ 10</div>
           <div class="plan-qty">1 consulta</div>
@@ -2827,6 +2828,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         </div>
         <div class="plan popular sel" onclick="selectPlan(this,'Bronce',45,5)">
           <div class="plan-hot">⭐ Popular</div>
+          <div class="plan-icon">🥉</div>
           <div class="plan-name">Bronce</div>
           <div class="plan-was">S/ 50</div>
           <div class="plan-price">S/ 45</div>
@@ -2834,6 +2836,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-uv">S/ 9 / llave · Ahorra 10%</div>
         </div>
         <div class="plan" onclick="selectPlan(this,'Plata',80,10)">
+          <div class="plan-icon">🥈</div>
           <div class="plan-name">Plata</div>
           <div class="plan-was">S/ 100</div>
           <div class="plan-price">S/ 80</div>
@@ -2841,14 +2844,23 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-uv">S/ 8 / llave · Ahorra 20%</div>
         </div>
         <div class="plan" onclick="selectPlan(this,'Oro',350,50)">
+          <div class="plan-icon">🥇</div>
           <div class="plan-name">Oro</div>
           <div class="plan-was">S/ 500</div>
           <div class="plan-price">S/ 350</div>
           <div class="plan-qty">50 consultas</div>
           <div class="plan-uv">S/ 7 / llave · Ahorra 30%</div>
         </div>
+        <div class="plan diamante" onclick="selectPlan(this,'Diamante',600,100)">
+          <div class="plan-icon">💎</div>
+          <div class="plan-name">Diamante</div>
+          <div class="plan-was">S/ 1000</div>
+          <div class="plan-price">S/ 600</div>
+          <div class="plan-qty">100 consultas</div>
+          <div class="plan-uv">S/ 6 / llave · Ahorra 40%</div>
+        </div>
       </div>
-      <button class="btn-pay" id="payBtn" onclick="simulatePay()" disabled style="opacity:.55;cursor:not-allowed">Compra deshabilitada · Próximamente</button>
+      <button class="btn-pay" id="payBtn" onclick="simulatePay()">Pagar S/ 45</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
     </div>
   </div>
@@ -5590,21 +5602,69 @@ function closeWelcomeModal() {
   document.getElementById('welcomeModal').classList.remove('open');
 }
 
-function selectPlan(el,name,price,qty){
-  document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel'));
+// Public key from app.culqi.com → Integración → API keys.
+// Set to pk_live_... for production or pk_test_... for sandbox.
+var _CULQI_PUBLIC_KEY = '';
+
+function selectPlan(el, name, price, qty) {
+  document.querySelectorAll('.plan').forEach(p => p.classList.remove('sel'));
   el.classList.add('sel');
-  S.selectedPlan={name,price,qty};
-  // Pay button stays disabled until the real gateway is wired up.
-  // Don't overwrite its text so the "Próximamente" copy remains visible.
+  S.selectedPlan = { name, price, qty };
+  var payBtn = document.getElementById('payBtn');
+  if (payBtn) { payBtn.textContent = 'Pagar S/ ' + price; payBtn.disabled = false; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
 }
 
-function simulatePay(){
-  // Payment gateway (Izipay) not yet integrated. Until the gateway and
-  // the Cloud Function that grants keys server-side are live, this
-  // button must not add keys — doing so client-side would either be
-  // rejected by the hardened /users update rule or, worse, mislead the
-  // user into thinking they paid.
-  toast('🚧 La compra de llaves aún no está disponible. Estamos conectando la pasarela de pagos.');
+function simulatePay() {
+  if (!auth.currentUser) { toast('⚠️ Debes iniciar sesión para comprar llaves'); openAuthModal('login', openModal); return; }
+  if (!window.Culqi) { toast('⚠️ Error cargando la pasarela. Recarga la página.'); return; }
+  var plan = S.selectedPlan;
+  Culqi.publicKey = _CULQI_PUBLIC_KEY;
+  Culqi.settings({
+    title: 'Reco',
+    currency: 'PEN',
+    description: 'Pack ' + plan.name + ' — ' + plan.qty + ' llave' + (plan.qty !== 1 ? 's' : ''),
+    amount: plan.price * 100,
+  });
+  Culqi.options({ lang: 'es' });
+  Culqi.open();
+}
+
+// Global callback — Culqi.js calls this after the user submits the card form.
+function culqi() {
+  if (Culqi.error) {
+    toast('⚠️ ' + (Culqi.error.user_message || 'Error en el pago.'));
+    return;
+  }
+  if (Culqi.token) {
+    Culqi.close();
+    _processPayment(Culqi.token.id);
+  }
+}
+
+var _payInProgress = false;
+async function _processPayment(tokenId) {
+  if (_payInProgress) return;
+  _payInProgress = true;
+  var payBtn = document.getElementById('payBtn');
+  if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'Procesando…'; }
+  try {
+    var plan = S.selectedPlan;
+    var fn = _getFunctions().httpsCallable('chargeWithCulqi');
+    var result = await fn({ tokenId: tokenId, planName: plan.name, amount: plan.price * 100 });
+    if (result.data && typeof result.data.keysLeft === 'number') {
+      S.keysLeft = result.data.keysLeft;
+      document.querySelectorAll('#keyCount,#homeKeyCount').forEach(function(el) { el.textContent = S.keysLeft; });
+    }
+    closeModal();
+    toast('🔑 Pago exitoso. Tienes ' + S.keysLeft + ' llave' + (S.keysLeft !== 1 ? 's' : '') + '.');
+    if (S.pendingUnlockId) { var id = S.pendingUnlockId; S.pendingUnlockId = null; _spendKey(id); }
+    else if (S.pendingPublish) { S.pendingPublish = false; _ppub(); }
+  } catch(e) {
+    toast('⚠️ ' + (e.message || 'Error al procesar el pago.'));
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + S.selectedPlan.price; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
+  } finally {
+    _payInProgress = false;
+  }
 }
 
 // ─────────────────────── FULL REPORT ───────────────────────
