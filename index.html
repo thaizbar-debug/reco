@@ -2894,6 +2894,7 @@ function _pubDocToProperty(id, p){
     baths: Number(p.baths) || 0,
     park: Number(p.parking) || 0,
     floor: Number(p.floor) || 0,
+    unitFloors: Math.max(1, Number(p.unitFloors) || 1),
     floors: Number(p.floors) || 0,
     age: Number(p.age) || 0,
     lat: p.lat || null,
@@ -3229,7 +3230,10 @@ function getFiltered(){
     if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0){
-      if(!S.features.every(f=>(p.features||[]).includes(f))) return false;
+      if(!S.features.every(f=>{
+        const pf=p.features||[];
+        return pf.includes(f)||pf.includes(_PUB_FEAT_LEGACY_MAP[f])||pf.includes(_PUB_FEAT_REVERSE_MAP[f]);
+      })) return false;
     }
     if(S.radiusCenter && GEO[p.id]){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
@@ -3493,7 +3497,7 @@ function renderCards(list){
     const bottomBtn=p.op==='Histórico'
       ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">✓ Ver informe</button>`)
       :'';
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${esc(p.id)}" onclick="openDetail('${esc(p.id)}')"><div class="card-img"><div class="cimg-track" id="cimgt-${esc(pid)}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${esc(p.address)}</div><div class="card-dist">📍 ${esc(p.district)}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${esc(f)}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${esc(p.id)}" onclick="openDetail('${esc(p.id)}')"><div class="card-img"><div class="cimg-track" id="cimgt-${esc(pid)}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${esc(p.address)}</div><div class="card-dist">📍 ${esc(p.district)}${p.floor>0?' · '+(p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niv.')+' piso '+esc(p.floor):'Piso '+esc(p.floor))+(p.floors?'/'+esc(p.floors):''):''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${esc(f)}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
@@ -4354,7 +4358,7 @@ function _pinHoverHtml(p){
   const priceHtml = isHistLocked
     ? '<div class="hc-price">🔒 Desbloquear</div>'
     : `<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>`;
-  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}${priceHtml}</div></div>`;
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · '+(p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niv.')+' piso '+esc(p.floor):'Piso '+esc(p.floor))+(p.floors?'/'+esc(p.floors):''):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}${priceHtml}</div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
@@ -5835,7 +5839,7 @@ function openFullReport(id){
           ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.beds)}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
           ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.baths)}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
           ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(parkCount(p))}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
-          ${p.floors>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}/${esc(p.floors)}</div><div class="fr-spec-lbl">Piso</div></div>`:''}
+          ${p.floors>0||p.floor>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</div><div class="fr-spec-lbl">${p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niveles'):'Piso'}</div></div>`:''}
           ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.age)}</div><div class="fr-spec-lbl">Años</div></div>`}
         </div>
 
@@ -6065,25 +6069,96 @@ function toast(msg){
 
 // ─────────────────────── PUBLISH ───────────────────────
 let _ps=1,_pubTab='single',pubMap=null,pubMarker=null,_pubGeoTimer=null;
+// MEJ-05 — Convivían "Nro pisos" y "Piso del inmueble" sin explicar
+// cuál era cuál. Un dúplex en los pisos 6 y 7 de un edificio de 7 no
+// tenía dónde declararse. Ahora son tres datos distintos y rotulados:
+//   floor      = piso donde empieza el inmueble
+//   unitFloors = cuántos niveles ocupa (1 = un solo nivel, 2 = dúplex…)
+//   floors     = pisos totales del edificio
 let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
          hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-         beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+         beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[],listedAt:null};
 const _VALUATION_ENABLED = false;
+// MEJ-06 — Revisión de la taxonomía de etiquetas. Las listas mezclaban
+// lo que está DENTRO del inmueble con lo que es del edificio, y varias
+// etiquetas ("Piscina", "Patio", "Área común", "Calle") no dejaban
+// claro a qué se referían. Cambios:
+//   · los nombres ambiguos quedan explícitos (Piscina propia / del edificio),
+//   · cada grupo dice en una línea qué se marca ahí,
+//   · cada etiqueta lleva una descripción que se ve al pasar el cursor,
+//   · las etiquetas antiguas siguen reconociéndose (_PUB_FEATS_LEGACY),
+//     para no romper los anuncios ya publicados ni los filtros.
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
-  'Jacuzzi','Jardín','Piscina','Terraza','Aire Acondicionado',
+  'Jacuzzi','Jardín propio','Piscina propia','Terraza propia','Aire Acondicionado',
   'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
   'Propiedad Eco-amigable o Sostenible','Propiedad de Playa'];
-const _PUB_FEATS_AMB=['Área de cafetería','Área de lavandería','Patio','Área común','Recepción','Conserje',
-  'Acceso a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
-  'Piscina (edificio)','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
+const _PUB_FEATS_AMB=['Cafetería del edificio','Lavandería del edificio','Patio común','Sala de estar común','Recepción','Conserje',
+  'Salida directa a parque','Zona de Parrilla (BBQ)','Sala de juegos','Depósito','Oficinas/Co-work',
+  'Piscina del edificio','Salón de usos múltiples','Sauna/Spa','Sótano','Áreas verdes',
   'Canchas deportivas','Gimnasio','Juegos infantiles',
   'Acceso para personas con movilidad reducida','Estacionamiento para visitas'];
-const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista interior','Vista a campo','Vista a paisaje'];
-const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Privado','Callejón'];
+const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista a área interior','Vista a campo','Vista a paisaje'];
+const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Vía privada','Callejón'];
 const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
-const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA];
+// Nombres anteriores: siguen siendo válidos para los anuncios que ya
+// los tienen guardados, pero no se ofrecen al publicar.
+const _PUB_FEATS_LEGACY=['Jardín','Piscina','Terraza','Área de cafetería','Área de lavandería','Patio',
+  'Área común','Acceso a parque','Piscina (edificio)','Vista interior','Privado'];
+const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA,..._PUB_FEATS_LEGACY];
+const _PUB_FEAT_LEGACY_MAP={'Jardín':'Jardín propio','Piscina':'Piscina propia','Terraza':'Terraza propia',
+  'Área de cafetería':'Cafetería del edificio','Área de lavandería':'Lavandería del edificio','Patio':'Patio común',
+  'Área común':'Sala de estar común','Acceso a parque':'Salida directa a parque',
+  'Piscina (edificio)':'Piscina del edificio','Vista interior':'Vista a área interior','Privado':'Vía privada'};
+const _PUB_FEAT_REVERSE_MAP=Object.fromEntries(Object.entries(_PUB_FEAT_LEGACY_MAP).map(([k,v])=>[v,k]));
+// Qué significa cada grupo, en una línea, arriba de sus casillas.
+const _PUB_FEAT_GROUP_HELP={
+  gen:'Lo que está dentro del inmueble y se entrega con él.',
+  amb:'Áreas del edificio o del condominio, compartidas con los demás propietarios.',
+  vista:'Lo que se ve desde las ventanas principales. Marca solo lo que se ve de verdad.',
+  acceso:'Tipo de vía por la que se llega a la puerta del inmueble.',
+  zona:'Carácter predominante de la zona donde está el inmueble.'
+};
+// Descripción de las etiquetas que generaban dudas en las pruebas.
+const _PUB_FEAT_HELP={
+  'Piscina propia':'Piscina de uso exclusivo del inmueble.',
+  'Piscina del edificio':'Piscina compartida del edificio o condominio.',
+  'Jardín propio':'Jardín de uso exclusivo, no las áreas verdes comunes.',
+  'Terraza propia':'Terraza de uso exclusivo del inmueble.',
+  'Patio común':'Patio compartido por los vecinos del edificio.',
+  'Sala de estar común':'Ambiente común de estar o espera, distinto de la recepción.',
+  'Cafetería del edificio':'Espacio de cafetería dentro del edificio o condominio.',
+  'Lavandería del edificio':'Lavandería compartida del edificio.',
+  'Salida directa a parque':'El edificio da directamente a un parque, sin cruzar pista.',
+  'Recepción':'Mostrador de recepción en el ingreso.',
+  'Conserje':'Personal permanente de conserjería o portería.',
+  'Depósito':'Depósito propio en el edificio (no el sótano común).',
+  'Áreas verdes':'Jardines comunes del edificio o condominio.',
+  'Vista a área interior':'Las ventanas dan a un patio o ducto interior del edificio.',
+  'Vista a calle':'Las ventanas dan a la vía pública.',
+  'Calle':'Vía local de tránsito bajo.',
+  'Avenida':'Vía principal de tránsito alto.',
+  'Jirón':'Vía urbana de varias cuadras, típica del centro.',
+  'Pasaje':'Vía corta y angosta, muchas veces peatonal.',
+  'Alameda':'Vía con paseo arbolado.',
+  'Boulevard':'Vía ancha con separador central o paseo.',
+  'Vía privada':'Calle interior de un condominio, con control de ingreso.',
+  'Callejón':'Vía muy angosta, generalmente sin salida.',
+  'Carretera':'Acceso por vía interurbana.',
+  'Mixta':'Conviven vivienda y comercio en la misma zona.',
+  'Semi-urbana':'Zona en consolidación, con servicios parciales.',
+  'Conservación':'Zona protegida o con restricciones de edificación.'
+};
+function _pubFeatGrid(list){
+  return list.map(f=>{
+    const h=_PUB_FEAT_HELP[f]||'';
+    return `<label class="pub-feat-item"${h?` title="${esc(h)}"`:''}><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f.replace(/'/g,"\\'")}',this.checked)"> ${f}${h?' <span style="color:var(--muted);cursor:help">ⓘ</span>':''}</label>`;
+  }).join('');
+}
+function _pubFeatGroupHelp(k){
+  return `<div style="font-size:11px;color:var(--muted);margin:2px 0 6px">${_PUB_FEAT_GROUP_HELP[k]}</div>`;
+}
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
@@ -6091,7 +6166,7 @@ function openPublish(){
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-       beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+       beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
        estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
@@ -6191,10 +6266,28 @@ function _rps(){
         <div class="pub-stp-row"><span class="stp-lbl">🛏 Dormitorios</span><div class="stp-ctrl"><button onclick="_pAdj('beds',-1)">−</button><span class="stp-val" id="pub_beds">${_pd.beds}</span><button onclick="_pAdj('beds',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚿 Baños</span><div class="stp-ctrl"><button onclick="_pAdj('baths',-1)">−</button><span class="stp-val" id="pub_baths">${_pd.baths}</span><button onclick="_pAdj('baths',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚗 Estacionamientos</span><div class="stp-ctrl"><button onclick="_pAdj('parking',-1)">−</button><span class="stp-val" id="pub_parking">${_pd.parking}</span><button onclick="_pAdj('parking',1)">+</button></div></div>
-        <div class="pub-field row" style="margin-top:10px">
-          <div><label>Nro pisos</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
-          <div><label>Piso del inmueble</label><input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value)"></div>
+        <div class="pub-field" style="margin-top:10px">
+          <label>🏢 Pisos</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Tres datos distintos: en qué piso está, cuántos niveles ocupa por dentro y cuántos pisos tiene el edificio.</div>
         </div>
+        <div class="pub-field row">
+          <div>
+            <label>${_pd.type==='Casa'?'Piso de ingreso':'Piso en el que está'}</label>
+            <input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 6">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">0 si está a nivel de calle.</div>
+          </div>
+          <div>
+            <label>Niveles que ocupa</label>
+            <input type="number" min="1" value="${_pd.unitFloors||1}" oninput="_pd.unitFloors=Math.max(1,Number(this.value)||1);_pubFloorsSummary()" placeholder="1">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">1 = un solo nivel · 2 = dúplex · 3 = tríplex.</div>
+          </div>
+          <div>
+            <label>${_pd.type==='Casa'?'Pisos de la casa':'Pisos del edificio'}</label>
+            <input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 7">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Altura total de la construcción.</div>
+          </div>
+        </div>
+        <div id="pubFloorsSummary" style="font-size:12px;color:var(--blue);margin:-2px 0 6px">${_pubFloorsText()}</div>
         <div class="pub-field row">
           <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
           <div><label>Estado</label>
@@ -6211,25 +6304,30 @@ function _rps(){
           <label class="pub-check"><input type="checkbox" ${_pd.petFriendly?'checked':''} onchange="_pd.petFriendly=this.checked"> Pet friendly</label>
         </div>
 
-        <h3 style="margin-top:18px">🏷️ Etiquetas generales</h3>
+        <h3 style="margin-top:18px">🏷️ Características del inmueble</h3>
+        ${_pubFeatGroupHelp('gen')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_GEN.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_GEN)}
         </div>
-        <h3 style="margin-top:14px">🏢 Etiquetas ambientes</h3>
+        <h3 style="margin-top:14px">🏢 Áreas comunes del edificio</h3>
+        ${_pubFeatGroupHelp('amb')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_AMB.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_AMB)}
         </div>
-        <h3 style="margin-top:14px">👁️ Etiquetas vistas</h3>
+        <h3 style="margin-top:14px">👁️ Vistas</h3>
+        ${_pubFeatGroupHelp('vista')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_VISTA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_VISTA)}
         </div>
-        <h3 style="margin-top:14px">🛣️ Etiquetas accesos</h3>
+        <h3 style="margin-top:14px">🛣️ Tipo de vía de acceso</h3>
+        ${_pubFeatGroupHelp('acceso')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ACCESO.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ACCESO)}
         </div>
-        <h3 style="margin-top:14px">📍 Etiquetas zonas</h3>
+        <h3 style="margin-top:14px">📍 Carácter de la zona</h3>
+        ${_pubFeatGroupHelp('zona')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ZONA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ZONA)}
         </div>
       </div>
     </div>
@@ -6273,6 +6371,7 @@ function _rps(){
           <div style="font-weight:600">${_pd.op} · ${_pd.type}</div>
           <div style="color:var(--muted);margin-top:2px">📍 ${_pd.address||'—'}${_pd.district?', '+_pd.district:''}</div>
           <div style="color:var(--muted);margin-top:2px">📐 ${_pd.area} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
+          ${_pubFloorsText()?`<div style="color:var(--muted);margin-top:2px">🏢 ${_pubFloorsText()}</div>`:''}
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
@@ -6295,6 +6394,33 @@ function _rps(){
   }
 }
 
+// MEJ-05 — Devuelve la frase que confirma, en lenguaje natural, lo que
+// el corredor acaba de escribir en los tres campos de pisos.
+function _pubFloorsText(){
+  const f=Number(_pd.floor)||0, u=Math.max(1,Number(_pd.unitFloors)||1), t=Number(_pd.floors)||0;
+  if(!f && u<2 && !t) return '';
+  const nivel=u>1?`Ocupa ${u} niveles (pisos ${f||1} al ${(f||1)+u-1})`:(f?`Está en el piso ${f}`:'Está a nivel de calle');
+  const edif=t?` de un edificio de ${t} piso${t!==1?'s':''}.`:'.';
+  const aviso=(t && f && (f+u-1)>t)?' <span style="color:var(--red)">Revisa: supera la altura del edificio.</span>':'';
+  return nivel+edif+aviso;
+}
+function _pubFloorsSummary(){
+  const el=document.getElementById('pubFloorsSummary');
+  if(el) el.innerHTML=_pubFloorsText();
+}
+// El nivel múltiple se guarda además como etiqueta, para que se vea en
+// la ficha del inmueble sin cambiar el modelo de datos del servidor.
+function _pubLevelTag(){
+  const u=Math.max(1,Number(_pd.unitFloors)||1);
+  if(u<2) return '';
+  return u===2?'Dúplex':u===3?'Tríplex':`${u} niveles`;
+}
+function _pubFeaturesWithLevelTag(){
+  const tag=_pubLevelTag();
+  const f=(_pd.features||[]).slice();
+  if(tag && f.indexOf(tag)===-1) f.push(tag);
+  return f;
+}
 function _pdOp(op){
   _pd.op=op;
   document.querySelectorAll('.pub-op-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(op==='Venta'?'Venta':'Alquiler')));
@@ -6512,10 +6638,10 @@ async function _ppub(){
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
-      floor: _pd.floor, floors: _pd.floors, age: _pd.age,
+      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1), age: _pd.age,
       estado: _pd.estado,
       ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
-      features: _pd.features || [],
+      features: _pubFeaturesWithLevelTag(),
       title: _pd.title, desc: _pd.desc,
     });
     const publicationId = res && res.data && res.data.publicationId;
@@ -6613,8 +6739,8 @@ function _pubBulkHTML(){
   </div>`;
 }
 function _pubDownloadTemplate(){
-  const cols=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','dormitorios','banos','estacionamientos','piso','pisos_edificio','antiguedad_anos','titulo','descripcion'];
-  const ex=['Av. Larco 1150 Dpto 801','Miraflores','Departamento','Venta','USD','185000','85','3','2','1','8','15','5','Depto moderno con vista al parque','Ubicado en el corazón de Miraflores...'];
+  const cols=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','dormitorios','banos','estacionamientos','piso','niveles_ocupa','pisos_edificio','antiguedad_anos','etiquetas','titulo','descripcion'];
+  const ex=['Av. Larco 1150 Dpto 801','Miraflores','Departamento','Venta','USD','185000','85','3','2','1','8','2','15','5','Piscina propia|Terraza propia','Dúplex moderno con vista al parque','Ubicado en el corazón de Miraflores...'];
   const csv=[cols.join(','),ex.join(',')].join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reco_plantilla.csv';a.click();
@@ -6697,6 +6823,11 @@ function _pubBulkValidateRow(r){
 // userName / status / createdAt / listedAt / photoUrls are all filled
 // in server-side; the client should not send them.
 function _pubBulkRowToPubData(r){
+  const uF=Math.max(1,Number(r.niveles_ocupa)||1);
+  const rawFeats=(r.etiquetas||'').split('|').map(s=>s.trim()).filter(Boolean);
+  const feats=rawFeats.map(f=>_PUB_FEAT_LEGACY_MAP[f]||f).filter(f=>_PUB_FEATS.includes(f));
+  const lvlTag=uF===2?'Dúplex':uF===3?'Tríplex':uF>3?uF+' niveles':'';
+  if(lvlTag && !feats.includes(lvlTag)) feats.push(lvlTag);
   return {
     source: 'bulk',
     address: String(r.direccion).trim(),
@@ -6712,11 +6843,12 @@ function _pubBulkRowToPubData(r){
     baths: Number(r.banos)||0,
     parking: Number(r.estacionamientos)||0,
     floor: Number(r.piso)||0,
+    unitFloors: uF,
     floors: Number(r.pisos_edificio)||0,
     age: Number(r.antiguedad_anos)||0,
     estado: 'Construido',
     ascensor: false, amoblado: false, petFriendly: false,
-    features: [],
+    features: feats,
     title: String(r.titulo).trim(),
     desc: String(r.descripcion).trim(),
   };
@@ -6924,7 +7056,7 @@ function toggleMobileMap(){
   function renderCarousel(items, containerId) {
     const fmt = n => n.toLocaleString('es-PE');
     const sqm = p => Math.round(p.price / p.area).toLocaleString('es-PE');
-    const loc = p => { let s = '📍 ' + p.district; if(p.floor > 1 && p.floors > 1) s += ' · Piso ' + p.floor + '/' + p.floors; return s; };
+    const loc = p => { let s = '📍 ' + p.district; if(p.floor > 0) { const uF=p.unitFloors||1; s += ' · '+(uF>1?(uF===2?'Dúplex':uF===3?'Tríplex':uF+' niv.')+' piso '+p.floor:'Piso '+p.floor)+(p.floors?'/'+p.floors:''); } return s; };
     const bathsFmt = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
     const imgUrl = id => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
     const offsets = {featuredGridVenta:0, featuredGridAlq:FEATURED_VENTA.length, featuredGridEstreno:FEATURED_VENTA.length+FEATURED_ALQ.length, featuredGridLujo:FEATURED_VENTA.length+FEATURED_ALQ.length+FEATURED_ESTRENO.length};
