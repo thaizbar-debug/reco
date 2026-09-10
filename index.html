@@ -660,6 +660,16 @@ header .spacer{flex:1}
   transition:background .12s,border-color .12s;
 }
 .pill-btn:hover{background:#e2e8f0;border-color:#94a3b8}
+.map-search-zone-btn{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:480;
+  background:var(--light);border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.15);
+  color:var(--txt);padding:8px 18px;border-radius:99px;
+  font-size:.82rem;font-weight:600;cursor:pointer;
+  transition:opacity .2s,transform .2s,background .12s;
+  display:none;
+}
+.map-search-zone-btn.visible{display:block}
+.map-search-zone-btn:hover{background:#e2e8f0;border-color:#94a3b8}
 
 /* ══════════════ MAP PANEL ══════════════ */
 .map-panel{flex:1;position:relative;overflow:hidden}
@@ -1351,6 +1361,50 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 #homeView .btn-mail{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1.5px solid var(--border);color:var(--txt);padding:11px 22px;border-radius:var(--r);font-size:.88rem;font-weight:700;cursor:pointer;transition:background .12s}
 #homeView .btn-mail:hover{background:var(--light)}
 
+/* GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) */
+.global-legal-bar{position:fixed;bottom:0;left:0;right:0;z-index:9000;background:#0f172a;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(255,255,255,.07)}
+.global-legal-bar .glb-copy{font-size:.7rem;color:rgba(255,255,255,.35)}
+.global-legal-bar .glb-links{display:flex;gap:14px}
+.global-legal-bar .glb-links a{font-size:.7rem;color:rgba(255,255,255,.3);text-decoration:none;transition:color .12s;white-space:nowrap}
+.global-legal-bar .glb-links a:hover{color:#fff}
+body.show-home .global-legal-bar{display:none}
+body.show-legal .global-legal-bar{display:none}
+@media(max-width:600px){.global-legal-bar{flex-direction:column;text-align:center;padding:10px 12px}}
+
+/* COOKIE CONSENT BANNER — slim full-width bar */
+.cookie-banner{position:fixed;bottom:34px;left:0;right:0;z-index:9500;background:#f5f5f5;border-top:1px solid #ddd;padding:10px 5%;display:none;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;animation:cookieSlideUp .25s ease}
+@keyframes cookieSlideUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:translateY(0)}}
+.cookie-banner p{font-size:.82rem;line-height:1.4;color:#444;margin:0}
+.cookie-banner p a{color:var(--blue);text-decoration:underline}
+.cookie-btns{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.cookie-btns button{padding:7px 20px;border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;transition:opacity .12s}
+.cookie-accept{background:#334155;color:#fff}
+.cookie-reject{background:transparent;color:#666;font-size:.85rem;padding:7px 10px;text-decoration:underline;font-weight:400}
+.cookie-accept:hover{opacity:.85}
+.cookie-reject:hover{color:#222}
+.cookie-close{background:none;border:none;font-size:1.2rem;color:#999;cursor:pointer;padding:4px 8px;line-height:1}
+.cookie-close:hover{color:#333}
+body.show-home .cookie-banner{bottom:0}
+body.show-legal .cookie-banner{display:none !important}
+@media(max-width:600px){.cookie-banner{padding:10px 12px;gap:10px;text-align:center}.cookie-btns{justify-content:center}}
+
+/* RECLAMACIONES FORM */
+.reclamo-form{max-width:600px;margin:0 auto 48px}
+.reclamo-form label{display:block;font-size:.82rem;font-weight:600;color:var(--txt);margin-bottom:4px;margin-top:16px}
+.reclamo-form label span{color:#ef4444}
+.reclamo-form input,.reclamo-form select,.reclamo-form textarea{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--r);font-size:.88rem;font-family:inherit;background:#fff;color:var(--txt);outline:none;transition:border-color .15s}
+.reclamo-form input:focus,.reclamo-form select:focus,.reclamo-form textarea:focus{border-color:var(--blue)}
+.reclamo-form textarea{resize:vertical;min-height:100px}
+.reclamo-form .form-row{display:flex;gap:12px}
+.reclamo-form .form-row>div{flex:1}
+@media(max-width:600px){.reclamo-form .form-row{flex-direction:column;gap:0}}
+.reclamo-form .btn-submit{display:block;width:100%;margin-top:24px;padding:14px;border:none;border-radius:var(--r);background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .15s}
+.reclamo-form .btn-submit:hover{opacity:.88}
+.reclamo-form .btn-submit:disabled{opacity:.5;cursor:not-allowed}
+.reclamo-success{text-align:center;padding:32px 16px;display:none}
+.reclamo-success h3{font-size:1.2rem;color:var(--green,#10b981);margin-bottom:8px}
+.reclamo-success p{color:var(--muted);font-size:.88rem}
+
 /* FOOTER */
 #homeView footer{background:#0f172a;color:rgba(255,255,255,.55);padding:44px 5% 26px}
 #homeView .footer-inner{max-width:1160px;margin:0 auto}
@@ -1891,6 +1945,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <li>La adquisición de información acerca de las transacciones históricas de compras y ventas respecto a los inmuebles indicados en el punto (i) anterior.</li>
         </ul>
         <p>RECO se reserva el derecho de dar de baja o modificar unilateralmente la configuración, presentación y condiciones de uso de la Plataforma en cualquier momento. Por lo tanto, cada vez que un USUARIO acceda a la Plataforma, deberá aceptar los Términos y Condiciones vigentes en ese momento.</p>
+        <p><strong>RECO no actúa como intermediario, corredor, agente inmobiliario ni asesor de inversiones.</strong> La Plataforma es un medio informativo que facilita la visualización de datos referenciales del mercado inmobiliario y la publicación de inmuebles por parte de terceros. RECO no participa, interviene ni media en las negociaciones, acuerdos o transacciones que los USUARIOS puedan realizar entre sí o con terceros como resultado del uso de la Plataforma. En consecuencia, RECO no asume responsabilidad alguna por la calidad, estado, legalidad o existencia de los inmuebles publicados, ni por la capacidad, solvencia o intención de las partes involucradas en cualquier transacción.</p>
       </section>
       <section><h2>3. Condiciones de acceso y utilización de la Plataforma</h2>
         <h3>3.1 Sobre el acceso y uso</h3>
@@ -1898,7 +1953,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <p>Es obligatorio completar todos los campos del formulario de registro con datos válidos para poder utilizar los servicios que se brindan en la Plataforma. EL USUARIO deberá completar el formulario con su información personal de manera exacta, precisa y verdadera ("Datos Personales") y asume el compromiso de actualizar los Datos Personales conforme resulte necesario.</p>
         <p>EL USUARIO se compromete a utilizar la Plataforma para fines estrictamente legales, conforme a la regulación vigente en la República del Perú. En ese sentido, EL USUARIO deberá abstenerse de: (i) hacer un uso no autorizado o fraudulento de la Plataforma; (ii) acceder o intentar acceder a recursos restringidos de la Plataforma; (iii) utilizar la Plataforma con fines o efectos ilícitos, ilegales, lesivos de los derechos e intereses de terceros, o que de cualquier forma puedan dañar, inutilizar, sobrecargar o impedir la normal utilización de la Plataforma; (iv) provocar daños en la Plataforma; (v) introducir o difundir virus informáticos u otros sistemas físicos o lógicos susceptibles de provocar daños; (vi) intentar acceder, utilizar y/o manipular los datos de RECO; (vii) reproducir o copiar, enlazar, distribuir, permitir el acceso del público a través de cualquier modalidad de comunicación pública, transformar o modificar los contenidos recopilados de la Plataforma sin la autorización del titular de los derechos o cuando esté legalmente permitido; (viii) obtener o intentar obtener los contenidos y los datos proporcionados por RECO empleando medios o procedimientos distintos de los que se hayan puesto a su disposición para este efecto.</p>
         <h3>3.2 Requisitos para el uso de la Plataforma</h3>
-        <p><strong>Sobre la edad y capacidad de EL USUARIO:</strong> EL USUARIO declara ser mayor de edad y acepta las responsabilidades que ello conlleva. No es posible controlar que menores de edad hagan uso de la Plataforma ni realicen compras a través de esta. Por lo tanto, además de no asumir responsabilidad alguna al respecto, se comunica que los padres y tutores serán los únicos responsables de supervisar y asistir a los menores en la navegación y uso de la Plataforma.</p>
+        <p><strong>Sobre la edad y capacidad de EL USUARIO:</strong> EL USUARIO declara ser mayor de edad y acepta las responsabilidades que ello conlleva. No es posible controlar que menores de edad hagan uso de la Plataforma ni realicen compras a través de esta. Por lo tanto, además de no asumir responsabilidad alguna al respecto, se comunica que los padres y tutores serán los únicos responsables de supervisar y asistir a los menores en la navegación y uso de la Plataforma. Asimismo, se insta a los padres y tutores a habilitar cualquier mecanismo necesario que impida el acceso de los menores a la Plataforma, no aceptándose reclamaciones al respecto.</p>
         <p><strong>Sobre la capacidad legal de EL USUARIO:</strong> EL USUARIO declara ser plenamente capaz y competente para comprender y aceptar los Términos y Condiciones, y cualesquiera obligaciones, afirmaciones, representaciones y garantías establecidas en estos Términos y Condiciones, y se compromete a acatar y cumplir lo establecido en el presente texto.</p>
         <p><strong>Garantías de EL USUARIO al utilizar la Plataforma:</strong> Al utilizar la Plataforma, EL USUARIO manifiesta y garantiza lo siguiente:</p>
         <ul>
@@ -1906,7 +1961,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <li>Autorizar todos y cada uno de los pagos a través de su propia cuenta bancaria o tarjeta de crédito.</li>
           <li>Cumplir con todas las normas y reglamentos de la institución financiera en la que mantenga cuenta bancaria o tarjeta de crédito.</li>
         </ul>
-        <p><strong>Creación de Usuario y Contraseña:</strong> Para utilizar la Plataforma, es necesario crear un Usuario y Contraseña. La creación de estos es necesaria para el uso de la plataforma y para el pago de los productos o servicios.</p>
+        <p><strong>Creación de Usuario y Contraseña:</strong> Para utilizar la Plataforma, es necesario crear un Usuario y Contraseña. La creación de estos es necesaria para el uso de la plataforma y para el pago de los productos o servicios. EL USUARIO deberá crear, usar y conservar su nombre de Usuario (en adelante, Cuenta de Usuario) y su contraseña, de acuerdo con los Términos y Condiciones respecto de los productos o servicios con los que se establezca la relación comercial.</p>
         <h3>3.3 Uso de la Plataforma</h3>
         <p>Para utilizar la Plataforma, EL USUARIO deberá aceptar necesariamente los presentes Términos y Condiciones.</p>
         <p>EL USUARIO reconoce y acepta que cierta información será proporcionada por terceros (por ejemplo, publicidad registral emitida por la Superintendencia Nacional de los Registros Públicos – SUNARP), para lo cual RECO podrá adquirir dicha información para beneficio de EL USUARIO de conformidad con las leyes aplicables de la República del Perú.</p>
@@ -1944,6 +1999,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <h3>4.4 Suspensión y terminación de cuenta</h3>
         <p>RECO se reserva el derecho de suspender o cancelar la cuenta de EL USUARIO, de manera temporal o definitiva, en cualquiera de los siguientes supuestos: (i) incumplimiento de estos Términos y Condiciones; (ii) uso fraudulento, ilícito o contrario a la buena fe de la Plataforma; (iii) inactividad de la cuenta por un periodo superior a veinticuatro (24) meses consecutivos; (iv) solicitud expresa de EL USUARIO; o (v) requerimiento de autoridad competente.</p>
         <p>En caso de suspensión o cancelación, RECO notificará a EL USUARIO a la dirección de correo electrónico registrada en su cuenta, salvo que la medida obedezca a un requerimiento legal que impida dicha comunicación. EL USUARIO podrá solicitar la eliminación de su cuenta y de sus datos personales en cualquier momento, enviando una solicitud escrita a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>, la cual será atendida en un plazo máximo de diez (10) días hábiles, sin perjuicio de la obligación de RECO de conservar determinada información cuando así lo exija la legislación aplicable.</p>
+        <h3>4.5 Indemnización</h3>
+        <p>EL USUARIO se compromete a indemnizar, defender y mantener indemne a RECO, sus directores, empleados, agentes y representantes, frente a cualquier reclamo, demanda, daño, pérdida, costo o gasto (incluyendo honorarios de abogados) que surja de o esté relacionado con: (i) el incumplimiento de estos Términos y Condiciones por parte de EL USUARIO; (ii) el uso indebido, fraudulento o ilícito de la Plataforma; (iii) la vulneración de derechos de terceros, incluyendo derechos de propiedad intelectual; o (iv) la información o contenido publicado por EL USUARIO en la Plataforma.</p>
+        <h3>4.6 Limitación de responsabilidad</h3>
+        <p>En la máxima medida permitida por la legislación aplicable, RECO no será responsable por daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo la pérdida de ganancias, datos, uso, fondo de comercio u otras pérdidas intangibles, que resulten del uso o la imposibilidad de uso de la Plataforma, aun cuando RECO haya sido advertido de la posibilidad de dichos daños. La responsabilidad total de RECO ante EL USUARIO por cualquier concepto no excederá el monto total pagado por EL USUARIO a RECO durante los doce (12) meses anteriores al evento que dé lugar al reclamo.</p>
       </section>
       <footer class="legal-foot"><p>VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
     </article>
@@ -1967,51 +2026,72 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <p>VANET DATA S.A.C., en adelante "RECO", con domicilio en Avenida Manuel Olguín No. 327, Santiago de Surco, Lima, Perú, y representada legalmente por Ricardo Ramon Barthelmess Saco, identificado con DNI No. 09868361, según consta en la partida electrónica No. 12927369 del Registro de Personas Jurídicas de Lima, actúa como responsable del tratamiento de los datos personales, en estricto cumplimiento de la normativa vigente de protección de datos.</p>
         <p>Este Aviso de Privacidad es aplicable a los servicios (en adelante, "USUARIO") proporcionados por RECO. EL USUARIO debe leer, comprender y aceptar todas las condiciones establecidas en este documento, antes de su registro como Usuario de la Plataforma. Asimismo, es requisito que EL USUARIO sea mayor de edad para poder utilizar la Plataforma y realizar compras en la misma.</p>
       </section>
-      <section><h2>2. Finalidad del tratamiento de datos</h2>
-        <p>Los datos personales proporcionados por EL USUARIO serán tratados por RECO con las siguientes finalidades:</p>
+      <section><h2>2. Banco de datos personales</h2>
+        <p>Los datos personales de EL USUARIO serán almacenados en el banco de datos personales denominado <strong>"Base de datos de clientes y usuarios de RECO"</strong>, de titularidad de VANET DATA S.A.C., inscrito ante la Autoridad Nacional de Protección de Datos Personales del Ministerio de Justicia y Derechos Humanos, conforme a lo dispuesto por el artículo 29 de la Ley 29733 y el artículo 51 del DS 003-2013-JUS.</p>
+      </section>
+      <section><h2>3. Finalidad del tratamiento de datos</h2>
+        <h3>3.1 Finalidades esenciales (necesarias para la prestación del servicio)</h3>
+        <p>Los datos personales serán tratados para las siguientes finalidades, respecto de las cuales no es posible prescindir del tratamiento:</p>
         <ul>
-          <li>Gestión y mantenimiento de la relación comercial y contractual.</li>
-          <li>Prestación de servicios y productos ofrecidos por RECO.</li>
+          <li>Gestión y mantenimiento de la relación comercial y contractual con EL USUARIO.</li>
+          <li>Prestación de los servicios y productos ofrecidos por RECO a través de la Plataforma.</li>
           <li>Procesamiento de pagos y transacciones relacionadas con nuestros servicios.</li>
-          <li>Cumplimiento de obligaciones legales y normativas aplicables.</li>
+          <li>Verificación de identidad y prevención de fraude.</li>
+          <li>Cumplimiento de obligaciones legales y normativas aplicables, incluyendo la atención de requerimientos de autoridades competentes.</li>
+          <li>Atención de consultas, solicitudes y reclamos de EL USUARIO.</li>
         </ul>
+        <h3>3.2 Finalidades adicionales (requieren consentimiento expreso)</h3>
+        <p>Adicionalmente, con el consentimiento expreso de EL USUARIO, sus datos podrán ser tratados para las siguientes finalidades:</p>
+        <ul>
+          <li>Envío de comunicaciones comerciales, promociones y ofertas de RECO y/o de terceros aliados.</li>
+          <li>Elaboración de perfiles de consumo y preferencias para personalización de servicios.</li>
+          <li>Realización de estudios de mercado, encuestas de satisfacción y análisis estadísticos.</li>
+          <li>Transferencia a socios comerciales para fines publicitarios.</li>
+        </ul>
+        <p>EL USUARIO puede revocar su consentimiento para las finalidades adicionales en cualquier momento, sin afectar la prestación de los servicios esenciales, dirigiendo su solicitud a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
+        <p>RECO cumple con los principios de finalidad y de proporcionalidad, por lo que los datos personales recopilados son los necesarios para cumplir con las finalidades expuestas. Todos los datos recopilados y almacenados tienen carácter obligatorio, salvo que expresamente se indique lo contrario. De no permitir el acceso a sus datos, en el caso de las finalidades esenciales RECO no podrá mantener la relación con EL USUARIO, y en el caso de las finalidades adicionales, RECO no podrá cumplirlas.</p>
       </section>
-      <section><h2>3. Tipos de datos recopilados</h2>
-        <p>RECO podrá recopilar y tratar datos personales de EL USUARIO como nombre, apellidos, dirección, correo electrónico, número de teléfono, datos bancarios, entre otros, necesarios para cumplir con las finalidades establecidas.</p>
+      <section><h2>4. Tipos de datos recopilados</h2>
+        <p>RECO podrá recopilar y tratar datos personales de EL USUARIO como nombre, apellidos, documento de identidad, dirección, correo electrónico, número de teléfono, datos bancarios, datos de navegación e información de uso de la Plataforma, entre otros necesarios para cumplir con las finalidades establecidas.</p>
       </section>
-      <section><h2>4. Base legal del tratamiento</h2>
+      <section><h2>5. Base legal del tratamiento</h2>
         <p>La recopilación y tratamiento de sus datos personales se basa en el consentimiento otorgado por EL USUARIO al utilizar los servicios y/o al proporcionar sus datos de manera directa. Asimismo, el tratamiento puede fundamentarse en la ejecución de un contrato o en el cumplimiento de obligaciones legales.</p>
       </section>
-      <section><h2>5. Medidas de seguridad</h2>
+      <section><h2>6. Medidas de seguridad</h2>
         <p>RECO implementa medidas técnicas, administrativas y físicas para garantizar la seguridad, confidencialidad e integridad de los datos personales de EL USUARIO, evitando su alteración, pérdida, tratamiento no autorizado o acceso no permitido.</p>
       </section>
-      <section><h2>6. Transferencia y almacenamiento de datos</h2>
+      <section><h2>7. Transferencia y almacenamiento de datos</h2>
+        <h3>7.1 Transferencia nacional</h3>
+        <p>RECO podrá compartir datos personales de EL USUARIO con autoridades gubernamentales o entidades reguladoras competentes, según lo requiera la ley aplicable o de acuerdo con una orden administrativa, de un tribunal o similar. Estas transferencias no requieren consentimiento de EL USUARIO, pues son requerimientos de autoridades competentes.</p>
+        <p>Adicionalmente, a nivel nacional RECO podrá compartir datos personales con los siguientes terceros, exclusivamente para las finalidades descritas en este Aviso: (i) procesadores de pago, para la gestión de transacciones; (ii) la Superintendencia Nacional de los Registros Públicos (SUNARP), para la obtención de información registral; y (iii) proveedores de servicios tecnológicos que asisten en la operación de la Plataforma. En todos los casos, RECO exige a estos terceros el cumplimiento de medidas de seguridad equivalentes a las propias.</p>
+        <h3>7.2 Transferencia internacional</h3>
         <p>Los datos personales de EL USUARIO podrán ser almacenados en servidores ubicados fuera del territorio peruano, operados por proveedores de servicios en la nube que cumplen con estándares internacionales de seguridad de la información. RECO garantiza que dichas transferencias internacionales de datos se realizan en cumplimiento del artículo 15 de la Ley 29733 y su Reglamento, asegurando un nivel de protección adecuado.</p>
-        <p>Asimismo, RECO podrá compartir datos personales con los siguientes terceros, exclusivamente para las finalidades descritas en este Aviso: (i) procesadores de pago, para la gestión de transacciones; (ii) la Superintendencia Nacional de los Registros Públicos (SUNARP), para la obtención de información registral; y (iii) proveedores de servicios tecnológicos que asisten en la operación de la Plataforma. En todos los casos, RECO exige a estos terceros el cumplimiento de medidas de seguridad equivalentes a las propias.</p>
       </section>
-      <section><h2>7. Periodo de conservación de datos</h2>
+      <section><h2>8. Periodo de conservación de datos</h2>
         <p>Los datos personales de EL USUARIO serán conservados mientras se mantenga vigente la relación comercial o contractual. Una vez finalizada dicha relación, los datos serán conservados durante un periodo máximo de cinco (5) años para el cumplimiento de obligaciones legales, contables y tributarias, o para la atención de posibles reclamaciones. Transcurrido dicho plazo, los datos serán eliminados o anonimizados de forma irreversible.</p>
+        <p>Sin perjuicio de los plazos de retención señalados, RECO podrá retener por plazos mayores los datos personales en caso se vea obligado por una orden de autoridad gubernamental competente, mandato legal o cuando se encuentre inmerso en un proceso judicial, administrativo o arbitral para el cual sean esenciales los datos personales.</p>
         <p>EL USUARIO podrá solicitar la eliminación anticipada de sus datos en cualquier momento, sin perjuicio de la obligación de RECO de conservar la información que sea legalmente exigible.</p>
       </section>
-      <section><h2>8. Derechos del titular de datos (derechos ARCO)</h2>
+      <section><h2>9. Derechos del titular de datos (derechos ARCO)</h2>
         <p>EL USUARIO puede ejercer los siguientes derechos respecto de sus datos personales, conforme a la Ley 29733:</p>
         <ul>
-          <li><strong>Acceso:</strong> conocer qué datos personales suyos están siendo tratados por RECO.</li>
-          <li><strong>Rectificación:</strong> solicitar la corrección de datos inexactos o incompletos.</li>
+          <li><strong>Acceso:</strong> obtener la información que sobre sí mismo sea objeto de tratamiento en cualquier banco de datos, la forma en que fueron recopilados, las razones que motivaron su recopilación y a solicitud de quién se realizó, así como las transferencias realizadas o que se prevén hacer.</li>
+          <li><strong>Rectificación:</strong> solicitar la actualización, inclusión, rectificación y supresión de sus datos personales cuando estos sean parcial o totalmente inexactos, incompletos, errados o falsos, cuando hayan dejado de ser necesarios a la finalidad para la que fueron recopilados o cuando hubiera vencido el plazo establecido para su tratamiento.</li>
           <li><strong>Cancelación:</strong> solicitar la supresión de sus datos cuando ya no sean necesarios para las finalidades informadas.</li>
-          <li><strong>Oposición:</strong> oponerse al tratamiento de sus datos por motivos legítimos.</li>
+          <li><strong>Oposición:</strong> salvo disposición contraria de la ley y cuando no hubiera prestado consentimiento, oponerse al tratamiento de sus datos cuando existan motivos fundados y legítimos relativos a una concreta situación personal. En caso de oposición justificada, el titular del banco de datos personales debe proceder a su supresión, conforme a ley.</li>
           <li><strong>Revocación del consentimiento:</strong> retirar el consentimiento previamente otorgado para el tratamiento de datos.</li>
+          <li><strong>Portabilidad:</strong> solicitar la entrega de sus datos personales en un formato estructurado, de uso común y lectura mecánica, para su transferencia a otro responsable de tratamiento, cuando sea técnicamente posible.</li>
         </ul>
         <p>Para ejercer estos derechos, EL USUARIO deberá enviar una solicitud escrita a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>, indicando: nombre completo, número de documento de identidad, descripción del derecho que desea ejercer y documentación de respaldo cuando corresponda. RECO atenderá la solicitud en un plazo máximo de veinte (20) días hábiles, conforme a lo establecido por la normativa vigente.</p>
         <p>Puede presentar reclamaciones ante la Autoridad Nacional de Protección de Datos Personales: Calle Scipión Llona 350, Miraflores, Lima.</p>
       </section>
-      <section><h2>9. Cookies y tecnologías similares</h2>
+      <section><h2>10. Cookies y tecnologías similares</h2>
         <p>Este sitio web utiliza cookies y tecnologías similares para mejorar la experiencia del usuario. Para obtener información detallada sobre qué cookies utilizamos, sus finalidades y cómo gestionar sus preferencias, consulte nuestra <a href="#cookies">Política de Cookies</a>.</p>
       </section>
-      <section><h2>10. Comunicaciones comerciales</h2>
+      <section><h2>11. Comunicaciones comerciales</h2>
         <p>RECO podrá enviar comunicaciones comerciales, promociones y novedades a EL USUARIO a través de correo electrónico u otros canales, siempre que EL USUARIO haya otorgado su consentimiento previo. EL USUARIO podrá revocar dicho consentimiento en cualquier momento mediante el enlace de desuscripción incluido en cada comunicación, o enviando una solicitud a <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a>.</p>
       </section>
-      <section><h2>11. Modificaciones al Aviso de Privacidad</h2>
+      <section><h2>12. Modificaciones al Aviso de Privacidad</h2>
         <p>RECO se reserva el derecho de modificar el presente Aviso de Privacidad. Cualquier cambio será notificado a través de nuestros canales de comunicación habituales y entrará en vigencia después de su publicación.</p>
       </section>
       <footer class="legal-foot"><p>Contacto: <a href="mailto:webmaster@recosac.com">webmaster@recosac.com</a> · VANET DATA S.A.C. — RUC 20553966800 · Av. Manuel Olguín 327, Santiago de Surco, Lima.</p></footer>
@@ -2076,8 +2156,12 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         </ul>
         <p>Tenga en cuenta que la desactivación de cookies puede afectar la funcionalidad de la Plataforma e impedir el uso de algunos servicios.</p>
       </section>
-      <section><h2>6. Base legal</h2>
-        <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma. Para las cookies de analítica, funcionalidad y terceros, la base legal es el consentimiento de EL USUARIO, otorgado al continuar navegando en la Plataforma tras ser informado de su uso.</p>
+      <section><h2>6. Base legal y consentimiento</h2>
+        <p>El uso de cookies estrictamente necesarias se basa en el interés legítimo de RECO para el correcto funcionamiento de la Plataforma (artículo 14, numeral 1 de la Ley 29733).</p>
+        <p>Para las cookies de analítica, funcionalidad y de terceros, se informa a EL USUARIO a través del banner de cookies que se muestra al acceder a la Plataforma por primera vez. EL USUARIO puede aceptar o rechazar expresamente las cookies no esenciales mediante los botones habilitados en dicho banner.</p>
+        <p>Si EL USUARIO no interactúa con el banner y continúa navegando por la Plataforma, <strong>se da por entendido que EL USUARIO aprueba el uso de cookies</strong>, incluyendo las de analítica y funcionalidad, dado que ha sido debidamente informado de su existencia y finalidad. En este caso, el banner no volverá a mostrarse.</p>
+        <p>EL USUARIO que haya rechazado expresamente las cookies no esenciales navega exclusivamente con cookies estrictamente necesarias.</p>
+        <p>El consentimiento puede ser revocado en cualquier momento eliminando las cookies del navegador o la preferencia almacenada en su dispositivo, así como configurando las opciones del navegador conforme a la sección 5 de esta Política.</p>
       </section>
       <section><h2>7. Actualizaciones</h2>
         <p>RECO podrá actualizar esta Política de Cookies para reflejar cambios en las prácticas de tratamiento o por motivos operativos, legales o regulatorios. Se recomienda revisar esta página periódicamente.</p>
@@ -2103,9 +2187,67 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <div><strong>Reclamo:</strong> disconformidad relacionada con los servicios prestados.</div>
       </div>
     </div>
-    <div style="text-align:center;margin:32px 0 48px">
-      <a href="https://docs.google.com/forms/d/1P-E6fiv1T44dp_LwndcPtP6KCBfjZAutw0BkaBl3X0c/viewform" target="_blank" rel="noopener" class="btn-primary" style="display:inline-block;padding:16px 40px;font-size:16px;text-decoration:none;border-radius:10px">Registrar queja o reclamo</a>
-      <p style="margin-top:16px;color:#666;font-size:13px">Se abrirá el formulario oficial de Reco en una nueva pestaña.</p>
+    <div class="reclamo-form" id="reclamoFormWrap">
+      <form id="reclamoForm" onsubmit="submitReclamo(event)">
+        <div class="form-row">
+          <div>
+            <label>Tipo <span>*</span></label>
+            <select id="recTipo" required>
+              <option value="">Seleccionar...</option>
+              <option value="reclamo">Reclamo</option>
+              <option value="queja">Queja</option>
+            </select>
+          </div>
+          <div>
+            <label>Documento <span>*</span></label>
+            <select id="recDocTipo" required>
+              <option value="">Tipo...</option>
+              <option value="DNI">DNI</option>
+              <option value="CE">Carné de Extranjería</option>
+              <option value="Pasaporte">Pasaporte</option>
+              <option value="RUC">RUC</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Número de documento <span>*</span></label>
+            <input type="text" id="recDocNum" required placeholder="Ej: 12345678" maxlength="20"/>
+          </div>
+          <div>
+            <label>Teléfono</label>
+            <input type="tel" id="recTelefono" placeholder="Ej: 987654321" maxlength="15"/>
+          </div>
+        </div>
+        <label>Nombre completo <span>*</span></label>
+        <input type="text" id="recNombre" required placeholder="Nombres y apellidos" maxlength="200"/>
+        <label>Correo electrónico <span>*</span></label>
+        <input type="email" id="recEmail" required placeholder="tucorreo@ejemplo.com" maxlength="200"/>
+        <label>Dirección</label>
+        <input type="text" id="recDireccion" placeholder="Dirección (opcional)" maxlength="300"/>
+        <label>Bien contratado <span>*</span></label>
+        <select id="recBien" required>
+          <option value="">Seleccionar...</option>
+          <option value="Consulta de propiedades (gratuito)">Consulta de propiedades (gratuito)</option>
+          <option value="Información histórica (llaves)">Información histórica (llaves)</option>
+          <option value="Publicación de inmueble">Publicación de inmueble</option>
+          <option value="Cuenta de usuario">Cuenta de usuario</option>
+          <option value="Otro">Otro</option>
+        </select>
+        <label>Descripción del reclamo o queja <span>*</span></label>
+        <textarea id="recDescripcion" required placeholder="Describe detalladamente tu reclamo o queja..." maxlength="2000"></textarea>
+        <label>Pedido del consumidor <span>*</span></label>
+        <textarea id="recPedido" required placeholder="¿Qué solución esperas? (Ej: reembolso, corrección del servicio, explicación, etc.)" maxlength="1000" style="min-height:60px"></textarea>
+        <label>Monto reclamado (S/)</label>
+        <input type="text" id="recMonto" placeholder="Ej: 50.00 (opcional)" maxlength="20"/>
+        <button type="submit" class="btn-submit" id="recSubmitBtn">Enviar reclamo</button>
+      </form>
+    </div>
+    <div class="reclamo-success" id="reclamoSuccess">
+      <h3>Reclamo registrado exitosamente</h3>
+      <p>Tu reclamo ha sido registrado con el código <strong id="reclamoCodigo"></strong>.</p>
+      <p>Recibirás una respuesta en un plazo máximo de 30 días calendario al correo proporcionado.</p>
+      <p style="margin-top:16px"><button onclick="resetReclamoForm()" style="padding:10px 24px;border:1.5px solid var(--border);border-radius:var(--r);background:#fff;cursor:pointer;font-weight:600">Registrar otro</button></p>
     </div>
     <div class="legal-foot">
       <p><strong>Razón social:</strong> VANET DATA S.A.C. &nbsp;|&nbsp; <strong>RUC:</strong> 20553966800</p>
@@ -2517,6 +2659,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
     <button class="panel-expand-btn" id="mapExpandBtn" onclick="togglePanelView('map')" title="Expandir mapa" style="position:absolute;top:12px;left:12px;z-index:450">⛶</button>
+    <button class="map-search-zone-btn" id="mapSearchZoneBtn" onclick="_searchInThisZone()">Buscar en esta zona</button>
     <div id="realMap"></div>
 
     <!-- Toolbar unificado (esquina superior derecha) -->
@@ -2751,6 +2894,7 @@ function _pubDocToProperty(id, p){
     baths: Number(p.baths) || 0,
     park: Number(p.parking) || 0,
     floor: Number(p.floor) || 0,
+    unitFloors: Math.max(1, Number(p.unitFloors) || 1),
     floors: Number(p.floors) || 0,
     age: Number(p.age) || 0,
     lat: p.lat || null,
@@ -2934,6 +3078,7 @@ const S = {
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
   poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
+  mapMode:'browse', mapDiverged:false,
   unlockedIds:new Set(), pendingUnlockId:null,
   // BUG-02: intención guardada antes de mandar al usuario al login.
   // Se reanuda en auth.onAuthStateChanged y se descarta si cierra el
@@ -3057,7 +3202,11 @@ async function fetchPremium(propertyId){
 }
 
 // ─────────────────────── FILTERS ───────────────────────
+const _LIMA_BOUNDS=typeof L!=='undefined'?L.latLngBounds([[-12.30,-77.22],[-11.75,-76.70]]):null;
 function getFiltered(){
+  const _mapEl=leafletMap&&leafletMap.getContainer();
+  const _boundsValid=!!(_mapEl&&_mapEl.offsetWidth>0&&_mapEl.offsetHeight>0);
+  const _cachedBounds=_boundsValid?leafletMap.getBounds():_LIMA_BOUNDS;
   let list = properties.filter(p=>{
     if(S.query){
       const q=S.query.toLowerCase();
@@ -3081,8 +3230,10 @@ function getFiltered(){
     if(S.maxSqm<Infinity && sqm>S.maxSqm) return false;
     if(S.bankOnly && !p.bank) return false;
     if(S.features.length>0){
-      const pf=p.features||[];
-      if(!S.features.every(f=>pf.includes(f)||pf.includes(_PUB_FEAT_REVERSE_MAP[f]||'')||pf.includes(_PUB_FEAT_LEGACY_MAP[f]||''))) return false;
+      if(!S.features.every(f=>{
+        const pf=p.features||[];
+        return pf.includes(f)||pf.includes(_PUB_FEAT_LEGACY_MAP[f])||pf.includes(_PUB_FEAT_REVERSE_MAP[f]);
+      })) return false;
     }
     if(S.radiusCenter && GEO[p.id]){
       const dist=L.latLng(GEO[p.id]).distanceTo(S.radiusCenter);
@@ -3097,6 +3248,9 @@ function getFiltered(){
       } else {
         if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
       }
+    }
+    if(S.mapMode==='browse' && _noSpatialToolActive() && _cachedBounds && GEO[p.id]){
+      if(!_cachedBounds.contains(GEO[p.id])) return false;
     }
     return true;
   });
@@ -3343,7 +3497,7 @@ function renderCards(list){
     const bottomBtn=p.op==='Histórico'
       ?(histLocked?`<button class="card-detail-btn card-locked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">🔑 Ver informe</button>`:`<button class="card-detail-btn card-unlocked" onclick="event.stopPropagation();openDetail('${esc(p.id)}')">✓ Ver informe</button>`)
       :'';
-    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${esc(p.id)}" onclick="openDetail('${esc(p.id)}')"><div class="card-img"><div class="cimg-track" id="cimgt-${esc(pid)}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${esc(p.address)}</div><div class="card-dist">📍 ${esc(p.district)}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${esc(f)}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
+    return `<div class="p-card${S.selectedId===p.id?' selected':''}" id="card-${esc(p.id)}" onclick="openDetail('${esc(p.id)}')"><div class="card-img"><div class="cimg-track" id="cimgt-${esc(pid)}">${slides}</div>${arrows}${dots}<div class="card-badges"><span class="badge badge-type">${esc(p.type)}</span>${p.bank?'<span class="badge badge-bank">🏦 Banco</span>':''}${p.isNew?'<span class="badge badge-new">✨ Nuevo</span>':''}</div></div><div class="card-body"><div class="card-addr">${esc(p.address)}</div><div class="card-dist">📍 ${esc(p.district)}${p.floor>0?' · '+(p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niv.')+' piso '+esc(p.floor):'Piso '+esc(p.floor))+(p.floors?'/'+esc(p.floors):''):''}</div><div class="card-specs">${specsHtml}</div>${p.features&&p.features.length?`<div class="card-feats">${p.features.slice(0,6).map(f=>`<span class="card-feat">${esc(f)}</span>`).join('')}${p.features.length>6?`<span class="card-feat card-feat-more">+${p.features.length-6}</span>`:''}</div>`:''}<div class="card-bottom">${priceHtml}${bottomBtn}</div></div></div>`;
   }).join('');
 
   list.forEach(p=>{
@@ -3385,11 +3539,42 @@ function initMap(){
   _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
+  const _mapC=leafletMap.getContainer();
+  _mapC.addEventListener('mousedown',()=>{_programmaticMove=false;});
+  _mapC.addEventListener('touchstart',()=>{_programmaticMove=false;});
   let _mapMoveTimer=null;
   leafletMap.on('zoomend moveend',()=>{
     clearTimeout(_mapMoveTimer);
-    _mapMoveTimer=setTimeout(()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); },150);
+    _mapMoveTimer=setTimeout(()=>{
+      if(S.mapMode==='browse' && _noSpatialToolActive()){
+        const list=getFiltered();
+        renderCards(list);
+        renderPins(list);
+      } else {
+        renderPins(getFiltered());
+        if(S.mapMode==='text' && !_programmaticMove){ S.mapDiverged=true; _updateMapSearchBtn(); }
+      }
+      _programmaticMove=false;
+      if(S.catastroOn) _catastroAuto();
+    },150);
   });
+}
+let _programmaticMove=false;
+
+function _noSpatialToolActive(){
+  return !S.radiusCenter && !S.polyFinished && !(S.commute && S.commute.maxMin);
+}
+function _updateMapSearchBtn(){
+  const btn=document.getElementById('mapSearchZoneBtn');
+  if(btn) btn.classList.toggle('visible', S.mapMode==='text' && S.mapDiverged);
+}
+function _searchInThisZone(){
+  document.getElementById('searchQ').value='';
+  S.query='';
+  S.mapMode='browse';
+  S.mapDiverged=false;
+  _updateMapSearchBtn();
+  applyFilters();
 }
 
 // ═══════════════════ HERRAMIENTAS DE MAPA (exclusividad mutua) ═══════════════════
@@ -4173,7 +4358,7 @@ function _pinHoverHtml(p){
   const priceHtml = isHistLocked
     ? '<div class="hc-price">🔒 Desbloquear</div>'
     : `<div class="hc-price">${esc(p.cur)} ${fmtPrice(p.op==='Histórico'?getHistTotal(p):p.price)}</div>`;
-  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · Piso '+esc(p.floor)+'/'+esc(p.floors):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}${priceHtml}</div></div>`;
+  return `<div class="lf-hover-card"><div class="lf-hover-img"><div class="cimg-track" id="cimgt-${esc(hid)}">${slides}</div>${arrows}${dots}${badges}</div><div class="lf-hover-body"><div class="hc-addr">${esc(p.address||'')}</div><div class="hc-dist">📍 ${esc(p.district||'')}${p.floor>0?' · '+(p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niv.')+' piso '+esc(p.floor):'Piso '+esc(p.floor))+(p.floors?'/'+esc(p.floors):''):''}</div>${specs}${p.age===0?'<div class="hc-estrenar">Estrenar</div>':''}${priceHtml}</div></div>`;
 }
 
 function _pinIconHtml(p,isActive){
@@ -4310,6 +4495,10 @@ function _updateSortNewLabel(){
 function applyFilters(){
   _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
+  const prevMode=S.mapMode;
+  S.mapMode=S.query?'text':'browse';
+  if(S.mapMode!==prevMode) S.mapDiverged=false;
+  _updateMapSearchBtn();
   S.type=document.getElementById('typeSel').value;
   S.bankOnly=document.getElementById('bankOnly').checked;
   S.sort=document.getElementById('sortSel').value;
@@ -4572,6 +4761,7 @@ function _activateRadiusAt(lat,lng,label){
 function _flyToLocation(lat,lng,label){
   _deactivateAllTools();
   S.query='';
+  S.mapMode='browse'; S.mapDiverged=false; _programmaticMove=true; _updateMapSearchBtn();
   const input=document.getElementById('searchQ');
   if(input){ input.value=''; input.placeholder='📍 '+(label||''); }
   if(leafletMap) leafletMap.setView([lat,lng],14,{animate:true,duration:.6});
@@ -4587,7 +4777,9 @@ async function pickGoogleResult(placeId,label){
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
   document.getElementById('sgDrop').style.display='none';
-  S.query=val; applyFilters();
+  S.query=val;
+  S.mapMode='text'; S.mapDiverged=false; _updateMapSearchBtn();
+  applyFilters();
   const vl=val.toLowerCase().trim();
   const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
   if(isDistrict) _flyToDistrictGeo(val);
@@ -4595,6 +4787,7 @@ function pickSuggestion(val){
 
 async function _flyToDistrictGeo(district){
   if(!leafletMap) return;
+  _programmaticMove=true;
   try{
     if(HERE_API_KEY){
       try{
@@ -4650,6 +4843,9 @@ function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
   if(e.key==='Enter'){
     S.query=document.getElementById('searchQ').value.trim();
+    S.mapMode=S.query?'text':'browse';
+    S.mapDiverged=false;
+    _updateMapSearchBtn();
     hideSuggestions();applyFilters();
     _geoFallback(S.query);
   }
@@ -4878,26 +5074,8 @@ function onPriceInputBlur(){
 }
 
 function clearFilters(){
-  document.getElementById('typeSel').value='all';
-  document.getElementById('bankOnly').checked=false;
-  document.getElementById('minArea').value='';
-  const minATel=document.getElementById('minAreaTerr');if(minATel)minATel.value='';
-  const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
-  const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
-  const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
-  _priceTab='precio'; _priceCur='soles';
-  document.getElementById('tabPrecio').classList.add('active');
-  document.getElementById('tabSqm').classList.remove('active');
-  document.getElementById('curSoles').classList.add('active');
-  document.getElementById('curDolar').classList.remove('active');
-  _resetPriceSliders();
-  buildPriceHistogram();
-  document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
-  advFeats.clear();
-  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
-  applyFilters();
+  _deactivateAllTools();
+  resetAll();
 }
 
 function buildPriceHistogram(){
@@ -4938,7 +5116,8 @@ function resetAll(){
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false,mapMode:'browse',mapDiverged:false});
+  _updateMapSearchBtn();
   applyFilters();
 }
 
@@ -5660,7 +5839,7 @@ function openFullReport(id){
           ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.beds)}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
           ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.baths)}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
           ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(parkCount(p))}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
-          ${p.floors>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}/${esc(p.floors)}</div><div class="fr-spec-lbl">Piso</div></div>`:''}
+          ${p.floors>0||p.floor>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</div><div class="fr-spec-lbl">${p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niveles'):'Piso'}</div></div>`:''}
           ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.age)}</div><div class="fr-spec-lbl">Años</div></div>`}
         </div>
 
@@ -5890,13 +6069,28 @@ function toast(msg){
 
 // ─────────────────────── PUBLISH ───────────────────────
 let _ps=1,_pubTab='single',pubMap=null,pubMarker=null,_pubGeoTimer=null;
+// MEJ-05 — Convivían "Nro pisos" y "Piso del inmueble" sin explicar
+// cuál era cuál. Un dúplex en los pisos 6 y 7 de un edificio de 7 no
+// tenía dónde declararse. Ahora son tres datos distintos y rotulados:
+//   floor      = piso donde empieza el inmueble
+//   unitFloors = cuántos niveles ocupa (1 = un solo nivel, 2 = dúplex…)
+//   floors     = pisos totales del edificio
 let _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
          hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-         beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+         beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
          estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
          features:[],title:'',desc:'',photos:[],listedAt:null};
 const _VALUATION_ENABLED = false;
 const _AI_COPY_ENABLED = false;
+// MEJ-06 — Revisión de la taxonomía de etiquetas. Las listas mezclaban
+// lo que está DENTRO del inmueble con lo que es del edificio, y varias
+// etiquetas ("Piscina", "Patio", "Área común", "Calle") no dejaban
+// claro a qué se referían. Cambios:
+//   · los nombres ambiguos quedan explícitos (Piscina propia / del edificio),
+//   · cada grupo dice en una línea qué se marca ahí,
+//   · cada etiqueta lleva una descripción que se ve al pasar el cursor,
+//   · las etiquetas antiguas siguen reconociéndose (_PUB_FEATS_LEGACY),
+//     para no romper los anuncios ya publicados ni los filtros.
 const _PUB_FEATS_GEN=['Baño de servicio','Walk-in Closet','Armario/Closet','Balcón','Intercomunicador',
   'Jacuzzi','Jardín propio','Piscina propia','Terraza propia','Aire Acondicionado',
   'Propiedad de Lujo o Exclusiva','Propiedad de Campo o Rural','Propiedad Inteligente',
@@ -5909,6 +6103,8 @@ const _PUB_FEATS_AMB=['Cafetería del edificio','Lavandería del edificio','Pati
 const _PUB_FEATS_VISTA=['Vista a parque','Vista al mar','Vista a calle','Vista a área interior','Vista a campo','Vista a paisaje'];
 const _PUB_FEATS_ACCESO=['Calle','Avenida','Jirón','Pasaje','Carretera','Alameda','Boulevard','Vía privada','Callejón'];
 const _PUB_FEATS_ZONA=['Residencial','Comercial','Industrial','Rural','Mixta','Semi-urbana','Conservación'];
+// Nombres anteriores: siguen siendo válidos para los anuncios que ya
+// los tienen guardados, pero no se ofrecen al publicar.
 const _PUB_FEATS_LEGACY=['Jardín','Piscina','Terraza','Área de cafetería','Área de lavandería','Patio',
   'Área común','Acceso a parque','Piscina (edificio)','Vista interior','Privado'];
 const _PUB_FEATS=[..._PUB_FEATS_GEN,..._PUB_FEATS_AMB,..._PUB_FEATS_VISTA,..._PUB_FEATS_ACCESO,..._PUB_FEATS_ZONA,..._PUB_FEATS_LEGACY];
@@ -5917,6 +6113,53 @@ const _PUB_FEAT_LEGACY_MAP={'Jardín':'Jardín propio','Piscina':'Piscina propia
   'Área común':'Sala de estar común','Acceso a parque':'Salida directa a parque',
   'Piscina (edificio)':'Piscina del edificio','Vista interior':'Vista a área interior','Privado':'Vía privada'};
 const _PUB_FEAT_REVERSE_MAP=Object.fromEntries(Object.entries(_PUB_FEAT_LEGACY_MAP).map(([k,v])=>[v,k]));
+// Qué significa cada grupo, en una línea, arriba de sus casillas.
+const _PUB_FEAT_GROUP_HELP={
+  gen:'Lo que está dentro del inmueble y se entrega con él.',
+  amb:'Áreas del edificio o del condominio, compartidas con los demás propietarios.',
+  vista:'Lo que se ve desde las ventanas principales. Marca solo lo que se ve de verdad.',
+  acceso:'Tipo de vía por la que se llega a la puerta del inmueble.',
+  zona:'Carácter predominante de la zona donde está el inmueble.'
+};
+// Descripción de las etiquetas que generaban dudas en las pruebas.
+const _PUB_FEAT_HELP={
+  'Piscina propia':'Piscina de uso exclusivo del inmueble.',
+  'Piscina del edificio':'Piscina compartida del edificio o condominio.',
+  'Jardín propio':'Jardín de uso exclusivo, no las áreas verdes comunes.',
+  'Terraza propia':'Terraza de uso exclusivo del inmueble.',
+  'Patio común':'Patio compartido por los vecinos del edificio.',
+  'Sala de estar común':'Ambiente común de estar o espera, distinto de la recepción.',
+  'Cafetería del edificio':'Espacio de cafetería dentro del edificio o condominio.',
+  'Lavandería del edificio':'Lavandería compartida del edificio.',
+  'Salida directa a parque':'El edificio da directamente a un parque, sin cruzar pista.',
+  'Recepción':'Mostrador de recepción en el ingreso.',
+  'Conserje':'Personal permanente de conserjería o portería.',
+  'Depósito':'Depósito propio en el edificio (no el sótano común).',
+  'Áreas verdes':'Jardines comunes del edificio o condominio.',
+  'Vista a área interior':'Las ventanas dan a un patio o ducto interior del edificio.',
+  'Vista a calle':'Las ventanas dan a la vía pública.',
+  'Calle':'Vía local de tránsito bajo.',
+  'Avenida':'Vía principal de tránsito alto.',
+  'Jirón':'Vía urbana de varias cuadras, típica del centro.',
+  'Pasaje':'Vía corta y angosta, muchas veces peatonal.',
+  'Alameda':'Vía con paseo arbolado.',
+  'Boulevard':'Vía ancha con separador central o paseo.',
+  'Vía privada':'Calle interior de un condominio, con control de ingreso.',
+  'Callejón':'Vía muy angosta, generalmente sin salida.',
+  'Carretera':'Acceso por vía interurbana.',
+  'Mixta':'Conviven vivienda y comercio en la misma zona.',
+  'Semi-urbana':'Zona en consolidación, con servicios parciales.',
+  'Conservación':'Zona protegida o con restricciones de edificación.'
+};
+function _pubFeatGrid(list){
+  return list.map(f=>{
+    const h=_PUB_FEAT_HELP[f]||'';
+    return `<label class="pub-feat-item"${h?` title="${esc(h)}"`:''}><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f.replace(/'/g,"\\'")}',this.checked)"> ${f}${h?' <span style="color:var(--muted);cursor:help">ⓘ</span>':''}</label>`;
+  }).join('');
+}
+function _pubFeatGroupHelp(k){
+  return `<div style="font-size:11px;color:var(--muted);margin:2px 0 6px">${_PUB_FEAT_GROUP_HELP[k]}</div>`;
+}
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
@@ -5924,7 +6167,7 @@ function openPublish(){
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
-       beds:0,baths:0,parking:0,floor:0,floors:0,age:0,
+       beds:0,baths:0,parking:0,floor:0,unitFloors:1,floors:0,age:0,
        estado:'Construido',ascensor:false,amoblado:false,petFriendly:false,
        features:[],title:'',desc:'',photos:[]};
   document.getElementById('pubOverlay').classList.add('open');
@@ -6024,10 +6267,28 @@ function _rps(){
         <div class="pub-stp-row"><span class="stp-lbl">🛏 Dormitorios</span><div class="stp-ctrl"><button onclick="_pAdj('beds',-1)">−</button><span class="stp-val" id="pub_beds">${_pd.beds}</span><button onclick="_pAdj('beds',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚿 Baños</span><div class="stp-ctrl"><button onclick="_pAdj('baths',-1)">−</button><span class="stp-val" id="pub_baths">${_pd.baths}</span><button onclick="_pAdj('baths',1)">+</button></div></div>
         <div class="pub-stp-row"><span class="stp-lbl">🚗 Estacionamientos</span><div class="stp-ctrl"><button onclick="_pAdj('parking',-1)">−</button><span class="stp-val" id="pub_parking">${_pd.parking}</span><button onclick="_pAdj('parking',1)">+</button></div></div>
-        <div class="pub-field row" style="margin-top:10px">
-          <div><label>Nro pisos</label><input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value)"></div>
-          <div><label>Piso del inmueble</label><input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value)"></div>
+        <div class="pub-field" style="margin-top:10px">
+          <label>🏢 Pisos</label>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Tres datos distintos: en qué piso está, cuántos niveles ocupa por dentro y cuántos pisos tiene el edificio.</div>
         </div>
+        <div class="pub-field row">
+          <div>
+            <label>${_pd.type==='Casa'?'Piso de ingreso':'Piso en el que está'}</label>
+            <input type="number" min="0" value="${_pd.floor}" oninput="_pd.floor=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 6">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">0 si está a nivel de calle.</div>
+          </div>
+          <div>
+            <label>Niveles que ocupa</label>
+            <input type="number" min="1" value="${_pd.unitFloors||1}" oninput="_pd.unitFloors=Math.max(1,Number(this.value)||1);_pubFloorsSummary()" placeholder="1">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">1 = un solo nivel · 2 = dúplex · 3 = tríplex.</div>
+          </div>
+          <div>
+            <label>${_pd.type==='Casa'?'Pisos de la casa':'Pisos del edificio'}</label>
+            <input type="number" min="0" value="${_pd.floors}" oninput="_pd.floors=Number(this.value);_pubFloorsSummary()" placeholder="Ej: 7">
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">Altura total de la construcción.</div>
+          </div>
+        </div>
+        <div id="pubFloorsSummary" style="font-size:12px;color:var(--blue);margin:-2px 0 6px">${_pubFloorsText()}</div>
         <div class="pub-field row">
           <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
           <div><label>Estado</label>
@@ -6044,25 +6305,30 @@ function _rps(){
           <label class="pub-check"><input type="checkbox" ${_pd.petFriendly?'checked':''} onchange="_pd.petFriendly=this.checked"> Pet friendly</label>
         </div>
 
-        <h3 style="margin-top:18px">🏷️ Etiquetas generales</h3>
+        <h3 style="margin-top:18px">🏷️ Características del inmueble</h3>
+        ${_pubFeatGroupHelp('gen')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_GEN.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_GEN)}
         </div>
-        <h3 style="margin-top:14px">🏢 Etiquetas ambientes</h3>
+        <h3 style="margin-top:14px">🏢 Áreas comunes del edificio</h3>
+        ${_pubFeatGroupHelp('amb')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_AMB.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_AMB)}
         </div>
-        <h3 style="margin-top:14px">👁️ Etiquetas vistas</h3>
+        <h3 style="margin-top:14px">👁️ Vistas</h3>
+        ${_pubFeatGroupHelp('vista')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_VISTA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_VISTA)}
         </div>
-        <h3 style="margin-top:14px">🛣️ Etiquetas accesos</h3>
+        <h3 style="margin-top:14px">🛣️ Tipo de vía de acceso</h3>
+        ${_pubFeatGroupHelp('acceso')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ACCESO.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ACCESO)}
         </div>
-        <h3 style="margin-top:14px">📍 Etiquetas zonas</h3>
+        <h3 style="margin-top:14px">📍 Carácter de la zona</h3>
+        ${_pubFeatGroupHelp('zona')}
         <div class="pub-feat-grid">
-          ${_PUB_FEATS_ZONA.map(f=>`<label class="pub-feat-item"><input type="checkbox" ${_pd.features.includes(f)?'checked':''} onchange="_pFeat('${f}',this.checked)"> ${f}</label>`).join('')}
+          ${_pubFeatGrid(_PUB_FEATS_ZONA)}
         </div>
       </div>
     </div>
@@ -6123,6 +6389,7 @@ function _rps(){
           <div style="font-weight:600">${_pd.op} · ${_pd.type}</div>
           <div style="color:var(--muted);margin-top:2px">📍 ${_pd.address||'—'}${_pd.district?', '+_pd.district:''}</div>
           <div style="color:var(--muted);margin-top:2px">📐 ${_pd.area} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
+          ${_pubFloorsText()?`<div style="color:var(--muted);margin-top:2px">🏢 ${_pubFloorsText()}</div>`:''}
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
@@ -6145,6 +6412,33 @@ function _rps(){
   }
 }
 
+// MEJ-05 — Devuelve la frase que confirma, en lenguaje natural, lo que
+// el corredor acaba de escribir en los tres campos de pisos.
+function _pubFloorsText(){
+  const f=Number(_pd.floor)||0, u=Math.max(1,Number(_pd.unitFloors)||1), t=Number(_pd.floors)||0;
+  if(!f && u<2 && !t) return '';
+  const nivel=u>1?`Ocupa ${u} niveles (pisos ${f||1} al ${(f||1)+u-1})`:(f?`Está en el piso ${f}`:'Está a nivel de calle');
+  const edif=t?` de un edificio de ${t} piso${t!==1?'s':''}.`:'.';
+  const aviso=(t && f && (f+u-1)>t)?' <span style="color:var(--red)">Revisa: supera la altura del edificio.</span>':'';
+  return nivel+edif+aviso;
+}
+function _pubFloorsSummary(){
+  const el=document.getElementById('pubFloorsSummary');
+  if(el) el.innerHTML=_pubFloorsText();
+}
+// El nivel múltiple se guarda además como etiqueta, para que se vea en
+// la ficha del inmueble sin cambiar el modelo de datos del servidor.
+function _pubLevelTag(){
+  const u=Math.max(1,Number(_pd.unitFloors)||1);
+  if(u<2) return '';
+  return u===2?'Dúplex':u===3?'Tríplex':`${u} niveles`;
+}
+function _pubFeaturesWithLevelTag(){
+  const tag=_pubLevelTag();
+  const f=(_pd.features||[]).slice();
+  if(tag && f.indexOf(tag)===-1) f.push(tag);
+  return f;
+}
 function _pdOp(op){
   _pd.op=op;
   document.querySelectorAll('.pub-op-btn').forEach(b=>b.classList.toggle('active',b.textContent.includes(op==='Venta'?'Venta':'Alquiler')));
@@ -6408,10 +6702,10 @@ async function _ppub(){
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
-      floor: _pd.floor, floors: _pd.floors, age: _pd.age,
+      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1), age: _pd.age,
       estado: _pd.estado,
       ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
-      features: _pd.features || [],
+      features: _pubFeaturesWithLevelTag(),
       title: _pd.title, desc: _pd.desc,
     });
     const publicationId = res && res.data && res.data.publicationId;
@@ -6509,8 +6803,8 @@ function _pubBulkHTML(){
   </div>`;
 }
 function _pubDownloadTemplate(){
-  const cols=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','dormitorios','banos','estacionamientos','piso','pisos_edificio','antiguedad_anos','titulo','descripcion'];
-  const ex=['Av. Larco 1150 Dpto 801','Miraflores','Departamento','Venta','USD','185000','85','3','2','1','8','15','5','Depto moderno con vista al parque','Ubicado en el corazón de Miraflores...'];
+  const cols=['direccion','distrito','tipo','operacion','moneda','precio','area_m2','dormitorios','banos','estacionamientos','piso','niveles_ocupa','pisos_edificio','antiguedad_anos','etiquetas','titulo','descripcion'];
+  const ex=['Av. Larco 1150 Dpto 801','Miraflores','Departamento','Venta','USD','185000','85','3','2','1','8','2','15','5','Piscina propia|Terraza propia','Dúplex moderno con vista al parque','Ubicado en el corazón de Miraflores...'];
   const csv=[cols.join(','),ex.join(',')].join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reco_plantilla.csv';a.click();
@@ -6593,6 +6887,11 @@ function _pubBulkValidateRow(r){
 // userName / status / createdAt / listedAt / photoUrls are all filled
 // in server-side; the client should not send them.
 function _pubBulkRowToPubData(r){
+  const uF=Math.max(1,Number(r.niveles_ocupa)||1);
+  const rawFeats=(r.etiquetas||'').split('|').map(s=>s.trim()).filter(Boolean);
+  const feats=rawFeats.map(f=>_PUB_FEAT_LEGACY_MAP[f]||f).filter(f=>_PUB_FEATS.includes(f));
+  const lvlTag=uF===2?'Dúplex':uF===3?'Tríplex':uF>3?uF+' niveles':'';
+  if(lvlTag && !feats.includes(lvlTag)) feats.push(lvlTag);
   return {
     source: 'bulk',
     address: String(r.direccion).trim(),
@@ -6608,11 +6907,12 @@ function _pubBulkRowToPubData(r){
     baths: Number(r.banos)||0,
     parking: Number(r.estacionamientos)||0,
     floor: Number(r.piso)||0,
+    unitFloors: uF,
     floors: Number(r.pisos_edificio)||0,
     age: Number(r.antiguedad_anos)||0,
     estado: 'Construido',
     ascensor: false, amoblado: false, petFriendly: false,
-    features: [],
+    features: feats,
     title: String(r.titulo).trim(),
     desc: String(r.descripcion).trim(),
   };
@@ -6820,7 +7120,7 @@ function toggleMobileMap(){
   function renderCarousel(items, containerId) {
     const fmt = n => n.toLocaleString('es-PE');
     const sqm = p => Math.round(p.price / p.area).toLocaleString('es-PE');
-    const loc = p => { let s = '📍 ' + p.district; if(p.floor > 1 && p.floors > 1) s += ' · Piso ' + p.floor + '/' + p.floors; return s; };
+    const loc = p => { let s = '📍 ' + p.district; if(p.floor > 0) { const uF=p.unitFloors||1; s += ' · '+(uF>1?(uF===2?'Dúplex':uF===3?'Tríplex':uF+' niv.')+' piso '+p.floor:'Piso '+p.floor)+(p.floors?'/'+p.floors:''); } return s; };
     const bathsFmt = b => b % 1 === 0 ? b : b.toString().replace('.5','½');
     const imgUrl = id => `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
     const offsets = {featuredGridVenta:0, featuredGridAlq:FEATURED_VENTA.length, featuredGridEstreno:FEATURED_VENTA.length+FEATURED_ALQ.length, featuredGridLujo:FEATURED_VENTA.length+FEATURED_ALQ.length+FEATURED_ESTRENO.length};
@@ -7162,6 +7462,7 @@ function _applyLandingHash(){
     if(q){
       document.getElementById('searchQ').value=q;
       S.query=q;
+      S.mapMode='text'; S.mapDiverged=false;
       applyFilters();
       const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===q.toLowerCase()&&s.sub==='Distrito');
       if(isDistrict) _flyToDistrictGeo(q);
@@ -7542,6 +7843,26 @@ function _applyLandingHash(){
         <button class="auth-submit" id="unmetDemandSubmitBtn" onclick="submitUnmetDemandRequest()">Enviar solicitud</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) -->
+<div class="global-legal-bar" id="globalLegalBar">
+  <span class="glb-copy">&copy; 2026 Reco &middot; Lima, Per&uacute; &middot; VANET DATA S.A.C. RUC 20553966800</span>
+  <div class="glb-links">
+    <a href="#terminos" onclick="showLegalPage('terminos');return false;">T&eacute;rminos de uso</a>
+    <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">Privacidad</a>
+    <a href="#cookies" onclick="showLegalPage('cookies');return false;">Cookies</a>
+    <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;">Libro de Reclamaciones</a>
+  </div>
+</div>
+
+<!-- COOKIE CONSENT BANNER -->
+<div class="cookie-banner" id="cookieBanner">
+  <p>Usamos cookies para mejorar tu experiencia. Revisa nuestras <a href="#privacidad" onclick="showLegalPage('privacidad');return false;">pol&iacute;tica de privacidad</a> y de <a href="#cookies" onclick="showLegalPage('cookies');return false;">cookies</a>.</p>
+  <div class="cookie-btns">
+    <button class="cookie-accept" id="cookieAccept">Aceptar</button>
+    <button class="cookie-close" id="cookieReject" aria-label="Cerrar">&times;</button>
   </div>
 </div>
 
@@ -9547,10 +9868,15 @@ var FAQS=[
     {q:'¿Tienen planes para bancos, tasadores o desarrolladores?',a:'Sí. Ofrecemos planes corporativos con acceso a nuestra base de tasaciones, datos históricos de SUNARP y reportes en lote. Escríbenos a webmaster@recosac.com.'},
     {q:'¿Cómo pago?',a:'Aceptamos Visa, Mastercard, American Express y Yape/Plin para personas naturales. Para empresas emitimos factura.'},
   ]},
+  {cat:'Servicio y disponibilidad',items:[
+    {q:'¿Cuál es la disponibilidad de la plataforma?',a:'Reco opera las 24 horas del día, los 7 días de la semana, con un compromiso de disponibilidad continua. Las ventanas de mantenimiento programado se realizan entre las 12:00 a. m. y las 4:00 a. m. (hora de Lima), y se notifican con al menos 24 horas de anticipación.'},
+    {q:'¿En cuánto tiempo responden consultas o incidencias?',a:'El tiempo máximo de primera respuesta para cualquier consulta o incidencia reportada es de 24 horas. Para incidencias críticas que afecten la disponibilidad del servicio, la atención es prioritaria e inmediata.'},
+    {q:'¿Reco actúa como intermediario inmobiliario?',a:'No. Reco es una plataforma de información y análisis. No interviene como intermediario, corredor ni asesor en transacciones de compraventa o alquiler de inmuebles. La responsabilidad de las decisiones de inversión recae exclusivamente en el usuario.'},
+  ]},
   {cat:'Privacidad y soporte',items:[
     {q:'¿Necesito crear cuenta para usar Reco?',a:'Para el veredicto básico y el mapa de calor, no. Para guardar favoritos, comprar llaves o descargar reportes, sí necesitas registrarte.'},
-    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733). Revisa el Aviso de Privacidad en el pie de página.'},
-    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página. Respondemos en máximo 30 días calendario.'},
+    {q:'¿Cómo protegen mis datos personales?',a:'Cumplimos la Ley de Protección de Datos Personales del Perú (Ley 29733) y su nuevo reglamento (DS 016-2024-JUS). Revisa el Aviso de Privacidad en el pie de página.'},
+    {q:'¿Cómo presento un reclamo?',a:'A través de nuestro Libro de Reclamaciones digital, disponible en el pie de página y en la barra legal de todas las vistas. Respondemos en máximo 30 días calendario, conforme al Código de Protección al Consumidor.'},
     {q:'¿Cómo contacto al equipo?',a:'Escríbenos a webmaster@recosac.com. Para temas legales: webmaster@recosac.com.'},
   ]},
 ];
@@ -9593,8 +9919,107 @@ function enviarContacto(){
   document.getElementById('ctAsunto').value='';
   document.getElementById('ctMensaje').value='';
 }
-</script>
 
+// ── Libro de Reclamaciones (Firestore) ──────────────────────
+function submitReclamo(e){
+  e.preventDefault();
+  var btn=document.getElementById('recSubmitBtn');
+  btn.disabled=true;btn.textContent='Enviando...';
+  var tipo=document.getElementById('recTipo').value;
+  var docTipo=document.getElementById('recDocTipo').value;
+  var docNum=document.getElementById('recDocNum').value.trim();
+  var nombre=document.getElementById('recNombre').value.trim();
+  var email=document.getElementById('recEmail').value.trim();
+  var telefono=document.getElementById('recTelefono').value.trim();
+  var direccion=document.getElementById('recDireccion').value.trim();
+  var descripcion=document.getElementById('recDescripcion').value.trim();
+  var bien=document.getElementById('recBien').value;
+  var pedido=document.getElementById('recPedido').value.trim();
+  var monto=document.getElementById('recMonto').value.trim();
+  if(!tipo||!docTipo||!docNum||!nombre||!email||!bien||!descripcion||!pedido){
+    alert('Completa todos los campos obligatorios.');
+    btn.disabled=false;btn.textContent='Enviar reclamo';return;
+  }
+  var codigo='REC-'+Date.now().toString(36).toUpperCase();
+  var data={
+    codigo:codigo,tipo:tipo,docTipo:docTipo,docNum:docNum,
+    nombre:nombre,email:email,telefono:telefono,direccion:direccion,
+    bien:bien,descripcion:descripcion,pedido:pedido,monto:monto,
+    status:'pendiente',
+    createdAt:firebase.firestore.FieldValue.serverTimestamp(),
+    userAgent:navigator.userAgent,
+    url:window.location.href
+  };
+  var user=auth.currentUser;
+  if(user){data.userId=user.uid;data.userEmail=user.email;}
+  db.collection('reclamaciones').add(data).then(function(){
+    document.getElementById('reclamoCodigo').textContent=codigo;
+    document.getElementById('reclamoFormWrap').style.display='none';
+    document.getElementById('reclamoSuccess').style.display='block';
+    btn.disabled=false;btn.textContent='Enviar reclamo';
+  }).catch(function(err){
+    console.error('Error al enviar reclamo:',err);
+    alert('Error al enviar. Por favor intenta de nuevo o escríbenos a webmaster@recosac.com.');
+    btn.disabled=false;btn.textContent='Enviar reclamo';
+  });
+}
+function resetReclamoForm(){
+  document.getElementById('reclamoForm').reset();
+  document.getElementById('reclamoFormWrap').style.display='block';
+  document.getElementById('reclamoSuccess').style.display='none';
+}
+
+// ── Cookie Consent ──────────────────────────────────────────
+(function initCookieConsent(){
+  var banner=document.getElementById('cookieBanner');
+  if(!banner)return;
+  var consent=null;
+  try{consent=localStorage.getItem('reco_cookie_consent');}catch(e){}
+  if(consent==='accepted'||consent==='rejected'||consent==='implicit'){
+    if(consent==='rejected')disableAnalytics();
+    else enableAnalytics();
+    return;
+  }
+  banner.style.display='flex';
+  document.getElementById('cookieAccept').addEventListener('click',function(){
+    try{localStorage.setItem('reco_cookie_consent','accepted');}catch(e){}
+    banner.style.display='none';
+    enableAnalytics();
+    logCookieConsent('accepted');
+  });
+  document.getElementById('cookieReject').addEventListener('click',function(){
+    try{localStorage.setItem('reco_cookie_consent','implicit');}catch(e){}
+    banner.style.display='none';
+    enableAnalytics();
+    logCookieConsent('accepted');
+  });
+  function enableAnalytics(){
+    if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'granted'});
+  }
+  function disableAnalytics(){
+    if(typeof gtag==='function')gtag('consent','update',{analytics_storage:'denied'});
+    document.cookie.split(';').forEach(function(c){
+      var name=c.split('=')[0].trim();
+      if(name.indexOf('_ga')===0||name.indexOf('_gid')===0){
+        document.cookie=name+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+      }
+    });
+  }
+  function logCookieConsent(decision){
+    try{
+      var data={
+        decision:decision,
+        timestamp:firebase.firestore.FieldValue.serverTimestamp(),
+        userAgent:navigator.userAgent,
+        url:window.location.href
+      };
+      var user=auth.currentUser;
+      if(user){data.userId=user.uid;data.userEmail=user.email;}
+      db.collection('cookieConsent').add(data).catch(function(){});
+    }catch(e){}
+  }
+})();
+</script>
 
 </body>
 </html>
