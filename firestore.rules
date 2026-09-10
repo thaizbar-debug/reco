@@ -300,6 +300,7 @@ service cloud.firestore {
       allow create: if true
                     && request.resource.data.decision in ['accepted', 'rejected'];
       allow update, delete: if false;
+    }
     // /notifications/{notifId}
     //
     // In-app notifications sent to users when their publication is
