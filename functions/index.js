@@ -995,11 +995,10 @@ exports.setAdminClaim = onCall(
 //   firebase functions:secrets:set CULQI_SECRET_KEY
 // ─────────────────────────────────────────────────────────────────────────────
 const CULQI_PLANS = {
-  Individual: { amount: 1000,  qty: 1   },
-  Bronce:     { amount: 4500,  qty: 5   },
-  Plata:      { amount: 8000,  qty: 10  },
-  Oro:        { amount: 35000, qty: 50  },
-  Diamante:   { amount: 60000, qty: 100 },
+  Individual: { amount: 1000,  qty: 1  },
+  Bronce:     { amount: 4500,  qty: 5  },
+  Plata:      { amount: 8000,  qty: 10 },
+  Oro:        { amount: 35000, qty: 50 },
 };
 
 exports.chargeWithCulqi = onCall(
