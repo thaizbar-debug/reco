@@ -2339,6 +2339,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
         <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
         <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
+        <a href="#bandeja" class="corredor-only" style="display:none" onclick="navigateUserSection('bandeja')">📨 Bandeja</a>
         <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
         <hr/>
         <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
@@ -8535,7 +8536,10 @@ async function _pullUserDataFromFirestore(){
       S.keysLeft = data.keysLeft;
       if(typeof updateKeyCount === 'function') updateKeyCount();
     }
-    if(typeof data.isCorredor === 'boolean') S.isCorredor = data.isCorredor;
+    if(typeof data.isCorredor === 'boolean'){
+      S.isCorredor = data.isCorredor;
+      document.querySelectorAll('.corredor-only').forEach(function(el){ el.style.display = S.isCorredor ? '' : 'none'; });
+    }
     var _u = auth.currentUser;
     if (_u && _u.emailVerified && Array.isArray(data.keyHistory)) {
       var _hasBonus = data.keyHistory.some(function(h){ return h.type === 'bonus'; });
@@ -8544,7 +8548,7 @@ async function _pullUserDataFromFirestore(){
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
       const h = window.location.hash.replace('#','');
-      if(['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
+      if(['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
         renderUserSection(h);
       }
     }
@@ -8629,6 +8633,7 @@ function renderUserSection(section) {
   else if (section === 'llaves') renderLlaves(el);
   else if (section === 'publicaciones') renderPublicaciones(el);
   else if (section === 'solicitudes') renderSolicitudes(el);
+  else if (section === 'bandeja') renderBandeja(el);
   else if (section === 'admin') renderAdminPanel(el);
   else { closeUserSection(); return; }
 }
@@ -9252,7 +9257,8 @@ function _startNotifListener(){
     .orderBy('createdAt','desc')
     .limit(20)
     .onSnapshot(function(snap){
-      _notifCache = snap.docs.map(function(d){ return {id:d.id, ...d.data()}; });
+      _notifCache = snap.docs.map(function(d){ return {id:d.id, ...d.data()}; })
+        .filter(function(n){ return n.kind !== 'advisor_request'; });
       _renderNotifBell();
     }, function(err){
       console.warn('[reco] notif listener error, trying fallback:', err);
@@ -9262,6 +9268,7 @@ function _startNotifListener(){
         .limit(20)
         .onSnapshot(function(snap){
           _notifCache = snap.docs.map(function(d){ return {id:d.id, ...d.data()}; })
+            .filter(function(n){ return n.kind !== 'advisor_request'; })
             .sort(function(a,b){
               var ta = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
               var tb = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
@@ -9325,6 +9332,59 @@ function _renderNotifCards(){
   }).join('');
   html += '</div>';
   return html;
+}
+
+// ── BANDEJA (corredor inbox) ──
+async function renderBandeja(el) {
+  if (!auth.currentUser) { closeUserSection(); openAuthModal('login', function(){ navigateUserSection('bandeja'); }); return; }
+  el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    + '<div class="us-title">📨 Bandeja de solicitudes</div>'
+    + '<div style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Solicitudes de clientes que buscan asesoría personalizada.</div>'
+    + '<div id="bandejaList"><div style="color:var(--muted);font-size:.85rem">Cargando…</div></div>';
+  try {
+    var snap = await db.collection('notifications')
+      .where('userId', '==', auth.currentUser.uid)
+      .where('kind', '==', 'advisor_request')
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get();
+    var list = document.getElementById('bandejaList');
+    if (!list) return;
+    if (snap.empty) {
+      list.innerHTML = '<div style="color:var(--muted);font-size:.85rem;padding:24px 0;text-align:center">Aún no tienes solicitudes.</div>';
+      return;
+    }
+    var unreadIds = [];
+    list.innerHTML = snap.docs.map(function(d) {
+      var n = d.data();
+      if (!n.read) unreadIds.push(d.id);
+      var time = n.createdAt ? _timeAgo(n.createdAt) : '';
+      var badge = n.read
+        ? '<span style="background:#f1f5f9;color:var(--muted);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:600">Leído</span>'
+        : '<span style="background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">Nuevo</span>';
+      return '<div class="us-card" style="margin-bottom:12px;padding:16px 18px">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        + badge
+        + (time ? '<span style="font-size:.75rem;color:var(--muted)">'+esc(time)+'</span>' : '')
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:.84rem">'
+        + '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Nombre</span><div style="font-weight:600;margin-top:2px">'+esc(n.fromName||'—')+'</div></div>'
+        + '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Email</span><div style="margin-top:2px"><a href="mailto:'+esc(n.fromEmail||'')+'" style="color:var(--blue)">'+esc(n.fromEmail||'—')+'</a></div></div>'
+        + (n.fromPhone ? '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Teléfono</span><div style="margin-top:2px">'+esc(n.fromPhone)+'</div></div>' : '')
+        + (n.referenceZone ? '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Zona</span><div style="margin-top:2px">'+esc(n.referenceZone)+'</div></div>' : '')
+        + (n.propertyTypeWanted ? '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Tipo buscado</span><div style="margin-top:2px">'+esc(n.propertyTypeWanted)+'</div></div>' : '')
+        + (n.budgetReference ? '<div><span style="color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Presupuesto</span><div style="margin-top:2px">'+esc(n.budgetReference)+'</div></div>' : '')
+        + '</div>'
+        + (n.message ? '<div style="margin-top:10px;font-size:.83rem;color:#374151;background:var(--light);border-radius:8px;padding:9px 12px">'+esc(n.message)+'</div>' : '')
+        + '</div>';
+    }).join('');
+    // Mark all as read in the background
+    unreadIds.forEach(function(id) { _markNotifRead(id); });
+  } catch(e) {
+    var list = document.getElementById('bandejaList');
+    if (list) list.innerHTML = '<div style="color:#dc2626;font-size:.85rem">Error al cargar la bandeja.</div>';
+    console.warn('[reco] renderBandeja failed:', e.message);
+  }
 }
 
 // ── PUBLICACIONES ──
@@ -9459,7 +9519,7 @@ async function removeMyPub(id) {
 // handle hash on load / popstate for user sections
 function _checkUserHash() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0) {
     if (!auth.currentUser) return;
     document.body.classList.remove('show-home');
     document.body.classList.add('show-user');
@@ -9468,7 +9528,7 @@ function _checkUserHash() {
 }
 window.addEventListener('popstate', function() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','solicitudes','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0) {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
@@ -10178,6 +10238,7 @@ auth.onAuthStateChanged(function(user) {
               <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
               <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
               <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
+              ${S.isCorredor?'<a href="#bandeja" onclick="navigateUserSection(\'bandeja\')">📨 Bandeja</a>':''}
               ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
               <hr/>
               <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
@@ -10202,8 +10263,10 @@ auth.onAuthStateChanged(function(user) {
       if (emailEl)    emailEl.textContent    = user.email;
       if (initialsEl) initialsEl.textContent = _getInitials(user.displayName || user.email);
       document.querySelectorAll('.admin-only').forEach(el => { el.style.display = _isAdmin() ? '' : 'none'; });
+      document.querySelectorAll('.corredor-only').forEach(el => { el.style.display = S.isCorredor ? '' : 'none'; });
     } else {
       document.querySelectorAll('.admin-only').forEach(el => { el.style.display = 'none'; });
+      document.querySelectorAll('.corredor-only').forEach(el => { el.style.display = 'none'; });
       appIngresarBtn.style.display = '';
       appUserWrap.style.display    = 'none';
     }

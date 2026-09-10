@@ -520,6 +520,41 @@ exports.submitContactRequest = onCall(
       createdAt:           FieldValue.serverTimestamp(),
     });
 
+    // Notify all corredores when a client submits an advisor search request.
+    if (isUnmetDemand) {
+      try {
+        const corredoresSnap = await db.collection('users')
+          .where('isCorredor', '==', true)
+          .get();
+        if (!corredoresSnap.empty) {
+          const notifBatch = db.batch();
+          corredoresSnap.docs.forEach(corredorDoc => {
+            const notifRef = db.collection('notifications').doc();
+            notifBatch.set(notifRef, {
+              userId:              corredorDoc.id,
+              kind:                'advisor_request',
+              read:                false,
+              createdAt:           FieldValue.serverTimestamp(),
+              contactRequestId:    reqId,
+              fromName,
+              fromEmail,
+              fromPhone:           optStr(raw.fromPhone, 40) || null,
+              referenceZone:       unmetFields.referenceZone || null,
+              propertyTypeWanted:  unmetFields.propertyTypeWanted || null,
+              budgetReference:     unmetFields.budgetReference || null,
+              viewType:            unmetFields.viewType || null,
+              message:             message || null,
+            });
+          });
+          await notifBatch.commit();
+        }
+      } catch (e) {
+        logger.warn('[submitContactRequest] corredor notifications failed', {
+          reqId, err: e && e.message,
+        });
+      }
+    }
+
     // Queue an email to the publication owner via /mail → Resend.
     // Only user-published properties have an owner; the ~2,663 static
     // properties have no publication owner so no email goes out for those.
