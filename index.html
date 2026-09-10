@@ -6933,7 +6933,8 @@ function _pubParseTagCol(raw, validList){
   const warnings=[];
   const tags=(String(raw||'')).split(';').map(s=>s.trim()).filter(Boolean);
   const mapped=tags.map(t=>{
-    const n=_PUB_FEAT_LEGACY_MAP[t]; if(n) return n;
+    const n=_PUB_FEAT_LEGACY_MAP[t];
+    if(n){ if(!validList.includes(n)) warnings.push('Etiqueta en grupo incorrecto: '+t); return n; }
     if(validList.includes(t)) return t;
     warnings.push('Etiqueta no reconocida: '+t);
     return null;

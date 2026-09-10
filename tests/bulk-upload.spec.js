@@ -85,6 +85,14 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
     expect(result.tags).toContain('Terraza propia');
   });
 
+  test('_pubParseTagCol warns when legacy tag maps to a different group', async ({ page }) => {
+    const result = await page.evaluate(() => {
+      return _pubParseTagCol('Jardín', _PUB_FEATS_AMB);
+    });
+    expect(result.tags).toContain('Jardín propio');
+    expect(result.warnings.some(w => w.includes('grupo incorrecto'))).toBe(true);
+  });
+
   test('_pubParseTagCol warns on unrecognized tags without blocking', async ({ page }) => {
     const result = await page.evaluate(() => {
       return _pubParseTagCol('Balcón;InventedTag;AnotherFake', _PUB_FEATS_GEN);
