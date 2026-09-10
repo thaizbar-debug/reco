@@ -5793,18 +5793,17 @@ function openFullReport(id){
   const overlay = document.getElementById('frOverlay');
   overlay.innerHTML = `
   <div class="fr-wrap">
-    <!-- NAV -->
-    <nav class="fr-nav">
-      <div style="display:flex;align-items:center;gap:16px">
+    <!-- BARRA DE NAVEGACIÓN DEL DETALLE -->
+    <div class="fr-subbar">
+      <div class="fr-subbar-left">
         <button class="fr-nav-back" onclick="closeFullReport()">← Volver</button>
-        <div class="fr-nav-logo">Reco <span>PE</span></div>
         <div class="fr-breadcrumb">${esc(p.district)} › ${esc(p.address.length>40?p.address.slice(0,40)+'…':p.address)}</div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div class="fr-subbar-right">
         <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
         ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
       </div>
-    </nav>
+    </div>
 
     <!-- GALLERY -->
     ${galleryHTML}
@@ -7990,7 +7989,7 @@ function _applyLandingHash(){
 <style>
 /* ── Full Report Overlay ── */
 #frOverlay{
-  position:fixed;inset:0;z-index:9999;
+  position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:190;
   background:#F5F3EF;
   overflow-y:auto;
   transform:translateY(100%);
@@ -8000,17 +7999,17 @@ function _applyLandingHash(){
 #frOverlay.open{pointer-events:auto;}
 #frOverlay.open{transform:translateY(0)}
 
-/* NAV */
+/* SUBBAR + LAYOUT */
 .fr-wrap{max-width:1100px;margin:0 auto;}
-.fr-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#FDFCFA;border-bottom:1px solid rgba(14,17,23,.1);position:sticky;top:0;z-index:10;}
-.fr-nav-back{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 14px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:#2A2F3A;}
-.fr-nav-back:hover{background:#F5F3EF}
-.fr-nav-logo{font-family:'Segoe UI',system-ui,sans-serif;font-size:20px;font-weight:700;display:flex;align-items:center;gap:7px;}
-.fr-nav-logo span{font-family:system-ui,sans-serif;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;background:#0E1117;color:#fff;padding:2px 7px;border-radius:4px;}
+.fr-subbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border,rgba(14,17,23,.1));position:sticky;top:0;z-index:10;}
+.fr-subbar-left{display:flex;align-items:center;gap:14px;}
+.fr-subbar-right{display:flex;align-items:center;gap:8px;}
+.fr-nav-back{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 14px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#2A2F3A);transition:background .12s,border-color .12s;}
+.fr-nav-back:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
 .fr-breadcrumb{font-size:12px;color:#8E94A0;display:none;}
-@media(min-width:600px){.fr-breadcrumb{display:block}}
-.fr-btn-ghost{background:none;border:1px solid rgba(14,17,23,.15);padding:7px 12px;border-radius:6px;font-size:13px;cursor:pointer;color:#555B6A;}
-.fr-btn-ghost:hover{background:#F5F3EF}
+@media(min-width:600px){.fr-breadcrumb{display:flex;align-items:center;gap:4px;}}
+.fr-btn-ghost{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 12px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#555B6A);transition:background .12s,border-color .12s;}
+.fr-btn-ghost:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
 
 /* GALLERY — carrusel adaptativo */
 .fr-gallery{position:relative;background:#0E1117;overflow:hidden;height:420px;}
