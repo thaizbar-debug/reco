@@ -62,7 +62,8 @@ service cloud.firestore {
                     && (!('isCorredor' in request.resource.data) || request.resource.data.isCorredor is bool);
       allow update: if request.auth != null
                     && request.auth.uid == uid
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favorites', 'email', 'displayName']);
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favorites', 'email', 'displayName', 'isCorredor'])
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isCorredor']) || request.resource.data.isCorredor is bool);
       allow delete: if false; // never allow self-delete from client
     }
 

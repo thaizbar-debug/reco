@@ -3079,7 +3079,7 @@ const S = {
   minFloors:0, minFloor:0, maxAge:Infinity,
   features:[], bankOnly:false,
   sort:'rel', selectedId:null,
-  keysLeft:0, selectedPlan:{name:'Bronce',price:45,qty:5},
+  keysLeft:0, isCorredor:false, selectedPlan:{name:'Bronce',price:45,qty:5},
   activeTool:null,
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
   polyMode:false, polyPoints:[], polyFinished:false,
@@ -8535,6 +8535,7 @@ async function _pullUserDataFromFirestore(){
       S.keysLeft = data.keysLeft;
       if(typeof updateKeyCount === 'function') updateKeyCount();
     }
+    if(typeof data.isCorredor === 'boolean') S.isCorredor = data.isCorredor;
     var _u = auth.currentUser;
     if (_u && _u.emailVerified && Array.isArray(data.keyHistory)) {
       var _hasBonus = data.keyHistory.some(function(h){ return h.type === 'bonus'; });
@@ -9045,6 +9046,14 @@ function renderPerfil(el) {
     + '<div class="us-field"><label>Contraseña</label><div class="us-field-row"><input type="password" id="usProfilePass" value="••••••••" disabled><button class="us-btn-edit" id="usPassEditBtn" onclick="usEditField(\'pass\')">Cambiar</button></div></div>'
     + '<div class="us-field"><label>Miembro desde</label><div class="us-field-row"><input type="text" value="'+since+'" disabled></div></div>'
     + '</div>'
+    + '<div class="us-card" style="margin-top:16px">'
+    + '<div class="us-card-title">Rol profesional</div>'
+    + '<div class="us-field"><label>Corredor inmobiliario</label>'
+    + '<div class="us-field-row" style="justify-content:space-between;align-items:center">'
+    + '<span style="font-size:.85rem;color:var(--muted)">'+(S.isCorredor?'Activado — recibes solicitudes de clientes':'Desactivado')+'</span>'
+    + '<button class="us-btn-edit" id="usCorredorBtn" onclick="usToggleIsCorredor()">'+(S.isCorredor?'Desactivar':'Activar')+'</button>'
+    + '</div></div>'
+    + '</div>'
     + '<div id="usProfileMsg" style="margin-top:12px;font-size:.85rem;text-align:center"></div>';
 }
 function usEditField(field) {
@@ -9107,6 +9116,20 @@ function _updatePasswordWithReauth(newPass) {
       return;
     }
     if (msg) msg.innerHTML = '<span style="color:#dc2626">'+(friendlyError(e.code)||e.message)+'</span>';
+  });
+}
+
+function usToggleIsCorredor() {
+  var u = auth.currentUser;
+  var msg = document.getElementById('usProfileMsg');
+  if (!u) return;
+  var next = !S.isCorredor;
+  var ref = db.collection('users').doc(u.uid);
+  ref.update({ isCorredor: next }).then(function() {
+    S.isCorredor = next;
+    renderPerfil(document.getElementById('userSectionContent'));
+  }).catch(function(e) {
+    if (msg) msg.innerHTML = '<span style="color:#dc2626">'+e.message+'</span>';
   });
 }
 
