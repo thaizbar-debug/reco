@@ -121,12 +121,15 @@ test.describe('MEJ-06: Legacy tag mapping', () => {
     const result = await page.evaluate(() => {
       return _pubBulkRowToPubData({
         direccion:'Av Test 1', distrito:'Miraflores',
-        tipo:'Departamento', operacion:'Venta', moneda:'USD',
-        precio:'200000', area_m2:'90',
-        dormitorios:'3', banos:'2', estacionamientos:'1',
-        piso:'6', niveles_ocupa:'2', pisos_edificio:'10',
-        antiguedad_anos:'3', titulo:'Test', descripcion:'Desc',
-        etiquetas:'Jardín|Piscina|Terraza'
+        tipo_propiedad:'Departamento', tipo_publicacion:'Venta', tipo_moneda:'USD',
+        precio:'200000', area_techada:'90',
+        nro_dormitorios:'3', nro_banos:'2', nro_estacionamientos:'1',
+        piso:'6', niveles:'2', nro_pisos:'10',
+        antiguedad:'3', titulo:'Test', descripcion:'Desc',
+        mostrar_direccion:'Sí',
+        etiquetas_generales:'Jardín;Piscina;Terraza',
+        etiquetas_ambientes:'', etiquetas_vista:'',
+        etiquetas_acceso:'', etiquetas_zonas:''
       });
     });
     expect(result.unitFloors).toBe(2);
