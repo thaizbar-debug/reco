@@ -6,17 +6,15 @@ test.describe('MEJ-05: Campos de pisos', () => {
     await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
   });
 
-  test('publish form source contains 3 floor field labels', async ({ page }) => {
-    const src = await page.evaluate(() => document.documentElement.outerHTML);
-    const scriptSrc = await page.evaluate(() => {
-      const scripts = document.querySelectorAll('script');
-      let all = '';
-      scripts.forEach(s => { all += s.textContent; });
-      return all;
+  test('publish form renders 3 floor fields when type is Departamento', async ({ page }) => {
+    await page.evaluate(() => {
+      _pd.type = 'Departamento';
+      renderPublish();
     });
-    expect(scriptSrc).toContain('Piso en el que está');
-    expect(scriptSrc).toContain('Niveles que ocupa');
-    expect(scriptSrc).toContain('Pisos del edificio');
+    const html = await page.evaluate(() => document.getElementById('vPublish').innerHTML);
+    expect(html).toContain('Piso en el que está');
+    expect(html).toContain('Niveles que ocupa');
+    expect(html).toContain('Pisos del edificio');
   });
 
   test('_pd initializes unitFloors to 1', async ({ page }) => {
@@ -92,6 +90,31 @@ test.describe('MEJ-06: Legacy tag mapping', () => {
     expect(feats).toContain('Jardín');
     expect(feats).toContain('Piscina propia');
     expect(feats).toContain('Piscina');
+  });
+
+  test('getFiltered matches property with legacy tag when filtering by canonical name', async ({ page }) => {
+    const matched = await page.evaluate(() => {
+      const saved = properties.slice();
+      const savedFeatures = S.features.slice();
+      const savedMapMode = S.mapMode;
+      try {
+        properties.length = 0;
+        properties.push({id:'__t__', op:'Venta', type:'Departamento', price:100000, area:80,
+          beds:2, baths:2, parking:0, floor:0, floors:0, unitFloors:1, age:5,
+          bank:false, isNew:false, features:['Piscina'], photoUrls:['fake']});
+        Object.assign(S, {op:'Venta', type:'all', bankOnly:false, minPrice:0, maxPrice:Infinity,
+          minArea:0, minAreaTerr:0, beds:0, baths:0, minPark:0, minFloors:0, minFloor:0,
+          maxAge:Infinity, minSqm:0, maxSqm:Infinity, query:'', radiusCenter:null,
+          polyFinished:false, commute:null, mapMode:'text', features:['Piscina propia']});
+        return getFiltered().some(p => p.id === '__t__');
+      } finally {
+        properties.length = 0;
+        saved.forEach(p => properties.push(p));
+        S.features = savedFeatures;
+        S.mapMode = savedMapMode;
+      }
+    });
+    expect(matched).toBe(true);
   });
 
   test('bulk row converter maps legacy tags and adds level tag', async ({ page }) => {
