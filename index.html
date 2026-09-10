@@ -10083,15 +10083,6 @@ async function submitUnmetDemandRequest() {
       viewType:         _unmetCtx.viewType,
       source:           'preview_panel'
     });
-    _queueUnmetDemandEmail({
-      fromName: name, fromEmail: email, fromPhone: phone,
-      referenceZone: zone, propertyTypeWanted: propType,
-      budgetReference: budget, message,
-      propertyAddress: _unmetCtx.propertyAddress,
-      propertyDistrict: _unmetCtx.propertyDistrict,
-      propertyId: _unmetCtx.propertyId,
-      viewType: _unmetCtx.viewType
-    });
     document.getElementById('unmetDemandForm').style.display = 'none';
     _showUnmetSuccess('✅ ¡Solicitud enviada! Nuestro equipo revisará tu búsqueda y te contactará.');
     toast('✅ Solicitud enviada');
