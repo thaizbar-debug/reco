@@ -1534,6 +1534,8 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .us-pub-status-detail .us-pub-hint{margin-top:4px;font-size:.72rem;color:#64748b}
 .notif-bell{position:relative;background:none;border:none;font-size:1.25rem;cursor:pointer;padding:4px 8px;line-height:1;display:none}
 .notif-bell .notif-badge{position:absolute;top:-2px;right:0;background:#ef4444;color:#fff;font-size:.6rem;font-weight:800;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 4px;pointer-events:none}
+.user-avatar-badge{position:absolute;top:-4px;right:-4px;background:#dc2626;color:#fff;border-radius:99px;min-width:17px;height:17px;font-size:.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;pointer-events:none;line-height:1}
+.menu-notif-badge{margin-left:auto;background:#6b7280;color:#fff;border-radius:99px;min-width:17px;height:17px;font-size:.6rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 4px;flex-shrink:0}
 .us-notif-list{margin-bottom:16px}
 .us-notif-card{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:10px;margin-bottom:8px;font-size:.82rem;line-height:1.4;position:relative}
 .us-notif-card.approved{background:#f0fdf4;border:1px solid #86efac}
@@ -2327,7 +2329,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
-    <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV</button>
+    <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV<span class="user-avatar-badge" style="display:none"></span></button>
     <div class="user-dropdown">
       <div class="user-dropdown-inner">
         <div class="u-header">
@@ -2338,8 +2340,8 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
         <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
         <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
-        <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
-        <a href="#bandeja" class="corredor-only" style="display:none" onclick="navigateUserSection('bandeja')">📨 Bandeja</a>
+        <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto<span class="menu-notif-badge menu-solicitudes-badge" style="display:none"></span></a>
+        <a href="#bandeja" class="corredor-only" style="display:none" onclick="navigateUserSection('bandeja')">📨 Bandeja<span class="menu-notif-badge menu-bandeja-badge" style="display:none"></span></a>
         <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
         <hr/>
         <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
@@ -8771,6 +8773,8 @@ async function renderSolicitudes(el){
     }).join('');
   }
   el.innerHTML = html;
+  localStorage.setItem('_solicitudesLastViewed', Date.now());
+  _renderUserBadges();
 }
 async function _crMarkHandled(id){
   try {
@@ -9332,6 +9336,73 @@ function _renderNotifCards(){
   }).join('');
   html += '</div>';
   return html;
+}
+
+// ── SOLICITUDES & BANDEJA BADGE LISTENERS ──
+var _solicitudesSnap = [];
+var _bandejaUnreadCount = 0;
+var _solicitudesUnsub = null;
+var _bandejaUnsub = null;
+function _startSolicitudesListener(uid) {
+  if (_solicitudesUnsub) { _solicitudesUnsub(); _solicitudesUnsub = null; }
+  _solicitudesSnap = [];
+  _solicitudesUnsub = db.collection('contactRequests')
+    .where('publicationOwnerId', '==', uid)
+    .where('status', '==', 'new')
+    .onSnapshot(function(snap) {
+      _solicitudesSnap = snap.docs.map(function(d) { return {id:d.id, ...d.data()}; });
+      _renderUserBadges();
+    }, function(err) {
+      console.warn('[reco] solicitudes badge listener failed:', err.message);
+    });
+}
+function _stopSolicitudesListener() {
+  if (_solicitudesUnsub) { _solicitudesUnsub(); _solicitudesUnsub = null; }
+  _solicitudesSnap = [];
+  _renderUserBadges();
+}
+function _startBandejaListener(uid) {
+  if (_bandejaUnsub) { _bandejaUnsub(); _bandejaUnsub = null; }
+  _bandejaUnreadCount = 0;
+  _bandejaUnsub = db.collection('notifications')
+    .where('userId', '==', uid)
+    .where('kind', '==', 'advisor_request')
+    .onSnapshot(function(snap) {
+      _bandejaUnreadCount = snap.docs.filter(function(d) { return d.data().read === false; }).length;
+      _renderUserBadges();
+    }, function(err) {
+      console.warn('[reco] bandeja badge listener failed:', err.message);
+    });
+}
+function _stopBandejaListener() {
+  if (_bandejaUnsub) { _bandejaUnsub(); _bandejaUnsub = null; }
+  _bandejaUnreadCount = 0;
+  _renderUserBadges();
+}
+function _getSolicitudesUnreadCount() {
+  var lastViewed = parseInt(localStorage.getItem('_solicitudesLastViewed') || '0');
+  if (!lastViewed) return _solicitudesSnap.length;
+  return _solicitudesSnap.filter(function(d) {
+    var t = d.createdAt;
+    return !t || !t.toMillis || t.toMillis() > lastViewed;
+  }).length;
+}
+function _renderUserBadges() {
+  var sol = _getSolicitudesUnreadCount();
+  var ban = _bandejaUnreadCount;
+  var total = sol + ban;
+  document.querySelectorAll('.user-avatar-badge').forEach(function(el) {
+    el.textContent = total > 9 ? '9+' : total;
+    el.style.display = total > 0 ? '' : 'none';
+  });
+  document.querySelectorAll('.menu-solicitudes-badge').forEach(function(el) {
+    el.textContent = sol > 9 ? '9+' : sol;
+    el.style.display = sol > 0 ? '' : 'none';
+  });
+  document.querySelectorAll('.menu-bandeja-badge').forEach(function(el) {
+    el.textContent = ban > 9 ? '9+' : ban;
+    el.style.display = ban > 0 ? '' : 'none';
+  });
 }
 
 // ── BANDEJA (corredor inbox) ──
@@ -10222,7 +10293,7 @@ auth.onAuthStateChanged(function(user) {
       homeUserWrap.style.display    = 'flex';
       homeUserWrap.innerHTML = `
         <div class="user-wrap" style="position:relative">
-          <button class="user-btn" onclick="toggleUserDropdown(this)">${_getInitials(user.displayName || user.email)}</button>
+          <button class="user-btn" onclick="toggleUserDropdown(this)">${_getInitials(user.displayName || user.email)}<span class="user-avatar-badge" style="display:none"></span></button>
           <div class="user-dropdown">
             <div class="user-dropdown-inner">
               <div class="u-header">
@@ -10233,14 +10304,15 @@ auth.onAuthStateChanged(function(user) {
               <a href="#favoritos" onclick="navigateUserSection('favoritos')">❤️ Mis favoritos</a>
               <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
               <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
-              <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto</a>
-              ${S.isCorredor?'<a href="#bandeja" onclick="navigateUserSection(\'bandeja\')">📨 Bandeja</a>':''}
+              <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto<span class="menu-notif-badge menu-solicitudes-badge" style="display:none"></span></a>
+              ${S.isCorredor?'<a href="#bandeja" onclick="navigateUserSection(\'bandeja\')">📨 Bandeja<span class="menu-notif-badge menu-bandeja-badge" style="display:none"></span></a>':''}
               ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
               <hr/>
               <a href="#" onclick="event.preventDefault();auth.signOut()">🚪 Cerrar sesión</a>
             </div>
           </div>
         </div>`;
+      _renderUserBadges();
     } else {
       homeIngresarBtn.style.display = '';
       homeUserWrap.style.display    = 'none';
@@ -10274,11 +10346,15 @@ auth.onAuthStateChanged(function(user) {
     refreshAdminClaim();
     _pullUserDataFromFirestore();
     _startNotifListener();
+    _startSolicitudesListener(user.uid);
+    _startBandejaListener(user.uid);
     _checkUserHash();
   } else {
     _adminClaimCache = false;
     _clearUserCache();
     _stopNotifListener();
+    _stopSolicitudesListener();
+    _stopBandejaListener();
     if (document.body.classList.contains('show-user')) closeUserSection();
   }
 });

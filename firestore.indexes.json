@@ -9,6 +9,14 @@
       ]
     },
     {
+      "collectionGroup": "contactRequests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "publicationOwnerId", "order": "ASCENDING" },
+        { "fieldPath": "status",             "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "histDetailAccess",
       "queryScope": "COLLECTION",
       "fields": [
