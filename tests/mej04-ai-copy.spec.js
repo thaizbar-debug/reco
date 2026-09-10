@@ -245,6 +245,7 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
       S.minPrice = 0; S.maxPrice = Infinity; S.minArea = 0; S.minAreaTerr = 0;
       S.minSqm = 0; S.maxSqm = Infinity; S.minPark = 0; S.minFloors = 0;
       S.minFloor = 0; S.maxAge = Infinity; S.bankOnly = false;
+      S.radiusCenter = null; S.polyFinished = false; S.commute = null; S.mapMode = 'text';
 
       // Filter by canonical name "Piscina propia"
       S.features = ['Piscina propia'];
