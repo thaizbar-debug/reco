@@ -9995,17 +9995,22 @@ async function openUnmetDemandModal(propertyId, viewType) {
   document.getElementById('unmetDemandBudgetLabel').textContent = _UNMET_BUDGET_LABEL[viewType] || 'Presupuesto aproximado';
   _clearUnmetMessages();
   document.getElementById('unmetDemandOverlay').classList.add('open');
-  const reqId = auth.currentUser.uid + '_' + propertyId + '_demanda_insatisfecha';
-  try {
-    const existing = await db.collection('contactRequests').doc(reqId).get();
-    if (existing.exists) {
-      document.getElementById('unmetDemandForm').style.display = 'none';
-      const when = _formatContactDate(existing.data().createdAt);
-      _showUnmetSuccess('Ya enviaste una solicitud desde este inmueble' + (when ? ' el ' + when : '') + '. Nuestro equipo la revisará pronto.');
-      return;
+  // When opened from a specific listing (propertyId set), check if the user
+  // already submitted to avoid duplicate contacts to the same owner.
+  // From the map view (no propertyId), unlimited submissions are allowed.
+  if (propertyId) {
+    const reqId = auth.currentUser.uid + '_' + propertyId + '_demanda_insatisfecha';
+    try {
+      const existing = await db.collection('contactRequests').doc(reqId).get();
+      if (existing.exists) {
+        document.getElementById('unmetDemandForm').style.display = 'none';
+        const when = _formatContactDate(existing.data().createdAt);
+        _showUnmetSuccess('Ya enviaste una solicitud desde este inmueble' + (when ? ' el ' + when : '') + '. Nuestro equipo la revisará pronto.');
+        return;
+      }
+    } catch (e) {
+      console.warn('[reco] prior unmet-demand check failed:', e);
     }
-  } catch (e) {
-    console.warn('[reco] prior unmet-demand check failed:', e);
   }
   const u = auth.currentUser;
   document.getElementById('unmetDemandName').value = u.displayName || '';

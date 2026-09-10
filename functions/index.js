@@ -466,20 +466,24 @@ exports.submitContactRequest = onCall(
       unmetFields = { referenceZone, propertyTypeWanted, budgetReference, viewType, source };
     }
 
-    const reqId = `${uid}_${propertyId}_${kind}`;
-    const reqRef = db.collection('contactRequests').doc(reqId);
+    // demanda_insatisfecha allows unlimited submissions (no per-user cap);
+    // all other kinds use a deterministic ID so duplicate contacts to the
+    // same owner are blocked by Firestore's create-if-not-exists semantics.
+    const reqId = isUnmetDemand
+      ? null
+      : `${uid}_${propertyId}_${kind}`;
+    const reqRef = isUnmetDemand
+      ? db.collection('contactRequests').doc()
+      : db.collection('contactRequests').doc(reqId);
 
-    // Existence check + rate limit outside the transaction. Duplicates
-    // are impossible-to-race on the deterministic ID (Firestore create
-    // with an existing ID fails naturally), and the rate-limit query
-    // trades a tiny lag window for a much simpler / cheaper Function
-    // (transactional aggregation queries are unavailable in Firestore).
-    const existing = await reqRef.get();
-    if (existing.exists) {
-      throw new HttpsError(
-        'already-exists',
-        'Ya contactaste al propietario de este inmueble.'
-      );
+    if (!isUnmetDemand) {
+      const existing = await reqRef.get();
+      if (existing.exists) {
+        throw new HttpsError(
+          'already-exists',
+          'Ya contactaste al propietario de este inmueble.'
+        );
+      }
     }
 
     const oneHourAgoMs = Date.now() - 60 * 60 * 1000;
