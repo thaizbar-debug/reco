@@ -1223,13 +1223,11 @@ exports.onPublicationModerated = onDocumentWritten(
     }
 
     try {
-      await db.collection('mail').add({
-        to: userEmail,
-        message: { subject, html, text },
-      });
-      // Mark the notification status so re-transitions to the same
-      // status don't send duplicate emails.
-      await event.data.after.ref.update({ _lastNotifiedStatus: newStatus });
+      const mailRef = db.collection('mail').doc();
+      const batch = db.batch();
+      batch.set(mailRef, { to: userEmail, message: { subject, html, text } });
+      batch.update(event.data.after.ref, { _lastNotifiedStatus: newStatus });
+      await batch.commit();
     } catch (e) {
       logger.warn('[onPublicationModerated] mail queue failed', {
         pubId, err: e.message,
