@@ -1362,7 +1362,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 #homeView .btn-mail:hover{background:var(--light)}
 
 /* GLOBAL LEGAL BAR (visible in search/map view — mirrors footer-bottom) */
-.global-legal-bar{position:fixed;bottom:0;left:0;right:0;z-index:9000;background:#0f172a;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(255,255,255,.07)}
+.global-legal-bar{position:fixed;bottom:0;left:0;right:0;z-index:150;background:#0f172a;padding:12px 5%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid rgba(255,255,255,.07)}
 .global-legal-bar .glb-copy{font-size:.7rem;color:rgba(255,255,255,.35)}
 .global-legal-bar .glb-links{display:flex;gap:14px}
 .global-legal-bar .glb-links a{font-size:.7rem;color:rgba(255,255,255,.3);text-decoration:none;transition:color .12s;white-space:nowrap}
@@ -2389,6 +2389,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
     <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
       <button class="clear-filters-btn" onclick="clearFilters()">Borrar filtros</button>
+      <button class="clear-filters-btn" style="border-color:transparent;opacity:.7" onclick="openUnmetDemandModal(null,S.op==='Alquiler'?'alquilar':S.op==='Histórico'?'historico':'comprar')">¿No lo encontraste?</button>
       <button class="adv-toggle-btn" id="advBtn" onclick="toggleAdv()" style="margin-left:0">
         Más filtros <span class="adv-arrow">▼</span>
       </button>
@@ -5599,6 +5600,7 @@ function simulatePay(){
 
 // ─────────────────────── FULL REPORT ───────────────────────
 function openFullReport(id){
+  closeDetail();
   const p = properties.find(x=>x.id===id);
   if(!p) return;
 
@@ -5873,7 +5875,6 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
-          <button class="fr-cta-unmet" onclick="openUnmetDemandModal('${p.id}','${isHist ? 'historico' : isAlq ? 'alquilar' : 'comprar'}')">¿No encontraste lo que buscabas?</button>
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
             <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
@@ -8309,7 +8310,7 @@ function _applyLandingHash(){
       <div class="auth-error" id="unmetDemandError"></div>
       <div class="auth-success" id="unmetDemandSuccess"></div>
       <div id="unmetDemandForm">
-        <div style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:14px;font-size:.82rem;color:var(--muted)">
+        <div id="unmetDemandPropContext" style="background:var(--light);border-radius:9px;padding:10px 12px;margin-bottom:14px;font-size:.82rem;color:var(--muted)">
           <div><strong style="color:var(--txt)">Viendo:</strong> <span id="unmetDemandPropAddress">—</span></div>
           <div style="margin-top:2px"><strong style="color:var(--txt)">Código:</strong> <span id="unmetDemandPropId">—</span></div>
         </div>
@@ -9884,8 +9885,10 @@ async function openUnmetDemandModal(propertyId, viewType) {
     propertyPrice: p ? (p.price || null) : null,
     propertyCurrency: p ? (p.cur || null) : null
   };
+  const hasProp = !!propertyId;
+  document.getElementById('unmetDemandPropContext').style.display = hasProp ? '' : 'none';
   document.getElementById('unmetDemandPropAddress').textContent = _unmetCtx.propertyAddress || '—';
-  document.getElementById('unmetDemandPropId').textContent = propertyId;
+  document.getElementById('unmetDemandPropId').textContent = propertyId || '—';
   document.getElementById('unmetDemandBudgetLabel').textContent = _UNMET_BUDGET_LABEL[viewType] || 'Presupuesto aproximado';
   _clearUnmetMessages();
   document.getElementById('unmetDemandOverlay').classList.add('open');
