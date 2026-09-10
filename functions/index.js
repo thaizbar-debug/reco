@@ -433,17 +433,21 @@ exports.submitContactRequest = onCall(
       return s.slice(0, max);
     };
 
-    const propertyId = str(raw.propertyId, 'propertyId', 128);
     const kind = raw.kind;
     if (!CONTACT_KINDS.includes(kind)) {
       throw new HttpsError('invalid-argument', 'kind inválido.');
     }
+    const isUnmetDemand = kind === 'demanda_insatisfecha';
+    // propertyId is optional for demanda_insatisfecha (submitted from the map
+    // without a specific listing); required for all other contact kinds.
+    const propertyId = isUnmetDemand
+      ? optStr(raw.propertyId, 128)
+      : str(raw.propertyId, 'propertyId', 128);
     const fromName  = str(raw.fromName, 'fromName', 200);
     const fromEmail = str(raw.fromEmail, 'fromEmail', 200);
     if (!/.+@.+\..+/.test(fromEmail)) {
       throw new HttpsError('invalid-argument', 'fromEmail inválido.');
     }
-    const isUnmetDemand = kind === 'demanda_insatisfecha';
     const message = isUnmetDemand ? optStr(raw.message, 2000) || '' : str(raw.message, 'message', 2000);
     if (!isUnmetDemand && message.length < 10) {
       throw new HttpsError('invalid-argument', 'El mensaje debe tener al menos 10 caracteres.');
