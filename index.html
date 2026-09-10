@@ -2329,7 +2329,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <button class="btn-publish" id="appIngresarBtn" onclick="openAuthModal('login')" style="background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-color:transparent">Ingresar</button>
   <div class="user-wrap" id="appUserWrap" style="display:none">
-    <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)">MV<span class="user-avatar-badge" style="display:none"></span></button>
+    <button class="user-btn" id="appUserInitials" onclick="toggleUserDropdown(this)"><span id="appUserInitialsText">MV</span><span class="user-avatar-badge" style="display:none"></span></button>
     <div class="user-dropdown">
       <div class="user-dropdown-inner">
         <div class="u-header">
@@ -10326,7 +10326,7 @@ auth.onAuthStateChanged(function(user) {
       appUserWrap.style.display    = '';
       const nameEl     = document.getElementById('appUserName');
       const emailEl    = document.getElementById('appUserEmail');
-      const initialsEl = document.getElementById('appUserInitials');
+      const initialsEl = document.getElementById('appUserInitialsText');
       if (nameEl)     nameEl.textContent     = user.displayName || user.email;
       if (emailEl)    emailEl.textContent    = user.email;
       if (initialsEl) initialsEl.textContent = _getInitials(user.displayName || user.email);
