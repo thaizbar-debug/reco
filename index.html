@@ -1101,7 +1101,6 @@ header .spacer{flex:1}
 }
 .plan-icon{font-size:1.8rem;margin-bottom:6px;line-height:1}
 .plan-name{font-size:.8rem;color:var(--muted);font-weight:600;margin-bottom:4px}
-.plan.diamante{grid-column:1/-1}
 .plan-was{font-size:.75rem;color:var(--muted);text-decoration:line-through}
 .plan-price{font-size:1.3rem;font-weight:900;color:var(--blue)}
 .plan-qty{font-size:.75rem;color:var(--muted);margin-top:3px}
@@ -2851,14 +2850,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-qty">50 consultas</div>
           <div class="plan-uv">S/ 7 / llave · Ahorra 30%</div>
         </div>
-        <div class="plan diamante" onclick="selectPlan(this,'Diamante',600,100)">
-          <div class="plan-icon">💎</div>
-          <div class="plan-name">Diamante</div>
-          <div class="plan-was">S/ 1000</div>
-          <div class="plan-price">S/ 600</div>
-          <div class="plan-qty">100 consultas</div>
-          <div class="plan-uv">S/ 6 / llave · Ahorra 40%</div>
-        </div>
+
       </div>
       <button class="btn-pay" id="payBtn" onclick="simulatePay()">Pagar S/ 45</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
