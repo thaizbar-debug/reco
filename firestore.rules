@@ -56,9 +56,10 @@ service cloud.firestore {
       // legitimate field added to the schema must also be added here.
       allow create: if request.auth != null
                     && request.auth.uid == uid
-                    && request.resource.data.keys().hasOnly(['email', 'displayName', 'createdAt', 'favorites', 'keysLeft', 'keyHistory'])
+                    && request.resource.data.keys().hasOnly(['email', 'displayName', 'createdAt', 'favorites', 'keysLeft', 'keyHistory', 'isCorredor'])
                     && (!('keysLeft' in request.resource.data) || request.resource.data.keysLeft == 0)
-                    && (!('keyHistory' in request.resource.data) || request.resource.data.keyHistory.size() == 0);
+                    && (!('keyHistory' in request.resource.data) || request.resource.data.keyHistory.size() == 0)
+                    && (!('isCorredor' in request.resource.data) || request.resource.data.isCorredor is bool);
       allow update: if request.auth != null
                     && request.auth.uid == uid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['favorites', 'email', 'displayName']);

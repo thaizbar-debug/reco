@@ -8221,6 +8221,10 @@ function _applyLandingHash(){
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:16px;cursor:pointer;font-size:.84rem;color:var(--txt)">
+          <input type="checkbox" id="registerIsCorredor" style="margin-top:2px;accent-color:var(--blue);width:16px;height:16px;flex-shrink:0"/>
+          <span>Soy corredor inmobiliario <span style="color:var(--muted);font-weight:400">(recibirás solicitudes de búsqueda de clientes)</span></span>
+        </label>
         <button class="auth-submit" id="registerBtn" onclick="registerWithEmail()">Crear cuenta</button>
         <div class="auth-divider">o registrarse con</div>
         <button class="auth-google-btn" onclick="signInWithGoogle()">
@@ -8482,14 +8486,17 @@ function _sanitizedSeed() {
       favs = raw.filter(x => typeof x === 'string' && x.length < 128).slice(0, _FAVORITES_MAX);
     }
   } catch (e) { favs = []; }
-  return {
+  const seed = {
     email: auth.currentUser.email || null,
     displayName: auth.currentUser.displayName || null,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     favorites: favs,
     keyHistory: [],
     keysLeft: 0,
+    isCorredor: _pendingIsCorredor,
   };
+  _pendingIsCorredor = false;
+  return seed;
 }
 
 async function _pullUserDataFromFirestore(){
@@ -9530,6 +9537,7 @@ function signInWithEmail() {
     .finally(() => setAuthLoading('loginBtn', false));
 }
 let _registerPending = false;
+let _pendingIsCorredor = false;
 function registerWithEmail() {
   if (_registerPending) return;
   const name  = document.getElementById('registerName').value.trim();
@@ -9539,6 +9547,7 @@ function registerWithEmail() {
   if (!name || !email || !pass) return showAuthError('Completa todos los campos.');
   if (pass !== pass2) return showAuthError('Las contraseñas no coinciden.');
   if (pass.length < 8) return showAuthError('La contraseña debe tener al menos 8 caracteres.');
+  _pendingIsCorredor = !!(document.getElementById('registerIsCorredor') && document.getElementById('registerIsCorredor').checked);
   _registerPending = true;
   setAuthLoading('registerBtn', true);
   auth.createUserWithEmailAndPassword(email, pass)
