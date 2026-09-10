@@ -660,6 +660,16 @@ header .spacer{flex:1}
   transition:background .12s,border-color .12s;
 }
 .pill-btn:hover{background:#e2e8f0;border-color:#94a3b8}
+.map-search-zone-btn{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:480;
+  background:var(--light);border:1.5px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,.15);
+  color:var(--txt);padding:8px 18px;border-radius:99px;
+  font-size:.82rem;font-weight:600;cursor:pointer;
+  transition:opacity .2s,transform .2s,background .12s;
+  display:none;
+}
+.map-search-zone-btn.visible{display:block}
+.map-search-zone-btn:hover{background:#e2e8f0;border-color:#94a3b8}
 
 /* ══════════════ MAP PANEL ══════════════ */
 .map-panel{flex:1;position:relative;overflow:hidden}
@@ -2517,6 +2527,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
   <!-- Map panel -->
   <div class="map-panel" id="mapPanel">
     <button class="panel-expand-btn" id="mapExpandBtn" onclick="togglePanelView('map')" title="Expandir mapa" style="position:absolute;top:12px;left:12px;z-index:450">⛶</button>
+    <button class="map-search-zone-btn" id="mapSearchZoneBtn" onclick="_searchInThisZone()">Buscar en esta zona</button>
     <div id="realMap"></div>
 
     <!-- Toolbar unificado (esquina superior derecha) -->
@@ -2934,6 +2945,7 @@ const S = {
   polyMode:false, polyPoints:[], polyFinished:false,
   commuteMode:false, commute:null, commuteTransport:'car', svMode:false,
   poiMode:false, trafficOn:false, catastroOn:false, poiRadius:800,
+  mapMode:'browse', mapDiverged:false,
   unlockedIds:new Set(), pendingUnlockId:null,
   // BUG-02: intención guardada antes de mandar al usuario al login.
   // Se reanuda en auth.onAuthStateChanged y se descarta si cierra el
@@ -3057,7 +3069,11 @@ async function fetchPremium(propertyId){
 }
 
 // ─────────────────────── FILTERS ───────────────────────
+const _LIMA_BOUNDS=typeof L!=='undefined'?L.latLngBounds([[-12.30,-77.22],[-11.75,-76.70]]):null;
 function getFiltered(){
+  const _mapEl=leafletMap&&leafletMap.getContainer();
+  const _boundsValid=!!(_mapEl&&_mapEl.offsetWidth>0&&_mapEl.offsetHeight>0);
+  const _cachedBounds=_boundsValid?leafletMap.getBounds():_LIMA_BOUNDS;
   let list = properties.filter(p=>{
     if(S.query){
       const q=S.query.toLowerCase();
@@ -3096,6 +3112,9 @@ function getFiltered(){
       } else {
         if(commuteMinTo(S.commute, GEO[p.id]) > S.commute.maxMin) return false;
       }
+    }
+    if(S.mapMode==='browse' && _noSpatialToolActive() && _cachedBounds && GEO[p.id]){
+      if(!_cachedBounds.contains(GEO[p.id])) return false;
     }
     return true;
   });
@@ -3384,11 +3403,42 @@ function initMap(){
   _baseLayer.addTo(leafletMap);
   L.control.zoom({position:'bottomright'}).addTo(leafletMap);
   leafletMap.on('click',onMapClick);
+  const _mapC=leafletMap.getContainer();
+  _mapC.addEventListener('mousedown',()=>{_programmaticMove=false;});
+  _mapC.addEventListener('touchstart',()=>{_programmaticMove=false;});
   let _mapMoveTimer=null;
   leafletMap.on('zoomend moveend',()=>{
     clearTimeout(_mapMoveTimer);
-    _mapMoveTimer=setTimeout(()=>{ renderPins(getFiltered()); if(S.catastroOn) _catastroAuto(); },150);
+    _mapMoveTimer=setTimeout(()=>{
+      if(S.mapMode==='browse' && _noSpatialToolActive()){
+        const list=getFiltered();
+        renderCards(list);
+        renderPins(list);
+      } else {
+        renderPins(getFiltered());
+        if(S.mapMode==='text' && !_programmaticMove){ S.mapDiverged=true; _updateMapSearchBtn(); }
+      }
+      _programmaticMove=false;
+      if(S.catastroOn) _catastroAuto();
+    },150);
   });
+}
+let _programmaticMove=false;
+
+function _noSpatialToolActive(){
+  return !S.radiusCenter && !S.polyFinished && !(S.commute && S.commute.maxMin);
+}
+function _updateMapSearchBtn(){
+  const btn=document.getElementById('mapSearchZoneBtn');
+  if(btn) btn.classList.toggle('visible', S.mapMode==='text' && S.mapDiverged);
+}
+function _searchInThisZone(){
+  document.getElementById('searchQ').value='';
+  S.query='';
+  S.mapMode='browse';
+  S.mapDiverged=false;
+  _updateMapSearchBtn();
+  applyFilters();
 }
 
 // ═══════════════════ HERRAMIENTAS DE MAPA (exclusividad mutua) ═══════════════════
@@ -4309,6 +4359,10 @@ function _updateSortNewLabel(){
 function applyFilters(){
   _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
+  const prevMode=S.mapMode;
+  S.mapMode=S.query?'text':'browse';
+  if(S.mapMode!==prevMode) S.mapDiverged=false;
+  _updateMapSearchBtn();
   S.type=document.getElementById('typeSel').value;
   S.bankOnly=document.getElementById('bankOnly').checked;
   S.sort=document.getElementById('sortSel').value;
@@ -4571,6 +4625,7 @@ function _activateRadiusAt(lat,lng,label){
 function _flyToLocation(lat,lng,label){
   _deactivateAllTools();
   S.query='';
+  S.mapMode='browse'; S.mapDiverged=false; _programmaticMove=true; _updateMapSearchBtn();
   const input=document.getElementById('searchQ');
   if(input){ input.value=''; input.placeholder='📍 '+(label||''); }
   if(leafletMap) leafletMap.setView([lat,lng],14,{animate:true,duration:.6});
@@ -4586,7 +4641,9 @@ async function pickGoogleResult(placeId,label){
 function pickSuggestion(val){
   document.getElementById('searchQ').value=val;
   document.getElementById('sgDrop').style.display='none';
-  S.query=val; applyFilters();
+  S.query=val;
+  S.mapMode='text'; S.mapDiverged=false; _updateMapSearchBtn();
+  applyFilters();
   const vl=val.toLowerCase().trim();
   const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
   if(isDistrict) _flyToDistrictGeo(val);
@@ -4594,6 +4651,7 @@ function pickSuggestion(val){
 
 async function _flyToDistrictGeo(district){
   if(!leafletMap) return;
+  _programmaticMove=true;
   try{
     if(HERE_API_KEY){
       try{
@@ -4649,6 +4707,9 @@ function handleSearchKey(e){
   if(e.key==='Escape'){hideSuggestions();}
   if(e.key==='Enter'){
     S.query=document.getElementById('searchQ').value.trim();
+    S.mapMode=S.query?'text':'browse';
+    S.mapDiverged=false;
+    _updateMapSearchBtn();
     hideSuggestions();applyFilters();
     _geoFallback(S.query);
   }
@@ -4877,26 +4938,8 @@ function onPriceInputBlur(){
 }
 
 function clearFilters(){
-  document.getElementById('typeSel').value='all';
-  document.getElementById('bankOnly').checked=false;
-  document.getElementById('minArea').value='';
-  const minATel=document.getElementById('minAreaTerr');if(minATel)minATel.value='';
-  const minFlEl=document.getElementById('minFloors');if(minFlEl)minFlEl.value='';
-  const minFl2=document.getElementById('minFloor');if(minFl2)minFl2.value='';
-  const maxAgEl=document.getElementById('maxAge');if(maxAgEl)maxAgEl.value='';
-  _priceTab='precio'; _priceCur='soles';
-  document.getElementById('tabPrecio').classList.add('active');
-  document.getElementById('tabSqm').classList.remove('active');
-  document.getElementById('curSoles').classList.add('active');
-  document.getElementById('curDolar').classList.remove('active');
-  _resetPriceSliders();
-  buildPriceHistogram();
-  document.querySelectorAll('#opSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
-  document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
-  advFeats.clear();
-  Object.assign(S,{op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
-  applyFilters();
+  _deactivateAllTools();
+  resetAll();
 }
 
 function buildPriceHistogram(){
@@ -4937,7 +4980,8 @@ function resetAll(){
   document.querySelectorAll('#bedsSeg button').forEach((b,i)=>{b.classList.toggle('active',i===0)});
   document.querySelectorAll('.adv-chip').forEach(c=>c.classList.remove('on'));
   advFeats.clear();
-  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false});
+  Object.assign(S,{query:'',op:'Venta',type:'all',beds:0,baths:0,minPark:0,minPrice:0,maxPrice:Infinity,minArea:0,minAreaTerr:0,minFloors:0,minFloor:0,maxAge:Infinity,minSqm:0,maxSqm:Infinity,features:[],bankOnly:false,mapMode:'browse',mapDiverged:false});
+  _updateMapSearchBtn();
   applyFilters();
 }
 
@@ -7090,6 +7134,7 @@ function _applyLandingHash(){
     if(q){
       document.getElementById('searchQ').value=q;
       S.query=q;
+      S.mapMode='text'; S.mapDiverged=false;
       applyFilters();
       const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===q.toLowerCase()&&s.sub==='Distrito');
       if(isDistrict) _flyToDistrictGeo(q);
