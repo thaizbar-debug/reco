@@ -8917,60 +8917,6 @@ async function renderAdminPanel(el){
   el.innerHTML = html;
 }
 
-// Drop a document in /mail for the "Trigger Email from Firestore"
-// extension to pick up and dispatch via SMTP. We don't await this —
-// email delivery is fire-and-forget and shouldn't block the moderation
-// UI. If the write fails we just log; the publication status update is
-// the source of truth.
-function _queueModerationEmail(pub, kind, reason){
-  if(!pub || !pub.userEmail){ console.warn('[reco] no userEmail on pub; skipping email'); return; }
-  const isApproved = kind === 'approved';
-  const subject = isApproved
-    ? '🚀 Tu publicación en Reco fue aprobada'
-    : 'Tu publicación en Reco no pudo ser aprobada';
-  const greeting = pub.userName ? `Hola ${esc(pub.userName.split(' ')[0])},` : 'Hola,';
-  const html = isApproved
-    ? `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-         <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
-         <p>${greeting}</p>
-         <p>Acabamos de aprobar tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>.
-         Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
-         <p style="margin-top:24px">
-           <a href="https://recosac.com/" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
-         </p>
-         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-       </div>`
-    : `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-         <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
-         <p>${greeting}</p>
-         <p>Revisamos tu publicación de <strong>${esc(pub.address || '—')}</strong> en <strong>${esc(pub.district || '—')}</strong>
-         y, por el momento, no podemos publicarla en Reco.</p>
-         ${reason ? `<p><strong>Razón:</strong> ${esc(reason)}</p>` : ''}
-         <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones" → "+ Publicar inmueble".</p>
-         <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-       </div>`;
-  const text = isApproved
-    ? `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} fue aprobada y ya está visible en Reco.\n\n— Equipo Reco`
-    : `${greeting}\n\nTu publicación de ${pub.address || ''} en ${pub.district || ''} no pudo ser aprobada.${reason ? '\nRazón: ' + reason : ''}\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco`;
-  db.collection('mail').add({
-    to: pub.userEmail,
-    message: { subject, html, text }
-  }).catch(e => console.warn('[reco] mail queue failed:', e.message));
-}
-function _queueNotification(pub, kind, reason){
-  if(!pub || !pub.userId) return;
-  db.collection('notifications').add({
-    userId: pub.userId,
-    type: kind === 'approved' ? 'publication_approved' : 'publication_rejected',
-    publicationId: pub.id || '',
-    address: pub.address || pub.title || 'Publicación',
-    district: pub.district || '',
-    reason: (kind === 'rejected' && reason) ? reason : '',
-    read: false,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  }).catch(e => console.warn('[reco] notification queue failed:', e.message));
-}
-
 async function _adminApprove(id){
   if(!_isAdmin()) return;
   try {
@@ -8984,7 +8930,6 @@ async function _adminApprove(id){
       rejectionReason: firebase.firestore.FieldValue.delete()
     });
     _adminAudit('publication.approve', 'publication', id, pub ? { userId: pub.userId||null } : null);
-    if(pub){ _queueModerationEmail(pub, 'approved'); _queueNotification(pub, 'approved'); }
     toast('✓ Publicación aprobada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] approve failed:', e); toast('⚠️ Error al aprobar: '+e.message); }
@@ -9004,7 +8949,6 @@ async function _adminReject(id){
       moderatedBy: auth.currentUser.uid
     });
     _adminAudit('publication.reject', 'publication', id, { reason: reason || '', userId: (pub && pub.userId) || null });
-    if(pub){ _queueModerationEmail(pub, 'rejected', reason); _queueNotification(pub, 'rejected', reason); }
     toast('✕ Publicación rechazada');
     renderAdminPanel(document.getElementById('userSectionContent'));
   } catch(e){ console.error('[reco] reject failed:', e); toast('⚠️ Error al rechazar: '+e.message); }
@@ -9585,7 +9529,9 @@ function signInWithEmail() {
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
+let _registerPending = false;
 function registerWithEmail() {
+  if (_registerPending) return;
   const name  = document.getElementById('registerName').value.trim();
   const email = document.getElementById('registerEmail').value.trim();
   const pass  = document.getElementById('registerPassword').value;
@@ -9593,39 +9539,38 @@ function registerWithEmail() {
   if (!name || !email || !pass) return showAuthError('Completa todos los campos.');
   if (pass !== pass2) return showAuthError('Las contraseñas no coinciden.');
   if (pass.length < 8) return showAuthError('La contraseña debe tener al menos 8 caracteres.');
+  _registerPending = true;
   setAuthLoading('registerBtn', true);
-  let createdUser = null;
   auth.createUserWithEmailAndPassword(email, pass)
-    .then(cred => { createdUser = cred.user; return cred.user.updateProfile({ displayName: name }); })
-    .then(() => {
-      if (createdUser && typeof createdUser.sendEmailVerification === 'function') {
-        var settings = { url: window.location.origin + window.location.pathname };
-        return createdUser.sendEmailVerification(settings).catch(err => {
-          console.warn('[reco] sendEmailVerification failed:', err && err.message);
-        });
-      }
-    })
-    .then(() => {
-      switchAuthTab('login');
-      showAuthSuccess('¡Cuenta creada! Te enviamos un email de verificación a ' + email + '. Revisá tu bandeja de entrada y la carpeta de spam.');
+    .then(cred => {
+      // Auth user created — point of no return. From here, the account
+      // EXISTS and any subsequent failure is a setup issue, not a
+      // registration failure. Close the modal immediately.
+      closeAuthModal();
+      cred.user.updateProfile({ displayName: name }).catch(err => {
+        console.warn('[reco] updateProfile failed (account created, display name pending):', err && err.message);
+      });
+      _getFunctions().httpsCallable('sendVerificationViaResend')({}).catch(err => {
+        console.warn('[reco] sendVerificationViaResend failed (account created, verification pending):', err && err.message);
+      });
     })
     .catch(e => showAuthError(friendlyError(e.code)))
-    .finally(() => setAuthLoading('registerBtn', false));
+    .finally(() => { _registerPending = false; setAuthLoading('registerBtn', false); });
 }
 function sendPasswordReset() {
   const email = document.getElementById('forgotEmail').value.trim();
   if (!email) return showAuthError('Ingresa tu email.');
   setAuthLoading('forgotBtn', true);
-  // Silently swallow auth/user-not-found so a third party can't use the
-  // "forgot password" form to enumerate registered emails. The success
-  // message is phrased neutrally ("if the email is registered…") so the
-  // response looks identical whether the account exists or not. Other
-  // failures (invalid-email, too-many-requests, network) still surface.
-  var settings = { url: window.location.origin + window.location.pathname };
-  auth.sendPasswordResetEmail(email, settings)
-    .catch(e => { if (e.code !== 'auth/user-not-found') throw e; })
-    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña. Revisá tu bandeja de entrada y la carpeta de spam.'))
-    .catch(e => showAuthError(friendlyError(e.code)))
+  // Route through the Cloud Function so the email goes via Resend
+  // (verified domain, SPF/DKIM/DMARC) instead of Firebase Auth's
+  // built-in SMTP which has deliverability issues.
+  // The callable always returns ok:true to prevent email enumeration.
+  _getFunctions().httpsCallable('sendPasswordResetViaResend')({ email })
+    .then(() => showAuthSuccess('Si el email está registrado, te enviamos un enlace para restablecer tu contraseña. Revisá tu bandeja de entrada y spam.'))
+    .catch(e => {
+      console.warn('[reco] sendPasswordResetViaResend failed:', e && e.message);
+      showAuthError('No pudimos procesar tu solicitud. Intentá de nuevo en unos minutos.');
+    })
     .finally(() => setAuthLoading('forgotBtn', false));
 }
 function friendlyError(code) {
@@ -9648,10 +9593,11 @@ function friendlyError(code) {
     'auth/user-not-found':        'Email o contraseña incorrectos.',
     'auth/wrong-password':        'Email o contraseña incorrectos.',
     'auth/invalid-credential':    'Email o contraseña incorrectos.',
-    'auth/email-already-in-use':  'No se pudo crear la cuenta. Si ya tienes una, inicia sesión.',
+    'auth/email-already-in-use':  'Ese correo ya está registrado. Iniciá sesión o recuperá tu contraseña.',
     'auth/invalid-email':         'El email no es válido.',
     'auth/weak-password':         'La contraseña es muy débil (mínimo 8 caracteres).',
     'auth/too-many-requests':     'Demasiados intentos. Intenta más tarde.',
+    'auth/operation-not-allowed': 'El registro con email no está habilitado en este momento.',
     'auth/popup-closed-by-user':  'Cerraste la ventana de Google.',
     'auth/network-request-failed':'Error de conexión. Verifica tu internet.',
     'auth/requires-recent-login': 'Por seguridad, confirma tu contraseña actual para continuar.',
@@ -9832,83 +9778,6 @@ function _showContactSuccess(msg) {
   el.style.display = 'block';
   document.getElementById('contactError').style.display = 'none';
 }
-// Queue an email to the publication owner via /mail. Fire-and-forget:
-// if the mail write fails we log and let the UI carry on — the
-// contactRequest itself already succeeded.
-function _queueContactEmailToOwner(o){
-  if (!o || !o.ownerEmail) return;
-  const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || '—';
-  const kindLabel = o.kind === 'arrendador' ? 'alquilar' : 'comprar';
-  const greeting = o.ownerName ? `Hola ${esc(o.ownerName.split(' ')[0])},` : 'Hola,';
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-    <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
-    <p>${greeting}</p>
-    <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${esc(propLine)}</strong>.</p>
-    <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
-      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${esc(o.fromName || '—')}</p>
-      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${esc(o.fromEmail)}">${esc(o.fromEmail)}</a></p>
-      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${esc(o.fromPhone)}</p>` : ''}
-      <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
-      <p style="margin:4px 0 0;white-space:pre-wrap">${esc(o.message)}</p>
-    </div>
-    <p>Responde directamente al email del interesado para coordinar.</p>
-    <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
-  </div>`;
-  const text = `${o.ownerName ? 'Hola '+o.ownerName.split(' ')[0]+',' : 'Hola,'}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\n`
-    + `Nombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
-    + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
-    + `\nMensaje:\n${o.message}\n\n— Equipo Reco`;
-  db.collection('mail').add({
-    to: o.ownerEmail,
-    replyTo: o.fromEmail || null,
-    fromUserId: auth.currentUser.uid,
-    message: {
-      subject: `📩 Nuevo interesado en tu inmueble (${propLine})`,
-      html, text
-    }
-  }).catch(e => console.warn('[reco] contact-owner mail queue failed:', e.message));
-}
-function _queueUnmetDemandEmail(o) {
-  if (!o) return;
-  const propLine = [o.propertyAddress, o.propertyDistrict].filter(Boolean).join(', ') || o.propertyId;
-  const viewLabel = o.viewType === 'alquilar' ? 'Alquilar'
-                  : o.viewType === 'historico' ? 'Histórico' : 'Comprar';
-  const html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
-    <h2 style="color:#0891b2">Demanda insatisfecha</h2>
-    <p>Un usuario reportó que no encontró lo que buscaba.</p>
-    <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
-      <p style="margin:0 0 6px"><strong>Nombre:</strong> ${esc(o.fromName || '—')}</p>
-      <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${esc(o.fromEmail)}">${esc(o.fromEmail)}</a></p>
-      ${o.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${esc(o.fromPhone)}</p>` : ''}
-      <p style="margin:0 0 6px"><strong>Zona de referencia:</strong> ${esc(o.referenceZone)}</p>
-      <p style="margin:0 0 6px"><strong>Tipo de propiedad:</strong> ${esc(o.propertyTypeWanted)}</p>
-      ${o.budgetReference ? `<p style="margin:0 0 6px"><strong>Presupuesto:</strong> ${esc(o.budgetReference)}</p>` : ''}
-      ${o.message ? `<p style="margin:12px 0 0"><strong>Mensaje:</strong></p><p style="margin:4px 0 0;white-space:pre-wrap">${esc(o.message)}</p>` : ''}
-    </div>
-    <div style="background:#fef3c7;border-radius:10px;padding:14px 16px;margin:16px 0">
-      <p style="margin:0 0 6px"><strong>Vista:</strong> ${esc(viewLabel)}</p>
-      <p style="margin:0 0 6px"><strong>Propiedad de origen:</strong> ${esc(propLine)}</p>
-      <p style="margin:0"><strong>ID:</strong> ${esc(o.propertyId)}</p>
-    </div>
-    <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Reco (notificación automática)</p>
-  </div>`;
-  const text = `Demanda insatisfecha\n\nNombre: ${o.fromName || '—'}\nEmail: ${o.fromEmail}\n`
-    + (o.fromPhone ? `Teléfono: ${o.fromPhone}\n` : '')
-    + `Zona: ${o.referenceZone}\nTipo: ${o.propertyTypeWanted}\n`
-    + (o.budgetReference ? `Presupuesto: ${o.budgetReference}\n` : '')
-    + (o.message ? `\nMensaje:\n${o.message}\n` : '')
-    + `\nVista: ${viewLabel}\nPropiedad: ${propLine} (${o.propertyId})\n\n— Reco`;
-  db.collection('mail').add({
-    to: _RECO_SUPPORT_EMAIL,
-    replyTo: o.fromEmail || null,
-    fromUserId: auth.currentUser.uid,
-    message: {
-      subject: `🔍 Demanda insatisfecha — ${o.propertyTypeWanted} en ${o.referenceZone}`,
-      html, text
-    }
-  }).catch(e => console.warn('[reco] unmet-demand mail queue failed:', e.message));
-}
-
 async function submitContactRequest() {
   if (!auth.currentUser) { openAuthModal('login', {notice:'✅ Sesión iniciada. Pulsá "Enviar" para mandar tu consulta.'}); return; }
   if (!_contactCtx) return;
@@ -9945,23 +9814,8 @@ async function submitContactRequest() {
       fromPhone:           phone || null,
       message,
     });
-    // TODO: remover TEMP_CONTACT_EMAIL_OVERRIDE y volver a usar
-    // publicationOwnerEmail cuando se confirme el flujo definitivo.
-    // Lógica original:
-    //   const _ownerEmail = _contactCtx.publicationOwnerEmail || _RECO_SUPPORT_EMAIL;
-    //   ownerName: _contactCtx.publicationOwnerEmail ? _contactCtx.publicationOwnerName : 'Equipo Reco',
-    const TEMP_CONTACT_EMAIL_OVERRIDE = 'sebastiand@recosac.com';
-    _queueContactEmailToOwner({
-      ownerEmail:  TEMP_CONTACT_EMAIL_OVERRIDE,
-      ownerName:   'Equipo Reco',
-      propertyAddress:  _contactCtx.propertyAddress,
-      propertyDistrict: _contactCtx.propertyDistrict,
-      kind:        _contactCtx.kind,
-      fromName:    name,
-      fromEmail:   email,
-      fromPhone:   phone,
-      message
-    });
+    // Contact-owner email is now queued server-side inside the
+    // submitContactRequest Cloud Function (via Resend SMTP).
     document.getElementById('contactForm').style.display = 'none';
     _showContactSuccess('✅ ¡Solicitud enviada! Te responderemos pronto al email registrado.');
     toast('✅ Solicitud enviada');
@@ -10203,9 +10057,7 @@ function _adjustHeadersForBanner() {
 window.addEventListener('resize', _adjustHeadersForBanner);
 document.addEventListener('DOMContentLoaded', _adjustHeadersForBanner);
 
-// Resend the verification email. Firebase rate-limits this server-side
-// so we don't add a hand-rolled cooldown — the "requests-blocked"
-// error simply surfaces as a toast.
+// Resend the verification email via the Cloud Function (Resend SMTP).
 let _verifyResendPending = false;
 async function resendVerificationEmail() {
   if (_verifyResendPending) return;
@@ -10217,16 +10069,17 @@ async function resendVerificationEmail() {
   const originalLabel = btn ? btn.textContent : null;
   if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
   try {
-    var settings = { url: window.location.origin + window.location.pathname };
-    await user.sendEmailVerification(settings);
-    toast('✉️ Te reenviamos el link. Revisá tu bandeja de entrada y spam.');
+    const result = await _getFunctions().httpsCallable('sendVerificationViaResend')({});
+    if (result.data && result.data.alreadyVerified) {
+      toast('Tu email ya está verificado.');
+      await user.reload();
+      _renderVerifyBanner(auth.currentUser);
+    } else {
+      toast('Te reenviamos el link. Revisá tu bandeja de entrada.');
+    }
   } catch (e) {
     console.warn('[reco] resend verification failed:', e && e.code, e && e.message);
-    if (e && e.code === 'auth/too-many-requests') {
-      toast('Demasiados intentos. Esperá unos minutos e intentá de nuevo.');
-    } else {
-      toast('No pudimos enviar el link: ' + ((e && e.message) || 'error desconocido'));
-    }
+    toast('No pudimos enviar el link. Intentá de nuevo en un momento.');
   } finally {
     _verifyResendPending = false;
     if (btn && originalLabel) { btn.disabled = false; btn.textContent = originalLabel; }

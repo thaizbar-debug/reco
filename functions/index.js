@@ -36,6 +36,7 @@ const openaiKey = defineSecret('OPENAI_API_KEY');
 const SEED_ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
 
 const REGION = 'southamerica-east1';
+const CONTINUE_URL = 'https://recosac.com/';
 const UNLOCK_COST = 1;
 // Publicar es gratuito mientras la pasarela de pagos no esté conectada.
 // Para volver a cobrar, poner el costo aquí y el mismo número en
@@ -57,6 +58,7 @@ const UNMET_DEMAND_PROPERTY_TYPES = ['Departamento', 'Casa', 'Terreno', 'Oficina
 // dataset. Hitting the cap throws resource-exhausted (client shows
 // "demasiadas consultas, espera un momento").
 const HIST_DETAIL_RATE_LIMIT_PER_HOUR = 500;
+const RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR = 3;
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -83,6 +85,13 @@ function _logAppCheck(request, fn) {
       origin: headers['origin'],
     });
   }
+}
+
+function _esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c =>
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;'
+  );
 }
 
 // Any callable that changes state or reads premium data must go through
@@ -488,6 +497,8 @@ exports.submitContactRequest = onCall(
       );
     }
 
+    const pubOwnerId = optStr(raw.publicationOwnerId, 128);
+
     await reqRef.create({
       propertyId,
       propertyAddress:     optStr(raw.propertyAddress, 500),
@@ -495,7 +506,7 @@ exports.submitContactRequest = onCall(
       propertyOp:          optStr(raw.propertyOp, 40),
       propertyPrice:       (typeof raw.propertyPrice === 'number' && isFinite(raw.propertyPrice)) ? raw.propertyPrice : null,
       propertyCurrency:    optStr(raw.propertyCurrency, 10),
-      publicationOwnerId:    isUnmetDemand ? null : optStr(raw.publicationOwnerId, 128),
+      publicationOwnerId:    isUnmetDemand ? null : pubOwnerId,
       publicationOwnerEmail: isUnmetDemand ? null : optStr(raw.publicationOwnerEmail, 200),
       kind,
       source:              optStr(raw.source, 40),
@@ -508,6 +519,60 @@ exports.submitContactRequest = onCall(
       status:              'new',
       createdAt:           FieldValue.serverTimestamp(),
     });
+
+    // Queue an email to the publication owner via /mail → Resend.
+    // Only user-published properties have an owner; the ~2,663 static
+    // properties have no publication owner so no email goes out for those.
+    if (pubOwnerId) {
+      try {
+        const ownerUser = await getAuth().getUser(pubOwnerId);
+        if (ownerUser.email) {
+          const propLine = [optStr(raw.propertyAddress, 500), optStr(raw.propertyDistrict, 100)]
+            .filter(Boolean).join(', ') || '—';
+          const kindLabel = kind === 'arrendador' ? 'alquilar' : 'comprar';
+          const ownerName = (ownerUser.displayName || '').split(' ')[0];
+          const ownerGreeting = ownerName ? `Hola ${_esc(ownerName)},` : 'Hola,';
+          await db.collection('mail').add({
+            to: ownerUser.email,
+            replyTo: fromEmail,
+            message: {
+              subject: `Nuevo interesado en tu inmueble (${propLine})`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
+  <p>${ownerGreeting}</p>
+  <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${_esc(propLine)}</strong>.</p>
+  <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
+    <p style="margin:0 0 6px"><strong>Nombre:</strong> ${_esc(fromName)}</p>
+    <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${_esc(fromEmail)}">${_esc(fromEmail)}</a></p>
+    ${raw.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${_esc(optStr(raw.fromPhone, 40))}</p>` : ''}
+    <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
+    <p style="margin:4px 0 0;white-space:pre-wrap">${_esc(message)}</p>
+  </div>
+  <p>Responde directamente al email del interesado para coordinar.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+              text: `${ownerName ? 'Hola ' + ownerName + ',' : 'Hola,'}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\nNombre: ${fromName}\nEmail: ${fromEmail}\n${raw.fromPhone ? 'Teléfono: ' + optStr(raw.fromPhone, 40) + '\n' : ''}\nMensaje:\n${message}\n\n— Equipo Reco`,
+            },
+          });
+        }
+      } catch (e) {
+        logger.warn('[submitContactRequest] contact-owner email failed', {
+          reqId, ownerEmail: (e && e.code === 'auth/user-not-found') ? null : pubOwnerId,
+          err: e && e.message,
+        });
+        try {
+          await db.collection('adminAuditLog').add({
+            adminUid: 'system',
+            adminEmail: null,
+            action: 'mail.contactOwnerFailed',
+            targetType: 'contactRequest',
+            targetId: reqId,
+            extras: { pubOwnerId, err: (e && e.message || '').slice(0, 300) },
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        } catch (_) { /* best effort */ }
+      }
+    }
 
     return { contactRequestId: reqId };
   }
@@ -959,7 +1024,6 @@ exports.grantKeys = onCall(
   }
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
 // MEJ-04: generateListingCopy — AI-powered listing description
 // Uses fetch() instead of the openai SDK to avoid an extra dependency in the
 // Cloud Function bundle; functionally identical (gpt-4o-mini, temperature 0.7,
@@ -1087,5 +1151,277 @@ Reglas:
       titulo: String(parsed.titulo || '').trim().slice(0, 200),
       descripcion: String(parsed.descripcion || '').trim().slice(0, 5000),
     };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendPasswordResetViaResend — generate a password-reset link with the Admin
+// SDK and queue a branded email through the /mail collection (→ Resend SMTP).
+//
+// Why not just firebase.auth().sendPasswordResetEmail() from the client?
+// That uses Firebase Auth's built-in SMTP, which sends from
+// noreply@reco-5a5dd.firebaseapp.com — a domain the project does not
+// control and cannot add SPF/DKIM/DMARC records to. The result: reset
+// emails land in spam or never arrive at all (BUG-06). By generating the
+// action link server-side and dispatching it through Resend (which sends
+// from no-reply@recosac.com with verified SPF/DKIM/DMARC), delivery is
+// reliable and immediate.
+//
+// Does NOT require authentication (the user forgot their password and
+// can't log in). App Check enforcement prevents bot abuse.
+//
+// Anti-enumeration: always returns { ok: true } regardless of whether the
+// email is registered, so the response is identical for existing and
+// non-existing accounts.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('sendPasswordResetViaResend');
+//   await fn({ email: 'user@example.com' });
+// ─────────────────────────────────────────────────────────────────────────────
+exports.sendPasswordResetViaResend = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'sendPasswordResetViaResend');
+    const emailRaw = request.data && request.data.email;
+    if (!emailRaw || typeof emailRaw !== 'string') {
+      throw new HttpsError('invalid-argument', 'Email requerido.');
+    }
+    const email = emailRaw.trim().toLowerCase();
+    if (!/.+@.+\..+/.test(email)) {
+      throw new HttpsError('invalid-argument', 'Email inválido.');
+    }
+
+    // Rate limit: at most RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR reset
+    // emails per address per rolling hour. Uses /mail docs with
+    // _resetFor == email as the counter — the same docs the extension
+    // picks up, so no extra collection needed. The response is always
+    // { ok: true } regardless of whether the limit was hit, preserving
+    // anti-enumeration (caller cannot tell if the email exists or was
+    // throttled).
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    const recentResets = await db.collection('mail')
+      .where('_resetFor', '==', email)
+      .where('_queuedAt', '>', oneHourAgo)
+      .count().get();
+    if (recentResets.data().count >= RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR) {
+      logger.warn('[sendPasswordResetViaResend] rate-limit hit', {
+        email, recent: recentResets.data().count,
+        limit: RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR,
+      });
+      return { ok: true };
+    }
+
+    try {
+      const link = await getAuth().generatePasswordResetLink(email, { url: CONTINUE_URL });
+      await db.collection('mail').add({
+        to: email,
+        _resetFor: email,
+        _queuedAt: new Date(),
+        message: {
+          subject: 'Restablecé tu contraseña en Reco',
+          html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Restablecé tu contraseña</h2>
+  <p>Recibimos un pedido para restablecer la contraseña de tu cuenta en Reco.</p>
+  <p style="margin-top:24px">
+    <a href="${link}" style="background:#0891b2;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Restablecer contraseña</a>
+  </p>
+  <p style="margin-top:24px;color:#64748b;font-size:.85rem">Si no pediste este cambio, ignorá este email. El enlace expira en 1 hora.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+          text: `Recibimos un pedido para restablecer tu contraseña en Reco.\n\nHacé clic en el siguiente enlace:\n${link}\n\nSi no pediste este cambio, ignorá este email. El enlace expira en 1 hora.\n\n— Equipo Reco`,
+        },
+      });
+    } catch (e) {
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email') {
+        return { ok: true };
+      }
+      logger.warn('[sendPasswordResetViaResend] failed', {
+        email, code: e.code, err: e.message,
+      });
+      throw new HttpsError('internal', 'No pudimos procesar tu solicitud. Intentá de nuevo.');
+    }
+    return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendVerificationViaResend — generate an email-verification link with the
+// Admin SDK and queue a branded email through /mail (→ Resend SMTP).
+//
+// Same motivation as sendPasswordResetViaResend: Firebase Auth's built-in
+// verification email comes from firebaseapp.com which has no SPF/DKIM for
+// this project's domain, so it often lands in spam.
+//
+// Requires authentication (the user just signed up and is logged in, but
+// their email is not yet verified). Returns early if already verified.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('sendVerificationViaResend');
+//   await fn();
+// ─────────────────────────────────────────────────────────────────────────────
+exports.sendVerificationViaResend = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'sendVerificationViaResend');
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+    }
+    const token = request.auth.token || {};
+    if (token.email_verified === true) {
+      return { ok: true, alreadyVerified: true };
+    }
+    const email = token.email;
+    if (!email) {
+      throw new HttpsError('failed-precondition', 'Tu cuenta no tiene email asociado.');
+    }
+    try {
+      const link = await getAuth().generateEmailVerificationLink(email, { url: CONTINUE_URL });
+      const user = await getAuth().getUser(request.auth.uid);
+      const name = (user.displayName || '').split(' ')[0];
+      const greeting = name ? `Hola ${_esc(name)},` : 'Hola,';
+      await db.collection('mail').add({
+        to: email,
+        message: {
+          subject: 'Verificá tu email en Reco',
+          html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Verificá tu email</h2>
+  <p>${greeting}</p>
+  <p>Para completar tu registro en Reco y poder publicar, verificá tu dirección de email:</p>
+  <p style="margin-top:24px">
+    <a href="${link}" style="background:#0891b2;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Verificar email</a>
+  </p>
+  <p style="margin-top:24px;color:#64748b;font-size:.85rem">Si no creaste una cuenta en Reco, ignorá este email.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+          text: `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nPara completar tu registro en Reco, verificá tu email:\n${link}\n\nSi no creaste una cuenta, ignorá este email.\n\n— Equipo Reco`,
+        },
+      });
+    } catch (e) {
+      logger.warn('[sendVerificationViaResend] failed', {
+        uid: request.auth.uid, code: e.code, err: e.message,
+      });
+      throw new HttpsError('internal', 'No pudimos enviar el email de verificación. Intentá de nuevo.');
+    }
+    return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onPublicationModerated — Firestore trigger on /publications/{pubId}.
+//
+// When a publication's status transitions to 'approved' or 'rejected',
+// this trigger automatically queues a notification email to the publisher
+// via the /mail collection (→ Resend SMTP).
+//
+// Replaces the old client-side _queueModerationEmail() which was fire-and-
+// forget: if the admin's browser dropped the Firestore write, the user
+// never got notified. This trigger fires server-side and is guaranteed to
+// run as long as the status update itself succeeds.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.onPublicationModerated = onDocumentWritten(
+  { region: REGION, document: 'publications/{pubId}' },
+  async (event) => {
+    const after = event.data && event.data.after && event.data.after.data();
+    if (!after) return;
+    const before = event.data && event.data.before && event.data.before.data();
+    const newStatus = after.status;
+    const oldStatus = before && before.status;
+    const pubId = event.params && event.params.pubId;
+
+    if (newStatus === oldStatus) return;
+    if (newStatus !== 'approved' && newStatus !== 'rejected') return;
+
+    // Idempotency: skip if we already notified the user about this exact
+    // status. Prevents duplicate emails on approve → unapprove → approve
+    // cycles. A re-approval after rejection IS a new event and sends a
+    // new email (the _lastNotifiedStatus would be 'rejected', not
+    // 'approved'). We write _lastNotifiedStatus after queuing the email.
+    if (after._lastNotifiedStatus === newStatus) {
+      logger.info('[onPublicationModerated] already notified, skipping', {
+        pubId, status: newStatus,
+      });
+      return;
+    }
+
+    // Resolve the recipient email. Prefer the publication's userEmail
+    // field (set at publish time), but fall back to Firebase Auth as
+    // the authoritative source. This handles edge cases where the
+    // publication was created before userEmail was stored, or where the
+    // user changed their email after publishing.
+    let userEmail = after.userEmail;
+    let userName = after.userName;
+    if (!userEmail && after.userId) {
+      try {
+        const authUser = await getAuth().getUser(after.userId);
+        userEmail = authUser.email;
+        userName = userName || authUser.displayName;
+      } catch (e) {
+        logger.warn('[onPublicationModerated] Auth lookup failed', {
+          pubId, userId: after.userId, err: e.message,
+        });
+      }
+    }
+    if (!userEmail) {
+      logger.warn('[onPublicationModerated] no email for publication owner', {
+        pubId, userId: after.userId,
+      });
+      return;
+    }
+
+    const name = (userName || '').split(' ')[0];
+    const greeting = name ? `Hola ${_esc(name)},` : 'Hola,';
+    const address = after.address || '—';
+    const district = after.district || '—';
+
+    let subject, html, text;
+    if (newStatus === 'approved') {
+      subject = 'Tu publicación en Reco fue aprobada';
+      html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
+  <p>${greeting}</p>
+  <p>Acabamos de aprobar tu publicación de <strong>${_esc(address)}</strong> en <strong>${_esc(district)}</strong>.
+  Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
+  <p style="margin-top:24px">
+    <a href="${CONTINUE_URL}" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
+  </p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`;
+      text = `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nTu publicación de ${address} en ${district} fue aprobada y ya está visible en Reco.\n\n— Equipo Reco`;
+    } else {
+      const reason = after.rejectionReason || '';
+      subject = 'Tu publicación en Reco no pudo ser aprobada';
+      html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
+  <p>${greeting}</p>
+  <p>Revisamos tu publicación de <strong>${_esc(address)}</strong> en <strong>${_esc(district)}</strong>
+  y, por el momento, no podemos publicarla en Reco.</p>
+  ${reason ? `<p><strong>Razón:</strong> ${_esc(reason)}</p>` : ''}
+  <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones".</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`;
+      text = `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nTu publicación de ${address} en ${district} no pudo ser aprobada.${reason ? '\nRazón: ' + reason : ''}\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco`;
+    }
+
+    try {
+      const mailRef = db.collection('mail').doc();
+      const batch = db.batch();
+      batch.set(mailRef, { to: userEmail, message: { subject, html, text } });
+      batch.update(event.data.after.ref, { _lastNotifiedStatus: newStatus });
+      await batch.commit();
+    } catch (e) {
+      logger.warn('[onPublicationModerated] mail queue failed', {
+        pubId, err: e.message,
+      });
+    }
   }
 );

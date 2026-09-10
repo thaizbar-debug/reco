@@ -17,6 +17,14 @@
       ]
     },
     {
+      "collectionGroup": "mail",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "_resetFor", "order": "ASCENDING" },
+        { "fieldPath": "_queuedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
       "fields": [
