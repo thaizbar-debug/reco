@@ -5644,6 +5644,110 @@ async function simulatePay() {
           ],
         },
       },
+      appearance: {
+        theme: 'default',
+        hiddenCulqiLogo: false,
+        hiddenBannerContent: false,
+        hiddenBanner: false,
+        hiddenToolBarAmount: false,
+        hiddenEmail: false,
+        menuType: 'sliderTop',
+        buttonCardPayText: 'Pagar',
+        variables: {
+          fontFamily: "'Segoe UI', system-ui, sans-serif",
+          fontWeightNormal: '500',
+          borderRadius: '10px',
+          colorBackground: '#ffffff',
+          colorPrimary: '#0891b2',
+          colorPrimaryText: '#ffffff',
+          colorText: '#0f172a',
+          colorTextSecondary: '#64748b',
+          colorTextPlaceholder: '#94a3b8',
+          colorIconTab: '#0891b2',
+          colorLogo: 'dark',
+        },
+        rules: {
+          '.Culqi-Main-Container': {
+            background: '#ffffff',
+            fontFamily: "'Segoe UI', system-ui, sans-serif",
+          },
+          '.Culqi-ToolBanner': {
+            background: '#0891b2',
+            color: 'white',
+          },
+          '.Culqi-Toolbar-Price': {
+            color: 'white',
+          },
+          '.Culqi-Toolbar-Price .Culqi-Icon': {
+            color: 'white',
+          },
+          '.Culqi-Main-Method': {
+            background: '#ffffff',
+          },
+          '.Culqi-Button': {
+            background: '#0891b2',
+            borderRadius: '10px',
+          },
+          '.Culqi-Input': {
+            border: '1px solid #e2e8f0',
+            borderRadius: '8px',
+            color: '#0f172a',
+          },
+          '.Culqi-Input:focus': {
+            border: '2px solid #0891b2',
+          },
+          '.Culqi-Input.input-valid': {
+            border: '1px solid #10b981',
+            background: '#ffffff',
+            color: '#0f172a',
+          },
+          '.Culqi-Input-Icon-Spinner': {
+            color: '#0891b2',
+          },
+          '.Culqi-Label': {
+            color: '#64748b',
+          },
+          '.Culqi-Text-Link': {
+            color: '#0891b2',
+          },
+          '.Culqi-Text-Link .Culqi-Icon': {
+            color: '#0891b2',
+          },
+          '.Culqi-message': {
+            color: '#0f172a',
+          },
+          '.Culqi-message-error': {
+            background: '#fef2f2',
+            color: '#ef4444',
+          },
+          '.Culqi-message-error .Culqi-Icon': {
+            color: '#ef4444',
+          },
+          '.Culqi-message-warning': {
+            background: '#fffbeb',
+            color: '#f59e0b',
+          },
+          '.Culqi-message-info': {
+            background: '#ecfeff',
+            color: '#0891b2',
+          },
+          '.Culqi-Menu': {
+            color: '#64748b',
+          },
+          '.Culqi-Menu .Culqi-Icon': {
+            color: '#64748b',
+          },
+          '.Culqi-Menu-item.active': {
+            color: '#0891b2',
+          },
+          '.Culqi-Menu-item.active .Culqi-Icon': {
+            color: '#0891b2',
+          },
+          '.Culqi-Menu-item.active .Culqi-Bar': {
+            background: '#0891b2',
+          },
+        },
+      },
     });
     _culqiInstance.culqi = function() {
       if (_culqiInstance.token) {
