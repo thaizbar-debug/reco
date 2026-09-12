@@ -5625,8 +5625,11 @@ async function simulatePay() {
       settings: { title: 'Reco', currency: 'PEN', amount: plan.price * 100, order: orderId },
       client: { email: auth.currentUser.email || '' },
       options: {
-        lang: 'auto', modal: true,
+        lang: 'es',
+        modal: true,
+        installments: false,
         paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
+        paymentMethodsSort: ['tarjeta', 'yape'],
       },
     });
     _culqiInstance.culqi = function() {
