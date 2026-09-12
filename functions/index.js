@@ -1060,7 +1060,7 @@ exports.createCulqiOrder = onCall(
           currency_code: 'PEN',
           description: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
           order_number: orderNumber,
-          client_details: { first_name: firstName, last_name: lastName, email, phone_number: '' },
+          client_details: { first_name: firstName, last_name: lastName, email, phone_number: '999999999' },
           expiration_date: expirationDate,
           confirm: false,
         }),
