@@ -5606,39 +5606,50 @@ function selectPlan(el, name, price, qty) {
   if (payBtn) { payBtn.textContent = 'Pagar S/ ' + price; payBtn.disabled = false; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
 }
 
-function simulatePay() {
+var _payInProgress = false;
+
+async function simulatePay() {
   if (!auth.currentUser) { toast('⚠️ Debes iniciar sesión para comprar llaves'); openAuthModal('login', openModal); return; }
   if (typeof CulqiCheckout === 'undefined') { toast('⚠️ Error cargando la pasarela. Recarga la página.'); return; }
+  if (_payInProgress) return;
   var plan = S.selectedPlan;
-  _culqiInstance = new CulqiCheckout(_CULQI_PUBLIC_KEY, {
-    settings: {
-      title: 'Reco',
-      currency: 'PEN',
-      amount: plan.price * 100,
-    },
-    client: {
-      email: auth.currentUser.email || '',
-    },
-    options: {
-      lang: 'auto',
-      modal: true,
-      paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
-    },
-  });
-  _culqiInstance.culqi = function() {
-    if (_culqiInstance.token) {
-      var tokenId = _culqiInstance.token.id;
-      _culqiInstance.close();
-      _processPayment(tokenId);
-    } else if (_culqiInstance.error) {
-      toast('⚠️ ' + (_culqiInstance.error.user_message || 'Error en el pago.'));
-    }
-  };
-  _culqiInstance.open();
+  var payBtn = document.getElementById('payBtn');
+  if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'Preparando…'; }
+  try {
+    // Create a Culqi order first — required for Yape support
+    var orderFn = _getFunctions().httpsCallable('createCulqiOrder');
+    var orderResult = await orderFn({ planName: plan.name, amount: plan.price * 100 });
+    var orderId = orderResult.data.orderId;
+
+    _culqiInstance = new CulqiCheckout(_CULQI_PUBLIC_KEY, {
+      settings: { title: 'Reco', currency: 'PEN', amount: plan.price * 100, order: orderId },
+      client: { email: auth.currentUser.email || '' },
+      options: {
+        lang: 'auto', modal: true,
+        paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
+      },
+    });
+    _culqiInstance.culqi = function() {
+      if (_culqiInstance.token) {
+        _culqiInstance.close();
+        _processPayment({ tokenId: _culqiInstance.token.id });
+      } else if (_culqiInstance.order) {
+        _culqiInstance.close();
+        _processPayment({ orderId: _culqiInstance.order.id });
+      } else if (_culqiInstance.error) {
+        toast('⚠️ ' + (_culqiInstance.error.user_message || 'Error en el pago.'));
+        if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; }
+      }
+    };
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; }
+    _culqiInstance.open();
+  } catch(e) {
+    toast('⚠️ ' + (e.message || 'Error al preparar el pago.'));
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
+  }
 }
 
-var _payInProgress = false;
-async function _processPayment(tokenId) {
+async function _processPayment(payload) {
   if (_payInProgress) return;
   _payInProgress = true;
   var payBtn = document.getElementById('payBtn');
@@ -5646,7 +5657,7 @@ async function _processPayment(tokenId) {
   try {
     var plan = S.selectedPlan;
     var fn = _getFunctions().httpsCallable('chargeWithCulqi');
-    var result = await fn({ tokenId: tokenId, planName: plan.name, amount: plan.price * 100 });
+    var result = await fn({ tokenId: payload.tokenId || null, orderId: payload.orderId || null, planName: plan.name, amount: plan.price * 100 });
     if (result.data && typeof result.data.keysLeft === 'number') {
       S.keysLeft = result.data.keysLeft;
       document.querySelectorAll('#keyCount,#homeKeyCount').forEach(function(el) { el.textContent = S.keysLeft; });
