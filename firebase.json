@@ -1,4 +1,25 @@
 {
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json", "firestore.rules", "firestore.indexes.json",
+      "storage.rules", ".firebaserc", "*.local",
+      "**/.*", "**/node_modules/**",
+      "functions/**", "tests/**", "data/**", "tools/**",
+      "*.sh", "*.py", "*.md", "*.log",
+      "Ultima version.html", "Versión final Thaiz - sin Sebastian.html",
+      "reco-busqueda.html", "reco-home.html", "demo-pins.html"
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+      }
+    ],
+    "rewrites": [
+      { "source": "**", "destination": "/index.html" }
+    ]
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
