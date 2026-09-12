@@ -14,7 +14,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
-<script src="https://checkout.culqi.com/js/v4"></script>
+<script src="https://js.culqi.com/checkout-js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 // HERE API key. Owned by the thaizbar@gmail.com account on
@@ -5596,7 +5596,8 @@ function closeWelcomeModal() {
 
 // Public key from app.culqi.com → Integración → API keys.
 // Set to pk_live_... for production or pk_test_... for sandbox.
-var _CULQI_PUBLIC_KEY = '';
+var _CULQI_PUBLIC_KEY = 'pk_live_tXxwBBmY9ngPgZRH';
+var _culqiInstance = null;
 
 function selectPlan(el, name, price, qty) {
   document.querySelectorAll('.plan').forEach(p => p.classList.remove('sel'));
@@ -5608,29 +5609,33 @@ function selectPlan(el, name, price, qty) {
 
 function simulatePay() {
   if (!auth.currentUser) { toast('⚠️ Debes iniciar sesión para comprar llaves'); openAuthModal('login', openModal); return; }
-  if (!window.Culqi) { toast('⚠️ Error cargando la pasarela. Recarga la página.'); return; }
+  if (typeof CulqiCheckout === 'undefined') { toast('⚠️ Error cargando la pasarela. Recarga la página.'); return; }
   var plan = S.selectedPlan;
-  Culqi.publicKey = _CULQI_PUBLIC_KEY;
-  Culqi.settings({
-    title: 'Reco',
-    currency: 'PEN',
-    description: 'Pack ' + plan.name + ' — ' + plan.qty + ' llave' + (plan.qty !== 1 ? 's' : ''),
-    amount: plan.price * 100,
+  _culqiInstance = new CulqiCheckout(_CULQI_PUBLIC_KEY, {
+    settings: {
+      title: 'Reco',
+      currency: 'PEN',
+      amount: plan.price * 100,
+    },
+    client: {
+      email: auth.currentUser.email || '',
+    },
+    options: {
+      lang: 'auto',
+      modal: true,
+      paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
+    },
   });
-  Culqi.options({ lang: 'es' });
-  Culqi.open();
-}
-
-// Global callback — Culqi.js calls this after the user submits the card form.
-function culqi() {
-  if (Culqi.error) {
-    toast('⚠️ ' + (Culqi.error.user_message || 'Error en el pago.'));
-    return;
-  }
-  if (Culqi.token) {
-    Culqi.close();
-    _processPayment(Culqi.token.id);
-  }
+  _culqiInstance.culqi = function() {
+    if (_culqiInstance.token) {
+      var tokenId = _culqiInstance.token.id;
+      _culqiInstance.close();
+      _processPayment(tokenId);
+    } else if (_culqiInstance.error) {
+      toast('⚠️ ' + (_culqiInstance.error.user_message || 'Error en el pago.'));
+    }
+  };
+  _culqiInstance.open();
 }
 
 var _payInProgress = false;
