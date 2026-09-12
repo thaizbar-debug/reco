@@ -1112,10 +1112,17 @@ header .spacer{flex:1}
 }
 .btn-pay:hover{opacity:.92}
 .pay-logos{text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px}
-.pay-dni-wrap{margin-bottom:12px}
-.pay-dni-label{display:block;font-size:.8rem;font-weight:600;color:var(--txt);margin-bottom:5px}
-.pay-dni-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;font-family:inherit;background:#fff;color:var(--txt);transition:border-color .15s}
-.pay-dni-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
+.pay-step2-back{background:none;border:none;color:var(--blue);font-size:.83rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:18px;display:flex;align-items:center;gap:4px}
+.pay-step2-summary{background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.pay-step2-plan{font-size:.95rem;font-weight:700;color:var(--txt)}
+.pay-step2-price{font-size:1.3rem;font-weight:800;color:var(--blue)}
+.pay-step2-qty{font-size:.78rem;color:var(--muted);margin-top:1px}
+.pay-step2-field{margin-bottom:18px}
+.pay-step2-label{display:block;font-size:.85rem;font-weight:600;color:var(--txt);margin-bottom:6px}
+.pay-step2-opt{font-weight:400;color:var(--muted)}
+.pay-step2-input{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:1rem;outline:none;box-sizing:border-box;font-family:inherit;background:#fff;color:var(--txt);transition:border-color .15s;letter-spacing:.05em}
+.pay-step2-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
+.pay-step2-hint{font-size:.75rem;color:var(--muted);margin-top:5px}
 .modal-close{
   float:right;background:rgba(255,255,255,.2);border:none;
   color:#fff;width:28px;height:28px;border-radius:99px;
@@ -2855,11 +2862,20 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         </div>
 
       </div>
-      <div class="pay-dni-wrap">
-        <label class="pay-dni-label" for="payDniRuc">DNI / RUC <span style="font-weight:400;color:var(--muted)">(opcional, para tu comprobante)</span></label>
-        <input class="pay-dni-input" id="payDniRuc" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="11" placeholder="12345678" autocomplete="off">
+      <button class="btn-pay" id="payBtn" onclick="showPayStep()">Pagar S/ 45</button>
+      <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
+    </div>
+
+    <!-- Step 2: DNI/RUC + confirmar -->
+    <div class="modal-body pay-step2" id="modalPayStep2" style="display:none">
+      <button class="pay-step2-back" onclick="backToPlans()">← Cambiar plan</button>
+      <div class="pay-step2-summary" id="payStep2Summary"></div>
+      <div class="pay-step2-field">
+        <label class="pay-step2-label" for="payDniRuc">DNI / RUC <span class="pay-step2-opt">(opcional · para tu comprobante)</span></label>
+        <input class="pay-step2-input" id="payDniRuc" type="text" inputmode="numeric" maxlength="11" placeholder="12345678" autocomplete="off">
+        <div class="pay-step2-hint">Si no tienes comprobante pendiente puedes dejarlo vacío.</div>
       </div>
-      <button class="btn-pay" id="payBtn" onclick="simulatePay()">Pagar S/ 45</button>
+      <button class="btn-pay" id="payBtn2" onclick="simulatePay()">Continuar al pago</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
     </div>
   </div>
@@ -5586,10 +5602,29 @@ function pinClick(id){
 function openModal(){ if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para comprar llaves');openAuthModal('login',openModal);return;} document.getElementById('modal').classList.add('open'); }
 function closeModal(){
   document.getElementById('modal').classList.remove('open');
-  // If user closed the buy-keys modal without paying, drop any pending
-  // resume flags so a stale flag doesn't fire on the next successful pay.
+  backToPlans();
   S.pendingPublish = false;
   S.pendingUnlockId = null;
+}
+function showPayStep() {
+  var plan = S.selectedPlan;
+  document.querySelector('.modal-body:not(.pay-step2)').style.display = 'none';
+  var step2 = document.getElementById('modalPayStep2');
+  step2.style.display = '';
+  document.getElementById('payStep2Summary').innerHTML =
+    '<div><div class="pay-step2-plan">Pack ' + plan.name + '</div>' +
+    '<div class="pay-step2-qty">' + plan.qty + ' consulta' + (plan.qty !== 1 ? 's' : '') + '</div></div>' +
+    '<div class="pay-step2-price">S/ ' + plan.price + '</div>';
+  var inp = document.getElementById('payDniRuc');
+  if (inp) { inp.value = ''; inp.focus(); }
+  var btn2 = document.getElementById('payBtn2');
+  if (btn2) { btn2.disabled = false; btn2.textContent = 'Continuar al pago'; }
+}
+function backToPlans() {
+  var step2 = document.getElementById('modalPayStep2');
+  if (step2) step2.style.display = 'none';
+  var step1 = document.querySelector('#modal .modal-body:not(.pay-step2)');
+  if (step1) step1.style.display = '';
 }
 function _showWelcomeModal(uid) {
   var key = 'reco_welcome_seen_' + uid;
@@ -5623,7 +5658,7 @@ async function simulatePay() {
   var plan = S.selectedPlan;
   var _dniRucCapture = (document.getElementById('payDniRuc') || {}).value || null;
   if (_dniRucCapture && _dniRucCapture.trim().length < 8) _dniRucCapture = null;
-  var payBtn = document.getElementById('payBtn');
+  var payBtn = document.getElementById('payBtn2') || document.getElementById('payBtn');
   if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'Preparando…'; }
   try {
     // Create a Culqi order first — required for Yape support
@@ -5755,21 +5790,21 @@ async function simulatePay() {
         _processPayment({ orderId: _culqiInstance.order.id, dniRuc: _dniRucCapture });
       } else if (_culqiInstance.error) {
         toast('⚠️ ' + (_culqiInstance.error.user_message || 'Error en el pago.'));
-        if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; }
+        if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; }
       }
     };
-    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; }
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; }
     _culqiInstance.open();
   } catch(e) {
     toast('⚠️ ' + (e.message || 'Error al preparar el pago.'));
-    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
   }
 }
 
 async function _processPayment(payload) {
   if (_payInProgress) return;
   _payInProgress = true;
-  var payBtn = document.getElementById('payBtn');
+  var payBtn = document.getElementById('payBtn2') || document.getElementById('payBtn');
   if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'Procesando…'; }
   try {
     var plan = S.selectedPlan;
@@ -5785,7 +5820,7 @@ async function _processPayment(payload) {
     else if (S.pendingPublish) { S.pendingPublish = false; _ppub(); }
   } catch(e) {
     toast('⚠️ ' + (e.message || 'Error al procesar el pago.'));
-    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + S.selectedPlan.price; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
+    if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
   } finally {
     _payInProgress = false;
   }
