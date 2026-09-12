@@ -5633,7 +5633,7 @@ async function simulatePay() {
         customFields: {
           customInput: [
             {
-              id: 'dni_ruc',
+              id: 'dniRuc',
               label: 'DNI / RUC (para tu comprobante)',
               placeholder: '12345678',
               minLength: 8,
@@ -5751,11 +5751,11 @@ async function simulatePay() {
     });
     _culqiInstance.culqi = function() {
       if (_culqiInstance.token) {
-        var dniRuc = (_culqiInstance.token.metadata && _culqiInstance.token.metadata.dni_ruc) || null;
+        var dniRuc = (_culqiInstance.token.metadata && _culqiInstance.token.metadata.dniRuc) || null;
         _culqiInstance.close();
         _processPayment({ tokenId: _culqiInstance.token.id, dniRuc: dniRuc });
       } else if (_culqiInstance.order) {
-        var dniRuc = (_culqiInstance.order.metadata && _culqiInstance.order.metadata.dni_ruc) || null;
+        var dniRuc = (_culqiInstance.order.metadata && _culqiInstance.order.metadata.dniRuc) || null;
         _culqiInstance.close();
         _processPayment({ orderId: _culqiInstance.order.id, dniRuc: dniRuc });
       } else if (_culqiInstance.error) {
