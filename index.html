@@ -1112,6 +1112,10 @@ header .spacer{flex:1}
 }
 .btn-pay:hover{opacity:.92}
 .pay-logos{text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px}
+.pay-dni-wrap{margin-bottom:12px}
+.pay-dni-label{display:block;font-size:.8rem;font-weight:600;color:var(--txt);margin-bottom:5px}
+.pay-dni-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;font-family:inherit;background:#fff;color:var(--txt);transition:border-color .15s}
+.pay-dni-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(8,145,178,.1)}
 .modal-close{
   float:right;background:rgba(255,255,255,.2);border:none;
   color:#fff;width:28px;height:28px;border-radius:99px;
@@ -2850,6 +2854,10 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="plan-uv">S/ 7 / llave · Ahorra 30%</div>
         </div>
 
+      </div>
+      <div class="pay-dni-wrap">
+        <label class="pay-dni-label" for="payDniRuc">DNI / RUC <span style="font-weight:400;color:var(--muted)">(opcional, para tu comprobante)</span></label>
+        <input class="pay-dni-input" id="payDniRuc" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="11" placeholder="12345678" autocomplete="off">
       </div>
       <button class="btn-pay" id="payBtn" onclick="simulatePay()">Pagar S/ 45</button>
       <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
@@ -5613,6 +5621,8 @@ async function simulatePay() {
   if (typeof CulqiCheckout === 'undefined') { toast('⚠️ Error cargando la pasarela. Recarga la página.'); return; }
   if (_payInProgress) return;
   var plan = S.selectedPlan;
+  var _dniRucCapture = (document.getElementById('payDniRuc') || {}).value || null;
+  if (_dniRucCapture && _dniRucCapture.trim().length < 8) _dniRucCapture = null;
   var payBtn = document.getElementById('payBtn');
   if (payBtn) { payBtn.disabled = true; payBtn.textContent = 'Preparando…'; }
   try {
@@ -5630,19 +5640,6 @@ async function simulatePay() {
         installments: false,
         paymentMethods: { tarjeta: true, yape: true, billetera: false, bancaMovil: false, agente: false, cuotealo: false },
         paymentMethodsSort: ['tarjeta', 'yape'],
-        customFields: {
-          customInput: [
-            {
-              id: 'dniRuc',
-              label: 'DNI / RUC (para tu comprobante)',
-              placeholder: '12345678',
-              minLength: 8,
-              maxLength: 11,
-              doubleSpan: true,
-              required: false,
-            },
-          ],
-        },
       },
       appearance: {
         theme: 'default',
@@ -5751,13 +5748,11 @@ async function simulatePay() {
     });
     _culqiInstance.culqi = function() {
       if (_culqiInstance.token) {
-        var dniRuc = (_culqiInstance.token.metadata && _culqiInstance.token.metadata.dniRuc) || null;
         _culqiInstance.close();
-        _processPayment({ tokenId: _culqiInstance.token.id, dniRuc: dniRuc });
+        _processPayment({ tokenId: _culqiInstance.token.id, dniRuc: _dniRucCapture });
       } else if (_culqiInstance.order) {
-        var dniRuc = (_culqiInstance.order.metadata && _culqiInstance.order.metadata.dniRuc) || null;
         _culqiInstance.close();
-        _processPayment({ orderId: _culqiInstance.order.id, dniRuc: dniRuc });
+        _processPayment({ orderId: _culqiInstance.order.id, dniRuc: _dniRucCapture });
       } else if (_culqiInstance.error) {
         toast('⚠️ ' + (_culqiInstance.error.user_message || 'Error en el pago.'));
         if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Pagar S/ ' + plan.price; }
