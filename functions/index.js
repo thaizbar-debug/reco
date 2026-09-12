@@ -989,7 +989,7 @@ const CULQI_PLANS = {
 
 // Shared helper: grant keys and record the purchase inside a transaction.
 // chargeId must be unique per payment (charge.id for cards, order.id for Yape).
-async function _grantKeysForPurchase(uid, planName, plan, chargeId) {
+async function _grantKeysForPurchase(uid, planName, plan, chargeId, dniRuc) {
   const userRef = db.collection('users').doc(uid);
 
   // Quick pre-check outside the transaction to reject obvious replays.
@@ -1012,6 +1012,7 @@ async function _grantKeysForPurchase(uid, planName, plan, chargeId) {
       balance: newTotal,
       chargeId,
       date: new Date().toISOString(),
+      ...(dniRuc ? { dniRuc } : {}),
     };
     const nextHistory = [histEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
     tx.set(userRef, { keysLeft: newTotal, keyHistory: nextHistory }, { merge: true });
@@ -1103,6 +1104,7 @@ exports.chargeWithCulqi = onCall(
     const orderId  = request.data && request.data.orderId;
     const planName = request.data && request.data.planName;
     const amount   = request.data && request.data.amount;
+    const dniRuc   = (request.data && request.data.dniRuc) || null;
 
     if (!tokenId && !orderId) throw new HttpsError('invalid-argument', 'tokenId u orderId requerido.');
     const plan = CULQI_PLANS[planName];
@@ -1160,7 +1162,7 @@ exports.chargeWithCulqi = onCall(
       chargeId = orderId;
     }
 
-    const newBalance = await _grantKeysForPurchase(uid, planName, plan, chargeId);
+    const newBalance = await _grantKeysForPurchase(uid, planName, plan, chargeId, dniRuc);
     logger.info('[chargeWithCulqi] success', { uid, planName, qty: plan.qty, chargeId });
     return { success: true, keysLeft: newBalance, chargeId };
   }
