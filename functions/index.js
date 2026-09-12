@@ -978,21 +978,7 @@ exports.setAdminClaim = onCall(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// chargeWithCulqi — charges the user via Culqi and grants keys on success.
-//
-// Client contract:
-//   const fn = _getFunctions().httpsCallable('chargeWithCulqi');
-//   const { data } = await fn({ tokenId, planName, amount });
-//   // data = { success: true, keysLeft: N, chargeId: '...' }
-//
-// Errors (HttpsError):
-//   unauthenticated    — no auth / AppCheck failed
-//   invalid-argument   — bad plan name or amount mismatch
-//   aborted            — Culqi rejected the charge (card declined, etc.)
-//   internal           — network error reaching Culqi API
-//
-// Secret CULQI_SECRET_KEY must be set before deploying to production:
-//   firebase functions:secrets:set CULQI_SECRET_KEY
+// Culqi plan catalogue — single source of truth for both functions below.
 // ─────────────────────────────────────────────────────────────────────────────
 const CULQI_PLANS = {
   Individual: { amount: 1000,  qty: 1  },
@@ -1001,14 +987,111 @@ const CULQI_PLANS = {
   Oro:        { amount: 35000, qty: 50 },
 };
 
+// Shared helper: grant keys and record the purchase inside a transaction.
+// chargeId must be unique per payment (charge.id for cards, order.id for Yape).
+async function _grantKeysForPurchase(uid, planName, plan, chargeId) {
+  const userRef = db.collection('users').doc(uid);
+
+  // Quick pre-check outside the transaction to reject obvious replays.
+  const preSnap = await userRef.get();
+  const preData = preSnap.exists ? preSnap.data() : {};
+  const preHistory = Array.isArray(preData.keyHistory) ? preData.keyHistory : [];
+  if (preHistory.some(h => h.chargeId === chargeId)) {
+    throw new HttpsError('already-exists', 'Este pago ya fue procesado.');
+  }
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.exists ? snap.data() : {};
+    const current = Number(data.keysLeft) || 0;
+    const newTotal = current + plan.qty;
+    const histEntry = {
+      type: 'purchase',
+      label: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
+      delta: plan.qty,
+      balance: newTotal,
+      chargeId,
+      date: new Date().toISOString(),
+    };
+    const nextHistory = [histEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
+    tx.set(userRef, { keysLeft: newTotal, keyHistory: nextHistory }, { merge: true });
+    return newTotal;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createCulqiOrder — creates a Culqi order before opening the checkout.
+// Required for Yape (and any other order-based payment method).
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('createCulqiOrder');
+//   const { data } = await fn({ planName, amount });
+//   // data = { orderId: 'ord_live_...' }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.createCulqiOrder = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
+  async (request) => {
+    _logAppCheck(request, 'createCulqiOrder');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+
+    const uid     = request.auth.uid;
+    const email   = request.auth.token.email || '';
+    const rawName = request.auth.token.name  || '';
+    const nameParts = rawName.trim().split(' ');
+    const firstName = nameParts[0] || 'Cliente';
+    const lastName  = nameParts.slice(1).join(' ') || 'Reco';
+
+    const { planName, amount } = request.data;
+    const plan = CULQI_PLANS[planName];
+    if (!plan) throw new HttpsError('invalid-argument', 'Plan inválido.');
+    if (plan.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con el plan.');
+
+    const orderNumber    = `RECO-${uid.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const expirationDate = Math.floor(Date.now() / 1000) + 15 * 60; // 15 min
+
+    let order;
+    try {
+      const res = await fetch('https://api.culqi.com/v2/orders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: plan.amount,
+          currency_code: 'PEN',
+          description: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
+          order_number: orderNumber,
+          client_details: { first_name: firstName, last_name: lastName, email, phone_number: '' },
+          expiration_date: expirationDate,
+          confirm: false,
+        }),
+      });
+      order = await res.json();
+      if (!res.ok) {
+        logger.warn('[createCulqiOrder] Culqi error', { uid, planName, order });
+        throw new HttpsError('aborted', order.user_message || 'Error al crear la orden de pago.');
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[createCulqiOrder] fetch error', { uid, err: e.message });
+      throw new HttpsError('internal', 'Error al conectar con Culqi.');
+    }
+
+    logger.info('[createCulqiOrder] created', { uid, planName, orderId: order.id });
+    return { orderId: order.id };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// chargeWithCulqi — finalizes payment and grants keys.
+// Handles both card tokens and Yape order confirmations.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('chargeWithCulqi');
+//   // Card:  await fn({ tokenId: 'tkn_live_...', planName, amount });
+//   // Yape:  await fn({ orderId: 'ord_live_...', planName, amount });
+//   // data = { success: true, keysLeft: N, chargeId: '...' }
+// ─────────────────────────────────────────────────────────────────────────────
 exports.chargeWithCulqi = onCall(
-  {
-    region: REGION,
-    maxInstances: 10,
-    consumeAppCheckToken: true,
-    enforceAppCheck: true,
-    secrets: [culqiSecretKey],
-  },
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
   async (request) => {
     _logAppCheck(request, 'chargeWithCulqi');
     if (!request.auth) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
@@ -1017,69 +1100,69 @@ exports.chargeWithCulqi = onCall(
     const email = request.auth.token.email || '';
 
     const tokenId  = request.data && request.data.tokenId;
+    const orderId  = request.data && request.data.orderId;
     const planName = request.data && request.data.planName;
     const amount   = request.data && request.data.amount;
 
-    if (!tokenId || typeof tokenId !== 'string') {
-      throw new HttpsError('invalid-argument', 'tokenId requerido.');
-    }
+    if (!tokenId && !orderId) throw new HttpsError('invalid-argument', 'tokenId u orderId requerido.');
     const plan = CULQI_PLANS[planName];
     if (!plan) throw new HttpsError('invalid-argument', 'Plan inválido.');
     if (plan.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con el plan.');
 
-    // Charge via Culqi REST API
-    let charge;
-    try {
-      const res = await fetch('https://api.culqi.com/v2/charges', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${culqiSecretKey.value()}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: plan.amount,
-          currency_code: 'PEN',
-          email,
-          source_id: tokenId,
-        }),
-      });
-      charge = await res.json();
-      if (!res.ok) {
-        logger.warn('[chargeWithCulqi] Culqi API error', { uid, planName, charge });
-        throw new HttpsError('aborted', charge.user_message || 'El pago no pudo procesarse.');
+    let chargeId;
+
+    if (tokenId) {
+      // ── Card payment ──
+      let charge;
+      try {
+        const res = await fetch('https://api.culqi.com/v2/charges', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: plan.amount, currency_code: 'PEN', email, source_id: tokenId }),
+        });
+        charge = await res.json();
+        if (!res.ok) {
+          logger.warn('[chargeWithCulqi] card error', { uid, planName, charge });
+          throw new HttpsError('aborted', charge.user_message || 'El pago no pudo procesarse.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[chargeWithCulqi] card fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al conectar con la pasarela de pago.');
       }
-    } catch (e) {
-      if (e instanceof HttpsError) throw e;
-      logger.error('[chargeWithCulqi] fetch error', { uid, err: e.message });
-      throw new HttpsError('internal', 'Error al conectar con la pasarela de pago.');
+      if (charge.outcome && charge.outcome.type !== 'venta_exitosa') {
+        throw new HttpsError('aborted', charge.user_message || 'El cargo fue rechazado.');
+      }
+      chargeId = charge.id;
+    } else {
+      // ── Yape: verify the order is paid ──
+      let order;
+      try {
+        const res = await fetch(`https://api.culqi.com/v2/orders/${encodeURIComponent(orderId)}`, {
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}` },
+        });
+        order = await res.json();
+        if (!res.ok) {
+          logger.warn('[chargeWithCulqi] order fetch error', { uid, orderId, order });
+          throw new HttpsError('aborted', order.user_message || 'Error verificando el pago.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[chargeWithCulqi] order fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al verificar el pago con Culqi.');
+      }
+      if (order.state !== 'paid') {
+        throw new HttpsError('aborted', 'El pago Yape aún no fue confirmado.');
+      }
+      if (order.amount !== plan.amount) {
+        throw new HttpsError('aborted', 'El monto de la orden no coincide con el plan.');
+      }
+      chargeId = orderId;
     }
 
-    if (charge.outcome && charge.outcome.type !== 'venta_exitosa') {
-      throw new HttpsError('aborted', charge.user_message || 'El cargo fue rechazado.');
-    }
-
-    // Grant keys inside a transaction to avoid race conditions
-    const userRef = db.collection('users').doc(uid);
-    const newBalance = await db.runTransaction(async (tx) => {
-      const snap = await tx.get(userRef);
-      const data = snap.exists ? snap.data() : {};
-      const current = Number(data.keysLeft) || 0;
-      const newTotal = current + plan.qty;
-      const histEntry = {
-        type: 'purchase',
-        label: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
-        delta: plan.qty,
-        balance: newTotal,
-        chargeId: charge.id,
-        date: new Date().toISOString(),
-      };
-      const nextHistory = [histEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
-      tx.set(userRef, { keysLeft: newTotal, keyHistory: nextHistory }, { merge: true });
-      return newTotal;
-    });
-
-    logger.info('[chargeWithCulqi] success', { uid, planName, qty: plan.qty, chargeId: charge.id });
-    return { success: true, keysLeft: newBalance, chargeId: charge.id };
+    const newBalance = await _grantKeysForPurchase(uid, planName, plan, chargeId);
+    logger.info('[chargeWithCulqi] success', { uid, planName, qty: plan.qty, chargeId });
+    return { success: true, keysLeft: newBalance, chargeId };
   }
 );
 
