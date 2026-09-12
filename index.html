@@ -1111,7 +1111,10 @@ header .spacer{flex:1}
   font-size:.92rem;font-weight:700;transition:opacity .15s;
 }
 .btn-pay:hover{opacity:.92}
-.pay-logos{text-align:center;font-size:.75rem;color:var(--muted);margin-top:12px}
+.pay-logos{text-align:center;margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+.pay-logo-img{height:20px;width:auto;opacity:.75;vertical-align:middle}
+.pay-logo-yape{height:18px;width:auto;opacity:.8;vertical-align:middle}
+.pay-logo-yape-tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:6px;background:#5f0bd5;color:#fff;font-size:11px;font-weight:700;letter-spacing:.3px;line-height:20px;opacity:.85}
 .pay-step2-back{background:none;border:none;color:var(--blue);font-size:.83rem;font-weight:600;cursor:pointer;padding:0;margin-bottom:18px;display:flex;align-items:center;gap:4px}
 .pay-step2-summary{background:#f8fafc;border:1.5px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
 .pay-step2-plan{font-size:.95rem;font-weight:700;color:var(--txt)}
@@ -2863,7 +2866,13 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
       </div>
       <button class="btn-pay" id="payBtn" onclick="showPayStep()">Pagar S/ 45</button>
-      <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
+      <div class="pay-logos">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/visa.svg" alt="Visa">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/mastercard.svg" alt="Mastercard">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/amex.svg" alt="Amex">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/diners.svg" alt="Diners">
+        <span class="pay-logo-yape-tag">Yape</span>
+      </div>
     </div>
 
     <!-- Step 2: DNI/RUC + confirmar -->
@@ -2876,7 +2885,13 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <div class="pay-step2-hint">Si no tienes comprobante pendiente puedes dejarlo vacío.</div>
       </div>
       <button class="btn-pay" id="payBtn2" onclick="simulatePay()">Continuar al pago</button>
-      <div class="pay-logos">💳 Visa · Mastercard · Amex · Yape · Plin</div>
+      <div class="pay-logos">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/visa.svg" alt="Visa">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/mastercard.svg" alt="Mastercard">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/amex.svg" alt="Amex">
+        <img class="pay-logo-img" src="https://cdn.jsdelivr.net/npm/payment-icons@1.1.0/min/flat/diners.svg" alt="Diners">
+        <span class="pay-logo-yape-tag">Yape</span>
+      </div>
     </div>
   </div>
 </div>
