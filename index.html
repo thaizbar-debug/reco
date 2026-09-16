@@ -3123,7 +3123,7 @@ const S = {
   minPrice:0, maxPrice:Infinity, minArea:0, minAreaTerr:0, minSqm:0, maxSqm:Infinity,
   minFloors:0, minFloor:0, maxAge:Infinity,
   features:[], bankOnly:false,
-  sort:'rel', selectedId:null,
+  sort:'rel', selectedId:null, pinnedId:null,
   keysLeft:0, isCorredor:false, selectedPlan:{name:'Bronce',price:45,qty:5},
   activeTool:null,
   radiusMode:false, radiusCenter:null, radiusMeters:1000,
@@ -3325,6 +3325,11 @@ function getFiltered(){
     const bHas=driveAssets(b).photos.length>0?0:1;
     return aHas-bHas;
   });
+  // Propiedad seleccionada desde el dropdown siempre primera
+  if(S.pinnedId){
+    const pi=list.findIndex(p=>p.id===S.pinnedId);
+    if(pi>0){ const [pp]=list.splice(pi,1); list.unshift(pp); }
+  }
   return list;
 }
 
@@ -4572,6 +4577,7 @@ function applyFilters(){
 
 let _geoTimer=null;
 function onSearch(v){
+  S.pinnedId=null; S.selectedId=null;
   showSuggestions(v);
   clearTimeout(_geoTimer);
   if(v&&v.length>=3) _geoTimer=setTimeout(()=>_fetchGeo(v),500);
@@ -4584,7 +4590,7 @@ function buildSuggestions(){
   const distSet=new Set(districts.map(d=>d.toLowerCase()));
   SG_DATA=[
     ...districts.map(d=>({icon:'📍',label:d,sub:'Distrito'})),
-    ...properties.filter(p=>!distSet.has(p.address.toLowerCase())).map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type,lat:p.lat??null,lng:p.lng??null}))
+    ...properties.filter(p=>!distSet.has(p.address.toLowerCase())).map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type,lat:p.lat??null,lng:p.lng??null,id:p.id}))
   ];
 }
 function boldMatch(text,q){
@@ -4594,7 +4600,10 @@ function boldMatch(text,q){
 }
 function _sgItemHtml(s,val){
   const _esc=s.label.replace(/'/g,"\\'");
-  const _call=(s.lat!=null&&s.lng!=null)?`pickPropertySuggestion(${s.lat},${s.lng},'${_esc}')`:`pickSuggestion('${_esc}')`;
+  const _id=(s.id||'').replace(/'/g,"\\'");
+  const _lat=s.lat!=null?s.lat:'null';
+  const _lng=s.lng!=null?s.lng:'null';
+  const _call=s.sub==='Distrito'?`pickSuggestion('${_esc}')`:`pickPropertySuggestion(${_lat},${_lng},'${_esc}','${_id}')`;
   return `<div class="sg-item" ${_tapAttrs(_call)}>
 
     <span class="sg-ico">${s.icon}</span>
@@ -4838,13 +4847,25 @@ function pickSuggestion(val){
   const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
   if(isDistrict) _flyToDistrictGeo(val);
 }
-function pickPropertySuggestion(lat,lng,label){
+function pickPropertySuggestion(lat,lng,label,id){
+  S.selectedId=id||null;
+  S.pinnedId=id||null;
   document.getElementById('searchQ').value=label;
   document.getElementById('sgDrop').style.display='none';
   S.query=label;
   S.mapMode='text'; S.mapDiverged=false; _updateMapSearchBtn();
   applyFilters();
-  if(lat!=null&&lng!=null&&leafletMap){ _programmaticMove=true; leafletMap.setView([lat,lng],16,{animate:true,duration:.6}); }
+  if(lat!=null&&lng!=null&&leafletMap){
+    _programmaticMove=true; leafletMap.setView([lat,lng],16,{animate:true,duration:.6});
+  } else if(leafletMap){
+    _fetchGeoResults(label+', Lima, Perú').then(results=>{
+      if(!results.length) return;
+      const r=results[0];
+      const go=(la,ln)=>{ _programmaticMove=true; leafletMap.setView([la,ln],16,{animate:true,duration:.6}); };
+      if(r.lat!=null&&r.lng!=null) go(r.lat,r.lng);
+      else if(r.placeId) _geocodePlaceId(r.placeId).then(loc=>{ if(loc) go(loc.lat,loc.lng); });
+    }).catch(()=>{});
+  }
 }
 
 async function _flyToDistrictGeo(district){
