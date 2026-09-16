@@ -3260,6 +3260,7 @@ function getFiltered(){
   const _boundsValid=!!(_mapEl&&_mapEl.offsetWidth>0&&_mapEl.offsetHeight>0);
   const _cachedBounds=_boundsValid?leafletMap.getBounds():_LIMA_BOUNDS;
   let list = properties.filter(p=>{
+    if(S.pinnedId && p.id===S.pinnedId) return true;
     if(S.query){
       const q=S.query.toLowerCase();
       if(!p.address.toLowerCase().includes(q) && !p.district.toLowerCase().includes(q)) return false;
@@ -4847,9 +4848,25 @@ function pickSuggestion(val){
   const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
   if(isDistrict) _flyToDistrictGeo(val);
 }
+function _switchOpTab(op){
+  const labelMap={'Venta':'Comprar','Alquiler':'Alquilar','Histórico':'Histórico'};
+  const label=labelMap[op]||'Comprar';
+  document.querySelectorAll('#opSeg button').forEach(b=>b.classList.toggle('active',b.textContent.trim()===label));
+  S.op=op;
+  _updateSortNewLabel();
+  const isHist=op==='Histórico';
+  document.getElementById('dormsLabel').style.display=isHist?'none':'';
+  document.getElementById('bedsSeg').style.display=isHist?'none':'';
+  document.getElementById('bankCheck').style.display=isHist?'none':'';
+  const advBtn=document.getElementById('advBtn');
+  if(advBtn) advBtn.style.display=isHist?'none':'';
+  if(isHist) document.getElementById('advPanel').classList.remove('open');
+}
 function pickPropertySuggestion(lat,lng,label,id){
   S.selectedId=id||null;
   S.pinnedId=id||null;
+  const prop=id?properties.find(p=>p.id===id):null;
+  if(prop&&prop.op) _switchOpTab(prop.op);
   document.getElementById('searchQ').value=label;
   document.getElementById('sgDrop').style.display='none';
   S.query=label;
