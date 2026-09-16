@@ -4584,7 +4584,7 @@ function buildSuggestions(){
   const distSet=new Set(districts.map(d=>d.toLowerCase()));
   SG_DATA=[
     ...districts.map(d=>({icon:'📍',label:d,sub:'Distrito'})),
-    ...properties.filter(p=>!distSet.has(p.address.toLowerCase())).map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type}))
+    ...properties.filter(p=>!distSet.has(p.address.toLowerCase())).map(p=>({icon:'🏠',label:p.address,sub:p.district+' · '+p.type,lat:p.lat??null,lng:p.lng??null}))
   ];
 }
 function boldMatch(text,q){
@@ -4593,7 +4593,9 @@ function boldMatch(text,q){
   return text.slice(0,i)+'<b>'+text.slice(i,i+q.length)+'</b>'+text.slice(i+q.length);
 }
 function _sgItemHtml(s,val){
-  return `<div class="sg-item" ${_tapAttrs(`pickSuggestion('${s.label.replace(/'/g,"\\'")}')`)}>
+  const _esc=s.label.replace(/'/g,"\\'");
+  const _call=(s.lat!=null&&s.lng!=null)?`pickPropertySuggestion(${s.lat},${s.lng},'${_esc}')`:`pickSuggestion('${_esc}')`;
+  return `<div class="sg-item" ${_tapAttrs(_call)}>
 
     <span class="sg-ico">${s.icon}</span>
     <span class="sg-txt">
@@ -4835,6 +4837,14 @@ function pickSuggestion(val){
   const vl=val.toLowerCase().trim();
   const isDistrict=SG_DATA.some(s=>s.label.toLowerCase()===vl&&s.sub==='Distrito');
   if(isDistrict) _flyToDistrictGeo(val);
+}
+function pickPropertySuggestion(lat,lng,label){
+  document.getElementById('searchQ').value=label;
+  document.getElementById('sgDrop').style.display='none';
+  S.query=label;
+  S.mapMode='text'; S.mapDiverged=false; _updateMapSearchBtn();
+  applyFilters();
+  if(lat!=null&&lng!=null&&leafletMap){ _programmaticMove=true; leafletMap.setView([lat,lng],16,{animate:true,duration:.6}); }
 }
 
 async function _flyToDistrictGeo(district){
