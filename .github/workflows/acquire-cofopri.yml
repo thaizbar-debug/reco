@@ -77,15 +77,14 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new data to commit"
           else
-            git commit -m "data: COFOPRI raw acquisition via GitHub Actions
-
-Automated acquisition from geoportal.cofopri.gob.pe
-Source: COFOPRI ArcGIS REST API (CATASTRO_URBANO MapServer)
-District filter: ${{ inputs.district }}
-
-Raw data only — no analysis or parcel_master modification.
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01PX5AbKL36yMkvkMQs3o24D"
+            printf '%s\n\n%s\n%s\n%s\n\n%s\n\n%s\n%s\n' \
+              "data: COFOPRI raw acquisition via GitHub Actions" \
+              "Automated acquisition from geoportal.cofopri.gob.pe" \
+              "Source: COFOPRI ArcGIS REST API (CATASTRO_URBANO MapServer)" \
+              "District filter: ${{ inputs.district }}" \
+              "Raw data only — no analysis or parcel_master modification." \
+              "Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>" \
+              "Claude-Session: https://claude.ai/code/session_01PX5AbKL36yMkvkMQs3o24D" \
+              | git commit -F -
             git push origin claude/catastros-pendientes-xi4laa
           fi
