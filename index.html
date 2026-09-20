@@ -5910,31 +5910,23 @@ function openFullReport(id){
   const isHist = p.op === 'Histórico';
   const isAlq  = p.op === 'Alquiler';
 
-  // ── Galería carrusel adaptativo ─────────────────────────────
-  const galleryHTML = photos.length
-    ? (() => {
-        const slides = photos.map((u,i) =>
-          `<div class="fr-gallery-slide">
-            <img src="${u}" alt="Foto ${i+1}" loading="${i===0?'eager':'lazy'}">
-          </div>`).join('');
-        const dots = photos.length > 1
-          ? `<div class="fr-gallery-dots">${photos.map((_,i)=>
-              `<div class="fr-gallery-dot${i===0?' active':''}" onclick="frGoto(${i})"></div>`
-            ).join('')}</div>` : '';
-        const arrows = photos.length > 1
-          ? `<button class="fr-gallery-arrow fr-gallery-prev" onclick="frPrev()">‹</button>
-             <button class="fr-gallery-arrow fr-gallery-next" onclick="frNext()">›</button>` : '';
-        return `<div class="fr-gallery" id="frGallery">
-          <div class="fr-gallery-track" id="frTrack">${slides}</div>
-          ${arrows}
-          ${photos.length > 1 ? `<div class="fr-gallery-counter"><span id="frCurr">1</span> / ${photos.length}</div>` : ''}
-          ${dots}
-        </div>`;
-      })()
-    : `<div class="fr-gallery-placeholder">
-        <div style="font-size:72px">${p.emoji}</div>
-        <div style="margin-top:12px;font-size:14px;opacity:.7">Sin fotos disponibles</div>
-      </div>`;
+  // ── Photo + Map hero ─────────────────────────────────────────
+  _frPhotos = photos;
+  const hasGeo = GEO[p.id] && GEO[p.id][0] && GEO[p.id][1];
+  const heroHTML = (() => {
+    const mainPhoto = photos.length > 0
+      ? `<img src="${esc(photos[0])}" alt="Foto principal" loading="eager">`
+      : `<div class="fr-hero-photo-placeholder" style="background:${p.gradient}">${esc(p.emoji)}</div>`;
+    const moreBtn = photos.length > 1
+      ? `<button class="fr-hero-more" onclick="openLightbox(_frPhotos,0)">📷 +${photos.length - 1} fotos</button>` : '';
+    const mapInner = hasGeo
+      ? `<div id="frDetailMap" style="width:100%;height:100%;"></div>`
+      : `<div class="fr-hero-map-placeholder"><span style="font-size:24px">📍</span><span>Ubicación no disponible</span></div>`;
+    return `<div class="fr-hero-split">
+      <div class="fr-hero-photo">${mainPhoto}${moreBtn}</div>
+      <div class="fr-hero-map">${mapInner}</div>
+    </div>`;
+  })();
 
   // ── Score de inversión — oculto hasta que el modelo esté calibrado ──
   const scoreHTML = '';
@@ -6030,6 +6022,41 @@ function openFullReport(id){
     </div>`;
   })() : '';
 
+  // ── Ficha del inmueble (Comprar / Alquilar) ──────────────────
+  const fichaHTML = (!isHist) ? (() => {
+    const fichaIcon = isAlq ? '🏠' : '🏠';
+    const fichaTitle = isAlq ? 'Ficha del alquiler' : 'Ficha de la propiedad';
+    const fichaSub = isAlq ? 'datos del inmueble' : 'datos del inmueble';
+    const priceLabel = isAlq ? 'Precio mensual' : 'Precio solicitado';
+    const priceVal = `${cur} ${fmtN(p.price)}`;
+    return `
+    <div class="fr-sec fr-sec-sunarp">
+      <h2 class="fr-sec-title">${fichaIcon} ${fichaTitle} <small>· ${fichaSub}</small></h2>
+      <div class="fr-sun-grid">
+        <div class="fr-sun-col">
+          <div class="fr-sun-col-title">Características del inmueble</div>
+          <div class="fr-sun-row"><span>🏠 Tipo</span><strong>${esc(p.type)}</strong></div>
+          <div class="fr-sun-row"><span>📍 Distrito</span><strong>${esc(p.district)}</strong></div>
+          ${p.age>0?`<div class="fr-sun-row"><span>📅 Antigüedad</span><strong>${esc(p.age)} años</strong></div>`:p.age===0?`<div class="fr-sun-row"><span>✨ Condición</span><strong>A estrenar</strong></div>`:''}
+          ${p.beds>0?`<div class="fr-sun-row"><span>🛏️ Dormitorios</span><strong>${esc(p.beds)}</strong></div>`:''}
+          ${p.baths>0?`<div class="fr-sun-row"><span>🚿 Baños</span><strong>${esc(p.baths)}</strong></div>`:''}
+          ${parkCount(p)>0?`<div class="fr-sun-row"><span>🚗 Estacionamientos</span><strong>${esc(parkCount(p))}</strong></div>`:''}
+          ${depCount(p)>0?`<div class="fr-sun-row"><span>📦 Depósitos</span><strong>${esc(depCount(p))}</strong></div>`:''}
+          <div class="fr-sun-row"><span>📐 Área</span><strong>${esc(p.area)} m²</strong></div>
+          ${p.floors>0||p.floor>0?`<div class="fr-sun-row"><span>🏢 Piso</span><strong>${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</strong></div>`:''}
+        </div>
+        <div class="fr-sun-col">
+          <div class="fr-sun-col-title">Valores</div>
+          <div class="fr-sun-row fr-sun-row-total"><span>💰 ${priceLabel}</span><strong>${priceVal}</strong></div>
+          ${sqm>0?`<div class="fr-sun-row"><span>📊 Valor por m²</span><strong>${cur} ${fmtN(sqm)}</strong></div>`:''}
+          ${p.bank?`<div class="fr-sun-row"><span>🏦 Tipo de propiedad</span><strong>Propiedad de banco</strong></div>`:''}
+          ${p.isNew?`<div class="fr-sun-row"><span>✨ Estado</span><strong>Nuevo / Estrenar</strong></div>`:''}
+          ${isAlq?`<div class="fr-sun-row"><span>📅 Modalidad</span><strong>Alquiler mensual</strong></div>`:''}
+        </div>
+      </div>
+    </div>`;
+  })() : '';
+
   // ── Serie histórica de tasaciones ────────────────────────────
   const tasHistHTML = `
     <div class="fr-sec">
@@ -6094,62 +6121,41 @@ function openFullReport(id){
       </div>
       <div class="fr-subbar-right">
         <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
-        ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
+        <button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>
       </div>
     </div>
-
-    <!-- GALLERY -->
-    ${galleryHTML}
 
     <!-- LAYOUT -->
     <div class="fr-layout">
       <div class="fr-main">
 
+        <!-- PHOTO + MAP -->
+        ${heroHTML}
+
         <!-- TÍTULO -->
         <h1 class="fr-title">${esc(p.address)}</h1>
         <div class="fr-loc">📍 ${esc(p.district)}${p.province&&p.province!==p.district?' · '+esc(p.province):''} · ${esc(p.department)}</div>
 
-        <!-- VERDICT -->
-        ${verdictHTML}
-
-        <!-- PRECIO + SPECS -->
-        <div class="fr-price-block">
-          <div>
-            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Valor total de la transacción':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${esc(cur)} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
-            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${esc(cur)} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
-            <div class="fr-price-meta">
-              ${sqm>0?`<span class="fr-price-pill">${esc(cur)} ${fmtN(sqm)} / m²</span>`:''}
-              ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
-              ${p.bank?'<span class="fr-badge-bank">🏦 Banco</span>':''}
-            </div>
-          </div>
-        </div>
-
-        <div class="fr-specs-grid">
-          <div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.area)}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
-          ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.beds)}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
-          ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.baths)}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
-          ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(parkCount(p))}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
-          ${p.floors>0||p.floor>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</div><div class="fr-spec-lbl">${p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niveles'):'Piso'}</div></div>`:''}
-          ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.age)}</div><div class="fr-spec-lbl">Años</div></div>`}
+        <!-- DESCRIPCIÓN -->
+        <div class="fr-sec">
+          <h2 class="fr-sec-title">Descripción</h2>
+          <p class="fr-desc">${p.desc ? esc(p.desc) : esc(p.address+', '+p.district+(p.province&&p.province!==p.district?', '+p.province:'')+', '+p.department)}</p>
         </div>
 
         ${p.features&&p.features.length?`
-        <div class="fr-tags">
+        <div class="fr-tags" style="margin-top:-16px">
           ${p.features.map(f=>`<span class="fr-tag">${esc(f)}</span>`).join('')}
         </div>`:''}
 
-        ${p.desc?`
-        <div class="fr-sec">
-          <h2 class="fr-sec-title">Descripción</h2>
-          <p class="fr-desc">${esc(p.desc)}</p>
-        </div>`:''}
+        <!-- FICHA (unificada) -->
+        ${isHist ? sunHTML : fichaHTML}
 
-        ${photoGalleryHTML}
-        ${sunHTML}
         ${zonifFullHTML}
-        ${tasHistHTML}
+
+        <div class="fr-sec">
+          ${buildTasChart(p.district, true)}
+        </div>
+
         ${ctxHTML}
         ${scoreHTML}
 
@@ -6187,9 +6193,22 @@ function openFullReport(id){
 
   overlay.classList.add('open');
   overlay.scrollTop = 0;
-  // Inicializar carrusel
-  _frIdx = 0; _frTotal = photos.length;
-  _frUpdate();
+
+  // Inicializar mapa Leaflet en el hero
+  if(hasGeo){
+    try{
+      const coords = GEO[p.id];
+      const frMap = L.map('frDetailMap', {
+        center: coords, zoom: 16,
+        zoomControl: false, attributionControl: false,
+        dragging: true, scrollWheelZoom: false,
+        doubleClickZoom: false, touchZoom: true,
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(frMap);
+      L.marker(coords).addTo(frMap);
+      setTimeout(()=>frMap.invalidateSize(), 100);
+    }catch(e){ console.warn('[reco] fr map init failed:', e); }
+  }
 
   // Inicializar simulador si aplica
   if(!isHist && !isAlq){
@@ -6224,6 +6243,7 @@ function closeFullReport(){
 
 // ─────────────────────── CARRUSEL FULL REPORT ────────────────
 let _frIdx = 0, _frTotal = 0;
+let _frPhotos = [];
 function _frUpdate(){
   const track = document.getElementById('frTrack');
   if(!track) return;
@@ -8450,6 +8470,18 @@ function _applyLandingHash(){
 .fr-vanet-dot{width:8px;height:8px;border-radius:50%;background:#3DB07A;flex-shrink:0;margin-top:4px;}
 .fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
+
+/* ── Photo + Map Hero ── */
+.fr-hero-split{display:grid;grid-template-columns:1fr;gap:0;height:260px;overflow:hidden;border-radius:14px;margin-bottom:24px;border:1px solid rgba(14,17,23,.1);}
+@media(min-width:600px){.fr-hero-split{grid-template-columns:1fr 1fr;height:320px;}}
+.fr-hero-photo{position:relative;overflow:hidden;background:#E0DDD7;}
+.fr-hero-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.fr-hero-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;}
+.fr-hero-more{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;z-index:3;transition:background .15s;}
+.fr-hero-more:hover{background:rgba(0,0,0,.8);}
+.fr-hero-map{position:relative;min-height:180px;}
+.fr-hero-map .leaflet-container{width:100%;height:100%;border-radius:0;}
+.fr-hero-map-placeholder{width:100%;height:100%;background:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8E94A0;font-size:13px;gap:6px;}
 </style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
