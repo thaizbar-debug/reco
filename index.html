@@ -5251,11 +5251,12 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
+const _TAS_MIN_N=10;
 function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
   if(!d)return'';
-  const years=Object.keys(d.y).sort();
+  const years=Object.keys(d.y).sort().filter(y=>d.y[y].n>=_TAS_MIN_N);
   if(years.length<2)return'';
   const vals=years.map(y=>d.y[y].m);
   const max=Math.max(...vals);
@@ -5265,7 +5266,6 @@ function buildTasChart(district, isFullReport){
   const cls=totalChange>2?'up':totalChange<-2?'down':'flat';
   const bars=years.map((y,i)=>{
     const v=d.y[y].m;
-    const n=d.y[y].n;
     const h=Math.round((v/max)*60)+8;
     const vr=d.y[y].v;
     const vrTxt=vr!==undefined?(vr>0?'+'+vr+'%':vr+'%'):'';
@@ -5944,7 +5944,7 @@ function openFullReport(id){
     if(isHist) return '';
     const td = TASACIONES_HIST[_normDistTas(p.district)];
     if(!td) return '';
-    const yrs = Object.keys(td.y).sort();
+    const yrs = Object.keys(td.y).sort().filter(y=>td.y[y].n>=_TAS_MIN_N);
     if(yrs.length < 2) return '';
     const lastYr = yrs[yrs.length-1], prevYr = yrs[yrs.length-2];
     const lastM = td.y[lastYr].m, prevM = td.y[prevYr].m;
@@ -5952,13 +5952,15 @@ function openFullReport(id){
     const firstM = td.y[yrs[0]].m;
     const totalVar = firstM > 0 ? ((lastM - firstM) / firstM * 100).toFixed(1) : null;
     const momBadge = mom > 5 ? '<span class="fr-badge green">▲ Alza</span>' : mom < -5 ? '<span class="fr-badge red">▼ Baja</span>' : '<span class="fr-badge amber">→ Estable</span>';
+    const covLabel = td.n>=500?'Alta cobertura':td.n>=100?'Media cobertura':'Baja cobertura';
+    const covCls = td.n>=500?'green':td.n>=100?'amber':'red';
     return `<div class="fr-sec">
       <h2 class="fr-sec-title">Contexto del mercado <small>· ${esc(p.district)}</small></h2>
       <div class="fr-ctx-grid">
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Mediana actual USD/m²</div>
           <div class="fr-ctx-val">$${lastM.toLocaleString()}</div>
-          <div class="fr-ctx-sub">Valor unitario terreno (${lastYr}). Base: ${td.y[lastYr].n} tasaciones.</div>
+          <div class="fr-ctx-sub">Valor unitario terreno (${lastYr}).</div>
         </div>
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Variación ${prevYr}→${lastYr}</div>
@@ -5968,9 +5970,9 @@ function openFullReport(id){
         </div>
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Profundidad de datos</div>
-          <div class="fr-ctx-val">${td.n.toLocaleString()}</div>
+          <div class="fr-ctx-val">${covLabel}</div>
           <div class="fr-ctx-sub">Tasaciones registradas (${yrs[0]}-${lastYr}).</div>
-          ${td.n>=100?'<span class="fr-badge green">Alta cobertura</span>':td.n>=30?'<span class="fr-badge amber">Cobertura media</span>':'<span class="fr-badge red">Pocos datos</span>'}
+          <span class="fr-badge ${covCls}">${covLabel}</span>
         </div>
       </div>
     </div>`;
@@ -6062,7 +6064,7 @@ function openFullReport(id){
   const verdictHTML = (() => {
     if(isHist) return '';
     const td = TASACIONES_HIST[_normDistTas(p.district)];
-    const yrs = td ? Object.keys(td.y).sort() : [];
+    const yrs = td ? Object.keys(td.y).sort().filter(y=>td.y[y].n>=_TAS_MIN_N) : [];
     const lastMedian = yrs.length > 0 ? td.y[yrs[yrs.length-1]].m : null;
     return `<div class="fr-verdict">
       <div class="fr-verdict-icon">▲</div>
