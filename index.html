@@ -5251,29 +5251,56 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
-const _TAS_MIN_N=10;
+const _TAS_MIN_N=20;
+const _BCRP_VAR={'2017':-2.4,'2018':-0.8,'2019':2.1,'2020':-3.5,'2021':8.6,'2022':6.9,'2023':5.0,'2024':3.5};
+function _smoothTas(d){
+  const yrs=Object.keys(d.y).sort();
+  const rel=yrs.filter(y=>d.y[y].n>=_TAS_MIN_N);
+  const out=[];
+  for(let i=0;i<yrs.length;i++){
+    const y=yrs[i];
+    if(d.y[y].n>=_TAS_MIN_N){out.push({y,m:d.y[y].m,n:d.y[y].n});continue;}
+    const prev=rel.filter(r=>r<y).pop();
+    const next=rel.find(r=>r>y);
+    let est;
+    if(prev&&next){
+      const pv=d.y[prev].m,nv=d.y[next].m;
+      est=Math.round(pv+(nv-pv)*(+y-+prev)/(+next-+prev));
+    }else if(prev){
+      let val=d.y[prev].m;
+      for(let yr=+prev+1;yr<=+y;yr++){const bv=_BCRP_VAR[String(yr)];if(bv!=null)val=Math.round(val*(1+bv/100));}
+      est=val;
+    }else if(next){
+      let val=d.y[next].m;
+      for(let yr=+next-1;yr>=+y;yr--){const bv=_BCRP_VAR[String(yr+1)];if(bv!=null)val=Math.round(val/(1+bv/100));}
+      est=val;
+    }else{est=d.y[y].m;}
+    out.push({y,m:est,n:d.y[y].n});
+  }
+  for(let i=1;i<out.length;i++){out[i].v=out[i-1].m>0?parseFloat(((out[i].m-out[i-1].m)/out[i-1].m*100).toFixed(1)):undefined;}
+  return out;
+}
 function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
   if(!d)return'';
-  const years=Object.keys(d.y).sort().filter(y=>d.y[y].n>=_TAS_MIN_N);
-  if(years.length<2)return'';
-  const vals=years.map(y=>d.y[y].m);
+  const sm=_smoothTas(d);
+  if(sm.length<2)return'';
+  const vals=sm.map(s=>s.m);
   const max=Math.max(...vals);
   const first=vals[0],last=vals[vals.length-1];
   const totalChange=first>0?((last-first)/first*100).toFixed(1):0;
   const arrow=totalChange>0?'▲':totalChange<0?'▼':'→';
   const cls=totalChange>2?'up':totalChange<-2?'down':'flat';
-  const bars=years.map((y,i)=>{
-    const v=d.y[y].m;
-    const h=Math.round((v/max)*60)+8;
-    const vr=d.y[y].v;
-    const vrTxt=vr!==undefined?(vr>0?'+'+vr+'%':vr+'%'):'';
+  const bars=sm.map(s=>{
+    const h=Math.round((s.m/max)*60)+8;
+    const vrTxt=s.v!==undefined?(s.v>0?'+'+s.v+'%':s.v+'%'):'';
     return `<div class="tas-bar-wrap">
       <div class="tas-bar" style="height:${h}px"></div>
-      <div class="tas-tip">$${v.toLocaleString()}/m²${vrTxt?' · '+vrTxt:''}</div>
+      <div class="tas-tip">$${s.m.toLocaleString()}/m²${vrTxt?' · '+vrTxt:''}</div>
     </div>`;
   }).join('');
+  const years=sm.map(s=>s.y);
   const labels=years.map(y=>`<span class="tas-label">${y.slice(2)}</span>`).join('');
   const prefix=isFullReport?'fr-':'';
   return `<div class="${prefix}tas-chart">
@@ -5939,18 +5966,17 @@ function openFullReport(id){
   // ── Score de inversión — oculto hasta que el modelo esté calibrado ──
   const scoreHTML = '';
 
-  // ── Contexto de mercado (solo Venta/Alquiler) — datos reales de TASACIONES_HIST ──
+  // ── Contexto de mercado (solo Venta/Alquiler) — datos suavizados de TASACIONES_HIST ──
   const ctxHTML = (() => {
     if(isHist) return '';
     const td = TASACIONES_HIST[_normDistTas(p.district)];
     if(!td) return '';
-    const yrs = Object.keys(td.y).sort().filter(y=>td.y[y].n>=_TAS_MIN_N);
-    if(yrs.length < 2) return '';
-    const lastYr = yrs[yrs.length-1], prevYr = yrs[yrs.length-2];
-    const lastM = td.y[lastYr].m, prevM = td.y[prevYr].m;
+    const sm = _smoothTas(td);
+    if(sm.length < 2) return '';
+    const last = sm[sm.length-1], prev = sm[sm.length-2];
+    const lastYr = last.y, prevYr = prev.y;
+    const lastM = last.m, prevM = prev.m;
     const mom = prevM > 0 ? ((lastM - prevM) / prevM * 100).toFixed(1) : null;
-    const firstM = td.y[yrs[0]].m;
-    const totalVar = firstM > 0 ? ((lastM - firstM) / firstM * 100).toFixed(1) : null;
     const momBadge = mom > 5 ? '<span class="fr-badge green">▲ Alza</span>' : mom < -5 ? '<span class="fr-badge red">▼ Baja</span>' : '<span class="fr-badge amber">→ Estable</span>';
     const covLabel = td.n>=500?'Alta cobertura':td.n>=100?'Media cobertura':'Baja cobertura';
     const covCls = td.n>=500?'green':td.n>=100?'amber':'red';
@@ -5971,7 +5997,7 @@ function openFullReport(id){
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Profundidad de datos</div>
           <div class="fr-ctx-val">${covLabel}</div>
-          <div class="fr-ctx-sub">Tasaciones registradas (${yrs[0]}-${lastYr}).</div>
+          <div class="fr-ctx-sub">Tasaciones registradas (${sm[0].y}-${lastYr}).</div>
           <span class="fr-badge ${covCls}">${covLabel}</span>
         </div>
       </div>
@@ -6064,8 +6090,9 @@ function openFullReport(id){
   const verdictHTML = (() => {
     if(isHist) return '';
     const td = TASACIONES_HIST[_normDistTas(p.district)];
-    const yrs = td ? Object.keys(td.y).sort().filter(y=>td.y[y].n>=_TAS_MIN_N) : [];
-    const lastMedian = yrs.length > 0 ? td.y[yrs[yrs.length-1]].m : null;
+    const _sm = td ? _smoothTas(td) : [];
+    const lastMedian = _sm.length > 0 ? _sm[_sm.length-1].m : null;
+    const yrs = _sm.map(s=>s.y);
     return `<div class="fr-verdict">
       <div class="fr-verdict-icon">▲</div>
       <div class="fr-verdict-body">
