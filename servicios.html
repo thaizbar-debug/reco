@@ -715,15 +715,15 @@ footer .footer-legal a:hover{color:#fff}
 .job-service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;margin-bottom:24px}
 .job-svc-card{position:relative;background:var(--white);border:1px solid var(--r-border);border-radius:var(--r-lg);padding:20px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column}
 .job-svc-card:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(34,183,230,.1);transform:translateY(-2px)}
-.job-svc-card.job-svc-coming{opacity:.7;cursor:default}
-.job-svc-card.job-svc-coming:hover{border-color:var(--r-border);box-shadow:none;transform:none}
+.job-svc-card.job-svc-coming{opacity:.85;cursor:pointer;border-style:dashed}
+.job-svc-card.job-svc-coming:hover{border-color:var(--accent);box-shadow:0 4px 16px rgba(34,183,230,.08);transform:translateY(-1px)}
 .job-svc-tag{position:absolute;top:-9px;left:20px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px}
 .job-svc-icon{font-size:28px;margin-bottom:6px}
 .job-svc-name{font-size:14px;font-weight:700;color:var(--ink);margin:0 0 4px}
 .job-svc-desc{font-size:12.5px;color:var(--ink-3);line-height:1.5;margin:0 0 10px;flex:1}
 .job-svc-price{font-size:13px;font-weight:700;color:var(--green);margin-bottom:6px}
 .job-svc-cta{font-size:12px;font-weight:600;color:var(--accent)}
-.job-svc-soon{font-size:11px;font-weight:600;color:var(--ink-4)}
+.job-svc-soon{font-size:11px;font-weight:600;color:var(--accent)}
 
 /* JOB RELATED */
 .job-related-section{margin-top:32px;padding-top:24px;border-top:2px solid var(--r-border)}
@@ -8738,7 +8738,48 @@ const RentUI = (() => {
         </div>
       </div>
 
+      ${_renderComingSoonAddons()}
+
       ${InfoBanner('🔒 Seguridad', 'Los pagos son procesados por el PSP certificado PCI-DSS. Reco nunca almacena datos de tarjeta. El resultado del pago es validado por webhook del servidor.')}`;
+  }
+
+  function _renderComingSoonAddons() {
+    const addons = [
+      { id: 'reco-cashback', icon: '💰', name: 'RecoCashback', desc: 'Cada S/ 500 pagados acumulan 1% de cashback aplicable a tu próximo reporte de valorización.', price: 'Incluido' },
+      { id: 'pago-arbitrios-predial', icon: '🏛️', name: 'Pago de arbitrios y predial', desc: 'Cancela cuotas de junta, predial e impuestos municipales desde la plataforma.', price: '2% comisión' },
+      { id: 'recibo-digital-sunat', icon: '📄', name: 'Recibo digital SUNAT', desc: 'Genera tu Formulario 1683 automáticamente con la data de cada pago.', price: 'S/ 5 / recibo' },
+    ];
+
+    return `
+      ${CategoryDivider('🚀', 'Servicios en desarrollo', addons.length)}
+      <div class="ref-notice" style="margin-bottom:16px">
+        <span class="ref-notice-icon">ℹ️</span>
+        <span>Estos servicios están en desarrollo. Registra tu interés para ser notificado cuando estén disponibles.</span>
+      </div>
+      <div class="fin-insurance-grid">
+        ${addons.map(a => `
+          <div class="fin-ins-card">
+            <div class="fin-ins-icon">${escapeHTML(a.icon)}</div>
+            <h4 class="fin-ins-name">${escapeHTML(a.name)}</h4>
+            <p class="fin-ins-desc">${escapeHTML(a.desc)}</p>
+            <div class="fin-ins-price">${escapeHTML(a.price)}</div>
+            <button class="plan-cta outline" style="width:100%;margin-top:10px;padding:8px 16px;font-size:13px" onclick="RentUI.registerInterest('${escapeAttr(a.id)}','${escapeAttr(a.name)}')">Me interesa →</button>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  function registerInterest(serviceId, serviceName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: serviceId,
+        serviceName: serviceName,
+        category: 'pagos',
+        icon: '💳',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
   }
 
   function _renderTenantSection(leases) {
@@ -9144,6 +9185,7 @@ const RentUI = (() => {
     showHistory,
     backToDashboard,
     crossSell,
+    registerInterest,
   };
 })();
 
@@ -9532,16 +9574,18 @@ const FinanceUI = (() => {
         ${insuranceProducts.map(p => _insuranceCard(p)).join('')}
       </div>
 
-      ${CategoryDivider('🚀', 'Próximamente', Object.keys(p2).length)}
-      <div class="fin-p2-grid">
+      ${CategoryDivider('🚀', 'Servicios en desarrollo', Object.keys(p2).length)}
+      <div class="ref-notice" style="margin-bottom:16px">
+        <span class="ref-notice-icon">ℹ️</span>
+        <span>Estos servicios están en desarrollo. Registra tu interés para ser notificado cuando estén disponibles.</span>
+      </div>
+      <div class="fin-insurance-grid">
         ${Object.values(p2).map(p => `
-          <div class="fin-p2-card">
-            <div class="fin-p2-icon">${escapeHTML(p.icon)}</div>
-            <div>
-              <strong>${escapeHTML(p.name)}</strong>
-              <span>${escapeHTML(p.description)}</span>
-            </div>
-            <div class="fin-p2-badge">P2</div>
+          <div class="fin-ins-card">
+            <div class="fin-ins-icon">${escapeHTML(p.icon)}</div>
+            <h4 class="fin-ins-name">${escapeHTML(p.name)}</h4>
+            <p class="fin-ins-desc">${escapeHTML(p.description)}</p>
+            <button class="plan-cta outline" style="width:100%;margin-top:10px;padding:8px 16px;font-size:13px" onclick="FinanceUI.registerInterest('${escapeAttr(p.id)}','${escapeAttr(p.name)}')">Me interesa →</button>
           </div>
         `).join('')}
       </div>
@@ -10200,6 +10244,19 @@ const FinanceUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function registerInterest(productId, productName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: productId,
+        serviceName: productName,
+        category: 'finanzas',
+        icon: '🏦',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
+  }
+
   function requestLead(productId, type) {
     var serviceName = type === 'seguro' ? 'Seguro de Hogar' : 'Servicio Financiero';
     var icon = type === 'seguro' ? '🛡️' : '🏦';
@@ -10236,6 +10293,7 @@ const FinanceUI = (() => {
     prepareFromRent,
     backToMarketplace,
     crossSell,
+    registerInterest,
   };
 })();
 
@@ -14034,14 +14092,14 @@ const JobsUI = (() => {
     const comingSoon = svc.status === SERVICE_STATUS.COMING_SOON;
 
     return `
-      <button type="button" class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" aria-label="${escapeAttr(svc.name)}${comingSoon ? ' — Próximamente' : ''}" ${comingSoon ? 'disabled' : `onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')"`}>
+      <button type="button" class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" aria-label="${escapeAttr(svc.name)}${comingSoon ? ' — En desarrollo' : ''}" onclick="${comingSoon ? `JobsUI.registerInterest('${escapeAttr(svc.id)}','${escapeAttr(svc.name)}')` : `JobsUI.navigateToService('${escapeAttr(svc.id)}')`}">
         ${tag}
         <div class="job-svc-icon">${escapeHTML(svc.icon)}</div>
         <h4 class="job-svc-name">${escapeHTML(svc.name)}</h4>
         <p class="job-svc-desc">${escapeHTML(svc.description)}</p>
         <div class="job-svc-price">${escapeHTML(svc.price)}</div>
         ${comingSoon
-          ? '<span class="job-svc-soon">Próximamente</span>'
+          ? '<span class="job-svc-soon">Me interesa →</span>'
           : `<span class="job-svc-cta">${escapeHTML(svc.cta ? svc.cta.label : 'Ver más')} →</span>`
         }
       </button>`;
@@ -14108,6 +14166,19 @@ const JobsUI = (() => {
     focusContent();
   }
 
+  function registerInterest(serviceId, serviceName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: serviceId,
+        serviceName: serviceName,
+        category: 'general',
+        icon: '🚀',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
+  }
+
   function _rerender() {
     const el = document.getElementById('svcContent');
     if (el) el.innerHTML = render();
@@ -14120,6 +14191,7 @@ const JobsUI = (() => {
     navigateToService,
     handleJobCTA,
     backToMain,
+    registerInterest,
   };
 })();
 

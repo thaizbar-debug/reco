@@ -93,16 +93,18 @@ const FinanceUI = (() => {
         ${insuranceProducts.map(p => _insuranceCard(p)).join('')}
       </div>
 
-      ${CategoryDivider('🚀', 'Próximamente', Object.keys(p2).length)}
-      <div class="fin-p2-grid">
+      ${CategoryDivider('🚀', 'Servicios en desarrollo', Object.keys(p2).length)}
+      <div class="ref-notice" style="margin-bottom:16px">
+        <span class="ref-notice-icon">ℹ️</span>
+        <span>Estos servicios están en desarrollo. Registra tu interés para ser notificado cuando estén disponibles.</span>
+      </div>
+      <div class="fin-insurance-grid">
         ${Object.values(p2).map(p => `
-          <div class="fin-p2-card">
-            <div class="fin-p2-icon">${escapeHTML(p.icon)}</div>
-            <div>
-              <strong>${escapeHTML(p.name)}</strong>
-              <span>${escapeHTML(p.description)}</span>
-            </div>
-            <div class="fin-p2-badge">P2</div>
+          <div class="fin-ins-card">
+            <div class="fin-ins-icon">${escapeHTML(p.icon)}</div>
+            <h4 class="fin-ins-name">${escapeHTML(p.name)}</h4>
+            <p class="fin-ins-desc">${escapeHTML(p.description)}</p>
+            <button class="plan-cta outline" style="width:100%;margin-top:10px;padding:8px 16px;font-size:13px" onclick="FinanceUI.registerInterest('${escapeAttr(p.id)}','${escapeAttr(p.name)}')">Me interesa →</button>
           </div>
         `).join('')}
       </div>
@@ -761,6 +763,19 @@ const FinanceUI = (() => {
     if (el) el.innerHTML = render();
   }
 
+  function registerInterest(productId, productName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: productId,
+        serviceName: productName,
+        category: 'finanzas',
+        icon: '🏦',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
+  }
+
   function requestLead(productId, type) {
     var serviceName = type === 'seguro' ? 'Seguro de Hogar' : 'Servicio Financiero';
     var icon = type === 'seguro' ? '🛡️' : '🏦';
@@ -797,5 +812,6 @@ const FinanceUI = (() => {
     prepareFromRent,
     backToMarketplace,
     crossSell,
+    registerInterest,
   };
 })();

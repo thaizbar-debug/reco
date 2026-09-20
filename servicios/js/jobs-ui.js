@@ -121,14 +121,14 @@ const JobsUI = (() => {
     const comingSoon = svc.status === SERVICE_STATUS.COMING_SOON;
 
     return `
-      <button type="button" class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" aria-label="${escapeAttr(svc.name)}${comingSoon ? ' — Próximamente' : ''}" ${comingSoon ? 'disabled' : `onclick="JobsUI.navigateToService('${escapeAttr(svc.id)}')"`}>
+      <button type="button" class="job-svc-card ${comingSoon ? 'job-svc-coming' : ''}" aria-label="${escapeAttr(svc.name)}${comingSoon ? ' — En desarrollo' : ''}" onclick="${comingSoon ? `JobsUI.registerInterest('${escapeAttr(svc.id)}','${escapeAttr(svc.name)}')` : `JobsUI.navigateToService('${escapeAttr(svc.id)}')`}">
         ${tag}
         <div class="job-svc-icon">${escapeHTML(svc.icon)}</div>
         <h4 class="job-svc-name">${escapeHTML(svc.name)}</h4>
         <p class="job-svc-desc">${escapeHTML(svc.description)}</p>
         <div class="job-svc-price">${escapeHTML(svc.price)}</div>
         ${comingSoon
-          ? '<span class="job-svc-soon">Próximamente</span>'
+          ? '<span class="job-svc-soon">Me interesa →</span>'
           : `<span class="job-svc-cta">${escapeHTML(svc.cta ? svc.cta.label : 'Ver más')} →</span>`
         }
       </button>`;
@@ -195,6 +195,19 @@ const JobsUI = (() => {
     focusContent();
   }
 
+  function registerInterest(serviceId, serviceName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: serviceId,
+        serviceName: serviceName,
+        category: 'general',
+        icon: '🚀',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
+  }
+
   function _rerender() {
     const el = document.getElementById('svcContent');
     if (el) el.innerHTML = render();
@@ -207,5 +220,6 @@ const JobsUI = (() => {
     navigateToService,
     handleJobCTA,
     backToMain,
+    registerInterest,
   };
 })();

@@ -86,7 +86,48 @@ const RentUI = (() => {
         </div>
       </div>
 
+      ${_renderComingSoonAddons()}
+
       ${InfoBanner('🔒 Seguridad', 'Los pagos son procesados por el PSP certificado PCI-DSS. Reco nunca almacena datos de tarjeta. El resultado del pago es validado por webhook del servidor.')}`;
+  }
+
+  function _renderComingSoonAddons() {
+    const addons = [
+      { id: 'reco-cashback', icon: '💰', name: 'RecoCashback', desc: 'Cada S/ 500 pagados acumulan 1% de cashback aplicable a tu próximo reporte de valorización.', price: 'Incluido' },
+      { id: 'pago-arbitrios-predial', icon: '🏛️', name: 'Pago de arbitrios y predial', desc: 'Cancela cuotas de junta, predial e impuestos municipales desde la plataforma.', price: '2% comisión' },
+      { id: 'recibo-digital-sunat', icon: '📄', name: 'Recibo digital SUNAT', desc: 'Genera tu Formulario 1683 automáticamente con la data de cada pago.', price: 'S/ 5 / recibo' },
+    ];
+
+    return `
+      ${CategoryDivider('🚀', 'Servicios en desarrollo', addons.length)}
+      <div class="ref-notice" style="margin-bottom:16px">
+        <span class="ref-notice-icon">ℹ️</span>
+        <span>Estos servicios están en desarrollo. Registra tu interés para ser notificado cuando estén disponibles.</span>
+      </div>
+      <div class="fin-insurance-grid">
+        ${addons.map(a => `
+          <div class="fin-ins-card">
+            <div class="fin-ins-icon">${escapeHTML(a.icon)}</div>
+            <h4 class="fin-ins-name">${escapeHTML(a.name)}</h4>
+            <p class="fin-ins-desc">${escapeHTML(a.desc)}</p>
+            <div class="fin-ins-price">${escapeHTML(a.price)}</div>
+            <button class="plan-cta outline" style="width:100%;margin-top:10px;padding:8px 16px;font-size:13px" onclick="RentUI.registerInterest('${escapeAttr(a.id)}','${escapeAttr(a.name)}')">Me interesa →</button>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  function registerInterest(serviceId, serviceName) {
+    if (typeof LeadCaptureModal !== 'undefined') {
+      LeadCaptureModal.open({
+        serviceId: serviceId,
+        serviceName: serviceName,
+        category: 'pagos',
+        icon: '💳',
+        ctaLabel: 'Registrar interés',
+        extraFields: ['district'],
+      });
+    }
   }
 
   function _renderTenantSection(leases) {
@@ -492,5 +533,6 @@ const RentUI = (() => {
     showHistory,
     backToDashboard,
     crossSell,
+    registerInterest,
   };
 })();
