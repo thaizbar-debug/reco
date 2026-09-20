@@ -498,7 +498,7 @@ function fmtShortDate(ts){if(!ts)return'—';const d=ts.toDate?ts.toDate():new D
 function fmtPrice(n,cur){if(!n&&n!==0)return'—';const s=Number(n).toLocaleString('es-PE',{maximumFractionDigits:0});return(cur==='PEN'?'S/ ':'$ ')+s;}
 function fmtNum(n){return n!=null?Number(n).toLocaleString('es-PE'):'0';}
 function truncate(s,max){if(!s)return'';return s.length>max?s.slice(0,max)+'…':s;}
-function kindLabel(k){return k==='arrendador'?'Alquiler':k==='vendedor'?'Compra':k==='asesor_reco'?'Asesoría':'Contacto';}
+function kindLabel(k){return k==='arrendador'?'Alquiler':k==='vendedor'?'Compra':k==='asesor_reco'?'Asesoría':k==='demanda_insatisfecha'?'Demanda':'Contacto';}
 function tsMs(ts){return ts&&ts.toMillis?ts.toMillis():ts?new Date(ts).getTime():0;}
 function daysAgo(n){return Date.now()-n*24*60*60*1000;}
 function initials(s){return(s||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();}
@@ -1775,7 +1775,7 @@ function renderContacts(el){
         </select>
         <select onchange="_contactFilter.kind=this.value;renderContacts(document.getElementById('mainContent'))">
           <option value="all"${_contactFilter.kind==='all'?' selected':''}>Todos los tipos</option>
-          <option value="vendedor">Compra</option><option value="arrendador">Alquiler</option><option value="asesor_reco">Asesoría</option>
+          <option value="vendedor">Compra</option><option value="arrendador">Alquiler</option><option value="asesor_reco">Asesoría</option><option value="demanda_insatisfecha">Demanda</option>
         </select>
       </div>
       ${filtered.length===0?'<div class="section-card"><div class="card-body"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg><p>No hay solicitudes que coincidan.</p></div></div></div>':
@@ -1815,6 +1815,15 @@ function showContactDetail(id){
       <div class="detail-row"><div class="dlabel">Teléfono</div><div class="dvalue">${c.fromPhone?`<a href="tel:${esc(c.fromPhone)}">${esc(c.fromPhone)}</a>`:'—'}</div></div>
       <div class="detail-row"><div class="dlabel">Propiedad</div><div class="dvalue">${esc(c.propertyAddress||'—')}</div></div>
       <div class="detail-row"><div class="dlabel">Distrito</div><div class="dvalue">${esc(c.propertyDistrict||'—')}</div></div>
+      ${c.propertyOp?`<div class="detail-row"><div class="dlabel">Operación</div><div class="dvalue">${esc(c.propertyOp)}</div></div>`:''}
+      ${c.propertyPrice?`<div class="detail-row"><div class="dlabel">Precio</div><div class="dvalue">${fmtPrice(c.propertyPrice,c.propertyCurrency)}</div></div>`:''}
+      ${c.publicationOwnerEmail?`<div class="detail-row"><div class="dlabel">Email propietario</div><div class="dvalue"><a href="mailto:${esc(c.publicationOwnerEmail)}">${esc(c.publicationOwnerEmail)}</a></div></div>`:''}
+      ${c.kind==='demanda_insatisfecha'?`
+      <div class="detail-row"><div class="dlabel">Zona referencia</div><div class="dvalue">${esc(c.referenceZone||'—')}</div></div>
+      <div class="detail-row"><div class="dlabel">Tipo inmueble</div><div class="dvalue">${esc(c.propertyTypeWanted||'—')}</div></div>
+      <div class="detail-row"><div class="dlabel">Presupuesto ref.</div><div class="dvalue">${esc(c.budgetReference||'—')}</div></div>
+      <div class="detail-row"><div class="dlabel">Vista</div><div class="dvalue">${esc(c.viewType||'—')}</div></div>
+      `:''}
       <div class="detail-row"><div class="dlabel">Fecha</div><div class="dvalue">${fmtDate(c.createdAt)}</div></div>
     </div>
     <div style="margin-top:12px"><strong style="font-size:.82rem">Mensaje:</strong><div style="font-size:.85rem;white-space:pre-wrap;margin-top:6px;padding:14px;background:var(--bg);border-radius:var(--r)">${esc(c.message||'—')}</div></div>
