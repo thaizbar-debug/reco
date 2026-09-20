@@ -16,6 +16,7 @@ const RentUI = (() => {
   let _currentPayment = null;
   let _currentCheckout = null;
   let _viewRole = 'tenant';
+  let _paymentResult = null;
 
   function reset() {
     _view = 'dashboard';
@@ -243,11 +244,14 @@ const RentUI = (() => {
               </div>
             `).join('')}
           </div>
-          ${provider._isMock ? `
-            <div class="rent-mock-notice">
-              En producción, se abrirá el checkout hosted del PSP (Niubiz, Mercado Pago, etc.) donde el usuario ingresa los datos de tarjeta de forma segura. Reco nunca ve ni almacena datos de tarjeta.
-            </div>
-          ` : ''}
+          ${typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isSdkLoaded()
+            ? `<div class="rent-mock-notice" style="background:var(--green-bg,#ecfdf5);border-color:var(--green,#16a34a);color:var(--green,#16a34a)">
+                Pago procesado de forma segura por Culqi (PCI-DSS). Aceptamos tarjeta de crédito/débito y Yape.
+              </div>`
+            : (provider._isMock ? `<div class="rent-mock-notice">
+                En producción, se abrirá el checkout hosted del PSP donde el usuario ingresa los datos de tarjeta de forma segura. Reco nunca ve ni almacena datos de tarjeta.
+              </div>` : '')
+          }
         </div>
 
         <div class="rent-security-note">
@@ -255,7 +259,7 @@ const RentUI = (() => {
         </div>
 
         <button class="plan-cta" style="margin-top:16px" onclick="RentUI.processPayment()">
-          Proceder al pago → ${PAYMENT_FEE_CONFIG.formatAmount(total)}
+          ${typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isSdkLoaded() ? '💳 ' : ''}Proceder al pago → ${PAYMENT_FEE_CONFIG.formatAmount(total)}
         </button>
       </div>`;
   }
@@ -265,12 +269,41 @@ const RentUI = (() => {
     const lease = RentService.getLeaseById(_selectedLeaseId);
     if (!lease) return;
 
+    const fee = PAYMENT_FEE_CONFIG.calculateFee(lease.monthlyRent);
+    const total = lease.monthlyRent + fee;
     const periodLabel = _getPeriodLabel(_selectedPeriod);
-    const result = RentService.createPayment(_selectedLeaseId, _selectedPeriod, periodLabel);
-    if (result.error) return;
 
-    _currentPayment = result.payment;
-    _currentCheckout = result.checkout;
+    if (typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isAvailable()) {
+      ServicePaymentGateway.checkout({
+        serviceId: 'rent-payment',
+        amount: total,
+        description: 'Alquiler ' + periodLabel + ' — ' + lease.property.address,
+        onSuccess: function(result) {
+          _paymentResult = result;
+          var payResult = RentService.createPayment(_selectedLeaseId, _selectedPeriod, periodLabel);
+          if (!payResult.error) {
+            _currentPayment = payResult.payment;
+            _currentCheckout = payResult.checkout;
+            RentService.simulatePaymentResult(_currentPayment.id, true);
+            _currentPayment = RentService.getPayment(_currentPayment.id);
+          }
+          _view = 'result';
+          _rerender();
+          RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.RENT_PAYMENT_SUCCESS, { lease_id: _selectedLeaseId, chargeId: result.chargeId, amount: total });
+        },
+        onError: function(msg) {
+          RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.RENT_PAYMENT_FAILED, { lease_id: _selectedLeaseId, error: msg });
+          alert(msg || 'Error en el pago. Intenta de nuevo.');
+        },
+      });
+      return;
+    }
+
+    var payResult = RentService.createPayment(_selectedLeaseId, _selectedPeriod, periodLabel);
+    if (payResult.error) return;
+
+    _currentPayment = payResult.payment;
+    _currentCheckout = payResult.checkout;
     _view = 'processing';
 
     RecoAnalytics.track(RecoAnalytics.EVENT_TYPES.RENT_CHECKOUT_OPENED, {

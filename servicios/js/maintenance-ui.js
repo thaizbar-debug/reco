@@ -14,6 +14,7 @@ const MaintenanceUI = (() => {
   let _currentOrder = null;
   let _ratingData = { stars: 0, review: '' };
   let _tracked = false;
+  let _paymentResult = null;
 
   function reset() {
     _view = 'catalog';
@@ -457,25 +458,61 @@ const MaintenanceUI = (() => {
 
         <div class="rent-checkout-card">
           <h4>💳 Método de pago</h4>
-          <div class="rent-method-option">
-            <div class="rent-method-icon">💳</div>
-            <div>
-              <strong>Pago al proveedor</strong>
-              <span>El pago se coordina directamente con el proveedor al completar el servicio.</span>
-            </div>
-          </div>
-          <div class="rent-mock-notice">⚠️ MOCK — En producción, se integrará pago en línea con PSP.</div>
+          ${typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isSdkLoaded() && _quote.price > 0
+            ? `<div class="rent-method-option">
+                <div class="rent-method-icon">💳</div>
+                <div>
+                  <strong>Pago en línea seguro</strong>
+                  <span>Procesado por Culqi (PCI-DSS). Tarjeta de crédito/débito y Yape.</span>
+                </div>
+              </div>`
+            : `<div class="rent-method-option">
+                <div class="rent-method-icon">💳</div>
+                <div>
+                  <strong>Pago al proveedor</strong>
+                  <span>El pago se coordina directamente con el proveedor al completar el servicio.</span>
+                </div>
+              </div>
+              <div class="rent-mock-notice">⚠️ El procesador de pagos no está conectado. Tu solicitud será registrada.</div>`
+          }
         </div>
 
         <div class="rent-security-note">🔒 Tu solicitud está protegida. Cancelación gratuita hasta 24h antes del servicio.</div>
 
-        <button class="plan-cta" style="margin-top:16px" onclick="MaintenanceUI.confirmOrder()">Confirmar solicitud → ${MKT_CONFIG.currencySymbol} ${escapeHTML(String(_quote.price))}</button>
+        ${typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isSdkLoaded() && _quote.price > 0
+          ? `<button class="plan-cta" style="margin-top:16px" onclick="MaintenanceUI.payAndConfirm()">💳 Pagar ${MKT_CONFIG.currencySymbol} ${escapeHTML(String(_quote.price))} →</button>`
+          : `<button class="plan-cta" style="margin-top:16px" onclick="MaintenanceUI.confirmOrder()">Confirmar solicitud → ${MKT_CONFIG.currencySymbol} ${escapeHTML(String(_quote.price))}</button>`
+        }
       </div>`;
   }
 
   function backToQuote() {
     _view = 'quote';
     _rerender();
+  }
+
+  function payAndConfirm() {
+    if (!_quote || !_quote.price || _quote.price <= 0) return;
+
+    if (typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isAvailable()) {
+      var svc = MaintenanceService.getServiceById(_selectedServiceId);
+      ServicePaymentGateway.checkout({
+        serviceId: _selectedServiceId,
+        amount: _quote.price,
+        description: svc ? svc.name : 'Servicio de mantenimiento',
+        onSuccess: function(result) {
+          _paymentResult = result;
+          RecoAnalytics.track('service_payment_success', { service_id: _selectedServiceId, chargeId: result.chargeId });
+          confirmOrder();
+        },
+        onError: function(msg) {
+          RecoAnalytics.track('service_payment_failed', { service_id: _selectedServiceId, error: msg });
+          alert(msg || 'Error en el pago. Intenta de nuevo.');
+        },
+      });
+    } else {
+      RecoFirebase.openAuthModal('login');
+    }
   }
 
   function confirmOrder() {
@@ -817,6 +854,7 @@ const MaintenanceUI = (() => {
     submitRating,
     prepareFromProperty,
     prepareFromTicket,
+    payAndConfirm,
     backToCatalog,
     crossSell,
   };

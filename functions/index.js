@@ -1169,6 +1169,195 @@ exports.chargeWithCulqi = onCall(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Service payment limits — server-side validation for variable-amount services.
+// ─────────────────────────────────────────────────────────────────────────────
+const SERVICE_PAYMENT_LIMITS = { min: 100, max: 5000000 }; // centavos: S/ 1 – S/ 50,000
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createServicePaymentOrder — creates a Culqi order for service payments.
+//
+// Unlike createCulqiOrder (which validates against CULQI_PLANS for key
+// purchases), this handles any service payment with a validated amount.
+// The order is recorded in /serviceOrders so processServicePayment can
+// verify it later.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('createServicePaymentOrder');
+//   const { data } = await fn({ serviceId: 'val-premium', amount: 59900, description: 'Tasación premium' });
+//   // data = { orderId: 'ord_live_...', serviceOrderId: 'abc123' }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.createServicePaymentOrder = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
+  async (request) => {
+    _logAppCheck(request, 'createServicePaymentOrder');
+    requireVerifiedAuth(request);
+
+    const uid = request.auth.uid;
+    const email = request.auth.token.email || '';
+    const rawName = request.auth.token.name || '';
+    const nameParts = rawName.trim().split(' ');
+    const firstName = nameParts[0] || 'Cliente';
+    const lastName = nameParts.slice(1).join(' ') || 'Reco';
+
+    const serviceId = request.data && request.data.serviceId;
+    const amount = request.data && request.data.amount;
+    const description = request.data && request.data.description;
+
+    if (!serviceId || typeof serviceId !== 'string' || serviceId.length > 128) {
+      throw new HttpsError('invalid-argument', 'serviceId requerido.');
+    }
+    if (!amount || typeof amount !== 'number' || amount < SERVICE_PAYMENT_LIMITS.min || amount > SERVICE_PAYMENT_LIMITS.max) {
+      throw new HttpsError('invalid-argument', `Monto inválido (${SERVICE_PAYMENT_LIMITS.min}–${SERVICE_PAYMENT_LIMITS.max} centavos).`);
+    }
+    const desc = String(description || 'Servicio Reco').slice(0, 200);
+
+    const orderNumber = `SVCO-${uid.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const expirationDate = Math.floor(Date.now() / 1000) + 15 * 60;
+
+    let order;
+    try {
+      const res = await fetch('https://api.culqi.com/v2/orders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          currency_code: 'PEN',
+          description: desc,
+          order_number: orderNumber,
+          client_details: { first_name: firstName, last_name: lastName, email, phone_number: '999999999' },
+          expiration_date: expirationDate,
+          confirm: false,
+        }),
+      });
+      order = await res.json();
+      if (!res.ok) {
+        logger.warn('[createServicePaymentOrder] Culqi error', { uid, serviceId, order });
+        throw new HttpsError('aborted', order.user_message || 'Error al crear la orden de pago.');
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[createServicePaymentOrder] fetch error', { uid, err: e.message });
+      throw new HttpsError('internal', 'Error al conectar con Culqi.');
+    }
+
+    const svcOrderRef = db.collection('serviceOrders').doc();
+    await svcOrderRef.set({
+      userId: uid,
+      userEmail: email,
+      serviceId,
+      description: desc,
+      amount,
+      currency: 'PEN',
+      culqiOrderId: order.id,
+      culqiOrderNumber: orderNumber,
+      status: 'pending_payment',
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    logger.info('[createServicePaymentOrder] created', { uid, serviceId, orderId: order.id, svcOrderId: svcOrderRef.id });
+    return { orderId: order.id, serviceOrderId: svcOrderRef.id };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// processServicePayment — charges for a service via Culqi and records payment.
+//
+// Handles both card tokens and Yape order confirmations, same as
+// chargeWithCulqi but validates against /serviceOrders instead of
+// CULQI_PLANS. Updates the service order to 'paid' on success.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('processServicePayment');
+//   // Card:  await fn({ tokenId: 'tkn_live_...', serviceOrderId, amount });
+//   // Yape:  await fn({ orderId: 'ord_live_...', serviceOrderId, amount });
+//   // data = { success: true, chargeId: '...' }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.processServicePayment = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
+  async (request) => {
+    _logAppCheck(request, 'processServicePayment');
+    requireVerifiedAuth(request);
+
+    const uid = request.auth.uid;
+    const email = request.auth.token.email || '';
+    const tokenId = request.data && request.data.tokenId;
+    const orderId = request.data && request.data.orderId;
+    const serviceOrderId = request.data && request.data.serviceOrderId;
+    const amount = request.data && request.data.amount;
+
+    if (!tokenId && !orderId) throw new HttpsError('invalid-argument', 'tokenId u orderId requerido.');
+    if (!serviceOrderId || typeof serviceOrderId !== 'string') throw new HttpsError('invalid-argument', 'serviceOrderId requerido.');
+    if (!amount || typeof amount !== 'number' || amount < SERVICE_PAYMENT_LIMITS.min) throw new HttpsError('invalid-argument', 'Monto inválido.');
+
+    const svcOrderRef = db.collection('serviceOrders').doc(serviceOrderId);
+    const svcOrderSnap = await svcOrderRef.get();
+    if (!svcOrderSnap.exists) throw new HttpsError('not-found', 'Orden de servicio no encontrada.');
+    const svcOrder = svcOrderSnap.data();
+    if (svcOrder.userId !== uid) throw new HttpsError('permission-denied', 'No autorizado.');
+    if (svcOrder.status === 'paid') throw new HttpsError('already-exists', 'Este servicio ya fue pagado.');
+    if (svcOrder.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con la orden.');
+
+    let chargeId;
+
+    if (tokenId) {
+      let charge;
+      try {
+        const res = await fetch('https://api.culqi.com/v2/charges', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount, currency_code: 'PEN', email, source_id: tokenId }),
+        });
+        charge = await res.json();
+        if (!res.ok) {
+          logger.warn('[processServicePayment] card error', { uid, serviceOrderId, charge });
+          throw new HttpsError('aborted', charge.user_message || 'El pago no pudo procesarse.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[processServicePayment] card fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al conectar con la pasarela de pago.');
+      }
+      if (charge.outcome && charge.outcome.type !== 'venta_exitosa') {
+        throw new HttpsError('aborted', charge.user_message || 'El cargo fue rechazado.');
+      }
+      chargeId = charge.id;
+    } else {
+      let culqiOrder;
+      try {
+        const res = await fetch(`https://api.culqi.com/v2/orders/${encodeURIComponent(orderId)}`, {
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}` },
+        });
+        culqiOrder = await res.json();
+        if (!res.ok) {
+          logger.warn('[processServicePayment] order fetch error', { uid, orderId, culqiOrder });
+          throw new HttpsError('aborted', culqiOrder.user_message || 'Error verificando el pago.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[processServicePayment] order fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al verificar el pago con Culqi.');
+      }
+      if (culqiOrder.state !== 'paid') {
+        throw new HttpsError('aborted', 'El pago Yape aún no fue confirmado.');
+      }
+      if (culqiOrder.amount !== amount) {
+        throw new HttpsError('aborted', 'El monto de la orden no coincide.');
+      }
+      chargeId = orderId;
+    }
+
+    await svcOrderRef.update({
+      status: 'paid',
+      chargeId,
+      paidAt: FieldValue.serverTimestamp(),
+    });
+
+    logger.info('[processServicePayment] success', { uid, serviceOrderId, chargeId });
+    return { success: true, chargeId };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // grantKeys — admin-only callable that adds keys to a user's balance.
 //
 // Client contract:

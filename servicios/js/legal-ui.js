@@ -16,6 +16,7 @@ const LegalUI = (() => {
   let _bookingStep = 0;
   let _bookingData = {};
   let _currentOrder = null;
+  let _paymentResult = null;
 
   function reset() {
     _view = 'catalog';
@@ -687,11 +688,45 @@ const LegalUI = (() => {
             <strong>${escapeHTML(service.price.display)}</strong>
           </div>
         </div>
-        <div class="val-checkout-notice">
-          <strong>💳 Pago no habilitado aún</strong>
-          <span>El procesador de pagos no está conectado. Tu solicitud será registrada y un asesor te contactará para coordinar el pago.</span>
-        </div>
+        ${typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isSdkLoaded() && service.price.value > 0
+          ? `<div class="val-checkout-notice" style="background:var(--green-bg,#ecfdf5);border-color:var(--green,#16a34a)">
+              <strong>💳 Pago en línea</strong>
+              <span>Tu pago será procesado de forma segura por Culqi (certificado PCI-DSS). Aceptamos tarjeta de crédito/débito y Yape.</span>
+            </div>
+            <button class="plan-cta" style="margin-top:14px" onclick="LegalUI.payAndConfirm()">💳 Pagar ${escapeHTML(service.price.display)} →</button>`
+          : `<div class="val-checkout-notice">
+              <strong>💳 Pago no habilitado aún</strong>
+              <span>El procesador de pagos no está conectado. Tu solicitud será registrada y un asesor te contactará para coordinar el pago.</span>
+            </div>`
+        }
       </div>`;
+  }
+
+  function payAndConfirm() {
+    var service = getServiceById(_selectedServiceId);
+    if (!service || !service.price || !service.price.value) return;
+
+    if (typeof ServicePaymentGateway !== 'undefined' && ServicePaymentGateway.isAvailable()) {
+      ServicePaymentGateway.checkout({
+        serviceId: _selectedServiceId,
+        amount: service.price.value,
+        description: service.name,
+        onSuccess: function(result) {
+          _paymentResult = result;
+          RecoAnalytics.track('service_payment_success', { service_id: _selectedServiceId, chargeId: result.chargeId });
+          var steps = _getBookingSteps(service);
+          _bookingStep = steps.length - 1;
+          _rerender();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        onError: function(msg) {
+          RecoAnalytics.track('service_payment_failed', { service_id: _selectedServiceId, error: msg });
+          alert(msg || 'Error en el pago. Intenta de nuevo.');
+        },
+      });
+    } else {
+      RecoFirebase.openAuthModal('login');
+    }
   }
 
   function _stepConfirmation(service) {
@@ -713,7 +748,6 @@ const LegalUI = (() => {
         },
         _checkResult ? _checkResult.propertyId : null
       );
-      // Bridge to Cloud Function for authenticated users
       if (typeof OrderBridge !== 'undefined') {
         OrderBridge.submit({
           serviceId: _selectedServiceId,
@@ -866,5 +900,6 @@ const LegalUI = (() => {
     prevStep,
     crossSell,
     preparePropertyCheck,
+    payAndConfirm,
   };
 })();
