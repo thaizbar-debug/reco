@@ -1,0 +1,91 @@
+name: Acquire COFOPRI Data
+
+on:
+  workflow_dispatch:
+    inputs:
+      district:
+        description: 'District to acquire'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - miraflores
+          - la-victoria
+          - surquillo
+          - chorrillos
+          - san-juan-de-lurigancho
+      dry_run:
+        description: 'Dry run (show planned queries without fetching)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: claude/catastros-pendientes-xi4laa
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run COFOPRI acquisition
+        run: |
+          ARGS="--source=cofopri --verbose"
+          if [ "${{ inputs.district }}" != "all" ]; then
+            ARGS="$ARGS --district=${{ inputs.district }}"
+          fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          echo "Running: node tools/etl/acquire_pilot_sources.js $ARGS"
+          node tools/etl/acquire_pilot_sources.js $ARGS
+
+      - name: Show acquisition summary
+        if: always()
+        run: |
+          echo "=== Acquisition Summary ==="
+          if [ -f data/raw/external/acquisition_summary.json ]; then
+            cat data/raw/external/acquisition_summary.json
+          else
+            echo "No acquisition_summary.json found"
+          fi
+          echo ""
+          echo "=== Files in data/raw/external/ ==="
+          find data/raw/external/ -type f | head -200
+
+      - name: Commit acquired data
+        if: ${{ inputs.dry_run != true }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/raw/external/
+          if git diff --cached --quiet; then
+            echo "No new data to commit"
+          else
+            git commit -m "data: COFOPRI raw acquisition via GitHub Actions
+
+Automated acquisition from geoportal.cofopri.gob.pe
+Source: COFOPRI ArcGIS REST API (CATASTRO_URBANO MapServer)
+District filter: ${{ inputs.district }}
+
+Raw data only — no analysis or parcel_master modification.
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01PX5AbKL36yMkvkMQs3o24D"
+            git push origin claude/catastros-pendientes-xi4laa
+          fi

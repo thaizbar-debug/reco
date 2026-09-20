@@ -14,7 +14,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const { defineSecret } = require('firebase-functions/params');
+const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -23,6 +24,9 @@ const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 const db = getFirestore();
+
+const openaiKey = defineSecret('OPENAI_API_KEY');
+const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
 
 // Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
 // Used by setAdminClaim to accept the current caller as admin even if
@@ -33,21 +37,29 @@ const db = getFirestore();
 const SEED_ADMIN_EMAILS = ['webmaster@recosac.com', 'sebastiand@recosac.com'];
 
 const REGION = 'southamerica-east1';
+const CONTINUE_URL = 'https://recosac.com/';
 const UNLOCK_COST = 1;
-const PUBLISH_COST = 3;
+// Publicar es gratuito mientras la pasarela de pagos no esté conectada.
+// Para volver a cobrar, poner el costo aquí y el mismo número en
+// _PUB_COST dentro de index.html. Con 0 no se valida saldo ni se
+// escribe movimiento de llaves.
+const PUBLISH_COST = 0;
 const HISTORY_CAP = 200;
+const WELCOME_KEYS = 1;
 // Max contactRequests a single fromUserId can create in the rolling
 // last hour. Above this, submitContactRequest throws resource-exhausted.
 // A legit user contacting 15 property owners in 60 minutes is already
 // aggressive; anything much beyond that is scraper behaviour.
 const CONTACT_RATE_LIMIT_PER_HOUR = 15;
-const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco'];
+const CONTACT_KINDS = ['arrendador', 'vendedor', 'asesor_reco', 'demanda_insatisfecha'];
+const UNMET_DEMAND_PROPERTY_TYPES = ['Departamento', 'Casa', 'Terreno', 'Oficina', 'Otro'];
 // Max getHistoricoDetail calls per authenticated user per rolling hour.
 // A user browsing 500 histórico cards in one hour is already very
 // intense; beyond that suggests a script trying to pull the full
 // dataset. Hitting the cap throws resource-exhausted (client shows
 // "demasiadas consultas, espera un momento").
 const HIST_DETAIL_RATE_LIMIT_PER_HOUR = 500;
+const RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR = 3;
 
 // AppCheck is ENFORCED on both callables (enforceAppCheck: true on
 // the onCall config below). Requests without a valid reCAPTCHA v3
@@ -74,6 +86,13 @@ function _logAppCheck(request, fn) {
       origin: headers['origin'],
     });
   }
+}
+
+function _esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c =>
+    c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;'
+  );
 }
 
 // Any callable that changes state or reads premium data must go through
@@ -289,7 +308,7 @@ exports.publishProperty = onCall(
       const userSnap = await tx.get(userRef);
       const userData = userSnap.exists ? userSnap.data() : {};
       const currentKeys = Number(userData.keysLeft) || 0;
-      if (currentKeys < PUBLISH_COST) {
+      if (PUBLISH_COST > 0 && currentKeys < PUBLISH_COST) {
         throw new HttpsError(
           'failed-precondition',
           `Sin llaves suficientes. Necesitas ${PUBLISH_COST} llaves para publicar (tenés ${currentKeys}).`
@@ -316,6 +335,7 @@ exports.publishProperty = onCall(
         baths: numOrZero(raw.baths),
         parking: numOrZero(raw.parking),
         floor: numOrZero(raw.floor),
+        unitFloors: Math.max(1, numOrZero(raw.unitFloors) || 1),
         floors: numOrZero(raw.floors),
         age: numOrZero(raw.age),
         estado,
@@ -329,19 +349,23 @@ exports.publishProperty = onCall(
 
       tx.set(pubRef, pubData);
 
-      const historyEntry = {
-        type: 'use',
-        qty: PUBLISH_COST,
-        propId: null,
-        propLabel: 'Publicación: ' + title,
-        date: new Date().toISOString(),
-      };
-      const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
+      // Con costo 0 no se debita nada ni se ensucia el historial de
+      // llaves con movimientos vacíos.
+      if (PUBLISH_COST > 0) {
+        const historyEntry = {
+          type: 'use',
+          qty: PUBLISH_COST,
+          propId: null,
+          propLabel: 'Publicación: ' + title,
+          date: new Date().toISOString(),
+        };
+        const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
 
-      tx.set(userRef, {
-        keysLeft: currentKeys - PUBLISH_COST,
-        keyHistory: nextHistory,
-      }, { merge: true });
+        tx.set(userRef, {
+          keysLeft: currentKeys - PUBLISH_COST,
+          keyHistory: nextHistory,
+        }, { merge: true });
+      }
 
       return {
         publicationId: pubRef.id,
@@ -410,35 +434,57 @@ exports.submitContactRequest = onCall(
       return s.slice(0, max);
     };
 
-    const propertyId = str(raw.propertyId, 'propertyId', 128);
     const kind = raw.kind;
     if (!CONTACT_KINDS.includes(kind)) {
       throw new HttpsError('invalid-argument', 'kind inválido.');
     }
+    const isUnmetDemand = kind === 'demanda_insatisfecha';
+    // propertyId is optional for demanda_insatisfecha (submitted from the map
+    // without a specific listing); required for all other contact kinds.
+    const propertyId = isUnmetDemand
+      ? optStr(raw.propertyId, 128)
+      : str(raw.propertyId, 'propertyId', 128);
     const fromName  = str(raw.fromName, 'fromName', 200);
     const fromEmail = str(raw.fromEmail, 'fromEmail', 200);
     if (!/.+@.+\..+/.test(fromEmail)) {
       throw new HttpsError('invalid-argument', 'fromEmail inválido.');
     }
-    const message = str(raw.message, 'message', 2000);
-    if (message.length < 10) {
+    const message = isUnmetDemand ? optStr(raw.message, 2000) || '' : str(raw.message, 'message', 2000);
+    if (!isUnmetDemand && message.length < 10) {
       throw new HttpsError('invalid-argument', 'El mensaje debe tener al menos 10 caracteres.');
     }
 
-    const reqId = `${uid}_${propertyId}_${kind}`;
-    const reqRef = db.collection('contactRequests').doc(reqId);
+    let unmetFields = {};
+    if (isUnmetDemand) {
+      const referenceZone = str(raw.referenceZone, 'referenceZone', 500);
+      const propertyTypeWanted = raw.propertyTypeWanted;
+      if (!UNMET_DEMAND_PROPERTY_TYPES.includes(propertyTypeWanted)) {
+        throw new HttpsError('invalid-argument', 'propertyTypeWanted inválido.');
+      }
+      const budgetReference = optStr(raw.budgetReference, 200);
+      const viewType = optStr(raw.viewType, 40);
+      const source = optStr(raw.source, 40);
+      unmetFields = { referenceZone, propertyTypeWanted, budgetReference, viewType, source };
+    }
 
-    // Existence check + rate limit outside the transaction. Duplicates
-    // are impossible-to-race on the deterministic ID (Firestore create
-    // with an existing ID fails naturally), and the rate-limit query
-    // trades a tiny lag window for a much simpler / cheaper Function
-    // (transactional aggregation queries are unavailable in Firestore).
-    const existing = await reqRef.get();
-    if (existing.exists) {
-      throw new HttpsError(
-        'already-exists',
-        'Ya contactaste al propietario de este inmueble.'
-      );
+    // demanda_insatisfecha allows unlimited submissions (no per-user cap);
+    // all other kinds use a deterministic ID so duplicate contacts to the
+    // same owner are blocked by Firestore's create-if-not-exists semantics.
+    const reqId = isUnmetDemand
+      ? null
+      : `${uid}_${propertyId}_${kind}`;
+    const reqRef = isUnmetDemand
+      ? db.collection('contactRequests').doc()
+      : db.collection('contactRequests').doc(reqId);
+
+    if (!isUnmetDemand) {
+      const existing = await reqRef.get();
+      if (existing.exists) {
+        throw new HttpsError(
+          'already-exists',
+          'Ya contactaste al propietario de este inmueble.'
+        );
+      }
     }
 
     const oneHourAgoMs = Date.now() - 60 * 60 * 1000;
@@ -460,6 +506,8 @@ exports.submitContactRequest = onCall(
       );
     }
 
+    const pubOwnerId = optStr(raw.publicationOwnerId, 128);
+
     await reqRef.create({
       propertyId,
       propertyAddress:     optStr(raw.propertyAddress, 500),
@@ -467,16 +515,108 @@ exports.submitContactRequest = onCall(
       propertyOp:          optStr(raw.propertyOp, 40),
       propertyPrice:       (typeof raw.propertyPrice === 'number' && isFinite(raw.propertyPrice)) ? raw.propertyPrice : null,
       propertyCurrency:    optStr(raw.propertyCurrency, 10),
-      publicationOwnerId:  optStr(raw.publicationOwnerId, 128),
+      publicationOwnerId:    isUnmetDemand ? null : pubOwnerId,
+      publicationOwnerEmail: isUnmetDemand ? null : optStr(raw.publicationOwnerEmail, 200),
       kind,
+      source:              optStr(raw.source, 40),
       fromUserId:          uid,
       fromName,
       fromEmail,
       fromPhone:           optStr(raw.fromPhone, 40),
       message,
+      ...unmetFields,
       status:              'new',
       createdAt:           FieldValue.serverTimestamp(),
     });
+
+    // Notify all corredores when a client submits an advisor search request.
+    if (isUnmetDemand) {
+      try {
+        const corredoresSnap = await db.collection('users')
+          .where('isCorredor', '==', true)
+          .get();
+        if (!corredoresSnap.empty) {
+          const notifBatch = db.batch();
+          corredoresSnap.docs.forEach(corredorDoc => {
+            const notifRef = db.collection('notifications').doc();
+            notifBatch.set(notifRef, {
+              userId:              corredorDoc.id,
+              kind:                'advisor_request',
+              read:                false,
+              createdAt:           FieldValue.serverTimestamp(),
+              contactRequestId:    reqId,
+              fromName,
+              fromEmail,
+              fromPhone:           optStr(raw.fromPhone, 40) || null,
+              referenceZone:       unmetFields.referenceZone || null,
+              propertyTypeWanted:  unmetFields.propertyTypeWanted || null,
+              budgetReference:     unmetFields.budgetReference || null,
+              viewType:            unmetFields.viewType || null,
+              message:             message || null,
+            });
+          });
+          await notifBatch.commit();
+        }
+      } catch (e) {
+        logger.warn('[submitContactRequest] corredor notifications failed', {
+          reqId, err: e && e.message,
+        });
+      }
+    }
+
+    // Queue an email to the publication owner via /mail → Resend.
+    // Only user-published properties have an owner; the ~2,663 static
+    // properties have no publication owner so no email goes out for those.
+    if (pubOwnerId) {
+      try {
+        const ownerUser = await getAuth().getUser(pubOwnerId);
+        if (ownerUser.email) {
+          const propLine = [optStr(raw.propertyAddress, 500), optStr(raw.propertyDistrict, 100)]
+            .filter(Boolean).join(', ') || '—';
+          const kindLabel = kind === 'arrendador' ? 'alquilar' : 'comprar';
+          const ownerName = (ownerUser.displayName || '').split(' ')[0];
+          const ownerGreeting = ownerName ? `Hola ${_esc(ownerName)},` : 'Hola,';
+          await db.collection('mail').add({
+            to: ownerUser.email,
+            replyTo: fromEmail,
+            message: {
+              subject: `Nuevo interesado en tu inmueble (${propLine})`,
+              html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Nuevo interesado en tu inmueble</h2>
+  <p>${ownerGreeting}</p>
+  <p>Alguien está interesado en <strong>${kindLabel}</strong> tu propiedad de <strong>${_esc(propLine)}</strong>.</p>
+  <div style="background:#f1f5f9;border-radius:10px;padding:14px 16px;margin:16px 0">
+    <p style="margin:0 0 6px"><strong>Nombre:</strong> ${_esc(fromName)}</p>
+    <p style="margin:0 0 6px"><strong>Email:</strong> <a href="mailto:${_esc(fromEmail)}">${_esc(fromEmail)}</a></p>
+    ${raw.fromPhone ? `<p style="margin:0 0 6px"><strong>Teléfono:</strong> ${_esc(optStr(raw.fromPhone, 40))}</p>` : ''}
+    <p style="margin:12px 0 0"><strong>Mensaje:</strong></p>
+    <p style="margin:4px 0 0;white-space:pre-wrap">${_esc(message)}</p>
+  </div>
+  <p>Responde directamente al email del interesado para coordinar.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+              text: `${ownerName ? 'Hola ' + ownerName + ',' : 'Hola,'}\n\nAlguien está interesado en ${kindLabel} tu propiedad de ${propLine}.\n\nNombre: ${fromName}\nEmail: ${fromEmail}\n${raw.fromPhone ? 'Teléfono: ' + optStr(raw.fromPhone, 40) + '\n' : ''}\nMensaje:\n${message}\n\n— Equipo Reco`,
+            },
+          });
+        }
+      } catch (e) {
+        logger.warn('[submitContactRequest] contact-owner email failed', {
+          reqId, ownerEmail: (e && e.code === 'auth/user-not-found') ? null : pubOwnerId,
+          err: e && e.message,
+        });
+        try {
+          await db.collection('adminAuditLog').add({
+            adminUid: 'system',
+            adminEmail: null,
+            action: 'mail.contactOwnerFailed',
+            targetType: 'contactRequest',
+            targetId: reqId,
+            extras: { pubOwnerId, err: (e && e.message || '').slice(0, 300) },
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        } catch (_) { /* best effort */ }
+      }
+    }
 
     return { contactRequestId: reqId };
   }
@@ -706,6 +846,43 @@ exports.cleanupHistDetailAccess = onSchedule(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// grantWelcomeKey — give every new user WELCOME_KEYS free keys.
+//
+// Fires when a /users/{uid} document is first created (by
+// _sanitizedSeed() on the client, which seeds keysLeft: 0). The admin
+// SDK bypasses Firestore rules, so it can set keysLeft to a non-zero
+// value that the client create rule intentionally blocks.
+//
+// Abuse surface: a user cannot re-trigger this by deleting and
+// re-creating their doc — the Firestore rule `allow delete: if false`
+// on /users prevents client-side deletion. Re-creating an existing doc
+// (set without merge) also fails because _pullUserDataFromFirestore
+// only calls set() when snap.exists === false.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.grantWelcomeKey = onDocumentCreated(
+  { region: REGION, document: 'users/{uid}' },
+  async (event) => {
+    const uid = event.params.uid;
+    const userRef = db.collection('users').doc(uid);
+
+    const historyEntry = {
+      type: 'bonus',
+      qty: WELCOME_KEYS,
+      propId: null,
+      propLabel: 'Llave de bienvenida',
+      date: new Date().toISOString(),
+    };
+
+    await userRef.update({
+      keysLeft: WELCOME_KEYS,
+      keyHistory: [historyEntry],
+    });
+
+    logger.info('[grantWelcomeKey] granted welcome key', { uid, keys: WELCOME_KEYS });
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // setAdminClaim — grant or revoke the `admin` custom claim on a user
 // by email. Only existing admins can call it (either via existing
 // admin claim OR the seed email allowlist during the migration
@@ -799,3 +976,689 @@ exports.setAdminClaim = onCall(
     return { targetUid: targetUser.uid, admin };
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Culqi plan catalogue — single source of truth for both functions below.
+// ─────────────────────────────────────────────────────────────────────────────
+const CULQI_PLANS = {
+  Individual: { amount: 1000,  qty: 1  },
+  Bronce:     { amount: 4500,  qty: 5  },
+  Plata:      { amount: 8000,  qty: 10 },
+  Oro:        { amount: 35000, qty: 50 },
+};
+
+// Shared helper: grant keys and record the purchase inside a transaction.
+// chargeId must be unique per payment (charge.id for cards, order.id for Yape).
+async function _grantKeysForPurchase(uid, planName, plan, chargeId, dniRuc) {
+  const userRef = db.collection('users').doc(uid);
+
+  // Quick pre-check outside the transaction to reject obvious replays.
+  const preSnap = await userRef.get();
+  const preData = preSnap.exists ? preSnap.data() : {};
+  const preHistory = Array.isArray(preData.keyHistory) ? preData.keyHistory : [];
+  if (preHistory.some(h => h.chargeId === chargeId)) {
+    throw new HttpsError('already-exists', 'Este pago ya fue procesado.');
+  }
+
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(userRef);
+    const data = snap.exists ? snap.data() : {};
+    const current = Number(data.keysLeft) || 0;
+    const newTotal = current + plan.qty;
+    const histEntry = {
+      type: 'purchase',
+      label: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
+      delta: plan.qty,
+      balance: newTotal,
+      chargeId,
+      date: new Date().toISOString(),
+      ...(dniRuc ? { dniRuc } : {}),
+    };
+    const nextHistory = [histEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
+    tx.set(userRef, { keysLeft: newTotal, keyHistory: nextHistory }, { merge: true });
+    return newTotal;
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createCulqiOrder — creates a Culqi order before opening the checkout.
+// Required for Yape (and any other order-based payment method).
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('createCulqiOrder');
+//   const { data } = await fn({ planName, amount });
+//   // data = { orderId: 'ord_live_...' }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.createCulqiOrder = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
+  async (request) => {
+    _logAppCheck(request, 'createCulqiOrder');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+
+    const uid     = request.auth.uid;
+    const email   = request.auth.token.email || '';
+    const rawName = request.auth.token.name  || '';
+    const nameParts = rawName.trim().split(' ');
+    const firstName = nameParts[0] || 'Cliente';
+    const lastName  = nameParts.slice(1).join(' ') || 'Reco';
+
+    const { planName, amount } = request.data;
+    const plan = CULQI_PLANS[planName];
+    if (!plan) throw new HttpsError('invalid-argument', 'Plan inválido.');
+    if (plan.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con el plan.');
+
+    const orderNumber    = `RECO-${uid.slice(0, 8).toUpperCase()}-${Date.now()}`;
+    const expirationDate = Math.floor(Date.now() / 1000) + 15 * 60; // 15 min
+
+    let order;
+    try {
+      const res = await fetch('https://api.culqi.com/v2/orders', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: plan.amount,
+          currency_code: 'PEN',
+          description: `Pack ${planName} — ${plan.qty} llave${plan.qty !== 1 ? 's' : ''}`,
+          order_number: orderNumber,
+          client_details: { first_name: firstName, last_name: lastName, email, phone_number: '999999999' },
+          expiration_date: expirationDate,
+          confirm: false,
+        }),
+      });
+      order = await res.json();
+      if (!res.ok) {
+        logger.warn('[createCulqiOrder] Culqi error', { uid, planName, order });
+        throw new HttpsError('aborted', order.user_message || 'Error al crear la orden de pago.');
+      }
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[createCulqiOrder] fetch error', { uid, err: e.message });
+      throw new HttpsError('internal', 'Error al conectar con Culqi.');
+    }
+
+    logger.info('[createCulqiOrder] created', { uid, planName, orderId: order.id });
+    return { orderId: order.id };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// chargeWithCulqi — finalizes payment and grants keys.
+// Handles both card tokens and Yape order confirmations.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('chargeWithCulqi');
+//   // Card:  await fn({ tokenId: 'tkn_live_...', planName, amount });
+//   // Yape:  await fn({ orderId: 'ord_live_...', planName, amount });
+//   // data = { success: true, keysLeft: N, chargeId: '...' }
+// ─────────────────────────────────────────────────────────────────────────────
+exports.chargeWithCulqi = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true, secrets: [culqiSecretKey] },
+  async (request) => {
+    _logAppCheck(request, 'chargeWithCulqi');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+
+    const uid   = request.auth.uid;
+    const email = request.auth.token.email || '';
+
+    const tokenId  = request.data && request.data.tokenId;
+    const orderId  = request.data && request.data.orderId;
+    const planName = request.data && request.data.planName;
+    const amount   = request.data && request.data.amount;
+    const dniRuc   = (request.data && request.data.dniRuc) || null;
+
+    if (!tokenId && !orderId) throw new HttpsError('invalid-argument', 'tokenId u orderId requerido.');
+    const plan = CULQI_PLANS[planName];
+    if (!plan) throw new HttpsError('invalid-argument', 'Plan inválido.');
+    if (plan.amount !== amount) throw new HttpsError('invalid-argument', 'Monto no coincide con el plan.');
+
+    let chargeId;
+
+    if (tokenId) {
+      // ── Card payment ──
+      let charge;
+      try {
+        const res = await fetch('https://api.culqi.com/v2/charges', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: plan.amount, currency_code: 'PEN', email, source_id: tokenId }),
+        });
+        charge = await res.json();
+        if (!res.ok) {
+          logger.warn('[chargeWithCulqi] card error', { uid, planName, charge });
+          throw new HttpsError('aborted', charge.user_message || 'El pago no pudo procesarse.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[chargeWithCulqi] card fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al conectar con la pasarela de pago.');
+      }
+      if (charge.outcome && charge.outcome.type !== 'venta_exitosa') {
+        throw new HttpsError('aborted', charge.user_message || 'El cargo fue rechazado.');
+      }
+      chargeId = charge.id;
+    } else {
+      // ── Yape: verify the order is paid ──
+      let order;
+      try {
+        const res = await fetch(`https://api.culqi.com/v2/orders/${encodeURIComponent(orderId)}`, {
+          headers: { Authorization: `Bearer ${culqiSecretKey.value()}` },
+        });
+        order = await res.json();
+        if (!res.ok) {
+          logger.warn('[chargeWithCulqi] order fetch error', { uid, orderId, order });
+          throw new HttpsError('aborted', order.user_message || 'Error verificando el pago.');
+        }
+      } catch (e) {
+        if (e instanceof HttpsError) throw e;
+        logger.error('[chargeWithCulqi] order fetch error', { uid, err: e.message });
+        throw new HttpsError('internal', 'Error al verificar el pago con Culqi.');
+      }
+      if (order.state !== 'paid') {
+        throw new HttpsError('aborted', 'El pago Yape aún no fue confirmado.');
+      }
+      if (order.amount !== plan.amount) {
+        throw new HttpsError('aborted', 'El monto de la orden no coincide con el plan.');
+      }
+      chargeId = orderId;
+    }
+
+    const newBalance = await _grantKeysForPurchase(uid, planName, plan, chargeId, dniRuc);
+    logger.info('[chargeWithCulqi] success', { uid, planName, qty: plan.qty, chargeId });
+    return { success: true, keysLeft: newBalance, chargeId };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grantKeys — admin-only callable that adds keys to a user's balance.
+//
+// Client contract:
+//   const fn = firebase.app().functions('southamerica-east1')
+//     .httpsCallable('grantKeys');
+//   const { data } = await fn({ email: 'user@example.com', qty: 50 });
+//   // data = { targetUid, email, added, newBalance }
+//
+// Errors (HttpsError):
+//   unauthenticated       — no auth context / AppCheck failed
+//   failed-precondition   — email not verified
+//   permission-denied     — caller is not an admin
+//   invalid-argument      — missing/malformed email or qty
+//   not-found             — no user account with that email
+// ─────────────────────────────────────────────────────────────────────────────
+exports.grantKeys = onCall(
+  {
+    region: REGION,
+    maxInstances: 5,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'grantKeys');
+    const caller = _requireAdminCaller(request);
+
+    const targetEmailRaw = request.data && request.data.email;
+    if (!targetEmailRaw || typeof targetEmailRaw !== 'string' || !/.+@.+\..+/.test(targetEmailRaw)) {
+      throw new HttpsError('invalid-argument', 'email requerido.');
+    }
+    const targetEmail = targetEmailRaw.trim().toLowerCase();
+
+    const qty = request.data && request.data.qty;
+    if (typeof qty !== 'number' || !Number.isInteger(qty) || qty < 1 || qty > 10000) {
+      throw new HttpsError('invalid-argument', 'qty requerido (entero entre 1 y 10000).');
+    }
+
+    let targetUser;
+    try {
+      targetUser = await getAuth().getUserByEmail(targetEmail);
+    } catch (e) {
+      throw new HttpsError('not-found', 'No hay una cuenta con ese email.');
+    }
+
+    const userRef = db.collection('users').doc(targetUser.uid);
+    const result = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(userRef);
+      const data = snap.exists ? snap.data() : {};
+      const currentKeys = Number(data.keysLeft) || 0;
+      const newBalance = currentKeys + qty;
+
+      const historyEntry = {
+        type: 'grant',
+        qty,
+        grantedBy: caller.email,
+        date: new Date().toISOString(),
+      };
+      const nextHistory = [historyEntry, ...(Array.isArray(data.keyHistory) ? data.keyHistory : [])].slice(0, HISTORY_CAP);
+
+      tx.set(userRef, {
+        keysLeft: newBalance,
+        keyHistory: nextHistory,
+      }, { merge: true });
+
+      return { newBalance };
+    });
+
+    try {
+      await db.collection('adminAuditLog').add({
+        adminUid: caller.uid,
+        adminEmail: caller.email || null,
+        action: 'keys.grant',
+        targetType: 'user',
+        targetId: targetUser.uid,
+        extras: { targetEmail, qty, newBalance: result.newBalance },
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      logger.warn('[grantKeys] audit write failed', { err: e && e.message });
+    }
+
+    return {
+      targetUid: targetUser.uid,
+      email: targetEmail,
+      added: qty,
+      newBalance: result.newBalance,
+    };
+  }
+);
+
+// MEJ-04: generateListingCopy — AI-powered listing description
+// Uses fetch() instead of the openai SDK to avoid an extra dependency in the
+// Cloud Function bundle; functionally identical (gpt-4o-mini, temperature 0.7,
+// response_format: json_object).
+// ─────────────────────────────────────────────────────────────────────────────
+const AI_COPY_LIMIT_PER_HOUR = 30;
+
+exports.generateListingCopy = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+    secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'generateListingCopy');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+
+    const d = request.data || {};
+    const district = String(d.district || '').replace(/[\r\n]/g, ' ').trim().slice(0, 60);
+    const area = Number(d.area) || 0;
+    if (!district || !area) {
+      throw new HttpsError('invalid-argument', 'Distrito y área son obligatorios.');
+    }
+    const type  = String(d.type  || '').slice(0, 40);
+    const op    = String(d.op    || '').slice(0, 20);
+    const beds  = Number(d.beds)  || 0;
+    const baths = Number(d.baths) || 0;
+    const parking = Number(d.parking) || 0;
+    const features = Array.isArray(d.features) ? d.features.map(f => String(f).slice(0, 60)) : [];
+
+    // ── Rate limit: hour-bucket in aiCopyUsage/{uid} ──
+    const hour = new Date().toISOString().slice(0, 13); // e.g. "2026-09-08T14"
+    const usageRef = db.collection('aiCopyUsage').doc(uid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(usageRef);
+      const data = snap.data() || {};
+      if (data.hour === hour && (data.count || 0) >= AI_COPY_LIMIT_PER_HOUR) {
+        throw new HttpsError(
+          'resource-exhausted',
+          `Límite de ${AI_COPY_LIMIT_PER_HOUR} generaciones por hora alcanzado. Intenta más tarde.`
+        );
+      }
+      if (data.hour === hour) {
+        tx.update(usageRef, { count: (data.count || 0) + 1, updatedAt: FieldValue.serverTimestamp() });
+      } else {
+        tx.set(usageRef, { hour, count: 1, updatedAt: FieldValue.serverTimestamp() });
+      }
+    });
+
+    // ── Build ficha (never includes address — only district) ──
+    const ficha = {
+      distrito: district,
+      area_m2: area,
+      ...(type  && { tipo: type }),
+      ...(op    && { operacion: op }),
+      ...(beds  && { dormitorios: beds }),
+      ...(baths && { banos: baths }),
+      ...(parking && { estacionamientos: parking }),
+      ...(features.length && { caracteristicas: features }),
+    };
+
+    const systemPrompt = `Eres un redactor inmobiliario profesional en Perú.
+Genera un título y una descripción para un aviso clasificado a partir de la ficha técnica que te entregará el usuario.
+
+Reglas:
+1. Usa SOLO los datos de la ficha. No inventes metraje, ambientes ni amenities que no aparezcan.
+2. No menciones el precio.
+3. No uses mayúsculas sostenidas ni exclamaciones repetidas.
+4. No prometas rentabilidad ni plusvalía.
+5. No uses lenguaje discriminatorio ni excluyente.
+6. Responde ÚNICAMENTE con un JSON válido (sin bloques de código) con esta forma:
+   {"titulo":"...","descripcion":"..."}
+   donde título ≤ 90 caracteres y descripción tiene entre 500 y 900 caracteres distribuidos en 2 a 3 párrafos separados por \\n\\n.`;
+
+    // ── Call OpenAI via fetch ──
+    const key = openaiKey.value();
+    if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
+
+    let body;
+    try {
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.7,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: JSON.stringify(ficha) },
+          ],
+        }),
+      });
+      body = await res.json();
+      if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
+    } catch (e) {
+      logger.error('[generateListingCopy] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
+    }
+
+    const raw = (body.choices?.[0]?.message?.content || '').trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      const titleMatch = raw.match(/"titulo"\s*:\s*"([^"]+)"/);
+      const descMatch = raw.match(/"descripcion"\s*:\s*"([^"]+)"/);
+      parsed = {
+        titulo: titleMatch ? titleMatch[1] : '',
+        descripcion: descMatch ? descMatch[1] : '',
+      };
+    }
+
+    if (!parsed.titulo && !parsed.descripcion) {
+      throw new HttpsError('internal', 'La IA no generó contenido válido.');
+    }
+
+    return {
+      titulo: String(parsed.titulo || '').trim().slice(0, 200),
+      descripcion: String(parsed.descripcion || '').trim().slice(0, 5000),
+    };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendPasswordResetViaResend — generate a password-reset link with the Admin
+// SDK and queue a branded email through the /mail collection (→ Resend SMTP).
+//
+// Why not just firebase.auth().sendPasswordResetEmail() from the client?
+// That uses Firebase Auth's built-in SMTP, which sends from
+// noreply@reco-5a5dd.firebaseapp.com — a domain the project does not
+// control and cannot add SPF/DKIM/DMARC records to. The result: reset
+// emails land in spam or never arrive at all (BUG-06). By generating the
+// action link server-side and dispatching it through Resend (which sends
+// from no-reply@recosac.com with verified SPF/DKIM/DMARC), delivery is
+// reliable and immediate.
+//
+// Does NOT require authentication (the user forgot their password and
+// can't log in). App Check enforcement prevents bot abuse.
+//
+// Anti-enumeration: always returns { ok: true } regardless of whether the
+// email is registered, so the response is identical for existing and
+// non-existing accounts.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('sendPasswordResetViaResend');
+//   await fn({ email: 'user@example.com' });
+// ─────────────────────────────────────────────────────────────────────────────
+exports.sendPasswordResetViaResend = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'sendPasswordResetViaResend');
+    const emailRaw = request.data && request.data.email;
+    if (!emailRaw || typeof emailRaw !== 'string') {
+      throw new HttpsError('invalid-argument', 'Email requerido.');
+    }
+    const email = emailRaw.trim().toLowerCase();
+    if (!/.+@.+\..+/.test(email)) {
+      throw new HttpsError('invalid-argument', 'Email inválido.');
+    }
+
+    // Rate limit: at most RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR reset
+    // emails per address per rolling hour. Uses /mail docs with
+    // _resetFor == email as the counter — the same docs the extension
+    // picks up, so no extra collection needed. The response is always
+    // { ok: true } regardless of whether the limit was hit, preserving
+    // anti-enumeration (caller cannot tell if the email exists or was
+    // throttled).
+    const oneHourAgo = new Date(Date.now() - 3600 * 1000);
+    const recentResets = await db.collection('mail')
+      .where('_resetFor', '==', email)
+      .where('_queuedAt', '>', oneHourAgo)
+      .count().get();
+    if (recentResets.data().count >= RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR) {
+      logger.warn('[sendPasswordResetViaResend] rate-limit hit', {
+        email, recent: recentResets.data().count,
+        limit: RESET_RATE_LIMIT_PER_EMAIL_PER_HOUR,
+      });
+      return { ok: true };
+    }
+
+    try {
+      const link = await getAuth().generatePasswordResetLink(email, { url: CONTINUE_URL });
+      await db.collection('mail').add({
+        to: email,
+        _resetFor: email,
+        _queuedAt: new Date(),
+        message: {
+          subject: 'Restablecé tu contraseña en Reco',
+          html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Restablecé tu contraseña</h2>
+  <p>Recibimos un pedido para restablecer la contraseña de tu cuenta en Reco.</p>
+  <p style="margin-top:24px">
+    <a href="${link}" style="background:#0891b2;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Restablecer contraseña</a>
+  </p>
+  <p style="margin-top:24px;color:#64748b;font-size:.85rem">Si no pediste este cambio, ignorá este email. El enlace expira en 1 hora.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+          text: `Recibimos un pedido para restablecer tu contraseña en Reco.\n\nHacé clic en el siguiente enlace:\n${link}\n\nSi no pediste este cambio, ignorá este email. El enlace expira en 1 hora.\n\n— Equipo Reco`,
+        },
+      });
+    } catch (e) {
+      if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-email') {
+        return { ok: true };
+      }
+      logger.warn('[sendPasswordResetViaResend] failed', {
+        email, code: e.code, err: e.message,
+      });
+      throw new HttpsError('internal', 'No pudimos procesar tu solicitud. Intentá de nuevo.');
+    }
+    return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// sendVerificationViaResend — generate an email-verification link with the
+// Admin SDK and queue a branded email through /mail (→ Resend SMTP).
+//
+// Same motivation as sendPasswordResetViaResend: Firebase Auth's built-in
+// verification email comes from firebaseapp.com which has no SPF/DKIM for
+// this project's domain, so it often lands in spam.
+//
+// Requires authentication (the user just signed up and is logged in, but
+// their email is not yet verified). Returns early if already verified.
+//
+// Client contract:
+//   const fn = firebase.functions().httpsCallable('sendVerificationViaResend');
+//   await fn();
+// ─────────────────────────────────────────────────────────────────────────────
+exports.sendVerificationViaResend = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+  },
+  async (request) => {
+    _logAppCheck(request, 'sendVerificationViaResend');
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesión.');
+    }
+    const token = request.auth.token || {};
+    if (token.email_verified === true) {
+      return { ok: true, alreadyVerified: true };
+    }
+    const email = token.email;
+    if (!email) {
+      throw new HttpsError('failed-precondition', 'Tu cuenta no tiene email asociado.');
+    }
+    try {
+      const link = await getAuth().generateEmailVerificationLink(email, { url: CONTINUE_URL });
+      const user = await getAuth().getUser(request.auth.uid);
+      const name = (user.displayName || '').split(' ')[0];
+      const greeting = name ? `Hola ${_esc(name)},` : 'Hola,';
+      await db.collection('mail').add({
+        to: email,
+        message: {
+          subject: 'Verificá tu email en Reco',
+          html: `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">Verificá tu email</h2>
+  <p>${greeting}</p>
+  <p>Para completar tu registro en Reco y poder publicar, verificá tu dirección de email:</p>
+  <p style="margin-top:24px">
+    <a href="${link}" style="background:#0891b2;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Verificar email</a>
+  </p>
+  <p style="margin-top:24px;color:#64748b;font-size:.85rem">Si no creaste una cuenta en Reco, ignorá este email.</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`,
+          text: `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nPara completar tu registro en Reco, verificá tu email:\n${link}\n\nSi no creaste una cuenta, ignorá este email.\n\n— Equipo Reco`,
+        },
+      });
+    } catch (e) {
+      logger.warn('[sendVerificationViaResend] failed', {
+        uid: request.auth.uid, code: e.code, err: e.message,
+      });
+      throw new HttpsError('internal', 'No pudimos enviar el email de verificación. Intentá de nuevo.');
+    }
+    return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// onPublicationModerated — Firestore trigger on /publications/{pubId}.
+//
+// When a publication's status transitions to 'approved' or 'rejected',
+// this trigger automatically queues a notification email to the publisher
+// via the /mail collection (→ Resend SMTP).
+//
+// Replaces the old client-side _queueModerationEmail() which was fire-and-
+// forget: if the admin's browser dropped the Firestore write, the user
+// never got notified. This trigger fires server-side and is guaranteed to
+// run as long as the status update itself succeeds.
+// ─────────────────────────────────────────────────────────────────────────────
+exports.onPublicationModerated = onDocumentWritten(
+  { region: REGION, document: 'publications/{pubId}' },
+  async (event) => {
+    const after = event.data && event.data.after && event.data.after.data();
+    if (!after) return;
+    const before = event.data && event.data.before && event.data.before.data();
+    const newStatus = after.status;
+    const oldStatus = before && before.status;
+    const pubId = event.params && event.params.pubId;
+
+    if (newStatus === oldStatus) return;
+    if (newStatus !== 'approved' && newStatus !== 'rejected') return;
+
+    // Idempotency: skip if we already notified the user about this exact
+    // status. Prevents duplicate emails on approve → unapprove → approve
+    // cycles. A re-approval after rejection IS a new event and sends a
+    // new email (the _lastNotifiedStatus would be 'rejected', not
+    // 'approved'). We write _lastNotifiedStatus after queuing the email.
+    if (after._lastNotifiedStatus === newStatus) {
+      logger.info('[onPublicationModerated] already notified, skipping', {
+        pubId, status: newStatus,
+      });
+      return;
+    }
+
+    // Resolve the recipient email. Prefer the publication's userEmail
+    // field (set at publish time), but fall back to Firebase Auth as
+    // the authoritative source. This handles edge cases where the
+    // publication was created before userEmail was stored, or where the
+    // user changed their email after publishing.
+    let userEmail = after.userEmail;
+    let userName = after.userName;
+    if (!userEmail && after.userId) {
+      try {
+        const authUser = await getAuth().getUser(after.userId);
+        userEmail = authUser.email;
+        userName = userName || authUser.displayName;
+      } catch (e) {
+        logger.warn('[onPublicationModerated] Auth lookup failed', {
+          pubId, userId: after.userId, err: e.message,
+        });
+      }
+    }
+    if (!userEmail) {
+      logger.warn('[onPublicationModerated] no email for publication owner', {
+        pubId, userId: after.userId,
+      });
+      return;
+    }
+
+    const name = (userName || '').split(' ')[0];
+    const greeting = name ? `Hola ${_esc(name)},` : 'Hola,';
+    const address = after.address || '—';
+    const district = after.district || '—';
+
+    let subject, html, text;
+    if (newStatus === 'approved') {
+      subject = 'Tu publicación en Reco fue aprobada';
+      html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#0891b2">¡Tu publicación está en línea!</h2>
+  <p>${greeting}</p>
+  <p>Acabamos de aprobar tu publicación de <strong>${_esc(address)}</strong> en <strong>${_esc(district)}</strong>.
+  Ya aparece en los resultados de búsqueda de Reco junto a las propiedades oficiales.</p>
+  <p style="margin-top:24px">
+    <a href="${CONTINUE_URL}" style="background:#0891b2;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ver en Reco</a>
+  </p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`;
+      text = `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nTu publicación de ${address} en ${district} fue aprobada y ya está visible en Reco.\n\n— Equipo Reco`;
+    } else {
+      const reason = after.rejectionReason || '';
+      subject = 'Tu publicación en Reco no pudo ser aprobada';
+      html = `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;color:#0f172a">
+  <h2 style="color:#dc2626">Tu publicación no pudo ser aprobada</h2>
+  <p>${greeting}</p>
+  <p>Revisamos tu publicación de <strong>${_esc(address)}</strong> en <strong>${_esc(district)}</strong>
+  y, por el momento, no podemos publicarla en Reco.</p>
+  ${reason ? `<p><strong>Razón:</strong> ${_esc(reason)}</p>` : ''}
+  <p>Puedes corregir lo indicado y volver a enviarla desde "Mis publicaciones".</p>
+  <p style="color:#64748b;font-size:.85rem;margin-top:32px">— Equipo Reco</p>
+</div>`;
+      text = `${name ? 'Hola ' + name + ',' : 'Hola,'}\n\nTu publicación de ${address} en ${district} no pudo ser aprobada.${reason ? '\nRazón: ' + reason : ''}\n\nPuedes corregirla y volver a enviarla.\n\n— Equipo Reco`;
+    }
+
+    try {
+      const mailRef = db.collection('mail').doc();
+      const batch = db.batch();
+      batch.set(mailRef, { to: userEmail, message: { subject, html, text } });
+      batch.update(event.data.after.ref, { _lastNotifiedStatus: newStatus });
+      await batch.commit();
+    } catch (e) {
+      logger.warn('[onPublicationModerated] mail queue failed', {
+        pubId, err: e.message,
+      });
+    }
+  }
+);
+
+Object.assign(exports, require('./admin'));

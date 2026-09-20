@@ -2,6 +2,11 @@ node_modules/
 functions/node_modules/
 firebase-debug.log
 firebase-debug.*.log
+firestore-debug.log
+firestore-debug.*.log
+ui-debug.log
 .firebase/
 *.local
 scripts/serviceAccountKey.json
+test-results/
+functions/test-results/
