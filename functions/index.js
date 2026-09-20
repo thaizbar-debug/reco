@@ -1660,3 +1660,5 @@ exports.onPublicationModerated = onDocumentWritten(
     }
   }
 );
+
+Object.assign(exports, require('./admin'));

@@ -4,7 +4,26 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
-<title>Reco SAC — Búsqueda de Inmuebles</title>
+<title>Reco SAC — Búsqueda de Inmuebles en Lima, Perú</title>
+<meta name="description" content="Busca propiedades en venta y alquiler en Lima con datos reales de SUNARP, tasaciones y valores de mercado. Departamentos, casas, terrenos y oficinas."/>
+<link rel="canonical" href="https://recosac.com/"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://recosac.com/"/>
+<meta property="og:title" content="Reco SAC — Inmuebles en Lima con datos reales"/>
+<meta property="og:description" content="Busca propiedades en venta y alquiler en Lima con datos reales de SUNARP, tasaciones y valores de mercado."/>
+<meta property="og:image" content="https://recosac.com/data/hero-landing.png"/>
+<meta property="og:locale" content="es_PE"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230891b2'/%3E%3Ctext x='16' y='23' font-family='system-ui' font-size='20' font-weight='800' fill='white' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E"/>
+<!-- GA4: Set your Measurement ID below (one place). No requests while placeholder. -->
+<script>
+var GA4_MEASUREMENT_ID='G-5BLX1VDC89';
+window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
+function _ga(event,params){try{if(window._ga4ok)gtag('event',event,params||{});}catch(e){}}
+(function(){if(!GA4_MEASUREMENT_ID||/XXXX/.test(GA4_MEASUREMENT_ID))return;window._ga4ok=true;
+var s=document.createElement('script');s.async=true;s.src='https://www.googletagmanager.com/gtag/js?id='+GA4_MEASUREMENT_ID;document.head.appendChild(s);
+gtag('js',new Date());gtag('config',GA4_MEASUREMENT_ID);})();
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Firebase SDKs -->
@@ -4553,6 +4572,7 @@ function _updateSortNewLabel(){
 function applyFilters(){
   _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
+  if(S.query) _ga('search',{search_term:S.query});
   const prevMode=S.mapMode;
   S.mapMode=S.query?'text':'browse';
   if(S.mapMode!==prevMode) S.mapDiverged=false;
@@ -5547,6 +5567,7 @@ function closeDetail(){
 }
 
 function showGatePanel(p){
+  _ga('paywall_view',{property_id:p.id||'',district:p.district||''});
   const loggedIn=!!auth.currentUser;
   const has=S.keysLeft>0;
   document.getElementById('detailContent').innerHTML=`
@@ -5705,6 +5726,7 @@ var _CULQI_PUBLIC_KEY = 'pk_live_tXxwBBmY9ngPgZRH';
 var _culqiInstance = null;
 
 function selectPlan(el, name, price, qty) {
+  _ga('pro_cta_click',{plan_name:name,plan_price:price,plan_keys:qty});
   document.querySelectorAll('.plan').forEach(p => p.classList.remove('sel'));
   el.classList.add('sel');
   S.selectedPlan = { name, price, qty };
@@ -5894,6 +5916,7 @@ function openFullReport(id){
   closeDetail();
   const p = properties.find(x=>x.id===id);
   if(!p) return;
+  _ga('property_view',{property_id:id,district:p.district||'',type:p.type||'',operation:p.op||''});
 
   const assets = driveAssets(p);
   const photos  = assets.photos;
@@ -7808,6 +7831,9 @@ function _refreshMainMap(){
 }
 function goToApp(hash){
   hash = hash || '';
+  if(hash.includes('op=venta')) _ga('buy_click');
+  else if(hash.includes('op=alquiler')) _ga('rent_click');
+  else if(hash.includes('op=hist')) _ga('historical_view');
   hideLegalPages();
   document.body.classList.remove('show-home');
   document.body.classList.remove('show-user');
@@ -9970,7 +9996,7 @@ function setAuthLoading(btnId, loading) {
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .then(() => closeAuthModal())
+    .then(() => { _ga('login',{method:'google'}); closeAuthModal(); })
     .catch(e => showAuthError(friendlyError(e.code)));
 }
 function signInWithEmail() {
@@ -9979,7 +10005,7 @@ function signInWithEmail() {
   if (!email || !pass) return showAuthError('Completa todos los campos.');
   setAuthLoading('loginBtn', true);
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => closeAuthModal())
+    .then(() => { _ga('login',{method:'email'}); closeAuthModal(); })
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
@@ -10002,6 +10028,7 @@ function registerWithEmail() {
       // Auth user created — point of no return. From here, the account
       // EXISTS and any subsequent failure is a setup issue, not a
       // registration failure. Close the modal immediately.
+      _ga('sign_up',{method:'email'});
       closeAuthModal();
       cred.user.updateProfile({ displayName: name }).catch(err => {
         console.warn('[reco] updateProfile failed (account created, display name pending):', err && err.message);

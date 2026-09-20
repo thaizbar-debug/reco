@@ -7,5 +7,6 @@ firestore-debug.*.log
 ui-debug.log
 .firebase/
 *.local
+scripts/serviceAccountKey.json
 test-results/
 functions/test-results/
