@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Reco — Tasaciones</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --nav:60px;
+  --blue:#0891b2;
+  --blue2:#06b6d4;
+  --blue-dark:#0e7490;
+  --amber:#f59e0b;
+  --green:#10b981;
+  --red:#ef4444;
+  --bg:#f1f5f9;
+  --surface:#fff;
+  --border:#e2e8f0;
+  --txt:#0f172a;
+  --muted:#64748b;
+  --light:#f8fafc;
+  --r:10px;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+  --sh2:0 8px 32px rgba(0,0,0,.12);
+}
+html{height:100%;scroll-behavior:smooth}
+body{min-height:100%;font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;line-height:1.6}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer;font-family:inherit;border:none}
+input,select,textarea{font-family:inherit;border:none;outline:none}
+
+/* Header */
+header{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:var(--nav);background:rgba(255,255,255,.96);
+  backdrop-filter:blur(12px);border-bottom:1px solid #cffafe;
+  display:flex;align-items:center;padding:0 20px;gap:14px;
+}
+.logo{font-size:1.3rem;font-weight:700;color:var(--blue);letter-spacing:-.02em}
+.logo span{color:var(--txt)}
+header .spacer{flex:1}
+.nav-back{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.85rem;padding:6px 14px;border-radius:99px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.nav-back:hover{background:var(--light);color:var(--txt)}
+
+/* Hero */
+.hero{
+  margin-top:var(--nav);
+  background:linear-gradient(135deg,#0e7490 0%,#0891b2 40%,#06b6d4 100%);
+  color:#fff;padding:64px 24px 56px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 30% 80%,rgba(255,255,255,.1) 0%,transparent 50%);
+}
+.hero-content{position:relative;z-index:1;max-width:700px;margin:0 auto}
+.hero h1{font-size:2.4rem;font-weight:700;line-height:1.15;margin-bottom:14px;text-wrap:balance}
+.hero p{font-size:1.05rem;color:rgba(255,255,255,.85);max-width:560px;margin:0 auto;line-height:1.65}
+
+/* Page */
+.page{max-width:960px;margin:0 auto;padding:0 20px 80px}
+
+/* Section */
+.section{padding:48px 0 0}
+.section-label{
+  font-size:.65rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+}
+.section h2{font-size:1.6rem;font-weight:700;line-height:1.2;margin-bottom:6px}
+.section-desc{font-size:.9rem;color:var(--muted);max-width:600px;margin-bottom:28px;line-height:1.6}
+
+/* Tier cards */
+.tier-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:900px){.tier-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:540px){.tier-grid{grid-template-columns:1fr}}
+.tier-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:24px;box-shadow:var(--sh);display:flex;flex-direction:column;
+  position:relative;transition:box-shadow .2s,transform .2s;
+}
+.tier-card:hover{box-shadow:var(--sh2);transform:translateY(-2px)}
+.tier-card.featured{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue),var(--sh)}
+.tier-card.free{border-color:var(--green);box-shadow:0 0 0 1px var(--green),var(--sh)}
+.tier-badge{
+  position:absolute;top:-10px;left:16px;font-size:.6rem;font-weight:700;
+  padding:4px 10px;border-radius:99px;color:#fff;letter-spacing:.04em;
+}
+.badge-free{background:var(--green)}
+.badge-fast{background:var(--amber)}
+.badge-rec{background:var(--blue)}
+.badge-bank{background:var(--txt)}
+.tier-icon{font-size:1.6rem;margin-bottom:10px}
+.tier-card h3{font-size:1.1rem;font-weight:700;margin-bottom:4px}
+.tier-card .time{font-size:.75rem;color:var(--muted);font-weight:600;margin-bottom:12px}
+.tier-price{font-size:1.6rem;font-weight:700;margin-bottom:16px;font-variant-numeric:tabular-nums}
+.tier-price.green{color:var(--green)}
+.tier-features{list-style:none;padding:0;flex:1;margin-bottom:16px}
+.tier-features li{padding:5px 0;font-size:.82rem;color:var(--muted);display:flex;align-items:baseline;gap:6px}
+.tier-features li::before{content:'';display:inline-block;width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.free .tier-features li::before{background:var(--green)}
+.tier-features li::before{background:var(--blue)}
+.tier-cta{
+  display:block;width:100%;text-align:center;padding:11px;border-radius:8px;
+  font-weight:600;font-size:.85rem;transition:.15s;margin-top:auto;
+}
+.cta-green{background:var(--green);color:#fff}
+.cta-green:hover{background:#059669}
+.cta-primary{background:var(--blue);color:#fff}
+.cta-primary:hover{background:var(--blue-dark)}
+.cta-outline{background:transparent;color:var(--blue);border:1.5px solid var(--blue)}
+.cta-outline:hover{background:#ecfeff}
+.cta-dark{background:var(--txt);color:#fff}
+.cta-dark:hover{background:#1e293b}
+
+/* Disclaimer */
+.disclaimer{
+  background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;
+  padding:16px 20px;margin-top:20px;font-size:.78rem;color:#92400e;line-height:1.6;
+}
+.disclaimer strong{color:#78350f}
+
+/* Data source */
+.data-source{
+  background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px;
+  padding:16px 20px;margin-top:12px;font-size:.78rem;color:var(--blue-dark);line-height:1.6;
+}
+
+/* Reco Estimate preview */
+.estimate-preview{
+  background:var(--surface);border:2px solid var(--green);border-radius:16px;
+  box-shadow:var(--sh2);overflow:hidden;max-width:420px;margin:0 auto;
+}
+.estimate-header{
+  background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+  padding:16px 20px;display:flex;align-items:center;gap:8px;
+}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.estimate-header span{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#065f46}
+.estimate-body{padding:20px}
+.est-address{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+.est-meta{font-size:.8rem;color:var(--muted);margin-bottom:14px}
+.est-verdict{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.8rem;font-weight:700;padding:6px 14px;border-radius:8px;
+  margin-bottom:14px;
+}
+.verdict-over{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.verdict-fair{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.verdict-opp{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.est-prices{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.est-main{font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.est-fair{font-size:.85rem;color:var(--muted)}
+.est-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--green) 0%,#fbbf24 50%,var(--red) 100%);position:relative;margin-bottom:6px}
+.est-dot{position:absolute;top:-4px;width:16px;height:16px;border-radius:50%;background:var(--txt);border:3px solid var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.est-labels{display:flex;justify-content:space-between;font-size:.65rem;color:var(--muted);margin-bottom:16px}
+.est-metrics{border-top:1px solid var(--border);padding-top:12px}
+.est-row{display:flex;justify-content:space-between;padding:6px 0;font-size:.8rem}
+.est-row .label{color:var(--muted)}
+.est-row .value{font-weight:600;font-variant-numeric:tabular-nums}
+.est-cta{
+  display:block;width:100%;text-align:center;padding:12px;border-radius:8px;
+  font-weight:600;font-size:.9rem;background:var(--blue);color:#fff;margin-top:16px;
+  transition:.15s;
+}
+.est-cta:hover{background:var(--blue-dark)}
+
+/* Compare table */
+.compare-wrap{overflow-x:auto;border-radius:12px;margin-top:16px}
+.compare{width:100%;border-collapse:collapse;font-size:.8rem;min-width:600px}
+.compare thead th{
+  text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);padding:10px 12px;
+  border-bottom:2px solid var(--border);background:var(--light);
+}
+.compare tbody td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.compare tbody tr:last-child td{border-bottom:none}
+
+footer{text-align:center;padding:32px 20px;border-top:1px solid var(--border);font-size:.75rem;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../index.html" class="logo"><span>Reco</span></a>
+  <div class="spacer"></div>
+  <a href="../index.html" class="nav-back">← Volver a Reco</a>
+</header>
+
+<div class="hero">
+  <div class="hero-content">
+    <h1>¿Cuánto vale tu propiedad?</h1>
+    <p>Desde una estimación gratuita con IA hasta una tasación bancaria certificada. 4 niveles para cada necesidad.</p>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ═══ RECO ESTIMATE PREVIEW ═══ -->
+  <div class="section">
+    <div class="section-label">Estimación gratuita</div>
+    <h2>Reco Estimate</h2>
+    <p class="section-desc">Conoce el valor estimado de cualquier propiedad en 5 segundos. Gratis, sin registro, basado en +40,000 tasaciones reales de Vanet.</p>
+
+    <div class="estimate-preview">
+      <div class="estimate-header">
+        <div class="live-dot"></div>
+        <span>Análisis en vivo &middot; ejemplo</span>
+      </div>
+      <div class="estimate-body">
+        <div class="est-address">Av. Arequipa 1842</div>
+        <div class="est-meta">Miraflores &middot; 85 m² &middot; 3 dorm &middot; Piso 8</div>
+        <div class="est-verdict verdict-over">&#9650; Sobrevalorado +14% vs. mercado</div>
+        <div class="est-prices">
+          <div class="est-main">S/ 550,000</div>
+          <div class="est-fair">Justo: S/ 481,000</div>
+        </div>
+        <div class="est-bar"><div class="est-dot" style="left:78%"></div></div>
+        <div class="est-labels"><span>Infravalorado</span><span>Justo</span><span>Sobrevalorado</span></div>
+        <div class="est-metrics">
+          <div class="est-row"><span class="label">Comparables usados</span><span class="value">23 tasaciones &middot; radio 600m</span></div>
+          <div class="est-row"><span class="label">Liquidez de la zona</span><span class="value">38 días promedio</span></div>
+          <div class="est-row"><span class="label">Yield estimado</span><span class="value">5.9% anual</span></div>
+          <div class="est-row"><span class="label">Score de inversión</span><span class="value">7.5 / 10</span></div>
+          <div class="est-row"><span class="label">Rango de confianza</span><span class="value">S/ 458K — S/ 504K</span></div>
+        </div>
+        <button class="est-cta">Ver análisis completo →</button>
+      </div>
+    </div>
+
+    <div class="disclaimer">
+      <strong>Estimación referencial:</strong> Los valores mostrados son aproximaciones generadas por IA con base en la base de datos de +40,000 tasaciones de Vanet. No constituyen tasación oficial ni tienen validez legal, bancaria o notarial. Los valores pueden diferir del precio real de mercado. Para decisiones de compra, venta, crédito o garantía, se recomienda una tasación profesional con perito REPEV certificado.
+    </div>
+    <div class="data-source">
+      <strong>Fuente de datos:</strong> Base de datos Vanet (+40K tasaciones reales). No se tiene acceso directo al repositorio completo de SUNARP. A futuro, evaluar alianza con SUNARP para ampliar la base de comparables.
+    </div>
+  </div>
+
+  <!-- ═══ 4 TIERS ═══ -->
+  <div class="section">
+    <div class="section-label">Niveles de servicio</div>
+    <h2>4 niveles de tasación</h2>
+    <p class="section-desc">Desde la estimación gratuita hasta la tasación bancaria certificada. Cada nivel tiene un propósito diferente.</p>
+
+    <div class="tier-grid">
+      <!-- Gratis -->
+      <div class="tier-card free">
+        <div class="tier-badge badge-free">Gratis</div>
+        <div class="tier-icon">⚡</div>
+        <h3>Reco Estimate</h3>
+        <div class="time">5 segundos</div>
+        <div class="tier-price green">S/ 0</div>
+        <ul class="tier-features">
+          <li>Veredicto IA instantáneo</li>
+          <li>Precio justo vs. publicado</li>
+          <li>Barra sobrevalorado/justo/oportunidad</li>
+          <li>Base: +40K tasaciones Vanet</li>
+          <li>Comparables (cantidad + radio)</li>
+          <li>Liquidez de zona, yield, score</li>
+          <li>Rango de confianza (min-max)</li>
+        </ul>
+        <button class="tier-cta cta-green">Estimar gratis →</button>
+      </div>
+
+      <!-- Express -->
+      <div class="tier-card">
+        <div class="tier-badge badge-fast">Más rápido</div>
+        <div class="tier-icon">📋</div>
+        <h3>Express</h3>
+        <div class="time">24 horas</div>
+        <div class="tier-price">S/ 149</div>
+        <ul class="tier-features">
+          <li>IA + revisión humana</li>
+          <li>Comparables Vanet detallados</li>
+          <li>Análisis de tendencia de zona</li>
+          <li>No apto para bancos</li>
+          <li>PDF descargable</li>
+        </ul>
+        <button class="tier-cta cta-outline">Solicitar</button>
+      </div>
+
+      <!-- Virtual -->
+      <div class="tier-card featured">
+        <div class="tier-badge badge-rec">Recomendado</div>
+        <div class="tier-icon">📹</div>
+        <h3>Virtual</h3>
+        <div class="time">48 horas</div>
+        <div class="tier-price">S/ 349</div>
+        <ul class="tier-features">
+          <li>Videollamada con perito REPEV</li>
+          <li>Válido para créditos</li>
+          <li>Registro fotográfico</li>
+          <li>Plano referencial</li>
+        </ul>
+        <button class="tier-cta cta-primary">Solicitar</button>
+      </div>
+
+      <!-- Presencial -->
+      <div class="tier-card">
+        <div class="tier-badge badge-bank">Bancaria</div>
+        <div class="tier-icon">🏛️</div>
+        <h3>Presencial</h3>
+        <div class="time">3-5 días</div>
+        <div class="tier-price">S/ 590</div>
+        <ul class="tier-features">
+          <li>Visita técnica in situ</li>
+          <li>BCP, BBVA, Interbank, Scotia</li>
+          <li>Informe REPEV firmado</li>
+          <li>Levantamiento de observaciones</li>
+        </ul>
+        <button class="tier-cta cta-dark">Solicitar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COMPARATIVA ═══ -->
+  <div class="section">
+    <div class="section-label">Comparativa</div>
+    <h2>¿Qué nivel necesito?</h2>
+    <p class="section-desc">Guía rápida según tu caso de uso.</p>
+
+    <div class="compare-wrap">
+      <table class="compare">
+        <thead>
+          <tr><th>Caso de uso</th><th>Nivel recomendado</th><th>¿Por qué?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600">Quiero saber si el precio que piden es justo</td><td style="color:var(--green);font-weight:600">Reco Estimate (gratis)</td><td style="color:var(--muted)">Veredicto instantáneo con comparables. Suficiente para negociar.</td></tr>
+          <tr><td style="font-weight:600">Voy a publicar mi propiedad y quiero ponerle precio</td><td style="color:var(--amber);font-weight:600">Express (S/ 149)</td><td style="color:var(--muted)">Informe con tendencias de zona y comparables detallados. PDF para respaldar tu precio.</td></tr>
+          <tr><td style="font-weight:600">Necesito tasación para un crédito hipotecario</td><td style="color:var(--blue);font-weight:600">Virtual (S/ 349)</td><td style="color:var(--muted)">Válido para entidades financieras. Más rápido y barato que presencial.</td></tr>
+          <tr><td style="font-weight:600">El banco exige tasación presencial</td><td style="font-weight:600">Presencial (S/ 590)</td><td style="color:var(--muted)">Informe REPEV firmado con visita técnica. Aceptado por todos los bancos.</td></tr>
+          <tr><td style="font-weight:600">Quiero evaluar una inversión inmobiliaria</td><td style="color:var(--green);font-weight:600">Reco Estimate (gratis)</td><td style="color:var(--muted)">Yield estimado, score de inversión y liquidez de zona. Todo lo que necesitas para decidir rápido.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Reco Servicios — Tasaciones<br>
+  La estimación gratuita es referencial y no sustituye una tasación profesional certificada.
+</footer>
+
+</body>
+</html>
