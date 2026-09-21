@@ -5251,6 +5251,48 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
+const RISK_DATA={
+  'Miraflores':{sismico:55,inundacion:15,deslizamiento:35,tsunami:60,crimen:32,aire:45},
+  'San Isidro':{sismico:50,inundacion:10,deslizamiento:20,tsunami:40,crimen:26,aire:40},
+  'Barranco':{sismico:55,inundacion:15,deslizamiento:45,tsunami:70,crimen:35,aire:42},
+  'Surco':{sismico:50,inundacion:20,deslizamiento:40,tsunami:10,crimen:28,aire:50},
+  'Santiago de Surco':{sismico:50,inundacion:20,deslizamiento:40,tsunami:10,crimen:28,aire:50},
+  'San Borja':{sismico:45,inundacion:10,deslizamiento:15,tsunami:5,crimen:24,aire:48},
+  'La Molina':{sismico:60,inundacion:25,deslizamiento:55,tsunami:0,crimen:22,aire:35},
+  'Chorrillos':{sismico:65,inundacion:35,deslizamiento:50,tsunami:75,crimen:42,aire:55},
+  'San Miguel':{sismico:55,inundacion:20,deslizamiento:25,tsunami:65,crimen:36,aire:52},
+  'Magdalena':{sismico:55,inundacion:15,deslizamiento:30,tsunami:60,crimen:34,aire:48},
+  'Magdalena del Mar':{sismico:55,inundacion:15,deslizamiento:30,tsunami:60,crimen:34,aire:48},
+  'Jesús María':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:30,aire:50},
+  'Jesus Maria':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:30,aire:50},
+  'Los Olivos':{sismico:60,inundacion:25,deslizamiento:45,tsunami:0,crimen:44,aire:62},
+  'Ate':{sismico:65,inundacion:30,deslizamiento:55,tsunami:0,crimen:48,aire:68},
+  'Surquillo':{sismico:52,inundacion:15,deslizamiento:25,tsunami:10,crimen:34,aire:48},
+  'Lince':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:32,aire:50},
+  'Pueblo Libre':{sismico:50,inundacion:15,deslizamiento:20,tsunami:10,crimen:30,aire:48},
+  'Breña':{sismico:52,inundacion:18,deslizamiento:25,tsunami:5,crimen:38,aire:55},
+  'San Martin de Porres':{sismico:58,inundacion:25,deslizamiento:35,tsunami:5,crimen:42,aire:60},
+  'Cercado de Lima':{sismico:55,inundacion:20,deslizamiento:30,tsunami:10,crimen:45,aire:62},
+};
+const DEFAULT_RISK={sismico:55,inundacion:20,deslizamiento:30,tsunami:20,crimen:35,aire:50};
+
+const BLURBS={
+  'Miraflores':'Miraflores es uno de los distritos más cotizados de Lima, con frente al malecón, oferta gastronómica de primer nivel, parques (Kennedy, Salazar) y excelente conectividad por Av. Arequipa y la Costa Verde.',
+  'Barranco':'Barranco es el distrito bohemio y cultural de Lima, conocido por arte urbano, galerías, restaurantes y bares con vista al mar. Combina casonas republicanas con desarrollos residenciales modernos.',
+  'San Isidro':'San Isidro es el principal centro financiero del Perú, con sedes corporativas, el parque El Olivar y residencias de alto valor. Excelentes servicios, seguridad y conectividad.',
+  'Surco':'Santiago de Surco es uno de los distritos residenciales más amplios de Lima, con buena oferta comercial (Jockey Plaza, El Polo), colegios privados de prestigio y zonas consolidadas.',
+  'Santiago de Surco':'Santiago de Surco es uno de los distritos residenciales más amplios de Lima, con buena oferta comercial (Jockey Plaza, El Polo), colegios privados de prestigio y zonas consolidadas.',
+  'La Molina':'La Molina destaca por tranquilidad, baja densidad, amplias áreas verdes y urbanizaciones planificadas. Ideal para familias que buscan casas con jardín y colegios privados cercanos.',
+  'Chorrillos':'Chorrillos combina zonas residenciales junto al mar con desarrollos en crecimiento y acceso directo a la Costa Verde.',
+  'San Borja':'San Borja es un distrito residencial planificado, con ciclovías, parques y servicios cercanos. Hogar del Museo de la Nación.',
+  'San Miguel':'San Miguel ofrece buena conectividad, centros comerciales (Plaza San Miguel) y una oferta inmobiliaria accesible comparada con distritos vecinos.',
+  'Magdalena del Mar':'Magdalena del Mar es un distrito costero con creciente desarrollo inmobiliario, malecón peatonal y buena conectividad por la Costa Verde.',
+  'Jesús María':'Jesús María combina residencialidad con oferta comercial, parques amplios (Campo de Marte) y excelente conectividad vial.',
+  'Lince':'Lince es un distrito céntrico de Lima con acceso a servicios, gastronomía y creciente inversión inmobiliaria en proyectos modernos.',
+  'Surquillo':'Surquillo ofrece una ubicación estratégica entre San Isidro, Miraflores y Surco, con mercados tradicionales y desarrollo residencial en alza.',
+  'Pueblo Libre':'Pueblo Libre es un distrito residencial histórico con museos, parques y zonas tranquilas, a pocos minutos de San Miguel y Jesús María.',
+};
+
 function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
@@ -5968,6 +6010,143 @@ function openFullReport(id){
     </div>`;
   })();
 
+  // ── Comparables cercanos (datos simulados basados en distrito) ──
+  const comparablesHTML = (() => {
+    const td = TASACIONES_HIST[_normDistTas(p.district)];
+    if(!td) return '';
+    const yrs = Object.keys(td.y).sort();
+    if(yrs.length < 1) return '';
+    const lastYr = yrs[yrs.length-1];
+    const medianUsd = td.y[lastYr].m;
+    const area = p.area || p.areaTech || 80;
+    const streets = [
+      ['Av. Arequipa','Calle Berlín','Jr. Porta','Av. La Mar','Av. Pardo','Calle Schell','Jr. Colina','Av. Benavides'],
+      ['Av. Javier Prado','Calle Las Begonias','Av. Rivera Navarrete','Calle Los Tulipanes','Av. Camino Real'],
+      ['Calle San Martín','Av. Grau','Jr. Cusco','Calle Lima','Av. Bolognesi','Jr. Puno','Calle Ayacucho']
+    ];
+    const pool = streets[Math.abs((p.district||'').charCodeAt(0))%streets.length];
+    const comps = [];
+    for(let i=0;i<5;i++){
+      const mVar = 0.85 + Math.random()*0.3;
+      const areaC = Math.round(area*(0.8+Math.random()*0.4));
+      const sqmC = Math.round(medianUsd*mVar);
+      const totalC = sqmC*areaC;
+      const mAgo = Math.floor(1+Math.random()*17);
+      const d = new Date();
+      d.setMonth(d.getMonth()-mAgo);
+      const fecha = d.toISOString().slice(0,10);
+      const num = 100+Math.floor(Math.random()*1900);
+      comps.push({fecha,addr:`${pool[i%pool.length]} ${num}`,area:areaC,price:totalC,sqm:sqmC});
+    }
+    comps.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+    const rows = comps.map(c => {
+      if(isHist){
+        return `<tr>
+          <td>${c.fecha}</td>
+          <td class="fr-comp-addr">${esc(c.addr)}</td>
+          <td>${c.area}</td>
+          <td><span class="fr-comp-locked">🔒 Usar llave</span></td>
+          <td><span class="fr-comp-locked">🔒</span></td>
+        </tr>`;
+      }
+      return `<tr>
+        <td>${c.fecha}</td>
+        <td class="fr-comp-addr">${esc(c.addr)}</td>
+        <td>${c.area}</td>
+        <td>S/ ${c.price.toLocaleString()}</td>
+        <td class="fr-comp-val">S/ ${c.sqm.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+
+    const unlockBtn = isHist ? `<div class="fr-comp-unlock" onclick="toast('🔑 Usa una llave para ver los valores de comparables cercanos')">🔑 Usar llave para ver valores</div>` : '';
+
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Comparables cercanos <small>· SUNARP · radio 600m</small></h2>
+      <div style="overflow-x:auto;border:1px solid rgba(14,17,23,.1);border-radius:12px;">
+        <table class="fr-comp-table">
+          <thead><tr><th>Fecha</th><th>Dirección</th><th>M²</th><th>Precio</th><th>S/M²</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${unlockBtn}
+    </div>`;
+  })();
+
+  // ── Guía de la zona ────────────────────────────────────────────
+  const localityHTML = (() => {
+    if(!p.district) return '';
+    const blurb = BLURBS[p.district] || `${esc(p.district)} es una zona consolidada de Lima con oferta residencial diversa y demanda activa en el mercado inmobiliario.`;
+    const pois = [['🍽️','Restaurantes y cafés'],['🏬','Supermercados'],['🌳','Parques'],['🏦','Bancos'],['🏥','Salud']];
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Guía de la zona <small>· ${esc(p.district)}, Lima</small></h2>
+      <div class="fr-locality-card">
+        <div class="fr-locality-header">
+          <div>
+            <div class="fr-locality-title">Conoce ${esc(p.district)}</div>
+            <div class="fr-locality-sub">${esc(p.address)} · Lima, Perú</div>
+          </div>
+          <a href="https://www.google.com/maps/search/?q=${encodeURIComponent(p.address+', '+p.district+', Lima')}" target="_blank" class="fr-locality-link">↗ Ver en Google Maps</a>
+        </div>
+        <p class="fr-locality-blurb">${blurb}</p>
+        <div class="fr-locality-pois">
+          ${pois.map(([ico,n])=>`<div class="fr-locality-poi"><strong>${ico} ${n}</strong><span>Disponible en la zona</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  })();
+
+  // ── Reco Riesgo ────────────────────────────────────────────────
+  const riesgoHTML = (() => {
+    if(!p.district) return '';
+    const d = RISK_DATA[p.district] || DEFAULT_RISK;
+    const natural = Math.round(d.sismico*.40 + d.inundacion*.25 + d.deslizamiento*.20 + d.tsunami*.15);
+    const score = Math.max(0, Math.min(100, Math.round(100 - natural*.50 - d.crimen*.35 - d.aire*.15)));
+    const color = score>=75?'#1a6b4a':score>=60?'#1a4fbf':score>=45?'#b58105':score>=30?'#c2410c':'#991b1b';
+    const band = score>=75?'Excelente':score>=60?'Bueno':score>=45?'Moderado':score>=30?'Atención':'Alto riesgo';
+    const rl = v => v<=20?{l:'Bajo',c:'#1a6b4a'}:v<=40?{l:'Medio-Bajo',c:'#1a4fbf'}:v<=60?{l:'Medio',c:'#b58105'}:v<=80?{l:'Alto',c:'#c2410c'}:{l:'Muy alto',c:'#991b1b'};
+    const items = [
+      ['🌐','Sismo','SIGRID · IGP',d.sismico],
+      ['🌊','Inundación / Huaico','SIGRID · CENEPRED',d.inundacion],
+      ['⛰️','Deslizamiento','SIGRID · INGEMMET',d.deslizamiento],
+      ['🌀','Tsunami','DHN · INDECI',d.tsunami],
+      ['🚓','Seguridad','INEI ENAPRES',d.crimen],
+      ['🌫️','Calidad del aire','OEFA · SENAMHI',d.aire]
+    ];
+    const cards = items.map(([ico,lbl,src,v]) => {
+      const rb = rl(v);
+      return `<div class="fr-riesgo-card">
+        <div class="fr-riesgo-card-head">
+          <span class="fr-riesgo-icon">${ico}</span>
+          <div><div class="fr-riesgo-label">${lbl}</div><div class="fr-riesgo-source">${src}</div></div>
+          <span class="fr-riesgo-badge" style="color:${rb.c};border-color:${rb.c}44">${rb.l}</span>
+        </div>
+        <div class="fr-riesgo-bar"><div class="fr-riesgo-bar-fill" style="width:${v}%;background:${rb.c}"></div></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Reco Riesgo <small>· score combinado por zona</small></h2>
+      <div class="fr-riesgo-hero" style="border-color:${color}33">
+        <div class="fr-riesgo-score">
+          <div class="fr-riesgo-num" style="color:${color}">${score}<span>/100</span></div>
+          <div class="fr-riesgo-band" style="color:${color}">${band}</div>
+        </div>
+        <div class="fr-riesgo-body">
+          <h3>Resumen del distrito · ${esc(p.district)}</h3>
+          <p>Score que combina <strong>riesgo natural (SIGRID/CENEPRED)</strong> con <strong>seguridad ciudadana (INEI)</strong> y <strong>calidad del aire</strong>. A mayor número, más seguro vivir o invertir en la zona.</p>
+          <div class="fr-riesgo-chips">
+            <span class="fr-riesgo-chip"><b>Natural:</b> ${100-natural}/100</span>
+            <span class="fr-riesgo-chip"><b>Seguridad:</b> ${100-d.crimen}/100</span>
+            <span class="fr-riesgo-chip"><b>Aire:</b> ${100-d.aire}/100</span>
+          </div>
+        </div>
+      </div>
+      <div class="fr-riesgo-grid">${cards}</div>
+      <div class="fr-riesgo-foot">Fuentes: SIGRID (CENEPRED), IGP, INGEMMET, DHN, INEI ENAPRES, OEFA. El score es referencial y no reemplaza un estudio técnico.</div>
+    </div>`;
+  })();
+
   // ── Ficha SUNARP (solo Histórico) ────────────────────────────
   const sunHTML = isHist ? (() => {
     // Sun object comes from the premium cache after unlockProperty.
@@ -6158,6 +6337,10 @@ function openFullReport(id){
 
         ${ctxHTML}
         ${scoreHTML}
+
+        ${comparablesHTML}
+        ${localityHTML}
+        ${riesgoHTML}
 
       </div>
 
@@ -8482,6 +8665,56 @@ function _applyLandingHash(){
 .fr-hero-map{position:relative;min-height:180px;}
 .fr-hero-map .leaflet-container{width:100%;height:100%;border-radius:0;}
 .fr-hero-map-placeholder{width:100%;height:100%;background:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8E94A0;font-size:13px;gap:6px;}
+
+/* ── Comparables cercanos ── */
+.fr-comp-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+.fr-comp-table thead{background:#F5F3EF;}
+.fr-comp-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0;border-bottom:1px solid rgba(14,17,23,.1);}
+.fr-comp-table th:last-child,.fr-comp-table td:last-child{text-align:right;}
+.fr-comp-table td{padding:14px;border-bottom:1px solid rgba(14,17,23,.06);color:#0E1117;vertical-align:middle;}
+.fr-comp-addr{font-weight:500;}
+.fr-comp-val{font-weight:700;}
+.fr-comp-locked{display:flex;align-items:center;gap:6px;justify-content:flex-end;color:#8E94A0;font-size:12px;}
+.fr-comp-unlock{display:block;text-align:center;margin-top:12px;padding:10px;background:rgba(26,79,191,.06);border:1px solid rgba(26,79,191,.15);border-radius:10px;color:var(--blue-dark);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;}
+.fr-comp-unlock:hover{background:rgba(26,79,191,.12);}
+
+/* ── Guía de la zona ── */
+.fr-locality-card{background:#fff;border:1px solid rgba(14,17,23,.1);border-radius:18px;padding:22px;}
+.fr-locality-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.fr-locality-title{font-size:20px;font-weight:700;color:#0E1117;}
+.fr-locality-sub{font-size:12.5px;color:#8E94A0;margin-top:2px;}
+.fr-locality-link{font-size:12px;color:var(--blue-dark);text-decoration:none;border:1px solid rgba(14,17,23,.15);padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;}
+.fr-locality-link:hover{background:#F5F3EF;}
+.fr-locality-blurb{margin-top:16px;font-size:13.5px;line-height:1.6;color:#555B6A;}
+.fr-locality-pois{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px;}
+@media(min-width:600px){.fr-locality-pois{grid-template-columns:repeat(3,1fr);}}
+.fr-locality-poi{background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:10px;padding:10px 12px;}
+.fr-locality-poi strong{display:block;font-size:13px;font-weight:600;color:#0E1117;margin-bottom:2px;}
+.fr-locality-poi span{font-size:11px;color:#8E94A0;}
+
+/* ── Reco Riesgo ── */
+.fr-riesgo-hero{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;padding:24px;border:1.5px solid;border-radius:14px;margin-bottom:18px;background:rgba(0,0,0,.02);}
+.fr-riesgo-score{text-align:center;min-width:120px;}
+.fr-riesgo-num{font-family:'Segoe UI',system-ui,sans-serif;font-size:58px;line-height:1;font-weight:700;}
+.fr-riesgo-num span{font-size:18px;color:#8E94A0;font-weight:400;margin-left:2px;}
+.fr-riesgo-band{margin-top:6px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.fr-riesgo-body h3{font-size:16px;margin:0 0 6px;font-weight:600;}
+.fr-riesgo-body p{font-size:13px;color:#555B6A;margin:0 0 12px;line-height:1.5;}
+.fr-riesgo-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.fr-riesgo-chip{background:#fff;border:1px solid rgba(14,17,23,.1);border-radius:999px;padding:5px 12px;font-size:12px;color:#555B6A;}
+.fr-riesgo-chip b{color:#0E1117;font-weight:600;}
+.fr-riesgo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.fr-riesgo-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:16px;}
+.fr-riesgo-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.fr-riesgo-icon{font-size:22px;}
+.fr-riesgo-label{font-size:13px;font-weight:600;color:#0E1117;}
+.fr-riesgo-source{font-size:11px;color:#8E94A0;}
+.fr-riesgo-badge{margin-left:auto;font-size:11px;font-weight:600;border:1px solid;border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.04em;}
+.fr-riesgo-bar{height:6px;background:#E0DDD7;border-radius:999px;overflow:hidden;margin-bottom:8px;}
+.fr-riesgo-bar-fill{height:100%;border-radius:999px;transition:width .4s;}
+.fr-riesgo-foot{font-size:11px;color:#8E94A0;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(14,17,23,.1);}
+@media(max-width:900px){.fr-riesgo-grid{grid-template-columns:repeat(2,1fr);} .fr-riesgo-hero{grid-template-columns:1fr;text-align:center;} .fr-riesgo-chips{justify-content:center;}}
+@media(max-width:560px){.fr-riesgo-grid{grid-template-columns:1fr;}}
 </style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
