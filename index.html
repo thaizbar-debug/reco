@@ -5276,6 +5276,130 @@ const RISK_DATA={
 };
 const DEFAULT_RISK={sismico:55,inundacion:20,deslizamiento:30,tsunami:20,crimen:35,aire:50};
 
+// ── Zona Destacados — curated notable establishments per district ──
+// Reviewed periodically. Each entry: name, category label, icon, tags
+// (destacado = landmark, trending = currently popular, nuevo = recently opened).
+// coords are optional — when present the card shows even if HERE API is down.
+const ZONA_DESTACADOS_REV = '2026-09';
+const ZONA_DESTACADOS = {
+  'Miraflores': [
+    {name:'Larcomar',          cat:'Centro comercial',ico:'🏬',tag:'destacado',  lat:-12.1302,lng:-77.0311},
+    {name:'Parque Kennedy',    cat:'Parque',          ico:'🌳',tag:'destacado',  lat:-12.1197,lng:-77.0300},
+    {name:'Parque del Amor',   cat:'Mirador',         ico:'🌅',tag:'destacado',  lat:-12.1268,lng:-77.0351},
+    {name:'Centro Comercial El Polo', cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.1085,lng:-77.0384},
+    {name:'Maido',             cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1213,lng:-77.0295},
+    {name:'Central',           cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1276,lng:-77.0229},
+    {name:'Clínica Anglo Americana', cat:'Clínica',   ico:'🏥',tag:'destacado',  lat:-12.1249,lng:-77.0272},
+    {name:'Wong Miraflores',   cat:'Supermercado',    ico:'🛒',tag:'destacado',  lat:-12.1188,lng:-77.0275},
+  ],
+  'San Isidro': [
+    {name:'Real Plaza Salaverry', cat:'Centro comercial',ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504},
+    {name:'Parque El Olivar',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1006,lng:-77.0363},
+    {name:'Country Club Lima Hotel', cat:'Hotel',        ico:'🏨',tag:'destacado', lat:-12.0964,lng:-77.0376},
+    {name:'Clínica Ricardo Palma', cat:'Clínica',        ico:'🏥',tag:'destacado', lat:-12.0977,lng:-77.0319},
+    {name:'La Mar Cebichería',   cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1096,lng:-77.0380},
+    {name:'Astrid & Gastón',     cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1030,lng:-77.0368},
+  ],
+  'Barranco': [
+    {name:'MAC Lima',            cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.1460,lng:-77.0218},
+    {name:'Puente de los Suspiros', cat:'Monumento',     ico:'🏛️',tag:'destacado', lat:-12.1468,lng:-77.0215},
+    {name:'Isolina',             cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1421,lng:-77.0235},
+    {name:'Malecón de Barranco', cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.1470,lng:-77.0240},
+    {name:'Metro Barranco',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1430,lng:-77.0200},
+  ],
+  'Santiago de Surco': [
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033},
+    {name:'Open Plaza Angamos',  cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1118,lng:-77.0065},
+    {name:'Clínica Good Hope',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.1112,lng:-77.0039},
+    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960},
+    {name:'La Bonbonniere Surco',cat:'Café',             ico:'☕',tag:'trending',  lat:-12.1100,lng:-77.0010},
+  ],
+  'Surco': [
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033},
+    {name:'Open Plaza Angamos',  cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1118,lng:-77.0065},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960},
+  ],
+  'La Molina': [
+    {name:'Plaza Camacho',       cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0870,lng:-76.9560},
+    {name:'Molina Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0790,lng:-76.9380},
+    {name:'ULIMA',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0855,lng:-76.9682},
+    {name:'Parque El Reducto',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0975,lng:-76.9610},
+    {name:'Clínica La Molina',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0835,lng:-76.9455},
+  ],
+  'San Borja': [
+    {name:'La Rambla San Borja', cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1015,lng:-77.0050},
+    {name:'Museo de la Nación',  cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0936,lng:-77.0032},
+    {name:'Gran Teatro Nacional',cat:'Teatro',           ico:'🎭',tag:'destacado', lat:-12.0927,lng:-77.0017},
+    {name:'Real Plaza Primavera',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1050,lng:-77.0117},
+    {name:'Hospital Edgardo Rebagliati', cat:'Hospital', ico:'🏥',tag:'destacado', lat:-12.0870,lng:-77.0100},
+  ],
+  'Jesús María': [
+    {name:'Campo de Marte',      cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0718,lng:-77.0428},
+    {name:'Hospital del Ejército',cat:'Hospital',        ico:'🏥',tag:'destacado', lat:-12.0704,lng:-77.0389},
+    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504},
+    {name:'Rasson',              cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.0730,lng:-77.0440},
+  ],
+  'San Miguel': [
+    {name:'Plaza San Miguel',    cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0770,lng:-77.0841},
+    {name:'Open Plaza San Miguel',cat:'Centro comercial',ico:'🏬',tag:'destacado', lat:-12.0755,lng:-77.0880},
+    {name:'PUCP',                cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0709,lng:-77.0798},
+    {name:'Parque Media Luna',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0775,lng:-77.0910},
+  ],
+  'Magdalena del Mar': [
+    {name:'Malecón Grau',        cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.0975,lng:-77.0750},
+    {name:'Metro Magdalena',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0888,lng:-77.0720},
+    {name:'Estación Magdalena (Línea 2)',cat:'Metro',    ico:'🚇',tag:'nuevo',    lat:-12.0900,lng:-77.0700},
+  ],
+  'Chorrillos': [
+    {name:'Pantanos de Villa',   cat:'Reserva natural',  ico:'🌿',tag:'destacado', lat:-12.2110,lng:-77.0000},
+    {name:'Mall del Sur',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1520,lng:-76.9890},
+    {name:'Playa Agua Dulce',    cat:'Playa',            ico:'🏖️',tag:'destacado', lat:-12.1660,lng:-77.0310},
+    {name:'Club Regatas Lima',   cat:'Club',             ico:'⛵',tag:'destacado', lat:-12.1650,lng:-77.0290},
+  ],
+  'Lince': [
+    {name:'Risso (polo gastronómico)', cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0850,lng:-77.0380},
+    {name:'Parque Mariscal Castilla',  cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0847,lng:-77.0336},
+    {name:'Clínica Internacional',     cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0830,lng:-77.0390},
+  ],
+  'Surquillo': [
+    {name:'Mercado N° 1 de Surquillo', cat:'Mercado',    ico:'🏪',tag:'trending', lat:-12.1120,lng:-77.0250},
+    {name:'Real Plaza Salaverry',      cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0909,lng:-77.0504},
+    {name:'Parque Reducto N° 2',       cat:'Parque',     ico:'🌳',tag:'destacado', lat:-12.1170,lng:-77.0220},
+  ],
+  'Pueblo Libre': [
+    {name:'Museo Larco',         cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0720,lng:-77.0712},
+    {name:'Museo Nacional de Arqueología', cat:'Museo',  ico:'🎨',tag:'destacado', lat:-12.0735,lng:-77.0645},
+    {name:'Plaza Bolívar',       cat:'Plaza',            ico:'🌳',tag:'destacado', lat:-12.0750,lng:-77.0630},
+  ],
+  'Los Olivos': [
+    {name:'Mega Plaza',          cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9962,lng:-77.0648},
+    {name:'Royal Plaza',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9870,lng:-77.0640},
+    {name:'UPN Los Olivos',      cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-11.9875,lng:-77.0590},
+  ],
+  'Ate': [
+    {name:'Real Plaza Santa Clara',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0270,lng:-76.9090},
+    {name:'Mall Aventura Santa Anita',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0550,lng:-76.9650},
+    {name:'Parque Ecológico',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0250,lng:-76.9200},
+  ],
+  'Breña': [
+    {name:'Hospital del Niño',   cat:'Hospital',         ico:'🏥',tag:'destacado', lat:-12.0580,lng:-77.0530},
+    {name:'Plaza Norte (cercano)',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580},
+  ],
+  'San Martín de Porres': [
+    {name:'Plaza Norte',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580},
+    {name:'UNI',                 cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0140,lng:-77.0505},
+    {name:'Metro San Martín',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0200,lng:-77.0550},
+  ],
+  'Cercado de Lima': [
+    {name:'Plaza de Armas',      cat:'Plaza histórica',  ico:'🏛️',tag:'destacado', lat:-12.0464,lng:-77.0302},
+    {name:'Jirón de la Unión',   cat:'Calle peatonal',   ico:'🚶',tag:'destacado', lat:-12.0490,lng:-77.0312},
+    {name:'Mercado Central',     cat:'Mercado',          ico:'🏪',tag:'destacado', lat:-12.0520,lng:-77.0260},
+    {name:'Barrio Chino',        cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0530,lng:-77.0270},
+    {name:'MALI',                cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0570,lng:-77.0345},
+  ],
+};
+
 const BLURBS={
   'Miraflores':'Miraflores es uno de los distritos más cotizados de Lima, con frente al malecón, oferta gastronómica de primer nivel, parques (Kennedy, Salazar) y excelente conectividad por Av. Arequipa y la Costa Verde.',
   'Barranco':'Barranco es el distrito bohemio y cultural de Lima, conocido por arte urbano, galerías, restaurantes y bares con vista al mar. Combina casonas republicanas con desarrollos residenciales modernos.',
@@ -6077,6 +6201,7 @@ function openFullReport(id){
   const localityHTML = (() => {
     if(!p.district) return '';
     const blurb = BLURBS[p.district] || `${esc(p.district)} es una zona consolidada de Lima con oferta residencial diversa y demanda activa en el mercado inmobiliario.`;
+    const revDate = ZONA_DESTACADOS_REV || '';
     return `<div class="fr-sec">
       <h2 class="fr-sec-title">Guía de la zona <small>· ${esc(p.district)}, Lima</small></h2>
       <div class="fr-locality-card">
@@ -6089,9 +6214,11 @@ function openFullReport(id){
         </div>
         <p class="fr-locality-blurb">${blurb}</p>
         <div id="frLocalitySummary" class="fr-locality-summary" style="display:none"></div>
+        <div id="frLocalityDestacados"></div>
         <div id="frLocalityPois" class="fr-locality-pois">
           <div class="fr-locality-loading">Buscando establecimientos cercanos…</div>
         </div>
+        <div class="fr-locality-rev">Información actualizada: ${esc(revDate)} · Datos en vivo: HERE Maps</div>
       </div>
     </div>`;
   })();
@@ -6400,11 +6527,53 @@ function openFullReport(id){
     calcSim();
   }
 
-  // ── Cargar POIs reales para Guía de la zona ──────────────────
+  // ── Cargar POIs reales + destacados para Guía de la zona ─────
   (async () => {
     const coords = GEO[p.id];
     if(!coords || !HERE_API_KEY) return;
-    const lat = coords[0], lng = coords[1], rad = 500;
+    const lat = coords[0], lng = coords[1], rad = 700;
+
+    const _hav = (la1,lo1,la2,lo2) => {
+      const R=6371e3, toR=Math.PI/180;
+      const dLa=(la2-la1)*toR, dLo=(lo2-lo1)*toR;
+      const a=Math.sin(dLa/2)**2+Math.cos(la1*toR)*Math.cos(la2*toR)*Math.sin(dLo/2)**2;
+      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    };
+
+    // ── 1. Render curated "Destacados" immediately ──────────────
+    const destacados = ZONA_DESTACADOS[p.district] || ZONA_DESTACADOS[_normDist(p.district)] || [];
+    const destContainer = document.getElementById('frLocalityDestacados');
+    if(destContainer && destacados.length > 0){
+      const nearby = destacados.map(d => {
+        const dist = (d.lat && d.lng) ? _hav(lat,lng,d.lat,d.lng) : null;
+        return {...d, dist};
+      }).filter(d => d.dist === null || d.dist <= 3000)
+        .sort((a,b) => {
+          const w = {destacado:0,trending:1,nuevo:2};
+          if((w[a.tag]||9) !== (w[b.tag]||9)) return (w[a.tag]||9) - (w[b.tag]||9);
+          return (a.dist||9999) - (b.dist||9999);
+        });
+
+      if(nearby.length > 0){
+        const tagLabel = {destacado:'Destacado',trending:'Popular',nuevo:'Nuevo'};
+        const tagClass = {destacado:'dest',trending:'trend',nuevo:'new'};
+        destContainer.innerHTML = `
+          <div class="fr-dest-label">Lugares destacados cerca de ti</div>
+          <div class="fr-dest-grid">${nearby.map(d => {
+            const dTxt = d.dist != null ? (d.dist >= 1000 ? (d.dist/1000).toFixed(1)+' km' : Math.round(d.dist)+' m') : '';
+            const badge = d.tag ? `<span class="fr-poi-badge fr-poi-badge--${tagClass[d.tag]||'dest'}">${tagLabel[d.tag]||d.tag}</span>` : '';
+            return `<div class="fr-dest-card">
+              <div class="fr-poi-icon fr-poi-icon--feat">${d.ico}</div>
+              <div class="fr-poi-info">
+                <div class="fr-poi-name">${esc(d.name)} ${badge}</div>
+                <div class="fr-poi-meta">${esc(d.cat)}${dTxt ? ' · '+esc(dTxt) : ''}</div>
+              </div>
+            </div>`;
+          }).join('')}</div>`;
+      }
+    }
+
+    // ── 2. Fetch live POIs from HERE Browse API ─────────────────
     const cats = [
       {key:'restaurantes', here:'100-1000-0000,100-1000-0001,100-1100-0000', label:'Restaurante', ico:'🍽️'},
       {key:'comida',       here:'600-6300-0066,600-6200-0063,600-6300-0067', label:'Supermercado', ico:'🛒'},
@@ -6416,7 +6585,7 @@ function openFullReport(id){
       {key:'transporte',   here:'400-4100-0035,400-4100-0036,400-4100-0000',  label:'Transporte', ico:'🚌'}
     ];
     const allCatCodes = cats.map(c=>c.here).join(',');
-    const url = `https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${allCatCodes}&limit=30&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
+    const url = `https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${allCatCodes}&limit=40&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
     try {
       const res = await fetch(url);
       if(!res.ok) throw new Error('HTTP '+res.status);
@@ -6426,16 +6595,8 @@ function openFullReport(id){
       const summaryEl = document.getElementById('frLocalitySummary');
       if(!container) return;
 
-      if(items.length === 0){
-        container.innerHTML = '<div class="fr-locality-empty">No se encontraron establecimientos en un radio de 500 m.</div>';
-        return;
-      }
-
       const catLabel = (item) => {
         const catId = (item.categories && item.categories[0] && item.categories[0].id) || '';
-        for(const c of cats){
-          if(c.here.split(',').some(h => catId.startsWith(h.split('-').slice(0,2).join('-')))) return {label:c.label,ico:c.ico};
-        }
         if(catId.startsWith('100')) return {label:'Restaurante',ico:'🍽️'};
         if(catId.startsWith('550')) return {label:'Parque',ico:'🌳'};
         if(catId.startsWith('600-63')||catId.startsWith('600-62')) return {label:'Supermercado',ico:'🛒'};
@@ -6444,46 +6605,78 @@ function openFullReport(id){
         if(catId.startsWith('800-80')) return {label:'Salud',ico:'🏥'};
         if(catId.startsWith('800-82')) return {label:'Educación',ico:'🎓'};
         if(catId.startsWith('400')) return {label:'Transporte',ico:'🚌'};
+        for(const c of cats){
+          if(c.here.split(',').some(h => catId.startsWith(h.split('-').slice(0,2).join('-')))) return {label:c.label,ico:c.ico};
+        }
         return {label:'Establecimiento',ico:'📍'};
       };
 
       const seen = new Set();
+      const destNames = new Set(destacados.map(d => d.name.toLowerCase()));
       const unique = items.filter(it => {
         const k = (it.title||'')+'|'+(it.position?.lat||0).toFixed(4);
         if(seen.has(k)) return false;
         seen.add(k);
+        if(destNames.has((it.title||'').toLowerCase())) return false;
         return true;
       });
 
-      const catCounts = {};
-      unique.forEach(it => {
+      // ── 3. Check curated matches — mark as "Curated + Live" ───
+      const enriched = unique.map(it => {
         const cl = catLabel(it);
-        catCounts[cl.label] = (catCounts[cl.label]||0)+1;
+        const nameLow = (it.title||'').toLowerCase();
+        const curatedMatch = destacados.find(d => nameLow.includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(nameLow));
+        return { ...it, cl, isCurated: !!curatedMatch, tag: curatedMatch?.tag || null };
       });
-      const catSummary = Object.entries(catCounts).map(([k])=>k.toLowerCase()+'s').slice(0,4).join(', ');
+
+      // Sort: trending/popular first, then by importance heuristic, then distance
+      const importantCats = new Set(['Centro comercial','Hospital','Clínica','Universidad','Colegio','Museo','Metro']);
+      enriched.sort((a,b) => {
+        const aImp = a.tag === 'trending' ? 0 : a.tag === 'destacado' ? 1 : importantCats.has(a.cl.label) ? 2 : 3;
+        const bImp = b.tag === 'trending' ? 0 : b.tag === 'destacado' ? 1 : importantCats.has(b.cl.label) ? 2 : 3;
+        if(aImp !== bImp) return aImp - bImp;
+        return (a.distance||9999) - (b.distance||9999);
+      });
+
+      const totalCount = enriched.length + destacados.length;
+      const catCounts = {};
+      enriched.forEach(it => { catCounts[it.cl.label] = (catCounts[it.cl.label]||0)+1; });
+      destacados.forEach(d => { catCounts[d.cat] = (catCounts[d.cat]||0)+1; });
+      const catSummary = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).map(([k])=>k.toLowerCase()+'s').slice(0,4).join(', ');
 
       if(summaryEl){
         summaryEl.style.display = '';
-        summaryEl.innerHTML = `Se han identificado <strong>${unique.length} establecimientos</strong> (${catSummary}) en un radio de ${rad} m.`;
+        summaryEl.innerHTML = `Se han identificado <strong>${totalCount} establecimientos</strong> (${catSummary}) en un radio de ${rad} m.`;
       }
 
-      container.innerHTML = unique.map(it => {
-        const cl = catLabel(it);
+      if(enriched.length === 0 && destacados.length === 0){
+        container.innerHTML = '<div class="fr-locality-empty">No se encontraron establecimientos en un radio de '+rad+' m.</div>';
+        return;
+      }
+
+      const tagLabel = {trending:'Popular',destacado:'Destacado',nuevo:'Nuevo'};
+      const tagClass = {trending:'trend',destacado:'dest',nuevo:'new'};
+
+      container.innerHTML = enriched.map(it => {
         const name = esc(it.title || 'Sin nombre');
         const dm = it.distance != null ? it.distance : 0;
         const dTxt = dm >= 1000 ? (dm/1000).toFixed(1)+' km' : Math.round(dm)+' m';
-        const addr = it.address && it.address.label ? esc(it.address.label) : '';
-        return `<div class="fr-locality-poi-card">
-          <div class="fr-poi-icon">${cl.ico}</div>
+        const badge = it.tag ? `<span class="fr-poi-badge fr-poi-badge--${tagClass[it.tag]||'dest'}">${tagLabel[it.tag]||''}</span>` : '';
+        return `<div class="fr-locality-poi-card${it.tag?' fr-poi-highlighted':''}">
+          <div class="fr-poi-icon">${it.cl.ico}</div>
           <div class="fr-poi-info">
-            <div class="fr-poi-name">${name}</div>
-            <div class="fr-poi-meta">${cl.label} · ${esc(dTxt)}${addr ? ' · '+addr : ''}</div>
+            <div class="fr-poi-name">${name} ${badge}</div>
+            <div class="fr-poi-meta">${it.cl.label} · ${esc(dTxt)}</div>
           </div>
         </div>`;
       }).join('');
     } catch(e) {
       const container = document.getElementById('frLocalityPois');
-      if(container) container.innerHTML = '<div class="fr-locality-empty">No se pudo consultar establecimientos cercanos.</div>';
+      if(container && destacados.length === 0){
+        container.innerHTML = '<div class="fr-locality-empty">No se pudo consultar establecimientos cercanos.</div>';
+      } else if(container){
+        container.innerHTML = '';
+      }
     }
   })();
 }
@@ -8760,12 +8953,24 @@ function _applyLandingHash(){
 @media(min-width:500px){.fr-locality-pois{grid-template-columns:repeat(2,1fr);}}
 .fr-locality-loading{text-align:center;padding:24px 12px;font-size:13px;color:#8E94A0;}
 .fr-locality-empty{text-align:center;padding:18px 12px;font-size:13px;color:#8E94A0;}
+.fr-locality-rev{font-size:10.5px;color:#B0ADA6;margin-top:16px;padding-top:10px;border-top:1px dashed rgba(14,17,23,.08);text-align:right;}
+.fr-dest-label{font-size:12px;font-weight:600;color:#0E1117;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
+.fr-dest-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px;}
+@media(min-width:500px){.fr-dest-grid{grid-template-columns:repeat(2,1fr);}}
+.fr-dest-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#FFFAF0 0%,#FFF7E6 100%);border:1px solid rgba(183,145,60,.18);border-radius:12px;padding:12px 14px;transition:border-color .15s,box-shadow .15s;}
+.fr-dest-card:hover{border-color:rgba(183,145,60,.35);box-shadow:0 2px 8px rgba(183,145,60,.10);}
+.fr-poi-icon--feat{background:rgba(183,145,60,.12);}
 .fr-locality-poi-card{display:flex;align-items:center;gap:12px;background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:12px;padding:12px 14px;transition:border-color .15s;}
 .fr-locality-poi-card:hover{border-color:rgba(14,17,23,.2);}
+.fr-locality-poi-card.fr-poi-highlighted{background:linear-gradient(135deg,#F8FBFF 0%,#F0F6FF 100%);border-color:rgba(26,79,191,.15);}
 .fr-poi-icon{font-size:22px;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#F5F3EF;border-radius:10px;}
 .fr-poi-info{min-width:0;}
-.fr-poi-name{font-size:13.5px;font-weight:600;color:#0E1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fr-poi-name{font-size:13.5px;font-weight:600;color:#0E1117;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .fr-poi-meta{font-size:11.5px;color:#8E94A0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fr-poi-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:999px;line-height:1.3;flex-shrink:0;}
+.fr-poi-badge--dest{background:#FDF3E3;color:#8B5E0A;border:1px solid rgba(183,145,60,.2);}
+.fr-poi-badge--trend{background:#EEF2FF;color:#4338CA;border:1px solid rgba(67,56,202,.15);}
+.fr-poi-badge--new{background:#ECFDF5;color:#047857;border:1px solid rgba(4,120,87,.15);}
 
 /* ── Reco Riesgo ── */
 .fr-riesgo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
