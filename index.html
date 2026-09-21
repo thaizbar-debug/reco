@@ -5252,14 +5252,14 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
 const _TAS_MIN_N=20;
-const _BCRP_VAR={'2015':2.1,'2016':1.0,'2017':-2.4,'2018':-0.8,'2019':2.1,'2020':-3.5,'2021':8.6,'2022':6.9,'2023':5.0,'2024':3.5,'2025':3.3,'2026':3.0};
+const _OUTLIER_PCT=40;
+const _BCRP_VAR={'2017':-2.4,'2018':-0.8,'2019':2.1,'2020':-3.5,'2021':8.6,'2022':6.9,'2023':5.0,'2024':3.5,'2025':3.3,'2026':3.0};
 function _smoothTas(d,nd){
   const raw=Object.keys(d.y).sort();
   const firstYr=+raw[0], lastYr=+raw[raw.length-1];
   const extYrs=[];
-  const startYr=Math.min(firstYr,2015);
-  const endYr=Math.max(lastYr,2025);
-  for(let y=startYr;y<=endYr;y++) extYrs.push(String(y));
+  for(let y=firstYr;y<=lastYr;y++) extYrs.push(String(y));
+  if(lastYr>=2023) for(let y=lastYr+1;y<=2025;y++) extYrs.push(String(y));
   const rel=raw.filter(y=>d.y[y].n>=_TAS_MIN_N);
   const out=[];
   for(let i=0;i<extYrs.length;i++){
@@ -5281,7 +5281,12 @@ function _smoothTas(d,nd){
       est=val;
     }else{est=d.y[y]?d.y[y].m:null;}
     if(!est||est<=0) continue;
-    out.push({y,m:est,n:d.y[y]?d.y[y].n:0,src:d.y[y]?'est':'bcrp'});
+    const real=d.y[y];
+    if(real&&real.n>0&&real.n<_TAS_MIN_N){
+      const dev=Math.abs(real.m-est)/est*100;
+      if(dev<=_OUTLIER_PCT){out.push({y,m:real.m,n:real.n,src:'tas'});continue;}
+    }
+    out.push({y,m:est,n:real?real.n:0,src:real?'est':'bcrp'});
   }
   if(out.length<2) return out;
   for(let i=1;i<out.length;i++){out[i].v=out[i-1].m>0?parseFloat(((out[i].m-out[i-1].m)/out[i-1].m*100).toFixed(1)):undefined;}
@@ -10703,7 +10708,7 @@ var FAQS=[
   ]},
   {cat:'Datos y metodología',items:[
     {q:'¿De dónde viene la información de precios?',a:'De transacciones inscritas en SUNARP (compraventas, hipotecas, transferencias), enriquecidas con data catastral y señales de mercado.'},
-    {q:'¿Cuántas transacciones tienen indexadas?',a:'Nuestra base incluye más de 47,000 tasaciones profesionales y 1,750 transacciones históricas con registro SUNARP, cubriendo 250 distritos a nivel nacional. Período: 2015-2025, con proyecciones basadas en índices BCRP.'},
+    {q:'¿Cuántas transacciones tienen indexadas?',a:'Nuestra base incluye más de 47,000 tasaciones profesionales y 1,750 transacciones históricas con registro SUNARP, cubriendo 250 distritos a nivel nacional. Período: 2017-2025, con proyecciones basadas en índices BCRP.'},
     {q:'¿Qué tan preciso es el modelo de valorización?',a:'Mostramos la evolución de valores por distrito combinando tasaciones profesionales (mediana USD/m²) con índices oficiales del BCRP para suavizar datos y proyectar tendencias. El motor de valorización automática con comparables está en construcción.'},
     {q:'¿Reemplaza a una tasación oficial?',a:'No. Reco entrega información referencial para tomar mejores decisiones, pero no sustituye la tasación de un perito registrado ante la SBS.'},
   ]},
