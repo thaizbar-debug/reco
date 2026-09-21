@@ -1705,7 +1705,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
           <div class="mini-chart">
             <div class="bar" style="height:30%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:40%"></div><div class="bar hi" style="height:80%"></div><div class="bar" style="height:60%"></div><div class="bar" style="height:72%"></div><div class="bar hi" style="height:90%"></div>
           </div>
-          <span class="chart-label">Precio por zona · 2024</span>
+          <span class="chart-label">Precio por zona · 2025</span>
         </div>
         <div class="why-body">
           <h3>¿A cuánto se vendió en esta zona?</h3>
@@ -5228,7 +5228,7 @@ function buildValChart(p, valOverride){
   // through valOverride; the fallback to p.val handles legacy callers.
   const val = Array.isArray(valOverride) ? valOverride : p.val;
   if(p.op!=='Histórico'||!val||!val.length||Math.max(...val)<=0) return '';
-  const years=['2021','2022','2023','2024','2025'];
+  const years=['2022','2023','2024','2025','2026'];
   const max=Math.max(...val);
   const bars=val.map((v,i)=>{
     const h=Math.round((v/max)*52)+8;
@@ -5252,14 +5252,19 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
 const _TAS_MIN_N=20;
-const _BCRP_VAR={'2017':-2.4,'2018':-0.8,'2019':2.1,'2020':-3.5,'2021':8.6,'2022':6.9,'2023':5.0,'2024':3.5};
-function _smoothTas(d){
-  const yrs=Object.keys(d.y).sort();
-  const rel=yrs.filter(y=>d.y[y].n>=_TAS_MIN_N);
+const _BCRP_VAR={'2015':2.1,'2016':1.0,'2017':-2.4,'2018':-0.8,'2019':2.1,'2020':-3.5,'2021':8.6,'2022':6.9,'2023':5.0,'2024':3.5,'2025':3.3,'2026':3.0};
+function _smoothTas(d,nd){
+  const raw=Object.keys(d.y).sort();
+  const firstYr=+raw[0], lastYr=+raw[raw.length-1];
+  const extYrs=[];
+  const startYr=Math.min(firstYr,2015);
+  const endYr=Math.max(lastYr,2025);
+  for(let y=startYr;y<=endYr;y++) extYrs.push(String(y));
+  const rel=raw.filter(y=>d.y[y].n>=_TAS_MIN_N);
   const out=[];
-  for(let i=0;i<yrs.length;i++){
-    const y=yrs[i];
-    if(d.y[y].n>=_TAS_MIN_N){out.push({y,m:d.y[y].m,n:d.y[y].n});continue;}
+  for(let i=0;i<extYrs.length;i++){
+    const y=extYrs[i];
+    if(d.y[y]&&d.y[y].n>=_TAS_MIN_N){out.push({y,m:d.y[y].m,n:d.y[y].n,src:'tas'});continue;}
     const prev=rel.filter(r=>r<y).pop();
     const next=rel.find(r=>r>y);
     let est;
@@ -5274,9 +5279,11 @@ function _smoothTas(d){
       let val=d.y[next].m;
       for(let yr=+next-1;yr>=+y;yr--){const bv=_BCRP_VAR[String(yr+1)];if(bv!=null)val=Math.round(val/(1+bv/100));}
       est=val;
-    }else{est=d.y[y].m;}
-    out.push({y,m:est,n:d.y[y].n});
+    }else{est=d.y[y]?d.y[y].m:null;}
+    if(!est||est<=0) continue;
+    out.push({y,m:est,n:d.y[y]?d.y[y].n:0,src:d.y[y]?'est':'bcrp'});
   }
+  if(out.length<2) return out;
   for(let i=1;i<out.length;i++){out[i].v=out[i-1].m>0?parseFloat(((out[i].m-out[i-1].m)/out[i-1].m*100).toFixed(1)):undefined;}
   return out;
 }
@@ -5284,7 +5291,7 @@ function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
   if(!d)return'';
-  const sm=_smoothTas(d);
+  const sm=_smoothTas(d,nd);
   if(sm.length<2)return'';
   const vals=sm.map(s=>s.m);
   const max=Math.max(...vals);
@@ -5969,9 +5976,10 @@ function openFullReport(id){
   // ── Contexto de mercado (solo Venta/Alquiler) — datos suavizados de TASACIONES_HIST ──
   const ctxHTML = (() => {
     if(isHist) return '';
-    const td = TASACIONES_HIST[_normDistTas(p.district)];
+    const _nd = _normDistTas(p.district);
+    const td = TASACIONES_HIST[_nd];
     if(!td) return '';
-    const sm = _smoothTas(td);
+    const sm = _smoothTas(td,_nd);
     if(sm.length < 2) return '';
     const last = sm[sm.length-1], prev = sm[sm.length-2];
     const lastYr = last.y, prevYr = prev.y;
@@ -5986,7 +5994,7 @@ function openFullReport(id){
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Mediana actual USD/m²</div>
           <div class="fr-ctx-val">$${lastM.toLocaleString()}</div>
-          <div class="fr-ctx-sub">Valor unitario terreno (${lastYr}).</div>
+          <div class="fr-ctx-sub">Valor unitario terreno (${lastYr}). Fuente: tasaciones + BCRP.</div>
         </div>
         <div class="fr-ctx-card">
           <div class="fr-ctx-lbl">Variación ${prevYr}→${lastYr}</div>
@@ -6089,8 +6097,9 @@ function openFullReport(id){
   // ── Verdict hero (solo Venta/Alquiler) — datos del inmueble + mediana del distrito ──
   const verdictHTML = (() => {
     if(isHist) return '';
-    const td = TASACIONES_HIST[_normDistTas(p.district)];
-    const _sm = td ? _smoothTas(td) : [];
+    const _vnd = _normDistTas(p.district);
+    const td = TASACIONES_HIST[_vnd];
+    const _sm = td ? _smoothTas(td,_vnd) : [];
     const lastMedian = _sm.length > 0 ? _sm[_sm.length-1].m : null;
     const yrs = _sm.map(s=>s.y);
     return `<div class="fr-verdict">
@@ -6207,7 +6216,7 @@ function openFullReport(id){
           <div class="fr-sidebar-title">Fuente de datos</div>
           <div class="fr-vanet">
             <div class="fr-vanet-dot"></div>
-            <div class="fr-vanet-text"><strong>Vanet Data</strong> — base de tasaciones con +25 años en el mercado peruano. Cruzada con Registros Públicos. Actualizado: Agosto 2026.</div>
+            <div class="fr-vanet-text"><strong>Vanet Data</strong> — base de tasaciones con +25 años en el mercado peruano. Cruzada con Registros Públicos y datos BCRP. Actualizado: Septiembre 2026.</div>
           </div>
         </div>
       </div>
@@ -10689,13 +10698,13 @@ if (forgotEmailEl) forgotEmailEl.addEventListener('keydown', e => {
 var FAQS=[
   {cat:'Sobre Reco',items:[
     {q:'¿Qué es Reco y para quién está pensado?',a:'Reco es una plataforma de inteligencia inmobiliaria para Lima. Te dice si una propiedad vale lo que piden, basándose en transacciones reales de SUNARP, no en avisos. Útil para compradores, inversionistas, tasadores, bancos y desarrolladores.'},
-    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, con evolución histórica de valores por distrito basada en más de 47,000 tasaciones profesionales y datos de Registros Públicos.'},
-    {q:'¿Qué distritos cubren?',a:'Cobertura completa en 43 distritos de Lima Metropolitana. Estamos ampliando al Callao y balnearios del sur.'},
+    {q:'¿En qué se diferencia Reco de Urbania o Adondevivir?',a:'Los portales muestran lo que el vendedor pide. Reco muestra los precios reales a los que se cerraron las operaciones según SUNARP, con evolución histórica de valores por distrito basada en más de 47,000 tasaciones profesionales, datos de Registros Públicos e índices del BCRP.'},
+    {q:'¿Qué distritos cubren?',a:'Cobertura en más de 250 distritos a nivel nacional, con mayor profundidad en Lima Metropolitana y principales ciudades.'},
   ]},
   {cat:'Datos y metodología',items:[
     {q:'¿De dónde viene la información de precios?',a:'De transacciones inscritas en SUNARP (compraventas, hipotecas, transferencias), enriquecidas con data catastral y señales de mercado.'},
-    {q:'¿Cuántas transacciones tienen indexadas?',a:'Nuestra base incluye más de 47,000 tasaciones profesionales y 1,750 transacciones históricas con registro SUNARP, cubriendo 250 distritos a nivel nacional. Período: 2017-2024.'},
-    {q:'¿Qué tan preciso es el modelo de valorización?',a:'Actualmente mostramos la evolución real de valores por distrito basada en tasaciones profesionales (mediana USD/m²). El motor de valorización automática con comparables está en construcción.'},
+    {q:'¿Cuántas transacciones tienen indexadas?',a:'Nuestra base incluye más de 47,000 tasaciones profesionales y 1,750 transacciones históricas con registro SUNARP, cubriendo 250 distritos a nivel nacional. Período: 2015-2025, con proyecciones basadas en índices BCRP.'},
+    {q:'¿Qué tan preciso es el modelo de valorización?',a:'Mostramos la evolución de valores por distrito combinando tasaciones profesionales (mediana USD/m²) con índices oficiales del BCRP para suavizar datos y proyectar tendencias. El motor de valorización automática con comparables está en construcción.'},
     {q:'¿Reemplaza a una tasación oficial?',a:'No. Reco entrega información referencial para tomar mejores decisiones, pero no sustituye la tasación de un perito registrado ante la SBS.'},
   ]},
   {cat:'Uso de la plataforma',items:[
