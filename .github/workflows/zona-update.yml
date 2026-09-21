@@ -1,0 +1,58 @@
+name: Zona Destacados — Revisión mensual
+
+on:
+  schedule:
+    # 1ro de cada mes a las 10:07 AM (hora Perú, UTC-5 = 15:07 UTC)
+    - cron: '7 15 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-zona:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run zona-destacados update script
+        run: node scripts/update-zona-destacados.mjs
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read report
+        if: steps.check.outputs.changed == 'true'
+        id: report
+        run: |
+          {
+            echo 'body<<ZONA_EOF'
+            cat zona-update-report.md
+            echo ''
+            echo '---'
+            echo '_PR generado automáticamente por el workflow de revisión periódica de Zona Destacados._'
+            echo 'ZONA_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create Pull Request
+        if: steps.check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: auto/zona-update-${{ github.run_number }}
+          commit-message: 'chore: actualizar ZONA_DESTACADOS — revisión periódica'
+          title: 'Zona Destacados — Actualización periódica'
+          body: ${{ steps.report.outputs.body }}
+          labels: zona-update,auto
+          delete-branch: true
