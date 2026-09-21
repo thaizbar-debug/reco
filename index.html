@@ -6077,7 +6077,6 @@ function openFullReport(id){
   const localityHTML = (() => {
     if(!p.district) return '';
     const blurb = BLURBS[p.district] || `${esc(p.district)} es una zona consolidada de Lima con oferta residencial diversa y demanda activa en el mercado inmobiliario.`;
-    const pois = [['🍽️','Restaurantes y cafés'],['🏬','Supermercados'],['🌳','Parques'],['🏦','Bancos'],['🏥','Salud']];
     return `<div class="fr-sec">
       <h2 class="fr-sec-title">Guía de la zona <small>· ${esc(p.district)}, Lima</small></h2>
       <div class="fr-locality-card">
@@ -6089,8 +6088,9 @@ function openFullReport(id){
           <a href="https://www.google.com/maps/search/?q=${encodeURIComponent(p.address+', '+p.district+', Lima')}" target="_blank" class="fr-locality-link">↗ Ver en Google Maps</a>
         </div>
         <p class="fr-locality-blurb">${blurb}</p>
-        <div class="fr-locality-pois">
-          ${pois.map(([ico,n])=>`<div class="fr-locality-poi"><strong>${ico} ${n}</strong><span>Disponible en la zona</span></div>`).join('')}
+        <div id="frLocalitySummary" class="fr-locality-summary" style="display:none"></div>
+        <div id="frLocalityPois" class="fr-locality-pois">
+          <div class="fr-locality-loading">Buscando establecimientos cercanos…</div>
         </div>
       </div>
     </div>`;
@@ -6100,10 +6100,6 @@ function openFullReport(id){
   const riesgoHTML = (() => {
     if(!p.district) return '';
     const d = RISK_DATA[p.district] || DEFAULT_RISK;
-    const natural = Math.round(d.sismico*.40 + d.inundacion*.25 + d.deslizamiento*.20 + d.tsunami*.15);
-    const score = Math.max(0, Math.min(100, Math.round(100 - natural*.50 - d.crimen*.35 - d.aire*.15)));
-    const color = score>=75?'#1a6b4a':score>=60?'#1a4fbf':score>=45?'#b58105':score>=30?'#c2410c':'#991b1b';
-    const band = score>=75?'Excelente':score>=60?'Bueno':score>=45?'Moderado':score>=30?'Atención':'Alto riesgo';
     const rl = v => v<=20?{l:'Bajo',c:'#1a6b4a'}:v<=40?{l:'Medio-Bajo',c:'#1a4fbf'}:v<=60?{l:'Medio',c:'#b58105'}:v<=80?{l:'Alto',c:'#c2410c'}:{l:'Muy alto',c:'#991b1b'};
     const items = [
       ['🌐','Sismo','SIGRID · IGP',d.sismico],
@@ -6126,24 +6122,9 @@ function openFullReport(id){
     }).join('');
 
     return `<div class="fr-sec">
-      <h2 class="fr-sec-title">Reco Riesgo <small>· score combinado por zona</small></h2>
-      <div class="fr-riesgo-hero" style="border-color:${color}33">
-        <div class="fr-riesgo-score">
-          <div class="fr-riesgo-num" style="color:${color}">${score}<span>/100</span></div>
-          <div class="fr-riesgo-band" style="color:${color}">${band}</div>
-        </div>
-        <div class="fr-riesgo-body">
-          <h3>Resumen del distrito · ${esc(p.district)}</h3>
-          <p>Score que combina <strong>riesgo natural (SIGRID/CENEPRED)</strong> con <strong>seguridad ciudadana (INEI)</strong> y <strong>calidad del aire</strong>. A mayor número, más seguro vivir o invertir en la zona.</p>
-          <div class="fr-riesgo-chips">
-            <span class="fr-riesgo-chip"><b>Natural:</b> ${100-natural}/100</span>
-            <span class="fr-riesgo-chip"><b>Seguridad:</b> ${100-d.crimen}/100</span>
-            <span class="fr-riesgo-chip"><b>Aire:</b> ${100-d.aire}/100</span>
-          </div>
-        </div>
-      </div>
+      <h2 class="fr-sec-title">Reco Riesgo <small>· indicadores por zona · ${esc(p.district)}</small></h2>
       <div class="fr-riesgo-grid">${cards}</div>
-      <div class="fr-riesgo-foot">Fuentes: SIGRID (CENEPRED), IGP, INGEMMET, DHN, INEI ENAPRES, OEFA. El score es referencial y no reemplaza un estudio técnico.</div>
+      <div class="fr-riesgo-foot">Fuentes: SIGRID (CENEPRED), IGP, INGEMMET, DHN, INEI ENAPRES, OEFA. La información es referencial y no reemplaza un estudio técnico.</div>
     </div>`;
   })();
 
@@ -6242,12 +6223,12 @@ function openFullReport(id){
       ${buildTasChart(p.district, true)}
     </div>`;
 
-  // ── Zonificación referencial (solo Histórico) ────────────────
-  const zonifFullHTML = isHist ? `
+  // ── Zonificación referencial (todos los tipos) ────────────────
+  const zonifFullHTML = `
     <div class="fr-sec">
       <h2 class="fr-sec-title">🗺️ Zonificación referencial <small>· uso de suelo</small></h2>
       ${renderZonifCard(p)}
-    </div>` : '';
+    </div>`;
 
   // ── Simulador hipotecario (solo Venta) ───────────────────────
   const simHTML = !isHist && !isAlq ? `
@@ -6418,6 +6399,93 @@ function openFullReport(id){
     document.querySelectorAll('.fr-sim-input:not(#frSimPrice)').forEach(el=>el.addEventListener('input',calcSim));
     calcSim();
   }
+
+  // ── Cargar POIs reales para Guía de la zona ──────────────────
+  (async () => {
+    const coords = GEO[p.id];
+    if(!coords || !HERE_API_KEY) return;
+    const lat = coords[0], lng = coords[1], rad = 500;
+    const cats = [
+      {key:'restaurantes', here:'100-1000-0000,100-1000-0001,100-1100-0000', label:'Restaurante', ico:'🍽️'},
+      {key:'comida',       here:'600-6300-0066,600-6200-0063,600-6300-0067', label:'Supermercado', ico:'🛒'},
+      {key:'parques',      here:'550-5510-0202,550-5510-0204,550-5510-0000', label:'Parque', ico:'🌳'},
+      {key:'salud',        here:'800-8000-0159,800-8000-0158,800-8000-0000', label:'Salud', ico:'🏥'},
+      {key:'educacion',    here:'800-8200-0174,800-8200-0173,800-8200-0000', label:'Educación', ico:'🎓'},
+      {key:'bancos',       here:'700-7000-0107',                              label:'Banco', ico:'🏦'},
+      {key:'farmacias',    here:'600-6400-0000,600-6400-0058',                label:'Farmacia', ico:'💊'},
+      {key:'transporte',   here:'400-4100-0035,400-4100-0036,400-4100-0000',  label:'Transporte', ico:'🚌'}
+    ];
+    const allCatCodes = cats.map(c=>c.here).join(',');
+    const url = `https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${allCatCodes}&limit=30&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
+    try {
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const j = await res.json();
+      const items = j.items || [];
+      const container = document.getElementById('frLocalityPois');
+      const summaryEl = document.getElementById('frLocalitySummary');
+      if(!container) return;
+
+      if(items.length === 0){
+        container.innerHTML = '<div class="fr-locality-empty">No se encontraron establecimientos en un radio de 500 m.</div>';
+        return;
+      }
+
+      const catLabel = (item) => {
+        const catId = (item.categories && item.categories[0] && item.categories[0].id) || '';
+        for(const c of cats){
+          if(c.here.split(',').some(h => catId.startsWith(h.split('-').slice(0,2).join('-')))) return {label:c.label,ico:c.ico};
+        }
+        if(catId.startsWith('100')) return {label:'Restaurante',ico:'🍽️'};
+        if(catId.startsWith('550')) return {label:'Parque',ico:'🌳'};
+        if(catId.startsWith('600-63')||catId.startsWith('600-62')) return {label:'Supermercado',ico:'🛒'};
+        if(catId.startsWith('600-64')) return {label:'Farmacia',ico:'💊'};
+        if(catId.startsWith('700')) return {label:'Banco',ico:'🏦'};
+        if(catId.startsWith('800-80')) return {label:'Salud',ico:'🏥'};
+        if(catId.startsWith('800-82')) return {label:'Educación',ico:'🎓'};
+        if(catId.startsWith('400')) return {label:'Transporte',ico:'🚌'};
+        return {label:'Establecimiento',ico:'📍'};
+      };
+
+      const seen = new Set();
+      const unique = items.filter(it => {
+        const k = (it.title||'')+'|'+(it.position?.lat||0).toFixed(4);
+        if(seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+
+      const catCounts = {};
+      unique.forEach(it => {
+        const cl = catLabel(it);
+        catCounts[cl.label] = (catCounts[cl.label]||0)+1;
+      });
+      const catSummary = Object.entries(catCounts).map(([k])=>k.toLowerCase()+'s').slice(0,4).join(', ');
+
+      if(summaryEl){
+        summaryEl.style.display = '';
+        summaryEl.innerHTML = `Se han identificado <strong>${unique.length} establecimientos</strong> (${catSummary}) en un radio de ${rad} m.`;
+      }
+
+      container.innerHTML = unique.map(it => {
+        const cl = catLabel(it);
+        const name = esc(it.title || 'Sin nombre');
+        const dm = it.distance != null ? it.distance : 0;
+        const dTxt = dm >= 1000 ? (dm/1000).toFixed(1)+' km' : Math.round(dm)+' m';
+        const addr = it.address && it.address.label ? esc(it.address.label) : '';
+        return `<div class="fr-locality-poi-card">
+          <div class="fr-poi-icon">${cl.ico}</div>
+          <div class="fr-poi-info">
+            <div class="fr-poi-name">${name}</div>
+            <div class="fr-poi-meta">${cl.label} · ${esc(dTxt)}${addr ? ' · '+addr : ''}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      const container = document.getElementById('frLocalityPois');
+      if(container) container.innerHTML = '<div class="fr-locality-empty">No se pudo consultar establecimientos cercanos.</div>';
+    }
+  })();
 }
 
 function closeFullReport(){
@@ -8685,24 +8753,21 @@ function _applyLandingHash(){
 .fr-locality-sub{font-size:12.5px;color:#8E94A0;margin-top:2px;}
 .fr-locality-link{font-size:12px;color:var(--blue-dark);text-decoration:none;border:1px solid rgba(14,17,23,.15);padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;}
 .fr-locality-link:hover{background:#F5F3EF;}
-.fr-locality-blurb{margin-top:16px;font-size:13.5px;line-height:1.6;color:#555B6A;}
-.fr-locality-pois{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px;}
-@media(min-width:600px){.fr-locality-pois{grid-template-columns:repeat(3,1fr);}}
-.fr-locality-poi{background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:10px;padding:10px 12px;}
-.fr-locality-poi strong{display:block;font-size:13px;font-weight:600;color:#0E1117;margin-bottom:2px;}
-.fr-locality-poi span{font-size:11px;color:#8E94A0;}
+.fr-locality-blurb{margin-top:0;margin-bottom:4px;font-size:13.5px;line-height:1.6;color:#555B6A;}
+.fr-locality-summary{font-size:13px;color:#555B6A;margin:12px 0 6px;line-height:1.5;}
+.fr-locality-summary strong{color:#0E1117;font-weight:600;}
+.fr-locality-pois{display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px;}
+@media(min-width:500px){.fr-locality-pois{grid-template-columns:repeat(2,1fr);}}
+.fr-locality-loading{text-align:center;padding:24px 12px;font-size:13px;color:#8E94A0;}
+.fr-locality-empty{text-align:center;padding:18px 12px;font-size:13px;color:#8E94A0;}
+.fr-locality-poi-card{display:flex;align-items:center;gap:12px;background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:12px;padding:12px 14px;transition:border-color .15s;}
+.fr-locality-poi-card:hover{border-color:rgba(14,17,23,.2);}
+.fr-poi-icon{font-size:22px;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#F5F3EF;border-radius:10px;}
+.fr-poi-info{min-width:0;}
+.fr-poi-name{font-size:13.5px;font-weight:600;color:#0E1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fr-poi-meta{font-size:11.5px;color:#8E94A0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* ── Reco Riesgo ── */
-.fr-riesgo-hero{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:center;padding:24px;border:1.5px solid;border-radius:14px;margin-bottom:18px;background:rgba(0,0,0,.02);}
-.fr-riesgo-score{text-align:center;min-width:120px;}
-.fr-riesgo-num{font-family:'Segoe UI',system-ui,sans-serif;font-size:58px;line-height:1;font-weight:700;}
-.fr-riesgo-num span{font-size:18px;color:#8E94A0;font-weight:400;margin-left:2px;}
-.fr-riesgo-band{margin-top:6px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
-.fr-riesgo-body h3{font-size:16px;margin:0 0 6px;font-weight:600;}
-.fr-riesgo-body p{font-size:13px;color:#555B6A;margin:0 0 12px;line-height:1.5;}
-.fr-riesgo-chips{display:flex;gap:8px;flex-wrap:wrap;}
-.fr-riesgo-chip{background:#fff;border:1px solid rgba(14,17,23,.1);border-radius:999px;padding:5px 12px;font-size:12px;color:#555B6A;}
-.fr-riesgo-chip b{color:#0E1117;font-weight:600;}
 .fr-riesgo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 .fr-riesgo-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:16px;}
 .fr-riesgo-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -8713,7 +8778,7 @@ function _applyLandingHash(){
 .fr-riesgo-bar{height:6px;background:#E0DDD7;border-radius:999px;overflow:hidden;margin-bottom:8px;}
 .fr-riesgo-bar-fill{height:100%;border-radius:999px;transition:width .4s;}
 .fr-riesgo-foot{font-size:11px;color:#8E94A0;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(14,17,23,.1);}
-@media(max-width:900px){.fr-riesgo-grid{grid-template-columns:repeat(2,1fr);} .fr-riesgo-hero{grid-template-columns:1fr;text-align:center;} .fr-riesgo-chips{justify-content:center;}}
+@media(max-width:900px){.fr-riesgo-grid{grid-template-columns:repeat(2,1fr);}}
 @media(max-width:560px){.fr-riesgo-grid{grid-template-columns:1fr;}}
 </style>
 
