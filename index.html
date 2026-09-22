@@ -5281,7 +5281,14 @@ function _smoothTas(d,nd){
       let val=d.y[next].m;
       for(let yr=+next-1;yr>=+y;yr--){const bv=_BCRP_VAR[String(yr+1)];if(bv!=null)val=Math.round(val/(1+bv/100));}
       est=val;
-    }else{est=d.y[y]?d.y[y].m:null;}
+    }else{
+      const fallback=out.length>0?out[out.length-1]:null;
+      if(fallback&&+y>+fallback.y){
+        let val=fallback.m;const fromYr=+fallback.y;
+        for(let yr=fromYr+1;yr<=+y;yr++){const bv=_BCRP_VAR[String(yr)];if(bv!=null)val=Math.round(val*(1+bv/100));}
+        est=val;
+      }else{est=d.y[y]?d.y[y].m:null;}
+    }
     if(!est||est<=0) continue;
     const real=d.y[y];
     if(real&&real.n>0&&real.n<_TAS_MIN_N){
