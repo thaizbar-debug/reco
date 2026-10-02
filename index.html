@@ -3147,6 +3147,7 @@ const S = {
 // in the user's unlockedIds does not charge another key.
 const _premiumCache = new Map(); // propertyId -> { owner, phone, sun, val, pdfs, ... }
 const _premiumPending = new Set(); // propertyId currently being fetched (dedupe)
+const _premiumFreshSpend = new Set(); // ids whose last unlock actually charged a key
 
 function _getFunctions(){
   return firebase.app().functions('southamerica-east1');
@@ -3239,6 +3240,7 @@ async function fetchPremium(propertyId){
     const data = res && res.data;
     if(data && data.premium){
       _premiumCache.set(propertyId, data.premium);
+      if(data.alreadyUnlocked === false) _premiumFreshSpend.add(propertyId);
       // Server tells us the fresh keysLeft after the (possibly no-op)
       // spend. Keep the local counter in sync so the UI reflects reality
       // — the header pill would otherwise stay stale.
@@ -5419,7 +5421,9 @@ function openDetail(id){
   // stripped) — controlled by _histDetailAlreadyLoaded.
   if(p.op==='Histórico' && !_histDetailAlreadyLoaded(p)){
     fetchHistDetail(id).then(()=>{
-      if(S.selectedId === id) openDetail(id);
+      // Only re-render when the fields actually arrived; an empty
+      // response would otherwise re-trigger this fetch forever.
+      if(S.selectedId === id && _histDetailAlreadyLoaded(p)) openDetail(id);
     }).catch(err => {
       console.warn('[reco] hist detail fetch failed:', err && err.code, err && err.message);
     });
@@ -5583,7 +5587,7 @@ function showGatePanel(p){
             :`<span class="gk-zero">🔒 Sin llaves disponibles</span>`
         }
       </div>
-      <button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">Desbloquear este informe →</button>
+      <button class="gate-btn-primary unlock" onclick="unlockAndOpen('${p.id}')">${loggedIn&&!has?'Comprar llaves para desbloquear →':'Desbloquear este informe →'}</button>
       <button class="gate-btn-secondary" onclick="closeDetail()">← Cancelar</button>
     </div>`;
 }
@@ -5593,6 +5597,64 @@ function updateKeyCount(){
   const home=document.getElementById('homeKeyCount');
   if(home)home.textContent=S.keysLeft;
   if(typeof _syncToFirestore === 'function') _syncToFirestore({keysLeft: S.keysLeft});
+}
+
+// Re-render the histórico gate (or the unlocked detail) when auth or
+// the user doc changes while the panel is open — otherwise it keeps
+// saying "Iniciá sesión" / showing a stale key count after login.
+function _refreshOpenGate(){
+  const id = S.selectedId;
+  if(!id || !document.getElementById('detailPanel').classList.contains('open')) return;
+  const p = properties.find(x=>x.id===id);
+  if(!p || p.op!=='Histórico') return;
+  if(S.unlockedIds.has(id)) openDetail(id);
+  else showGatePanel(p);
+}
+
+// Normalised callable error code ('functions/not-found' → 'not-found').
+function _fnErrCode(e){
+  return String((e && e.code) || '').replace(/^functions\//, '');
+}
+// requireVerifiedAuth() and the no-keys check both throw
+// failed-precondition; tell them apart so an unverified-token error is
+// not shown as "Sin llaves" (and the user is not sent to buy keys they
+// already have).
+function _isEmailNotVerifiedErr(e){
+  if(_fnErrCode(e) !== 'failed-precondition') return false;
+  if(e && e.details && e.details.reason) return e.details.reason === 'email_not_verified';
+  return /verific/i.test((e && e.message) || '');
+}
+
+// Calls unlockProperty (via fetchPremium) recovering from the two
+// failures that are not real denials:
+//  - a stale ID token (email verified after the token was minted, or
+//    the token expired): reload the user, force-refresh the token and
+//    retry once.
+//  - a transport failure ('internal' with no server body, 'unavailable',
+//    'deadline-exceeded'): cold start, flaky network, request blocked
+//    before reaching the function. Retry once after a short pause.
+// Retrying is safe: unlockProperty is idempotent per (uid, propertyId),
+// so a request that did land server-side is not charged twice.
+async function _unlockWithRecovery(id){
+  let refreshed = false, retried = false;
+  for(;;){
+    try {
+      return await fetchPremium(id);
+    } catch(e) {
+      const code = _fnErrCode(e);
+      if(!refreshed && auth.currentUser && (code === 'unauthenticated' || _isEmailNotVerifiedErr(e))){
+        refreshed = true;
+        try { await auth.currentUser.reload(); await auth.currentUser.getIdToken(true); } catch(_) {}
+        continue;
+      }
+      if(!retried && (code === 'internal' || code === 'unavailable' || code === 'deadline-exceeded')){
+        retried = true;
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+      throw e;
+    }
+  }
 }
 
 // Server-side unlock. Calls the unlockProperty callable, which does
@@ -5606,22 +5668,76 @@ function updateKeyCount(){
 // have accepted the write because keysLeft was writable, and even
 // after PR #41 made keysLeft read-only, the premium fields shipped
 // in the public JSON so an attacker could just read them anyway.
+//
+// Every entry point (gate button, resume after login, resume after
+// buying keys) goes through here:
+//   not logged in      → login modal, then resume this same unlock
+//   email not verified → verification banner
+//   no keys            → buy-keys modal, then resume after payment
+//   has keys / already unlocked → open the full detail
+let _unlockInFlight = null;
 async function unlockAndOpen(id){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para desbloquear informes');openAuthModal('login',function(){unlockAndOpen(id);});return;}
   if(!_ensureEmailVerified()) return;
+  if(_unlockInFlight === id) return;
+  _unlockInFlight = id;
   const btn = document.querySelector('.gate-btn-primary.unlock');
   const originalLabel = btn ? btn.textContent : null;
   if(btn){ btn.disabled = true; btn.textContent = 'Desbloqueando…'; }
+  let premium;
   try {
-    const premium = await fetchPremium(id);
-    if(!premium){ toast('⚠️ No pudimos desbloquear este informe. Reintenta más tarde.'); return; }
+    // Right after login the user doc may still be loading; wait for it
+    // (bounded) so keysLeft / unlockedIds are the real ones.
+    if(_userDataReady){
+      await Promise.race([_userDataReady.catch(()=>{}), new Promise(r=>setTimeout(r, 4000))]);
+    }
+    premium = await _unlockWithRecovery(id);
+  } catch (e) {
+    console.warn('[reco] unlockProperty failed:', e && e.code, e && e.message, e && e.details);
+    const code = _fnErrCode(e);
+    if(code === 'unauthenticated'){
+      toast('⚠️ Debes iniciar sesión para desbloquear informes');
+      openAuthModal('login',function(){unlockAndOpen(id);});
+    } else if(_isEmailNotVerifiedErr(e)){
+      toast('⚠️ ' + ((e && e.message) || 'Verificá tu email antes de continuar.'));
+      _renderVerifyBanner(auth.currentUser);
+    } else if(code === 'failed-precondition'){
+      toast('🔑 No tenés llaves disponibles. Comprá llaves para desbloquear este informe.');
+      S.keysLeft = 0;
+      updateKeyCount();
+      S.pendingUnlockId = id;
+      openModal();
+    } else if(code === 'not-found'){
+      toast('⚠️ No encontramos esta propiedad en nuestros datos premium.');
+    } else if(code === 'resource-exhausted'){
+      toast('⚠️ Demasiadas solicitudes. Esperá un momento y reintentá.');
+    } else if(code === 'internal' || code === 'unavailable' || code === 'deadline-exceeded'){
+      toast('⚠️ No pudimos conectar con el servidor para desbloquear. Revisá tu conexión y reintentá; no se descontó ninguna llave.');
+    } else {
+      toast('⚠️ Error al desbloquear: ' + ((e && e.message) || 'desconocido'));
+    }
+    return;
+  } finally {
+    _unlockInFlight = null;
+    if(btn && originalLabel){ btn.disabled = false; btn.textContent = originalLabel; }
+  }
+  if(!premium){ toast('⚠️ No pudimos desbloquear este informe. Reintenta más tarde.'); return; }
+
+  // From here the key is already spent server-side. Any UI hiccup must
+  // not be reported as "Error al desbloquear", so it runs outside the
+  // callable's try/catch.
+  try {
+    const spentNow = _premiumFreshSpend.delete(id);
     S.unlockedIds.add(id);
     const p = properties.find(x=>x.id===id);
-    // Best-effort local history entry so the user sees the spend in
-    // "Mis llaves" without a round trip. The authoritative history
-    // lives on the server-side user doc that the callable wrote to.
-    if(typeof addKeyHistoryEntry === 'function'){
-      addKeyHistoryEntry('use', 1, id, p ? (p.address+', '+p.district) : id);
+    if(spentNow){
+      // Best-effort local history entry so the user sees the spend in
+      // "Mis llaves" without a round trip. The authoritative history
+      // lives on the server-side user doc that the callable wrote to.
+      if(typeof addKeyHistoryEntry === 'function'){
+        addKeyHistoryEntry('use', 1, id, p ? (p.address+', '+p.district) : id);
+      }
+      toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
     }
     // Prefetch the histórico detail (price / area fields that no
     // longer ship in the public JSON) so the card re-render below
@@ -5631,26 +5747,10 @@ async function unlockAndOpen(id){
     if (p && p.op === 'Histórico'){
       fetchHistDetail(id).then(() => applyFilters()).catch(()=>{});
     }
-    toast(`🔑 Llave usada · Te quedan ${S.keysLeft} llave${S.keysLeft!==1?'s':''}`);
     openDetail(id);
     applyFilters();
   } catch (e) {
-    console.warn('[reco] unlockProperty failed:', e && e.code, e && e.message);
-    const code = (e && e.code) || '';
-    if(code === 'functions/unauthenticated' || code === 'unauthenticated'){
-      toast('⚠️ Debes iniciar sesión para desbloquear informes');
-      openAuthModal('login',function(){unlockAndOpen(id);});
-    } else if(code === 'functions/failed-precondition' || code === 'failed-precondition'){
-      toast('⚠️ Sin llaves suficientes. Comprá más llaves para desbloquear.');
-      S.pendingUnlockId = id;
-      openModal();
-    } else if(code === 'functions/not-found' || code === 'not-found'){
-      toast('⚠️ No encontramos esta propiedad en nuestros datos premium.');
-    } else {
-      toast('⚠️ Error al desbloquear: ' + ((e && e.message) || 'desconocido'));
-    }
-  } finally {
-    if(btn && originalLabel){ btn.disabled = false; btn.textContent = originalLabel; }
+    console.warn('[reco] post-unlock render failed:', e);
   }
 }
 
@@ -5877,10 +5977,14 @@ async function _processPayment(payload) {
       S.keysLeft = result.data.keysLeft;
       document.querySelectorAll('#keyCount,#homeKeyCount').forEach(function(el) { el.textContent = S.keysLeft; });
     }
+    // closeModal() resets pendingUnlockId / pendingPublish, so read
+    // them first or the post-payment resume never fires.
+    var resumeUnlockId = S.pendingUnlockId;
+    var resumePublish = S.pendingPublish;
     closeModal();
     toast('🔑 Pago exitoso. Tienes ' + S.keysLeft + ' llave' + (S.keysLeft !== 1 ? 's' : '') + '.');
-    if (S.pendingUnlockId) { var id = S.pendingUnlockId; S.pendingUnlockId = null; _spendKey(id); }
-    else if (S.pendingPublish) { S.pendingPublish = false; _ppub(); }
+    if (resumeUnlockId) { setTimeout(function(){ unlockAndOpen(resumeUnlockId); }, 300); }
+    else if (resumePublish) { _ppub(); }
   } catch(e) {
     toast('⚠️ ' + (e.message || 'Error al procesar el pago.'));
     if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
@@ -8795,6 +8899,10 @@ function _sanitizedSeed() {
   return seed;
 }
 
+// Promise of the in-flight _pullUserDataFromFirestore() for the current
+// session. unlockAndOpen awaits it (bounded) so a resume right after
+// login sees the real keysLeft / unlockedIds instead of the defaults.
+let _userDataReady = null;
 async function _pullUserDataFromFirestore(){
   const ref = _userDocRef();
   if(!ref) return;
@@ -8829,6 +8937,7 @@ async function _pullUserDataFromFirestore(){
       var _hasBonus = data.keyHistory.some(function(h){ return h.type === 'bonus'; });
       if (_hasBonus) _showWelcomeModal(_u.uid);
     }
+    _refreshOpenGate();
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
       const h = window.location.hash.replace('#','');
@@ -8846,6 +8955,7 @@ function _clearUserCache(){
   localStorage.removeItem('reco_my_pubs');
   S.keysLeft = 0;
   S.unlockedIds = new Set();
+  _userDataReady = null;
   _premiumCache.clear();
   if(typeof updateKeyCount === 'function') updateKeyCount();
   if(typeof applyFilters === 'function') applyFilters();
@@ -9917,6 +10027,15 @@ function closeAuthModal() {
   document.getElementById('authOverlay').classList.remove('open');
   clearAuthMessages();
 }
+// Cierre tras un login/registro exitoso. A diferencia de closeAuthModal()
+// NO descarta S.pendingAuthAction: el .then() del sign-in puede correr
+// antes que auth.onAuthStateChanged, y si borráramos la intención ahí
+// el usuario volvería al mapa sin que se abra lo que quería (p. ej. el
+// histórico que intentaba desbloquear). onAuthStateChanged la consume.
+function _hideAuthModalAfterLogin() {
+  document.getElementById('authOverlay').classList.remove('open');
+  clearAuthMessages();
+}
 // Ejecuta (una sola vez) la intención guardada antes del login.
 function _runPendingAuthAction() {
   const pending = S.pendingAuthAction;
@@ -9970,7 +10089,7 @@ function setAuthLoading(btnId, loading) {
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .then(() => closeAuthModal())
+    .then(() => _hideAuthModalAfterLogin())
     .catch(e => showAuthError(friendlyError(e.code)));
 }
 function signInWithEmail() {
@@ -9979,7 +10098,7 @@ function signInWithEmail() {
   if (!email || !pass) return showAuthError('Completa todos los campos.');
   setAuthLoading('loginBtn', true);
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => closeAuthModal())
+    .then(() => _hideAuthModalAfterLogin())
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
@@ -10001,8 +10120,9 @@ function registerWithEmail() {
     .then(cred => {
       // Auth user created — point of no return. From here, the account
       // EXISTS and any subsequent failure is a setup issue, not a
-      // registration failure. Close the modal immediately.
-      closeAuthModal();
+      // registration failure. Close the modal immediately (keeping the
+      // pending intent so onAuthStateChanged can resume it).
+      _hideAuthModalAfterLogin();
       cred.user.updateProfile({ displayName: name }).catch(err => {
         console.warn('[reco] updateProfile failed (account created, display name pending):', err && err.message);
       });
@@ -10626,7 +10746,7 @@ auth.onAuthStateChanged(function(user) {
     // to admin via setAdminClaim they get moderation UI without
     // needing to logout (the callable returns and we refresh here).
     refreshAdminClaim();
-    _pullUserDataFromFirestore();
+    _userDataReady = _pullUserDataFromFirestore();
     _startNotifListener();
     _startSolicitudesListener(user.uid);
     _startBandejaListener(user.uid);
