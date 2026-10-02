@@ -21,12 +21,14 @@ jobs:
           node-version: '20'
 
       - name: Run zona-destacados update script
+        env:
+          GOOGLE_PLACES_KEY: ${{ secrets.GOOGLE_PLACES_KEY }}
         run: node scripts/update-zona-destacados.mjs
 
       - name: Check for changes
         id: check
         run: |
-          if git diff --quiet index.html; then
+          if git diff --quiet index.html && [ -z "$(git ls-files --others --exclude-standard data/zona-photos/)" ]; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -56,3 +58,6 @@ jobs:
           body: ${{ steps.report.outputs.body }}
           labels: zona-update,auto
           delete-branch: true
+          add-paths: |
+            index.html
+            data/zona-photos/**

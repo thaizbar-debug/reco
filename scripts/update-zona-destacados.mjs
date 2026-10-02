@@ -2,19 +2,23 @@
 // Automated review of ZONA_DESTACADOS curated data.
 // Queries HERE Browse API for notable establishments per district,
 // compares with current curated data, and generates a PR-ready diff.
+// Optionally fetches establishment photos via Google Places API.
 //
 // Usage:
 //   node scripts/update-zona-destacados.mjs              # apply changes + report
 //   node scripts/update-zona-destacados.mjs --dry-run    # report only, no file changes
 //   node scripts/update-zona-destacados.mjs --report-only # same as --dry-run
+//   node scripts/update-zona-destacados.mjs --skip-photos # skip photo fetching
 
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = resolve(__dirname, '..', 'index.html');
+const PHOTOS_DIR = resolve(__dirname, '..', 'data', 'zona-photos');
 const DRY_RUN = process.argv.includes('--dry-run') || process.argv.includes('--report-only');
+const SKIP_PHOTOS = process.argv.includes('--skip-photos');
 
 // ── District center coordinates (approximate) ──────────────────
 const DISTRICT_CENTERS = {
@@ -74,9 +78,26 @@ const TRENDING_KEYWORDS = [
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function slugify(str) {
+  return str.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
 function extractApiKey(html) {
   const m = html.match(/HERE_API_KEY\s*=\s*'([^']+)'/);
   return m ? m[1] : null;
+}
+
+function extractGoogleKey(html) {
+  const m = html.match(/GOOGLE_MAPS_KEY\s*=\s*'([^']*)'/);
+  return m && m[1] ? m[1] : null;
+}
+
+function getGooglePlacesKey(html) {
+  return process.env.GOOGLE_PLACES_KEY || extractGoogleKey(html) || null;
 }
 
 function extractCurrentData(html) {
@@ -118,6 +139,92 @@ function haversine(lat1, lng1, lat2, lng2) {
   const dLat = (lat2 - lat1) * toR, dLng = (lng2 - lng1) * toR;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * toR) * Math.cos(lat2 * toR) * Math.sin(dLng / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// ── Google Places API — photo fetching ─────────────────────────
+async function searchGooglePlace(gKey, name, lat, lng) {
+  const url = 'https://places.googleapis.com/v1/places:searchText';
+  const body = {
+    textQuery: `${name} Lima Peru`,
+    locationBias: {
+      circle: { center: { latitude: lat, longitude: lng }, radius: 500.0 }
+    },
+    maxResultCount: 1,
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': gKey,
+      'X-Goog-FieldMask': 'places.id,places.photos',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return null;
+  const j = await res.json();
+  const place = j.places?.[0];
+  if (!place?.photos?.length) return null;
+  return place.photos[0].name;
+}
+
+async function downloadGooglePhoto(gKey, photoName, destPath) {
+  const url = `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&skipHttpRedirect=true`;
+  const res = await fetch(url, {
+    headers: { 'X-Goog-Api-Key': gKey },
+  });
+  if (!res.ok) return false;
+  const j = await res.json();
+  const photoUri = j.photoUri;
+  if (!photoUri) return false;
+
+  const imgRes = await fetch(photoUri);
+  if (!imgRes.ok) return false;
+  const buf = Buffer.from(await imgRes.arrayBuffer());
+  writeFileSync(destPath, buf);
+  return true;
+}
+
+async function fetchPhotoForEntry(gKey, entry, districtSlug) {
+  if (entry.photo) return entry.photo;
+  if (!entry.lat || !entry.lng) return null;
+
+  const placeSlug = slugify(entry.name);
+  const distDir = resolve(PHOTOS_DIR, districtSlug);
+  mkdirSync(distDir, { recursive: true });
+  const fileName = `${placeSlug}.jpg`;
+  const destPath = resolve(distDir, fileName);
+
+  if (existsSync(destPath)) {
+    return `data/zona-photos/${districtSlug}/${fileName}`;
+  }
+
+  try {
+    const photoName = await searchGooglePlace(gKey, entry.name, entry.lat, entry.lng);
+    if (!photoName) return null;
+    await sleep(100);
+    const ok = await downloadGooglePhoto(gKey, photoName, destPath);
+    if (!ok) return null;
+    return `data/zona-photos/${districtSlug}/${fileName}`;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchPhotosForDistrict(gKey, district, entries) {
+  const districtSlug = slugify(district);
+  let fetched = 0;
+  const updated = [];
+  for (const entry of entries) {
+    if (entry.photo) {
+      updated.push(entry);
+      continue;
+    }
+    const photoPath = await fetchPhotoForEntry(gKey, entry, districtSlug);
+    updated.push({ ...entry, photo: photoPath });
+    if (photoPath) fetched++;
+    await sleep(200);
+  }
+  return { entries: updated, fetched };
 }
 
 async function scanDistrict(apiKey, district, center) {
@@ -360,6 +467,38 @@ async function main() {
 
   console.log('');
 
+  // ── Photo fetching via Google Places API ────────────────────
+  const gKey = getGooglePlacesKey(html);
+  let totalPhotos = 0;
+
+  if (!gKey) {
+    console.log('📷 Google Places API key no configurada — fotos omitidas.');
+    console.log('   Configura GOOGLE_PLACES_KEY como secreto de GitHub o');
+    console.log('   GOOGLE_MAPS_KEY en index.html para habilitar fotos.\n');
+  } else if (SKIP_PHOTOS) {
+    console.log('📷 Fotos omitidas (--skip-photos)\n');
+  } else if (DRY_RUN) {
+    console.log('📷 Fotos omitidas en modo dry-run\n');
+  } else {
+    console.log('📷 Descargando fotos de establecimientos...');
+    mkdirSync(PHOTOS_DIR, { recursive: true });
+    for (const [district, entries] of Object.entries(updatedData)) {
+      const missing = entries.filter(e => !e.photo).length;
+      if (missing === 0) continue;
+      process.stdout.write(`   📸 ${district} (${missing} sin foto)...`);
+      try {
+        const { entries: withPhotos, fetched } = await fetchPhotosForDistrict(gKey, district, entries);
+        updatedData[district] = withPhotos;
+        if (fetched > 0) hasChanges = true;
+        totalPhotos += fetched;
+        console.log(` ${fetched} fotos descargadas`);
+      } catch (e) {
+        console.log(` ERROR: ${e.message}`);
+      }
+    }
+    console.log(`   Total fotos nuevas: ${totalPhotos}\n`);
+  }
+
   const report = generateReport(changes, newRev);
   console.log(report);
 
@@ -380,6 +519,9 @@ async function main() {
   const patchedHTML = patchHTML(html, updatedData, newRev);
   writeFileSync(HTML_PATH, patchedHTML);
   console.log(`\n✏️  index.html actualizado (rev: ${newRev})`);
+  if (totalPhotos > 0) {
+    console.log(`📷 ${totalPhotos} fotos guardadas en data/zona-photos/`);
+  }
   process.exit(0);
 }
 
