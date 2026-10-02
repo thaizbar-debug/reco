@@ -60,6 +60,8 @@ const LANDMARK_KEYWORDS = [
   'wong','metro ','plaza vea','tottus','vivanda',
   'clínica','clinica','hospital','essalud',
   'universidad','univ ','pucp','ulima','uni ','usmp','usil','upc','esan','up ',
+  'bcp','bbva','interbank','scotiabank','banco de la nación','banco falabella',
+  'colegio','senati','isil','tecsup',
   'museo','teatro','estadio',
   'parque kennedy','campo de marte','olivar','pantanos de villa',
   'línea 1','línea 2','metropolitano','estación',
@@ -106,7 +108,7 @@ function classifyPlace(name, catLabel) {
   const low = name.toLowerCase();
   if (TRENDING_KEYWORDS.some(k => low.includes(k))) return 'trending';
   if (LANDMARK_KEYWORDS.some(k => low.includes(k))) return 'destacado';
-  const importantCats = ['Hospital/Clínica', 'Educación', 'Centro comercial', 'Cultura', 'Transporte'];
+  const importantCats = ['Hospital/Clínica', 'Educación', 'Centro comercial', 'Cultura', 'Transporte', 'Banco', 'Supermercado'];
   if (importantCats.includes(catLabel)) return 'destacado';
   return null;
 }
@@ -158,7 +160,7 @@ async function scanDistrict(apiKey, district, center) {
 
   // Score and filter: only keep places worth curating
   return unique
-    .map(it => ({ ...it, tag: classifyPlace(it.name, it.cat) }))
+    .map(it => ({ ...it, tag: classifyPlace(it.name, it.cat), photo: null }))
     .filter(it => it.tag !== null)
     .sort((a, b) => {
       const w = { destacado: 0, trending: 1, nuevo: 2 };
@@ -179,8 +181,13 @@ function compareDistrict(district, current, scanned) {
 }
 
 function mergeDistrict(current, diff) {
-  // Keep existing entries that are still detected, update tags for scanned matches
-  const merged = [...diff.kept];
+  const currentByName = new Map((current || []).map(e => [e.name.toLowerCase().trim(), e]));
+
+  // Keep existing entries that are still detected, preserving photo field
+  const merged = diff.kept.map(e => {
+    const prev = currentByName.get(e.name.toLowerCase().trim());
+    return prev ? { ...e, photo: prev.photo || null } : { ...e, photo: null };
+  });
 
   // Add new notable places
   for (const entry of diff.toAdd) {
@@ -191,10 +198,26 @@ function mergeDistrict(current, diff) {
       tag: 'nuevo',
       lat: Math.round(entry.lat * 10000) / 10000,
       lng: Math.round(entry.lng * 10000) / 10000,
+      photo: null,
     });
   }
 
-  // removed entries are simply dropped (not in merged)
+  // Ensure essential categories: Supermercado, Educación/Colegio, Banco
+  const hasCat = (cats) => merged.some(e => cats.some(c => e.cat.toLowerCase().includes(c)));
+  const essentialCats = [
+    { cats: ['supermercado'], fallbackCat: 'Supermercado', fallbackIco: '🛒' },
+    { cats: ['universidad', 'colegio', 'educación', 'instituto'], fallbackCat: 'Educación', fallbackIco: '🎓' },
+    { cats: ['banco'], fallbackCat: 'Banco', fallbackIco: '🏦' },
+  ];
+  for (const { cats } of essentialCats) {
+    if (!hasCat(cats)) {
+      const removed = diff.toRemove.find(e => cats.some(c => e.cat.toLowerCase().includes(c)));
+      if (removed) {
+        merged.push({ ...removed, photo: currentByName.get(removed.name.toLowerCase().trim())?.photo || null });
+      }
+    }
+  }
+
   return merged;
 }
 
@@ -210,6 +233,7 @@ function serializeData(data) {
       parts.push(`tag:'${e.tag}'`);
       if (e.lat != null) parts.push(`lat:${e.lat}`);
       if (e.lng != null) parts.push(`lng:${e.lng}`);
+      parts.push(`photo:${e.photo ? `'${e.photo.replace(/'/g, "\\'")}'` : 'null'}`);
       const comma = ei < entries.length - 1 ? ',' : ',';
       lines.push(`    {${parts.join(',')}}${comma}`);
     });

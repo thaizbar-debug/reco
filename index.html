@@ -5283,120 +5283,155 @@ const DEFAULT_RISK={sismico:55,inundacion:20,deslizamiento:30,tsunami:20,crimen:
 const ZONA_DESTACADOS_REV = '2026-09';
 const ZONA_DESTACADOS = {
   'Miraflores': [
-    {name:'Larcomar',          cat:'Centro comercial',ico:'🏬',tag:'destacado',  lat:-12.1302,lng:-77.0311},
-    {name:'Parque Kennedy',    cat:'Parque',          ico:'🌳',tag:'destacado',  lat:-12.1197,lng:-77.0300},
-    {name:'Parque del Amor',   cat:'Mirador',         ico:'🌅',tag:'destacado',  lat:-12.1268,lng:-77.0351},
-    {name:'Centro Comercial El Polo', cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.1085,lng:-77.0384},
-    {name:'Maido',             cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1213,lng:-77.0295},
-    {name:'Central',           cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1276,lng:-77.0229},
-    {name:'Clínica Anglo Americana', cat:'Clínica',   ico:'🏥',tag:'destacado',  lat:-12.1249,lng:-77.0272},
-    {name:'Wong Miraflores',   cat:'Supermercado',    ico:'🛒',tag:'destacado',  lat:-12.1188,lng:-77.0275},
+    {name:'Wong Miraflores',   cat:'Supermercado',    ico:'🛒',tag:'destacado',  lat:-12.1188,lng:-77.0275,photo:null},
+    {name:'Colegio Pestalozzi',cat:'Colegio',         ico:'🎓',tag:'destacado',  lat:-12.1222,lng:-77.0242,photo:null},
+    {name:'BCP Miraflores',    cat:'Banco',           ico:'🏦',tag:'destacado',  lat:-12.1193,lng:-77.0289,photo:null},
+    {name:'Larcomar',          cat:'Centro comercial',ico:'🏬',tag:'destacado',  lat:-12.1302,lng:-77.0311,photo:null},
+    {name:'Parque Kennedy',    cat:'Parque',          ico:'🌳',tag:'destacado',  lat:-12.1197,lng:-77.0300,photo:null},
+    {name:'Maido',             cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1213,lng:-77.0295,photo:null},
+    {name:'Central',           cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1276,lng:-77.0229,photo:null},
+    {name:'Clínica Anglo Americana', cat:'Clínica',   ico:'🏥',tag:'destacado',  lat:-12.1249,lng:-77.0272,photo:null},
   ],
   'San Isidro': [
-    {name:'Real Plaza Salaverry', cat:'Centro comercial',ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504},
-    {name:'Parque El Olivar',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1006,lng:-77.0363},
-    {name:'Country Club Lima Hotel', cat:'Hotel',        ico:'🏨',tag:'destacado', lat:-12.0964,lng:-77.0376},
-    {name:'Clínica Ricardo Palma', cat:'Clínica',        ico:'🏥',tag:'destacado', lat:-12.0977,lng:-77.0319},
-    {name:'La Mar Cebichería',   cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1096,lng:-77.0380},
-    {name:'Astrid & Gastón',     cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1030,lng:-77.0368},
+    {name:'Vivanda Pezet',       cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1020,lng:-77.0370,photo:null},
+    {name:'Colegio San Agustín', cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.0950,lng:-77.0345,photo:null},
+    {name:'BCP San Isidro',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0975,lng:-77.0365,photo:null},
+    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504,photo:null},
+    {name:'Parque El Olivar',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1006,lng:-77.0363,photo:null},
+    {name:'Country Club Lima Hotel', cat:'Hotel',        ico:'🏨',tag:'destacado', lat:-12.0964,lng:-77.0376,photo:null},
+    {name:'Clínica Ricardo Palma', cat:'Clínica',        ico:'🏥',tag:'destacado', lat:-12.0977,lng:-77.0319,photo:null},
+    {name:'La Mar Cebichería',   cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1096,lng:-77.0380,photo:null},
+    {name:'Astrid & Gastón',     cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1030,lng:-77.0368,photo:null},
   ],
   'Barranco': [
-    {name:'MAC Lima',            cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.1460,lng:-77.0218},
-    {name:'Puente de los Suspiros', cat:'Monumento',     ico:'🏛️',tag:'destacado', lat:-12.1468,lng:-77.0215},
-    {name:'Isolina',             cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1421,lng:-77.0235},
-    {name:'Malecón de Barranco', cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.1470,lng:-77.0240},
-    {name:'Metro Barranco',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1430,lng:-77.0200},
+    {name:'Metro Barranco',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1430,lng:-77.0200,photo:null},
+    {name:'Colegio Héctor de Cárdenas', cat:'Colegio',   ico:'🎓',tag:'destacado', lat:-12.1440,lng:-77.0225,photo:null},
+    {name:'BCP Barranco',        cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1445,lng:-77.0215,photo:null},
+    {name:'MAC Lima',            cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.1460,lng:-77.0218,photo:null},
+    {name:'Puente de los Suspiros', cat:'Monumento',     ico:'🏛️',tag:'destacado', lat:-12.1468,lng:-77.0215,photo:null},
+    {name:'Isolina',             cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1421,lng:-77.0235,photo:null},
+    {name:'Malecón de Barranco', cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.1470,lng:-77.0240,photo:null},
   ],
   'Santiago de Surco': [
-    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033},
-    {name:'Open Plaza Angamos',  cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1118,lng:-77.0065},
-    {name:'Clínica Good Hope',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.1112,lng:-77.0039},
-    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885},
-    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960},
-    {name:'La Bonbonniere Surco',cat:'Café',             ico:'☕',tag:'trending',  lat:-12.1100,lng:-77.0010},
+    {name:'Plaza Vea Surco',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1100,lng:-77.0050,photo:null},
+    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885,photo:null},
+    {name:'Interbank Surco',     cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1095,lng:-77.0040,photo:null},
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033,photo:null},
+    {name:'Clínica Good Hope',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.1112,lng:-77.0039,photo:null},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960,photo:null},
+    {name:'La Bonbonniere Surco',cat:'Café',             ico:'☕',tag:'trending',  lat:-12.1100,lng:-77.0010,photo:null},
   ],
   'Surco': [
-    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033},
-    {name:'Open Plaza Angamos',  cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1118,lng:-77.0065},
-    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960},
+    {name:'Plaza Vea Surco',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1100,lng:-77.0050,photo:null},
+    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885,photo:null},
+    {name:'BCP Surco',           cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1095,lng:-77.0040,photo:null},
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033,photo:null},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960,photo:null},
   ],
   'La Molina': [
-    {name:'Plaza Camacho',       cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0870,lng:-76.9560},
-    {name:'Molina Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0790,lng:-76.9380},
-    {name:'ULIMA',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0855,lng:-76.9682},
-    {name:'Parque El Reducto',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0975,lng:-76.9610},
-    {name:'Clínica La Molina',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0835,lng:-76.9455},
+    {name:'Wong La Molina',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0845,lng:-76.9530,photo:null},
+    {name:'ULIMA',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0855,lng:-76.9682,photo:null},
+    {name:'BCP La Molina',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0860,lng:-76.9550,photo:null},
+    {name:'Plaza Camacho',       cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0870,lng:-76.9560,photo:null},
+    {name:'Molina Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0790,lng:-76.9380,photo:null},
+    {name:'Parque El Reducto',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0975,lng:-76.9610,photo:null},
+    {name:'Clínica La Molina',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0835,lng:-76.9455,photo:null},
   ],
   'San Borja': [
-    {name:'La Rambla San Borja', cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1015,lng:-77.0050},
-    {name:'Museo de la Nación',  cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0936,lng:-77.0032},
-    {name:'Gran Teatro Nacional',cat:'Teatro',           ico:'🎭',tag:'destacado', lat:-12.0927,lng:-77.0017},
-    {name:'Real Plaza Primavera',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1050,lng:-77.0117},
-    {name:'Hospital Edgardo Rebagliati', cat:'Hospital', ico:'🏥',tag:'destacado', lat:-12.0870,lng:-77.0100},
+    {name:'Tottus San Borja',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1010,lng:-77.0045,photo:null},
+    {name:'Colegio San Agustín San Borja', cat:'Colegio',ico:'🎓',tag:'destacado', lat:-12.0960,lng:-77.0070,photo:null},
+    {name:'BCP San Borja',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1005,lng:-77.0055,photo:null},
+    {name:'La Rambla San Borja', cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1015,lng:-77.0050,photo:null},
+    {name:'Museo de la Nación',  cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0936,lng:-77.0032,photo:null},
+    {name:'Hospital Edgardo Rebagliati', cat:'Hospital', ico:'🏥',tag:'destacado', lat:-12.0870,lng:-77.0100,photo:null},
   ],
   'Jesús María': [
-    {name:'Campo de Marte',      cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0718,lng:-77.0428},
-    {name:'Hospital del Ejército',cat:'Hospital',        ico:'🏥',tag:'destacado', lat:-12.0704,lng:-77.0389},
-    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504},
-    {name:'Rasson',              cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.0730,lng:-77.0440},
+    {name:'Metro Jesús María',   cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0725,lng:-77.0435,photo:null},
+    {name:'Colegio María Inmaculada', cat:'Colegio',     ico:'🎓',tag:'destacado', lat:-12.0740,lng:-77.0420,photo:null},
+    {name:'BBVA Jesús María',    cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0720,lng:-77.0430,photo:null},
+    {name:'Campo de Marte',      cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0718,lng:-77.0428,photo:null},
+    {name:'Hospital del Ejército',cat:'Hospital',        ico:'🏥',tag:'destacado', lat:-12.0704,lng:-77.0389,photo:null},
+    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504,photo:null},
   ],
   'San Miguel': [
-    {name:'Plaza San Miguel',    cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0770,lng:-77.0841},
-    {name:'Open Plaza San Miguel',cat:'Centro comercial',ico:'🏬',tag:'destacado', lat:-12.0755,lng:-77.0880},
-    {name:'PUCP',                cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0709,lng:-77.0798},
-    {name:'Parque Media Luna',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0775,lng:-77.0910},
+    {name:'Plaza Vea San Miguel',cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0765,lng:-77.0845,photo:null},
+    {name:'PUCP',                cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0709,lng:-77.0798,photo:null},
+    {name:'BCP San Miguel',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0770,lng:-77.0840,photo:null},
+    {name:'Plaza San Miguel',    cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0770,lng:-77.0841,photo:null},
+    {name:'Parque Media Luna',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0775,lng:-77.0910,photo:null},
   ],
   'Magdalena del Mar': [
-    {name:'Malecón Grau',        cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.0975,lng:-77.0750},
-    {name:'Metro Magdalena',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0888,lng:-77.0720},
-    {name:'Estación Magdalena (Línea 2)',cat:'Metro',    ico:'🚇',tag:'nuevo',    lat:-12.0900,lng:-77.0700},
+    {name:'Metro Magdalena',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0888,lng:-77.0720,photo:null},
+    {name:'Colegio San Antonio Marianistas', cat:'Colegio',ico:'🎓',tag:'destacado', lat:-12.0900,lng:-77.0710,photo:null},
+    {name:'Interbank Magdalena', cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0890,lng:-77.0725,photo:null},
+    {name:'Malecón Grau',        cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.0975,lng:-77.0750,photo:null},
+    {name:'Estación Magdalena (Línea 2)',cat:'Metro',    ico:'🚇',tag:'nuevo',    lat:-12.0900,lng:-77.0700,photo:null},
   ],
   'Chorrillos': [
-    {name:'Pantanos de Villa',   cat:'Reserva natural',  ico:'🌿',tag:'destacado', lat:-12.2110,lng:-77.0000},
-    {name:'Mall del Sur',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1520,lng:-76.9890},
-    {name:'Playa Agua Dulce',    cat:'Playa',            ico:'🏖️',tag:'destacado', lat:-12.1660,lng:-77.0310},
-    {name:'Club Regatas Lima',   cat:'Club',             ico:'⛵',tag:'destacado', lat:-12.1650,lng:-77.0290},
+    {name:'Plaza Vea Chorrillos',cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1650,lng:-77.0080,photo:null},
+    {name:'Colegio Villa María', cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1660,lng:-77.0120,photo:null},
+    {name:'BCP Chorrillos',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1655,lng:-77.0100,photo:null},
+    {name:'Pantanos de Villa',   cat:'Reserva natural',  ico:'🌿',tag:'destacado', lat:-12.2110,lng:-77.0000,photo:null},
+    {name:'Mall del Sur',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1520,lng:-76.9890,photo:null},
+    {name:'Playa Agua Dulce',    cat:'Playa',            ico:'🏖️',tag:'destacado', lat:-12.1660,lng:-77.0310,photo:null},
   ],
   'Lince': [
-    {name:'Risso (polo gastronómico)', cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0850,lng:-77.0380},
-    {name:'Parque Mariscal Castilla',  cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0847,lng:-77.0336},
-    {name:'Clínica Internacional',     cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0830,lng:-77.0390},
+    {name:'Metro Lince',         cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0840,lng:-77.0370,photo:null},
+    {name:'ISIL',                cat:'Instituto',        ico:'🎓',tag:'destacado', lat:-12.0835,lng:-77.0360,photo:null},
+    {name:'Interbank Lince',     cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0845,lng:-77.0375,photo:null},
+    {name:'Risso (polo gastronómico)', cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0850,lng:-77.0380,photo:null},
+    {name:'Parque Mariscal Castilla',  cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0847,lng:-77.0336,photo:null},
+    {name:'Clínica Internacional',     cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0830,lng:-77.0390,photo:null},
   ],
   'Surquillo': [
-    {name:'Mercado N° 1 de Surquillo', cat:'Mercado',    ico:'🏪',tag:'trending', lat:-12.1120,lng:-77.0250},
-    {name:'Real Plaza Salaverry',      cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0909,lng:-77.0504},
-    {name:'Parque Reducto N° 2',       cat:'Parque',     ico:'🌳',tag:'destacado', lat:-12.1170,lng:-77.0220},
+    {name:'Tottus Angamos',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1115,lng:-77.0260,photo:null},
+    {name:'SENATI Surquillo',    cat:'Instituto',        ico:'🎓',tag:'destacado', lat:-12.1125,lng:-77.0230,photo:null},
+    {name:'BCP Surquillo',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1120,lng:-77.0245,photo:null},
+    {name:'Mercado N° 1 de Surquillo', cat:'Mercado',    ico:'🏪',tag:'trending', lat:-12.1120,lng:-77.0250,photo:null},
+    {name:'Parque Reducto N° 2',       cat:'Parque',     ico:'🌳',tag:'destacado', lat:-12.1170,lng:-77.0220,photo:null},
   ],
   'Pueblo Libre': [
-    {name:'Museo Larco',         cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0720,lng:-77.0712},
-    {name:'Museo Nacional de Arqueología', cat:'Museo',  ico:'🎨',tag:'destacado', lat:-12.0735,lng:-77.0645},
-    {name:'Plaza Bolívar',       cat:'Plaza',            ico:'🌳',tag:'destacado', lat:-12.0750,lng:-77.0630},
+    {name:'Metro Pueblo Libre',  cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0735,lng:-77.0640,photo:null},
+    {name:'UNMSM',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0570,lng:-77.0830,photo:null},
+    {name:'BCP Pueblo Libre',    cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0740,lng:-77.0650,photo:null},
+    {name:'Museo Larco',         cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0720,lng:-77.0712,photo:null},
+    {name:'Plaza Bolívar',       cat:'Plaza',            ico:'🌳',tag:'destacado', lat:-12.0750,lng:-77.0630,photo:null},
   ],
   'Los Olivos': [
-    {name:'Mega Plaza',          cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9962,lng:-77.0648},
-    {name:'Royal Plaza',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9870,lng:-77.0640},
-    {name:'UPN Los Olivos',      cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-11.9875,lng:-77.0590},
+    {name:'Tottus Mega Plaza',   cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-11.9960,lng:-77.0650,photo:null},
+    {name:'UPN Los Olivos',      cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-11.9875,lng:-77.0590,photo:null},
+    {name:'BCP Los Olivos',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-11.9965,lng:-77.0645,photo:null},
+    {name:'Mega Plaza',          cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9962,lng:-77.0648,photo:null},
+    {name:'Royal Plaza',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9870,lng:-77.0640,photo:null},
   ],
   'Ate': [
-    {name:'Real Plaza Santa Clara',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0270,lng:-76.9090},
-    {name:'Mall Aventura Santa Anita',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0550,lng:-76.9650},
-    {name:'Parque Ecológico',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0250,lng:-76.9200},
+    {name:'Plaza Vea Santa Clara',cat:'Supermercado',    ico:'🛒',tag:'destacado', lat:-12.0270,lng:-76.9095,photo:null},
+    {name:'UNI Ate',             cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0290,lng:-76.9180,photo:null},
+    {name:'BCP Ate',             cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0275,lng:-76.9100,photo:null},
+    {name:'Real Plaza Santa Clara',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0270,lng:-76.9090,photo:null},
+    {name:'Mall Aventura Santa Anita',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0550,lng:-76.9650,photo:null},
+    {name:'Parque Ecológico',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0250,lng:-76.9200,photo:null},
   ],
   'Breña': [
-    {name:'Hospital del Niño',   cat:'Hospital',         ico:'🏥',tag:'destacado', lat:-12.0580,lng:-77.0530},
-    {name:'Plaza Norte (cercano)',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580},
+    {name:'Metro Breña',         cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0585,lng:-77.0525,photo:null},
+    {name:'Universidad del Pacífico', cat:'Universidad', ico:'🎓',tag:'destacado', lat:-12.0620,lng:-77.0460,photo:null},
+    {name:'BCP Breña',           cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0580,lng:-77.0530,photo:null},
+    {name:'Hospital del Niño',   cat:'Hospital',         ico:'🏥',tag:'destacado', lat:-12.0580,lng:-77.0530,photo:null},
   ],
   'San Martín de Porres': [
-    {name:'Plaza Norte',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580},
-    {name:'UNI',                 cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0140,lng:-77.0505},
-    {name:'Metro San Martín',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0200,lng:-77.0550},
+    {name:'Metro San Martín',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0200,lng:-77.0550,photo:null},
+    {name:'UNI',                 cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0140,lng:-77.0505,photo:null},
+    {name:'BCP San Martín',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0190,lng:-77.0545,photo:null},
+    {name:'Plaza Norte',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580,photo:null},
   ],
   'Cercado de Lima': [
-    {name:'Plaza de Armas',      cat:'Plaza histórica',  ico:'🏛️',tag:'destacado', lat:-12.0464,lng:-77.0302},
-    {name:'Jirón de la Unión',   cat:'Calle peatonal',   ico:'🚶',tag:'destacado', lat:-12.0490,lng:-77.0312},
-    {name:'Mercado Central',     cat:'Mercado',          ico:'🏪',tag:'destacado', lat:-12.0520,lng:-77.0260},
-    {name:'Barrio Chino',        cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0530,lng:-77.0270},
-    {name:'MALI',                cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0570,lng:-77.0345},
+    {name:'Metro Centro Cívico', cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0510,lng:-77.0290,photo:null},
+    {name:'UNMSM',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0570,lng:-77.0830,photo:null},
+    {name:'BCP Lima',            cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0495,lng:-77.0305,photo:null},
+    {name:'Plaza de Armas',      cat:'Plaza histórica',  ico:'🏛️',tag:'destacado', lat:-12.0464,lng:-77.0302,photo:null},
+    {name:'Jirón de la Unión',   cat:'Calle peatonal',   ico:'🚶',tag:'destacado', lat:-12.0490,lng:-77.0312,photo:null},
+    {name:'Barrio Chino',        cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0530,lng:-77.0270,photo:null},
+    {name:'MALI',                cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0570,lng:-77.0345,photo:null},
   ],
 };
 
@@ -6202,6 +6237,42 @@ function openFullReport(id){
     if(!p.district) return '';
     const blurb = BLURBS[p.district] || `${esc(p.district)} es una zona consolidada de Lima con oferta residencial diversa y demanda activa en el mercado inmobiliario.`;
     const revDate = ZONA_DESTACADOS_REV || '';
+    const _coords = GEO[p.id];
+    const hasSV = _coords && _coords[0] && _coords[1];
+    const svSrc = hasSV ? `https://maps.google.com/maps?q=&layer=c&cbll=${_coords[0]},${_coords[1]}&cbp=11,0,0,0,0&output=svembed` : '';
+
+    const _allDest = ZONA_DESTACADOS[p.district] || ZONA_DESTACADOS[_normDist(p.district)] || [];
+    const photoPool = _allDest.filter(d => d.photo);
+    const catGrad = {'Supermercado':'linear-gradient(135deg,#a8e6cf,#88d8b0)','Banco':'linear-gradient(135deg,#a8c0ff,#6c9bff)','Educación':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Universidad':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Colegio':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Hospital':'linear-gradient(135deg,#b5d8ff,#86b6f6)','Clínica':'linear-gradient(135deg,#b5d8ff,#86b6f6)','Restaurante':'linear-gradient(135deg,#ffd3b6,#ffaaa5)','Parque':'linear-gradient(135deg,#c6f1d6,#7ec8a0)','Centro comercial':'linear-gradient(135deg,#ffe082,#ffcc02)','Museo':'linear-gradient(135deg,#f3e5f5,#ce93d8)','Farmacia':'linear-gradient(135deg,#c8e6c9,#81c784)'};
+
+    const prioCats = ['Supermercado','Educación','Universidad','Colegio','Banco'];
+    const prioritized = [];
+    const seenCats = new Set();
+    for(const cat of prioCats){
+      const match = _allDest.find(d => d.cat.toLowerCase().includes(cat.toLowerCase()) && !prioritized.includes(d));
+      if(match){ prioritized.push(match); seenCats.add(match.name); }
+    }
+    const rest = _allDest.filter(d => !seenCats.has(d.name));
+    const photoOrder = [...prioritized, ...rest].slice(0, 4);
+
+    const photoTiles = photoOrder.map((d, i) => {
+      const isLast = i === 3 && _allDest.length > 4;
+      const extra = _allDest.length - 4;
+      if(d.photo){
+        return `<div class="fr-zona-tile" style="background-image:url('${esc(d.photo)}')">
+          <div class="fr-zona-tile-label">${esc(d.name)}</div>
+          ${isLast ? `<div class="fr-zona-tile-more">+${extra} lugares</div>` : ''}
+        </div>`;
+      }
+      const bg = catGrad[d.cat] || 'linear-gradient(135deg,#e0e0e0,#bdbdbd)';
+      return `<div class="fr-zona-tile fr-zona-tile--placeholder" style="background:${bg}">
+        <div class="fr-zona-tile-ico">${d.ico}</div>
+        <div class="fr-zona-tile-label">${esc(d.name)}</div>
+        <div class="fr-zona-tile-cat">${esc(d.cat)}</div>
+        ${isLast ? `<div class="fr-zona-tile-more">+${extra} lugares</div>` : ''}
+      </div>`;
+    }).join('');
+
     return `<div class="fr-sec">
       <h2 class="fr-sec-title">Guía de la zona <small>· ${esc(p.district)}, Lima</small></h2>
       <div class="fr-locality-card">
@@ -6212,6 +6283,18 @@ function openFullReport(id){
           </div>
           <a href="https://www.google.com/maps/search/?q=${encodeURIComponent(p.address+', '+p.district+', Lima')}" target="_blank" class="fr-locality-link">↗ Ver en Google Maps</a>
         </div>
+
+        <div class="fr-zona-mosaic">
+          <div class="fr-zona-sv">
+            ${hasSV
+              ? `<iframe src="${svSrc}" class="fr-zona-sv-frame" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+                 <div class="fr-zona-sv-badge">📍 Street View · vista actual</div>`
+              : `<div class="fr-zona-sv-placeholder"><span>📍</span> Vista de la zona</div>`
+            }
+          </div>
+          <div class="fr-zona-photos">${photoTiles}</div>
+        </div>
+
         <p class="fr-locality-blurb">${blurb}</p>
         <div id="frLocalitySummary" class="fr-locality-summary" style="display:none"></div>
         <div id="frLocalityDestacados"></div>
@@ -6400,18 +6483,6 @@ function openFullReport(id){
   const overlay = document.getElementById('frOverlay');
   overlay.innerHTML = `
   <div class="fr-wrap">
-    <!-- BARRA DE NAVEGACIÓN DEL DETALLE -->
-    <div class="fr-subbar">
-      <div class="fr-subbar-left">
-        <button class="fr-nav-back" onclick="closeFullReport()">← Volver</button>
-        <div class="fr-breadcrumb">${esc(p.district)} › ${esc(p.address.length>40?p.address.slice(0,40)+'…':p.address)}</div>
-      </div>
-      <div class="fr-subbar-right">
-        <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
-        <button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>
-      </div>
-    </div>
-
     <!-- LAYOUT -->
     <div class="fr-layout">
       <div class="fr-main">
@@ -6466,6 +6537,10 @@ function openFullReport(id){
           <div class="fr-agent-row">
             <div class="fr-agent-av">RE</div>
             <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+          </div>
+          <div class="fr-sidebar-actions">
+            <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
+            <button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>
           </div>
         </div>
 
@@ -8755,15 +8830,8 @@ function _applyLandingHash(){
 #frOverlay.open{pointer-events:auto;}
 #frOverlay.open{transform:translateY(0)}
 
-/* SUBBAR + LAYOUT */
+/* LAYOUT */
 .fr-wrap{max-width:1100px;margin:0 auto;}
-.fr-subbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border,rgba(14,17,23,.1));position:sticky;top:0;z-index:10;}
-.fr-subbar-left{display:flex;align-items:center;gap:14px;}
-.fr-subbar-right{display:flex;align-items:center;gap:8px;}
-.fr-nav-back{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 14px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#2A2F3A);transition:background .12s,border-color .12s;}
-.fr-nav-back:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
-.fr-breadcrumb{font-size:12px;color:#8E94A0;display:none;}
-@media(min-width:600px){.fr-breadcrumb{display:flex;align-items:center;gap:4px;}}
 .fr-btn-ghost{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 12px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#555B6A);transition:background .12s,border-color .12s;}
 .fr-btn-ghost:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
 
@@ -8954,12 +9022,37 @@ function _applyLandingHash(){
 .fr-locality-loading{text-align:center;padding:24px 12px;font-size:13px;color:#8E94A0;}
 .fr-locality-empty{text-align:center;padding:18px 12px;font-size:13px;color:#8E94A0;}
 .fr-locality-rev{font-size:10.5px;color:#B0ADA6;margin-top:16px;padding-top:10px;border-top:1px dashed rgba(14,17,23,.08);text-align:right;}
+
+/* ZONA MOSAIC — Street View + photo grid */
+.fr-zona-mosaic{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px;border-radius:14px;overflow:hidden;min-height:200px;}
+@media(min-width:600px){.fr-zona-mosaic{grid-template-columns:3fr 2fr;min-height:300px;}}
+.fr-zona-sv{position:relative;background:#e8e5df;min-height:200px;border-radius:14px;overflow:hidden;}
+@media(min-width:600px){.fr-zona-sv{border-radius:14px 0 0 14px;min-height:auto;}}
+.fr-zona-sv-frame{width:100%;height:100%;min-height:200px;border:0;display:block;}
+.fr-zona-sv-badge{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.65);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:4px;}
+.fr-zona-sv-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;color:#8E94A0;font-size:14px;gap:4px;}
+.fr-zona-photos{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+@media(min-width:600px){.fr-zona-photos{border-radius:0 14px 14px 0;}}
+.fr-zona-tile{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:4/3;background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;cursor:default;}
+.fr-zona-tile:not(.fr-zona-tile--placeholder){box-shadow:inset 0 -60px 40px -10px rgba(0,0,0,.55);}
+.fr-zona-tile--placeholder{align-items:center;justify-content:center;gap:4px;padding:12px 8px;text-align:center;}
+.fr-zona-tile-ico{font-size:28px;line-height:1;}
+.fr-zona-tile-label{font-size:12px;font-weight:600;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fr-zona-tile:not(.fr-zona-tile--placeholder) .fr-zona-tile-label{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+.fr-zona-tile--placeholder .fr-zona-tile-label{color:#2A2F3A;font-size:11px;}
+.fr-zona-tile-cat{font-size:10px;color:#555B6A;}
+.fr-zona-tile-more{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;border-radius:10px;}
+
 .fr-dest-label{font-size:12px;font-weight:600;color:#0E1117;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
 .fr-dest-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px;}
 @media(min-width:500px){.fr-dest-grid{grid-template-columns:repeat(2,1fr);}}
 .fr-dest-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#FFFAF0 0%,#FFF7E6 100%);border:1px solid rgba(183,145,60,.18);border-radius:12px;padding:12px 14px;transition:border-color .15s,box-shadow .15s;}
 .fr-dest-card:hover{border-color:rgba(183,145,60,.35);box-shadow:0 2px 8px rgba(183,145,60,.10);}
 .fr-poi-icon--feat{background:rgba(183,145,60,.12);}
+
+/* SIDEBAR ACTIONS — Guardar / Exportar */
+.fr-sidebar-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(14,17,23,.08);}
+.fr-sidebar-actions .fr-btn-ghost{flex:1;text-align:center;}
 .fr-locality-poi-card{display:flex;align-items:center;gap:12px;background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:12px;padding:12px 14px;transition:border-color .15s;}
 .fr-locality-poi-card:hover{border-color:rgba(14,17,23,.2);}
 .fr-locality-poi-card.fr-poi-highlighted{background:linear-gradient(135deg,#F8FBFF 0%,#F0F6FF 100%);border-color:rgba(26,79,191,.15);}
