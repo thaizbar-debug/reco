@@ -6094,7 +6094,7 @@ function openFullReport(id){
       </div>
       <div class="fr-subbar-right">
         <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
-        ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
+        ${!isHist?`<button class="fr-btn-ghost" onclick="exportPropertyPdf('${esc(p.id)}')">↗ Exportar PDF</button>`:''}
       </div>
     </div>
 
@@ -6166,10 +6166,18 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
-          <div class="fr-agent-row">
-            <div class="fr-agent-av">RE</div>
-            <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
-          </div>
+          ${(()=>{
+            if(isHist) return `<div class="fr-agent-row">
+              <div class="fr-agent-av">RE</div>
+              <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+            </div>`;
+            const pub = _publisherOf(p);
+            const n = _publisherListings(pub.key).length;
+            return `<button type="button" class="fr-agent-row fr-agent-link" data-pub="${esc(pub.key)}" onclick="openPublisherProfile(this.dataset.pub)" title="Ver todas las propiedades de ${esc(pub.name)}">
+              <div class="fr-agent-av">${esc(_agInitials(pub.name))}</div>
+              <div class="fr-agent-txt"><div class="fr-agent-name">${esc(pub.name)}</div>${pub.isReco?'<div class="fr-agent-resp">Responde en ~2h</div>':''}<div class="fr-agent-more">Ver sus ${n} ${n===1?'propiedad':'propiedades'} →</div></div>
+            </button>`;
+          })()}
         </div>
 
         ${simHTML}
@@ -6222,6 +6230,485 @@ function closeFullReport(){
   document.getElementById('frOverlay').classList.remove('open');
 }
 
+// ─────────────────────── EXPORTAR PDF ─────────────────────────
+// Genera una ficha imprimible en una pestaña nueva y abre el diálogo
+// de impresión del navegador ("Guardar como PDF"). Se hace 100% en el
+// cliente: no se envían datos a ningún servidor, no se cargan librerías
+// de terceros y el texto queda vectorial/seleccionable (a diferencia de
+// html2canvas+jsPDF, que rasteriza la página). Todo el contenido
+// proviene de `esc()` y el documento lleva su propia CSP restrictiva.
+const _PDF_TC_REF = 3.70; // S/ por US$ (BCRP, promedio venta ago-2025)
+
+function _pdfMortgage(price){
+  const down = price*0.20, loan = price-down, r = 0.095/12, n = 20*12;
+  return { down, loan, monthly: loan*r/(1-Math.pow(1+r,-n)) };
+}
+
+function exportPropertyPdf(id){
+  const p = properties.find(x=>x.id===id);
+  if(!p) return;
+  if(p.op === 'Histórico'){ toast('⚠️ La ficha PDF solo está disponible para Comprar y Alquilar'); return; }
+  // Abrimos la pestaña de forma síncrona dentro del click para que el
+  // bloqueador de pop-ups no la intercepte.
+  const w = window.open('', '_blank');
+  if(!w){ toast('⚠️ Tu navegador bloqueó la pestaña. Permite pop-ups para exportar el PDF.'); return; }
+
+  const cur = p.cur, isAlq = p.op === 'Alquiler';
+  const sqm = sqmPriceNet(p);
+  const photos = driveAssets(p).photos.slice(0,4);
+  const pub = _publisherOf(p);
+  const abs = u => { try { return new URL(u, location.href).href; } catch(e){ return ''; } };
+  const listingUrl = location.origin + location.pathname + '#prop=' + encodeURIComponent(p.id);
+  const today = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+
+  const td = TASACIONES_HIST[_normDistTas(p.district)];
+  const yrs = td ? Object.keys(td.y).sort() : [];
+  const lastYr = yrs[yrs.length-1];
+  const median = lastYr ? td.y[lastYr].m : null;
+
+  const specs = [
+    ['Tipo', p.type],
+    ['Operación', isAlq ? 'Alquiler' : 'Venta'],
+    ['Área', p.area > 0 ? `${p.area} m²` : ''],
+    ['Área terreno', p.areaTerr > 0 ? `${p.areaTerr} m²` : ''],
+    ['Dormitorios', p.beds > 0 ? p.beds : ''],
+    ['Baños', p.baths > 0 ? p.baths : ''],
+    ['Cocheras', parkCount(p) > 0 ? parkCount(p) : ''],
+    ['Piso', p.floor > 0 ? `${p.floor}${p.floors ? ' de '+p.floors : ''}` : ''],
+    ['Antigüedad', p.age === 0 ? 'A estrenar' : (p.age > 0 ? `${p.age} años` : '')]
+  ].filter(r => r[1] !== '' && r[1] != null);
+
+  const mort = !isAlq && p.price > 0 ? _pdfMortgage(p.price) : null;
+  const money = v => `${esc(cur)} ${fmtNum(Math.round(v))}`;
+
+  const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reco - ${esc(p.address)} - ${esc(p.district)}</title>
+<style>
+  @page{size:A4;margin:14mm 14mm 16mm}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#0E1117;background:#eef0f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar{position:sticky;top:0;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;background:#0E1117;color:#fff;font-size:13px}
+  .bar button{background:#0e7490;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
+  .bar span{opacity:.75}
+  .sheet{max-width:210mm;margin:18px auto;background:#fff;padding:14mm;box-shadow:0 2px 14px rgba(0,0,0,.08)}
+  header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0e7490;padding-bottom:10px;margin-bottom:16px}
+  header img{height:34px}
+  header .meta{text-align:right;font-size:10px;color:#64748b;line-height:1.5}
+  h1{font-size:22px;margin:0 0 4px;line-height:1.25}
+  .loc{font-size:12px;color:#555B6A;margin-bottom:12px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:#ecfeff;color:#0e7490;margin-right:6px}
+  .price{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;background:#f6f8fa;border-radius:10px;padding:12px 14px;margin:10px 0 16px}
+  .price .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8E94A0;font-weight:600}
+  .price .val{font-size:26px;font-weight:800;color:#0e7490;line-height:1.1}
+  .price .sub{font-size:12px;color:#555B6A}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px}
+  .photos img{width:100%;height:150px;object-fit:cover;border-radius:6px;display:block;background:#e5e7eb}
+  .photos img:first-child{grid-column:1/-1;height:240px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#0e7490;margin:18px 0 8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  td{padding:6px 8px;border-bottom:1px solid #f0f1f3}
+  td:first-child{color:#555B6A;width:40%}
+  td:last-child{font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .tags{display:flex;flex-wrap:wrap;gap:4px}
+  .tag{font-size:10px;border:1px solid #d9dde3;border-radius:4px;padding:2px 7px;color:#555B6A}
+  .desc{font-size:12px;line-height:1.6;white-space:pre-line}
+  .box{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.55}
+  footer{margin-top:22px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9.5px;color:#8E94A0;line-height:1.5}
+  footer a{color:#0e7490;word-break:break-all}
+  .avoid{break-inside:avoid;page-break-inside:avoid}
+  @media print{
+    body{background:#fff}
+    .bar{display:none}
+    .sheet{margin:0;padding:0;box-shadow:none;max-width:none}
+  }
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}.sheet{padding:16px}}
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">⬇ Descargar / Guardar como PDF</button><span>En el diálogo elige «Guardar como PDF» como destino.</span></div>
+<div class="sheet">
+  <header>
+    <img src="${esc(abs('data/reco_logo.jpg'))}" alt="Reco">
+    <div class="meta">Ficha de propiedad · Ref. ${esc(p.id)}<br>Generada el ${esc(today)}</div>
+  </header>
+
+  <div><span class="badge">${isAlq ? 'En alquiler' : 'En venta'}</span><span class="badge">${esc(p.type)}</span>${p.isNew ? '<span class="badge">A estrenar</span>' : ''}</div>
+  <h1>${esc(p.address)}</h1>
+  <div class="loc">📍 ${esc(p.district)}${p.province && p.province !== p.district ? ' · '+esc(p.province) : ''}${p.department ? ' · '+esc(p.department) : ''}</div>
+
+  <div class="price avoid">
+    <div><div class="lbl">${isAlq ? 'Precio mensual' : 'Precio solicitado'}</div><div class="val">${money(p.price)}</div></div>
+    ${sqm > 0 ? `<div class="sub"><strong>${money(sqm)}</strong> / m²</div>` : ''}
+    ${p.area > 0 ? `<div class="sub"><strong>${esc(p.area)}</strong> m²</div>` : ''}
+  </div>
+
+  ${photos.length ? `<div class="photos">${photos.map((u,i)=>`<img src="${esc(u)}" alt="Foto ${i+1}">`).join('')}</div>` : ''}
+
+  <div class="grid2">
+    <div class="avoid">
+      <h2>Características</h2>
+      <table>${specs.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>
+    </div>
+    <div class="avoid">
+      ${median ? `<h2>Contexto de mercado</h2>
+      <div class="box">Mediana de tasaciones en <strong>${esc(p.district)}</strong> (${esc(lastYr)}): <strong>US$ ${fmtNum(median)}/m²</strong> de terreno, sobre ${fmtNum(td.y[lastYr].n)} tasaciones.<br><span style="color:#8E94A0">Fuente: Vanet Data. Información orientativa.</span></div>` : ''}
+      ${mort ? `<h2>Simulación hipotecaria</h2>
+      <table>
+        <tr><td>Inicial (20%)</td><td>${money(mort.down)}</td></tr>
+        <tr><td>Préstamo</td><td>${money(mort.loan)}</td></tr>
+        <tr><td>Cuota mensual*</td><td>${money(mort.monthly)}</td></tr>
+      </table>
+      <div style="font-size:9.5px;color:#8E94A0;margin-top:4px">*20 años, TEA referencial 9.5%. No constituye oferta de crédito.</div>` : ''}
+      <h2>Contacto</h2>
+      <div class="box"><strong>${esc(pub.name)}</strong><br>Escríbele desde la publicación en Reco:<br><a href="${esc(listingUrl)}">${esc(listingUrl)}</a></div>
+    </div>
+  </div>
+
+  ${p.features && p.features.length ? `<div class="avoid"><h2>Amenidades y atributos</h2><div class="tags">${p.features.map(f=>`<span class="tag">${esc(f)}</span>`).join('')}</div></div>` : ''}
+  ${p.desc && p.desc !== p.address ? `<h2>Descripción</h2><div class="desc">${esc(p.desc)}</div>` : ''}
+
+  <footer>
+    Documento generado por Reco (recosac.com) a partir de la información publicada. Precios, áreas y características son referenciales y pueden variar; verifícalos con el anunciante antes de tomar cualquier decisión. Reco no actúa como intermediario en la transacción.
+  </footer>
+</div>
+<script>
+  (function(){
+    var imgs = Array.prototype.slice.call(document.images), left = imgs.length, done = false;
+    function go(){ if(done) return; done = true; setTimeout(function(){ window.print(); }, 250); }
+    if(!left) return go();
+    imgs.forEach(function(im){
+      if(im.complete) { if(--left === 0) go(); return; }
+      im.addEventListener('load', function(){ if(--left === 0) go(); });
+      im.addEventListener('error', function(){ im.style.display='none'; if(--left === 0) go(); });
+    });
+    setTimeout(go, 5000);
+  })();
+<\/script>
+</body></html>`;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  try { w.opener = null; } catch(e){}
+  if(typeof gtag === 'function') gtag('event','export_pdf',{property_id:p.id, op:p.op});
+}
+
+// ─────────────────────── PERFIL DEL ANUNCIANTE ────────────────
+// Cada propiedad de Comprar/Alquilar pertenece a un anunciante: las
+// publicaciones de la comunidad a su `userId`, y el inventario propio
+// (data/properties.json) al "Equipo Reco". Desde el detalle completo se
+// puede abrir la cartera completa del anunciante con insights + filtros.
+const _AG_RECO_KEY = 'reco';
+const _AG_PAGE = 24;
+let _ag = null; // { key, name, list, filters, shown }
+
+function _publisherOf(p){
+  if(p && p.userId){
+    // Nunca mostramos el email del anunciante en vistas públicas.
+    const name = (p.userName && String(p.userName).trim()) || 'Anunciante';
+    return { key: p.userId, name, isReco: false };
+  }
+  return { key: _AG_RECO_KEY, name: 'Equipo Reco', isReco: true };
+}
+function _publisherListings(key){
+  return properties.filter(p => p.op !== 'Histórico' && _publisherOf(p).key === key);
+}
+function _agInitials(name){
+  const w = String(name).trim().split(/\s+/).filter(Boolean);
+  return ((w[0]||'?')[0] + (w.length > 1 ? w[w.length-1][0] : (w[0]||'')[1] || '')).toUpperCase();
+}
+function _agUsd(p){ return p.cur === 'S/' ? p.price / _PDF_TC_REF : p.price; }
+function _agDate(raw){
+  if(!raw) return null;
+  if(typeof raw.toDate === 'function') return raw.toDate();
+  if(typeof raw === 'object' && raw.seconds) return new Date(raw.seconds*1000);
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+function _agAvg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+// Promedio recortado: con 10+ datos descarta el 10% más bajo y el 10% más
+// alto, así un precio mal cargado (p.ej. 26M o 676) no distorsiona el perfil.
+function _agTrim(a){
+  if(a.length < 10) return _agAvg(a);
+  const s = a.slice().sort((x,y)=>x-y), k = Math.floor(s.length/10);
+  return _agAvg(s.slice(k, s.length-k));
+}
+function _agRange(a){
+  if(!a.length) return [0,0];
+  const s = a.slice().sort((x,y)=>x-y);
+  if(s.length < 10) return [s[0], s[s.length-1]];
+  const k = Math.floor(s.length/10);
+  return [s[k], s[s.length-1-k]];
+}
+function _agMedian(a){
+  if(!a.length) return 0;
+  const s = a.slice().sort((x,y)=>x-y), m = s.length>>1;
+  return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function _agK(v){
+  v = Math.round(v);
+  if(v >= 1e6) return (v/1e6).toFixed(v >= 1e7 ? 0 : 2).replace(/\.?0+$/,'') + 'M';
+  if(v >= 1e4) return Math.round(v/1e3) + 'k';
+  return fmtNum(v);
+}
+function _agCount(list, fn){
+  const m = new Map();
+  list.forEach(p => { const k = fn(p); if(k) m.set(k, (m.get(k)||0)+1); });
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
+function _agInsights(list){
+  const venta = list.filter(p=>p.op==='Venta' && p.price>0);
+  const alq   = list.filter(p=>p.op==='Alquiler' && p.price>0);
+  const vUsd  = venta.map(_agUsd), aUsd = alq.map(_agUsd);
+  const sqmV  = venta.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  const dists = _agCount(list, p=>p.district && p.district!=='—' ? p.district : null);
+  const types = _agCount(list, p=>p.type);
+  const areas = list.filter(p=>p.area>0).map(p=>p.area);
+  const beds  = list.filter(p=>p.beds>0).map(p=>p.beds);
+  const nNew  = list.filter(p=>p.age===0).length;
+  const dates = list.map(p=>_agDate(p.listedAt||p.publishedAt)).filter(Boolean).sort((a,b)=>a-b);
+  const avgV  = _agTrim(vUsd);
+  const rngV  = _agRange(vUsd);
+  const segment = !venta.length ? '' : avgV >= 400000 ? 'segmento alto' : avgV >= 150000 ? 'segmento medio' : 'segmento económico';
+  return {
+    total: list.length, nV: venta.length, nA: alq.length,
+    avgV, medV: _agMedian(vUsd), minV: rngV[0], maxV: rngV[1], trimmed: vUsd.length >= 10 || aUsd.length >= 10,
+    avgA: _agTrim(aUsd), medA: _agMedian(aUsd),
+    avgSqm: _agTrim(sqmV), avgArea: _agTrim(areas), avgBeds: _agAvg(beds),
+    dists, types, nNew, segment,
+    first: dates[0] || null, last: dates[dates.length-1] || null
+  };
+}
+
+function openPublisherProfile(key, opts){
+  opts = opts || {};
+  const list = _publisherListings(key);
+  if(!list.length){ toast('Este anunciante no tiene propiedades activas'); return; }
+  closeFullReport();
+  if(typeof closeDetail === 'function') closeDetail();
+  const pub = _publisherOf(list[0]);
+  _ag = { key, name: pub.name, isReco: pub.isReco, list,
+          filters: { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:'new' },
+          shown: _AG_PAGE };
+  if(!opts.fromHash){
+    const h = '#anunciante=' + encodeURIComponent(key);
+    try { history.pushState({view:'app', hash:h, agProfile:true}, '', h); } catch(e){}
+  }
+  _agRender();
+  const ov = document.getElementById('agOverlay');
+  ov.classList.add('open');
+  ov.scrollTop = 0;
+  if(typeof gtag === 'function') gtag('event','view_publisher',{publisher:key, listings:list.length});
+}
+
+function closePublisherProfile(fromPop){
+  const ov = document.getElementById('agOverlay');
+  if(!ov || !ov.classList.contains('open')) return;
+  ov.classList.remove('open');
+  if(!fromPop && location.hash.startsWith('#anunciante=')){
+    if(history.state && history.state.agProfile) history.back();
+    else { try { history.replaceState({view:'app'}, '', location.pathname + location.search); } catch(e){} }
+  }
+}
+window.addEventListener('popstate', function(){
+  if(!location.hash.startsWith('#anunciante=')) closePublisherProfile(true);
+});
+
+function _agFiltered(){
+  const f = _ag.filters, q = f.q.trim().toLowerCase();
+  const pmin = parseFloat(f.pmin), pmax = parseFloat(f.pmax);
+  let out = _ag.list.filter(p =>
+    (!f.op || p.op === f.op) &&
+    (!f.district || p.district === f.district) &&
+    (!f.type || p.type === f.type) &&
+    (!f.beds || p.beds >= f.beds) &&
+    (isNaN(pmin) || _agUsd(p) >= pmin) &&
+    (isNaN(pmax) || _agUsd(p) <= pmax) &&
+    (!q || (p.address + ' ' + p.district).toLowerCase().includes(q))
+  );
+  const by = {
+    new:   (a,b) => ((_agDate(b.listedAt||b.publishedAt)||0) - (_agDate(a.listedAt||a.publishedAt)||0)),
+    pasc:  (a,b) => _agUsd(a) - _agUsd(b),
+    pdesc: (a,b) => _agUsd(b) - _agUsd(a),
+    area:  (a,b) => (b.area||0) - (a.area||0),
+    sqm:   (a,b) => (sqmPriceNet(a)||Infinity) - (sqmPriceNet(b)||Infinity)
+  }[f.sort];
+  if(by) out = out.slice().sort(by);
+  return out;
+}
+
+function agSetFilter(k, v){
+  if(!_ag) return;
+  _ag.filters[k] = k === 'beds' ? (parseInt(v,10)||0) : v;
+  _ag.shown = _AG_PAGE;
+  if(k === 'op') document.querySelectorAll('#agOpSeg button').forEach(b => b.classList.toggle('active', b.dataset.op === v));
+  _agRenderList();
+}
+function agClearFilters(){
+  if(!_ag) return;
+  _ag.filters = { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:_ag.filters.sort };
+  _ag.shown = _AG_PAGE;
+  _agRender(true);
+}
+function agPickDistrict(d){
+  agSetFilter('district', d);
+  const sel = document.getElementById('agDist'); if(sel) sel.value = d;
+  const fl = document.querySelector('#agOverlay .ag-filters'); if(fl) fl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function agShowMore(){ if(_ag){ _ag.shown += _AG_PAGE; _agRenderList(); } }
+function agOpenListing(id){ openFullReport(id); }
+
+function _agRender(keepScroll){
+  const ov = document.getElementById('agOverlay');
+  const st = keepScroll ? ov.scrollTop : 0;
+  const I = _agInsights(_ag.list);
+  const usd = v => 'US$ ' + _agK(v);
+  const topD = I.dists[0], topT = I.types[0];
+  const fmtD = d => d ? d.toLocaleDateString('es-PE',{month:'short',year:'numeric'}) : '';
+  const hasPen = _ag.list.some(p=>p.cur==='S/');
+
+  const profileLine = [
+    topT ? `Cartera enfocada en <strong>${esc(topT[0].toLowerCase())}s</strong>` : '',
+    topD ? `con mayor presencia en <strong>${esc(topD[0])}</strong>` : '',
+    I.segment ? `y un ticket de venta del <strong>${I.segment}</strong>` : ''
+  ].filter(Boolean).join(' ');
+
+  const cards = [
+    { l:'Propiedades activas', v: fmtNum(I.total), s: `${I.nV} en venta · ${I.nA} en alquiler` },
+    I.nV ? { l:'Precio promedio de venta', v: usd(I.avgV), s: `Mediana ${usd(I.medV)} · rango típico ${usd(I.minV)} – ${usd(I.maxV)}` } : null,
+    I.nA ? { l:'Alquiler promedio mensual', v: usd(I.avgA), s: `Mediana ${usd(I.medA)} / mes` } : null,
+    I.avgSqm ? { l:'Precio promedio por m² (venta)', v: usd(I.avgSqm), s: I.avgArea ? `Área promedio ${fmtNum(Math.round(I.avgArea))} m²` : '' } : null,
+    topD ? { l:'Distrito principal', v: esc(topD[0]), s: `${topD[1]} propiedades · ${Math.round(topD[1]/I.total*100)}% de su cartera` } : null,
+    topT ? { l:'Tipo predominante', v: esc(topT[0]), s: I.types.slice(0,3).map(t=>`${esc(t[0])} ${Math.round(t[1]/I.total*100)}%`).join(' · ') } : null,
+    { l:'A estrenar', v: Math.round(I.nNew/I.total*100) + '%', s: `${I.nNew} de ${I.total}${I.avgBeds ? ` · ${I.avgBeds.toFixed(1)} dorm. promedio` : ''}` },
+    I.first ? { l:'Actividad', v: fmtD(I.last), s: `Última publicación · desde ${fmtD(I.first)}` } : null
+  ].filter(Boolean);
+
+  const maxD = topD ? topD[1] : 1;
+  const distBars = I.dists.slice(0,6).map(([d,n]) =>
+    `<button class="ag-dbar" onclick="agPickDistrict(this.dataset.d)" data-d="${esc(d)}">
+       <span class="ag-dbar-name">${esc(d)}</span>
+       <span class="ag-dbar-track"><span style="width:${Math.max(4, n/maxD*100)}%"></span></span>
+       <span class="ag-dbar-n">${n}</span>
+     </button>`).join('');
+
+  const f = _ag.filters;
+  const optList = (arr, sel) => arr.map(([v,n]) => `<option value="${esc(v)}"${v===sel?' selected':''}>${esc(v)} (${n})</option>`).join('');
+
+  ov.innerHTML = `
+  <div class="fr-wrap">
+    <div class="fr-subbar">
+      <div class="fr-subbar-left">
+        <button class="fr-nav-back" onclick="closePublisherProfile()">← Volver</button>
+        <div class="fr-breadcrumb">Anunciantes › ${esc(_ag.name)}</div>
+      </div>
+      <div class="fr-subbar-right">
+        <button class="fr-btn-ghost" onclick="agCopyLink()">🔗 Compartir perfil</button>
+      </div>
+    </div>
+
+    <div class="ag-body">
+      <section class="ag-hero">
+        <div class="ag-av">${esc(_agInitials(_ag.name))}</div>
+        <div class="ag-hero-main">
+          <div class="ag-kicker">${_ag.isReco ? 'Cartera verificada por Reco' : 'Anunciante en Reco'}</div>
+          <h1 class="ag-name">${esc(_ag.name)}</h1>
+          <p class="ag-summary">${profileLine}.</p>
+        </div>
+      </section>
+
+      <section class="ag-kpis">
+        ${cards.map(c=>`<div class="ag-kpi"><div class="ag-kpi-l">${c.l}</div><div class="ag-kpi-v">${c.v}</div>${c.s?`<div class="ag-kpi-s">${c.s}</div>`:''}</div>`).join('')}
+      </section>
+      ${hasPen || I.trimmed ? `<div class="ag-note">${I.trimmed ? 'Promedios recortados: excluyen el 10% de valores más bajos y más altos para evitar distorsiones. ' : ''}${hasPen ? `Montos en soles convertidos a US$ con TC referencial S/ ${_PDF_TC_REF.toFixed(2)} (BCRP).` : ''}</div>` : ''}
+
+      ${I.dists.length > 1 ? `<section class="ag-dists">
+        <h2 class="fr-sec-title">Dónde publica <small>· top distritos</small></h2>
+        <div class="ag-dbars">${distBars}</div>
+      </section>` : ''}
+
+      <section class="ag-filters" aria-label="Filtros">
+        <div class="ag-seg" id="agOpSeg" role="group" aria-label="Operación">
+          <button data-op="" class="${!f.op?'active':''}" onclick="agSetFilter('op','')">Todas</button>
+          <button data-op="Venta" class="${f.op==='Venta'?'active':''}" onclick="agSetFilter('op','Venta')">Comprar <span>${I.nV}</span></button>
+          <button data-op="Alquiler" class="${f.op==='Alquiler'?'active':''}" onclick="agSetFilter('op','Alquiler')">Alquilar <span>${I.nA}</span></button>
+        </div>
+        <div class="ag-frow">
+          <label class="ag-f ag-f-q"><span>Buscar</span><input type="search" placeholder="Dirección o calle" value="${esc(f.q)}" oninput="agSetFilter('q',this.value)"></label>
+          <label class="ag-f"><span>Distrito</span><select id="agDist" onchange="agSetFilter('district',this.value)"><option value="">Todos</option>${optList(I.dists, f.district)}</select></label>
+          <label class="ag-f"><span>Tipo</span><select onchange="agSetFilter('type',this.value)"><option value="">Todos</option>${optList(I.types, f.type)}</select></label>
+          <label class="ag-f"><span>Dormitorios</span><select onchange="agSetFilter('beds',this.value)">${[0,1,2,3,4].map(n=>`<option value="${n}"${f.beds===n?' selected':''}>${n?n+'+':'Cualquiera'}</option>`).join('')}</select></label>
+          <label class="ag-f ag-f-num"><span>Precio mín. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="0" value="${esc(f.pmin)}" oninput="agSetFilter('pmin',this.value)"></label>
+          <label class="ag-f ag-f-num"><span>Precio máx. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="Sin límite" value="${esc(f.pmax)}" oninput="agSetFilter('pmax',this.value)"></label>
+          <label class="ag-f"><span>Ordenar</span><select onchange="agSetFilter('sort',this.value)">
+            <option value="new"${f.sort==='new'?' selected':''}>Más recientes</option>
+            <option value="pasc"${f.sort==='pasc'?' selected':''}>Precio: menor a mayor</option>
+            <option value="pdesc"${f.sort==='pdesc'?' selected':''}>Precio: mayor a menor</option>
+            <option value="area"${f.sort==='area'?' selected':''}>Mayor área</option>
+            <option value="sqm"${f.sort==='sqm'?' selected':''}>Menor precio/m²</option>
+          </select></label>
+        </div>
+      </section>
+
+      <div class="ag-list-head"><span id="agCount"></span><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>
+      <div id="agList" class="ag-list"></div>
+    </div>
+  </div>`;
+  _agRenderList();
+  ov.scrollTop = st;
+}
+
+function _agRenderList(){
+  const list = _agFiltered();
+  const shown = list.slice(0, _ag.shown);
+  const el = document.getElementById('agList');
+  const cnt = document.getElementById('agCount');
+  if(cnt) cnt.textContent = `${list.length} ${list.length===1?'propiedad':'propiedades'}${list.length!==_ag.list.length?` de ${_ag.list.length}`:''}`;
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML = `<div class="ag-empty">No hay propiedades con estos filtros.<br><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>`;
+    return;
+  }
+  el.innerHTML = shown.map(p => {
+    const ph = driveAssets(p).photos[0];
+    const sqm = sqmPriceNet(p);
+    const specs = [
+      p.area>0 ? `${esc(p.area)} m²` : '',
+      p.beds>0 ? `${esc(p.beds)} dorm.` : '',
+      p.baths>0 ? `${esc(p.baths)} baños` : '',
+      parkCount(p)>0 ? `${esc(parkCount(p))} coch.` : '',
+      p.age===0 ? 'A estrenar' : (p.age>0 ? `${esc(p.age)} años` : '')
+    ].filter(Boolean).join(' · ');
+    return `<article class="ag-row" tabindex="0" role="button" onclick="agOpenListing('${esc(p.id)}')" onkeydown="if(event.key==='Enter')agOpenListing('${esc(p.id)}')">
+      <div class="ag-thumb">${ph ? `<img src="${esc(ph)}" alt="" loading="lazy">` : `<span>${esc(p.emoji||'🏠')}</span>`}</div>
+      <div class="ag-info">
+        <div class="ag-tags"><span class="ag-op ${p.op==='Alquiler'?'alq':'ven'}">${p.op==='Alquiler'?'Alquiler':'Venta'}</span><span class="ag-type">${esc(p.type)}</span></div>
+        <div class="ag-addr">${esc(p.address)}</div>
+        <div class="ag-dist">📍 ${esc(p.district)}</div>
+        ${specs ? `<div class="ag-specs">${specs}</div>` : ''}
+      </div>
+      <div class="ag-price">
+        <div class="ag-price-v">${esc(p.cur)} ${fmtNum(Math.round(p.price))}${p.op==='Alquiler'?'<small>/mes</small>':''}</div>
+        ${sqm>0 ? `<div class="ag-price-s">${esc(p.cur)} ${fmtNum(sqm)}/m²</div>` : ''}
+        <div class="ag-cta">Ver detalle →</div>
+      </div>
+    </article>`;
+  }).join('') + (list.length > shown.length
+    ? `<button class="ag-more" onclick="agShowMore()">Ver más (${list.length - shown.length} restantes)</button>` : '');
+}
+
+function agCopyLink(){
+  if(!_ag) return;
+  const url = location.origin + location.pathname + '#anunciante=' + encodeURIComponent(_ag.key);
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .then(()=>toast('🔗 Enlace del perfil copiado'))
+    .catch(()=>toast(url));
+}
+
 // ─────────────────────── CARRUSEL FULL REPORT ────────────────
 let _frIdx = 0, _frTotal = 0;
 function _frUpdate(){
@@ -6245,7 +6732,10 @@ function frNext(){ if(_frIdx < _frTotal - 1){ _frIdx++; _frUpdate(); } }
 function frGoto(i){ _frIdx = i; _frUpdate(); }
 // Keyboard nav cuando el overlay está abierto
 document.addEventListener('keydown', e => {
-  if(!document.getElementById('frOverlay').classList.contains('open')) return;
+  if(!document.getElementById('frOverlay').classList.contains('open')){
+    if(e.key === 'Escape') closePublisherProfile();
+    return;
+  }
   if(e.key === 'ArrowLeft') frPrev();
   if(e.key === 'ArrowRight') frNext();
   if(e.key === 'Escape') closeFullReport();
@@ -8118,6 +8608,11 @@ function applyHashNav(){
     if(id) openDetail(id);
     return;
   }
+  if(h.startsWith('#anunciante=')){
+    const key = decodeURIComponent(h.slice(12));
+    if(key) openPublisherProfile(key, {fromHash:true});
+    return;
+  }
   const params = {};
   h.replace(/^#/,'').split('&').forEach(p=>{const [k,v]=p.split('=');if(k)params[k]=decodeURIComponent(v||'');});
   if(params.age!==undefined || params.feat){
@@ -8276,6 +8771,9 @@ function _applyLandingHash(){
 </div>
 <div id="frOverlay">
   <!-- contenido generado dinámicamente por openFullReport() -->
+</div>
+<div id="agOverlay">
+  <!-- contenido generado dinámicamente por openPublisherProfile() -->
 </div>
 
 <style>
@@ -8450,6 +8948,93 @@ function _applyLandingHash(){
 .fr-vanet-dot{width:8px;height:8px;border-radius:50%;background:#3DB07A;flex-shrink:0;margin-top:4px;}
 .fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
+
+/* ── Perfil del anunciante ── */
+#agOverlay{
+  position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:189;
+  background:#F5F3EF;overflow-y:auto;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;
+}
+#agOverlay.open{pointer-events:auto;transform:translateY(0)}
+button.fr-agent-link{width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:0;padding:14px 0 2px}
+button.fr-agent-link:hover .fr-agent-name{color:var(--blue-dark);text-decoration:underline;text-underline-offset:2px}
+button.fr-agent-link:hover .fr-agent-resp{color:var(--blue-dark)}
+.fr-agent-txt{min-width:0}
+.fr-agent-more{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:2px}
+.ag-body{padding:24px 20px 60px}
+.ag-hero{display:flex;gap:16px;align-items:center;margin-bottom:20px}
+.ag-av{width:64px;height:64px;border-radius:50%;background:var(--blue-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+.ag-hero-main{min-width:0}
+.ag-kicker{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0}
+.ag-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0 4px}
+.ag-summary{font-size:14px;color:#555B6A;line-height:1.5;margin:0}
+.ag-summary strong{color:#0E1117}
+.ag-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ag-kpi{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:14px 16px}
+.ag-kpi-l{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:6px}
+.ag-kpi-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:700;color:#0E1117;line-height:1.2;overflow-wrap:anywhere}
+.ag-kpi-s{font-size:12px;color:#555B6A;margin-top:4px;line-height:1.45}
+.ag-note{font-size:11px;color:#8E94A0;margin-top:8px}
+.ag-dists{margin-top:28px}
+.ag-dbars{display:flex;flex-direction:column;gap:6px;max-width:640px}
+.ag-dbar{display:grid;grid-template-columns:minmax(110px,180px) 1fr 40px;align-items:center;gap:10px;background:none;border:none;padding:4px 0;font:inherit;cursor:pointer;text-align:left;color:#0E1117}
+.ag-dbar-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dbar-track{height:10px;background:#E8E5DF;border-radius:5px;overflow:hidden}
+.ag-dbar-track span{display:block;height:100%;background:var(--blue-dark);border-radius:5px}
+.ag-dbar-n{font-size:12px;font-weight:600;text-align:right;color:#555B6A}
+.ag-dbar:hover .ag-dbar-name{color:var(--blue-dark);text-decoration:underline}
+.ag-filters{position:sticky;top:44px;z-index:5;background:#F5F3EF;padding:14px 0 10px;margin-top:24px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-seg{display:inline-flex;background:#E8E5DF;border-radius:10px;padding:3px;margin-bottom:10px}
+.ag-seg button{border:none;background:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#555B6A;cursor:pointer}
+.ag-seg button span{font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-seg button.active{background:#fff;color:#0E1117;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ag-frow{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ag-f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ag-f span{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8E94A0}
+.ag-f input,.ag-f select{width:100%;border:1px solid rgba(14,17,23,.18);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;color:#0E1117;outline:none}
+.ag-f input:focus,.ag-f select:focus{border-color:var(--blue-dark)}
+.ag-f-q{grid-column:span 2}
+@media(min-width:1000px){.ag-frow{grid-template-columns:2fr repeat(6,minmax(0,1fr))}.ag-f-q{grid-column:auto}}
+.ag-list-head{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;font-size:13px;color:#555B6A;font-weight:600}
+.ag-clear{background:none;border:none;color:var(--blue-dark);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 0}
+.ag-list{display:flex;flex-direction:column;gap:10px}
+.ag-row{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:center;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:10px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.ag-row:hover,.ag-row:focus-visible{border-color:rgba(8,145,178,.45);box-shadow:0 4px 14px rgba(14,17,23,.06);outline:none}
+.ag-thumb{width:150px;height:104px;border-radius:8px;overflow:hidden;background:#E0DDD7;display:flex;align-items:center;justify-content:center;font-size:34px}
+.ag-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ag-info{min-width:0}
+.ag-tags{display:flex;gap:6px;margin-bottom:4px}
+.ag-op,.ag-type{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.ag-op.ven{background:#ecfeff;color:var(--blue-dark)}
+.ag-op.alq{background:#FDF3E3;color:#8B5E0A}
+.ag-type{background:#F0EEEA;color:#555B6A}
+.ag-addr{font-size:15px;font-weight:700;color:#0E1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dist{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-specs{font-size:12px;color:#8E94A0;margin-top:4px}
+.ag-price{text-align:right;padding-right:6px;white-space:nowrap}
+.ag-price-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:19px;font-weight:800;color:#0E1117}
+.ag-price-v small{font-size:11px;font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-price-s{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-cta{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:8px}
+.ag-more{display:block;margin:10px auto 0;background:#fff;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;color:#0E1117}
+.ag-more:hover{background:#ecfeff;border-color:var(--blue-dark)}
+.ag-empty{text-align:center;padding:40px 16px;color:#555B6A;font-size:14px;background:#FDFCFA;border:1px dashed rgba(14,17,23,.18);border-radius:12px}
+@media(max-width:640px){
+  .ag-body{padding:18px 16px 48px}
+  .ag-name{font-size:23px}
+  .ag-av{width:52px;height:52px;font-size:18px}
+  .ag-kpis{grid-template-columns:1fr 1fr}
+  .ag-kpi-v{font-size:16px;overflow-wrap:normal;hyphens:auto}
+  .ag-kpi{padding:12px}
+  .ag-filters{position:static}
+  .ag-frow{grid-template-columns:1fr 1fr}
+  .ag-f-q{grid-column:1/-1}
+  .ag-row{grid-template-columns:96px 1fr;gap:12px}
+  .ag-thumb{width:96px;height:80px}
+  .ag-price{grid-column:1/-1;text-align:left;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:0}
+  .ag-cta{margin:0 0 0 auto}
+  .ag-addr{white-space:normal;font-size:14px}
+}
 </style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
