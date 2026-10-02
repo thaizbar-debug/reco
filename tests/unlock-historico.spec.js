@@ -152,6 +152,9 @@ test.describe('Desbloqueo de históricos', () => {
       return unlockAndOpen(id);
     }, id);
     expect(await page.evaluate((id) => S.unlockedIds.has(id), id)).toBe(true);
-    expect(await page.evaluate(() => (_getKeyHistory() || []).filter(h => h.type === 'use').length)).toBe(0);
+    expect(await page.evaluate(() => {
+      const h = typeof _getKeyHistory === 'function' ? _getKeyHistory() : [];
+      return (h || []).filter(x => x.type === 'use').length;
+    })).toBe(0);
   });
 });

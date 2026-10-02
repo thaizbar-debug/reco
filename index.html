@@ -5983,8 +5983,20 @@ async function _processPayment(payload) {
     var resumePublish = S.pendingPublish;
     closeModal();
     toast('🔑 Pago exitoso. Tienes ' + S.keysLeft + ' llave' + (S.keysLeft !== 1 ? 's' : '') + '.');
-    if (resumeUnlockId) { setTimeout(function(){ unlockAndOpen(resumeUnlockId); }, 300); }
-    else if (resumePublish) { _ppub(); }
+    if (resumeUnlockId) {
+      // Wait for the modal close animation before opening the detail panel.
+      // transitionend fires when the CSS transition completes; the setTimeout
+      // is a fallback for environments with no transition (tests, reduce-motion).
+      // _unlockInFlight guards unlockAndOpen so the fallback is a no-op if
+      // transitionend already fired.
+      var _modalEl = document.getElementById('modal');
+      var _resumeId = resumeUnlockId;
+      _modalEl.addEventListener('transitionend', function _resume() {
+        _modalEl.removeEventListener('transitionend', _resume);
+        unlockAndOpen(_resumeId);
+      }, { once: true });
+      setTimeout(function(){ unlockAndOpen(_resumeId); }, 500);
+    } else if (resumePublish) { _ppub(); }
   } catch(e) {
     toast('⚠️ ' + (e.message || 'Error al procesar el pago.'));
     if (payBtn) { payBtn.disabled = false; payBtn.textContent = 'Continuar al pago'; payBtn.style.opacity = ''; payBtn.style.cursor = ''; }
@@ -10020,21 +10032,19 @@ function openAuthModal(tab, pendingAction) {
   switchAuthTab(tab || 'login');
   clearAuthMessages();
 }
-function closeAuthModal() {
+function closeAuthModal({ keepPending = false } = {}) {
   // Cerrar con la ✕ o clic fuera cancela la intención: no queremos que
   // se dispare sola en un login posterior no relacionado.
-  S.pendingAuthAction = null;
+  if (!keepPending) S.pendingAuthAction = null;
   document.getElementById('authOverlay').classList.remove('open');
   clearAuthMessages();
 }
-// Cierre tras un login/registro exitoso. A diferencia de closeAuthModal()
-// NO descarta S.pendingAuthAction: el .then() del sign-in puede correr
-// antes que auth.onAuthStateChanged, y si borráramos la intención ahí
-// el usuario volvería al mapa sin que se abra lo que quería (p. ej. el
-// histórico que intentaba desbloquear). onAuthStateChanged la consume.
+// Cierre tras un login/registro exitoso: cierra el modal pero conserva
+// S.pendingAuthAction para que onAuthStateChanged lo consuma.
+// (closeAuthModal({ keepPending: true }) hace lo mismo; este alias
+// hace explícita la intención en los call-sites de login/registro.)
 function _hideAuthModalAfterLogin() {
-  document.getElementById('authOverlay').classList.remove('open');
-  clearAuthMessages();
+  closeAuthModal({ keepPending: true });
 }
 // Ejecuta (una sola vez) la intención guardada antes del login.
 function _runPendingAuthAction() {
