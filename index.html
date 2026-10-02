@@ -5989,13 +5989,22 @@ async function _processPayment(payload) {
       // is a fallback for environments with no transition (tests, reduce-motion).
       // _unlockInFlight guards unlockAndOpen so the fallback is a no-op if
       // transitionend already fired.
+      // Whichever fires first wins; the other is cancelled so the detail
+      // is not re-rendered twice and no stale listener survives to fire
+      // on a later, unrelated modal transition.
       var _modalEl = document.getElementById('modal');
       var _resumeId = resumeUnlockId;
-      _modalEl.addEventListener('transitionend', function _resume() {
+      var _resumed = false, _fallback = null;
+      var _resume = function(ev) {
+        if (ev && ev.target !== _modalEl) return; // ignore bubbled child transitions
+        if (_resumed) return;
+        _resumed = true;
         _modalEl.removeEventListener('transitionend', _resume);
+        clearTimeout(_fallback);
         unlockAndOpen(_resumeId);
-      }, { once: true });
-      setTimeout(function(){ unlockAndOpen(_resumeId); }, 500);
+      };
+      _modalEl.addEventListener('transitionend', _resume);
+      _fallback = setTimeout(_resume, 500);
     } else if (resumePublish) { _ppub(); }
   } catch(e) {
     toast('⚠️ ' + (e.message || 'Error al procesar el pago.'));

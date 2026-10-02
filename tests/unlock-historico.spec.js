@@ -143,6 +143,28 @@ test.describe('Desbloqueo de históricos', () => {
     await expect(page.locator('#modal')).not.toHaveClass(/open/);
   });
 
+  test('tras el pago la reanudación corre una sola vez y no deja listeners colgados', async ({ page }) => {
+    const id = await setup(page);
+    await page.evaluate((id) => {
+      window.__login();
+      window.__resumes = 0;
+      const orig = window.unlockAndOpen;
+      window.unlockAndOpen = (x) => { window.__resumes++; return orig(x); };
+      window.__responders.unlockProperty = [window.__ok(false)];
+      window.__responders.chargeWithCulqi = [() => ({ keysLeft: 5 })];
+      S.pendingUnlockId = id;
+      document.getElementById('modal').classList.add('open');
+      return _processPayment({ tokenId: 'tok' });
+    }, id);
+    await page.waitForTimeout(800);
+    // Una transición posterior del modal no debe volver a disparar el desbloqueo.
+    await page.evaluate(() => {
+      const m = document.getElementById('modal');
+      m.dispatchEvent(new TransitionEvent('transitionend', { propertyName: 'opacity' }));
+    });
+    expect(await page.evaluate(() => window.__resumes)).toBe(1);
+  });
+
   test('ya desbloqueado en el servidor → abre sin descontar ni registrar uso', async ({ page }) => {
     const id = await setup(page);
     await page.evaluate((id) => {
