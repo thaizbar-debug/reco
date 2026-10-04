@@ -229,6 +229,20 @@ Only for local dev. Never commit those lines.
   post-deploy (needs Cloud Scheduler API enabled — Firebase enables
   it during `firebase deploy` if this is the first scheduled
   function in the project).
+- `updateTipoCambio` — scheduled function that runs every day at
+  18:30 (America/Lima), after the FX market closes. Fetches the BCRP
+  public API (series `PD04640PD`, interbank sell rate, daily average)
+  and writes the latest business day to `/publicData/tipoCambio`
+  (`{ valor, fecha, serie, fuente, actualizadoEn }`). The web uses it
+  to convert soles to dollars in the publisher profile, falling back
+  to the `ultimo` block of `data/tc_pen_usd_bcrp.json`; whichever has
+  the newer `fecha` wins. Values outside 2.5–6 or jumping > 10% vs.
+  the stored one are logged as WARN and not written. `/publicData` is
+  world-readable and client-write-denied in `firestore.rules`.
+  Deploy: `firebase deploy --only functions:updateTipoCambio,firestore:rules`.
+  To populate it right away instead of waiting for 18:30, open Cloud
+  Scheduler in the GCP console and hit **Force run** on
+  `firebase-schedule-updateTipoCambio-southamerica-east1`.
 - `setAdminClaim` — takes `{ email, admin: true|false }`, sets the
   `admin` custom claim on that user's Firebase Auth token. Only
   existing admins can call it (either via the claim or the seed

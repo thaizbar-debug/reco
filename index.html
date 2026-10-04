@@ -6237,23 +6237,38 @@ function closeFullReport(){
 // de terceros y el texto queda vectorial/seleccionable (a diferencia de
 // html2canvas+jsPDF, que rasteriza la página). Todo el contenido
 // proviene de `esc()` y el documento lleva su propia CSP restrictiva.
-// Tipo de cambio S/ por US$ para convertir montos en soles. Se lee de
-// data/tc_pen_usd_bcrp.json (bloque `ultimo`, actualizado con
-// scripts/update-tc-bcrp.js desde la API del BCRP). El valor de abajo es
-// solo el respaldo si el JSON no carga.
+// Tipo de cambio S/ por US$ para convertir montos en soles. Fuentes, de
+// más a menos fresca:
+//   1. Firestore /publicData/tipoCambio — lo actualiza a diario la Cloud
+//      Function programada updateTipoCambio desde la API del BCRP.
+//   2. data/tc_pen_usd_bcrp.json (bloque `ultimo`; scripts/update-tc-bcrp.js).
+//   3. La constante de abajo, si nada de lo anterior carga.
+// Siempre gana el dato con la fecha más reciente.
 const _TC = { valor: 3.437, fecha: '2026-10-02', fuente: 'BCRP' };
+function _tcApply(valor, fecha){
+  valor = +valor;
+  if(!(valor > 2.5 && valor < 6) || !fecha) return;
+  if(String(fecha) < String(_TC.fecha)) return;
+  _TC.valor = valor; _TC.fecha = String(fecha); _TC.fuente = 'BCRP';
+}
 function _loadTipoCambio(){
-  return fetch('data/tc_pen_usd_bcrp.json?t=' + Date.now())
+  const fromJson = fetch('data/tc_pen_usd_bcrp.json?t=' + Date.now())
     .then(r => r.ok ? r.json() : null)
     .then(d => {
       if(!d) return;
-      const u = d.ultimo;
-      if(u && +u.valor > 0){ _TC.valor = +u.valor; _TC.fecha = u.fecha; _TC.fuente = 'BCRP'; return; }
+      if(d.ultimo) return _tcApply(d.ultimo.valor, d.ultimo.fecha);
       const m = d.mensual || {}, k = Object.keys(m).sort().pop();
-      if(k && +m[k] > 0){ _TC.valor = +m[k]; _TC.fecha = k; }
+      if(k) _tcApply(m[k], k);
     })
     .catch(() => {});
+  const fromFirestore = Promise.resolve()
+    .then(() => (typeof db !== 'undefined' && db) ? db.collection('publicData').doc('tipoCambio').get() : null)
+    .then(snap => { if(snap && snap.exists){ const t = snap.data(); _tcApply(t.valor, t.fecha); } })
+    .catch(() => {});
+  return Promise.all([fromJson, fromFirestore]);
 }
+// Al cargar solo está el JSON: `db` se define en un <script> posterior,
+// así que Firestore se consulta otra vez al abrir el perfil.
 _loadTipoCambio();
 function _tcLabel(){
   const f = String(_TC.fecha||'').split('-');
@@ -6536,6 +6551,11 @@ function openPublisherProfile(key, opts){
   const ov = document.getElementById('agOverlay');
   ov.classList.add('open');
   ov.scrollTop = 0;
+  // Si llega un TC más reciente (Firestore), recalcula los montos en soles.
+  const tcAntes = _TC.fecha + '|' + _TC.valor;
+  _loadTipoCambio().then(() => {
+    if(_ag && _ag.key === key && ov.classList.contains('open') && (_TC.fecha + '|' + _TC.valor) !== tcAntes) _agRender(true);
+  });
   if(typeof gtag === 'function') gtag('event','view_publisher',{publisher:key, listings:list.length});
 }
 

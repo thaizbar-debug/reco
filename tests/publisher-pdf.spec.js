@@ -55,6 +55,19 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     expect(Math.round(r.usd)).toBe(1000);
   });
 
+  test('_tcApply: gana el TC con fecha más reciente y descarta valores absurdos', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      _TC.valor = 3.437; _TC.fecha = '2026-10-02';
+      _tcApply(3.70, '2025-08');           // más antiguo → se ignora
+      const a = _TC.valor;
+      _tcApply(34.5, '2026-10-05');        // fuera de rango → se ignora
+      const b = _TC.valor;
+      _tcApply(3.452, '2026-10-05');       // Firestore más reciente → gana
+      return [a, b, _TC.valor, _TC.fecha];
+    });
+    expect(r).toEqual([3.437, 3.437, 3.452, '2026-10-05']);
+  });
+
   test('los totales del perfil cuadran con los contadores de la portada', async ({ page }) => {
     const r = await page.evaluate(() => {
       const hasPhoto = p => driveAssets(p).photos.length > 0;

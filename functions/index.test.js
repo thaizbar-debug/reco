@@ -245,4 +245,36 @@ assert.ok(true, 'Post-creation failures are isolated from Auth creation errors (
 //   - User is never permanently broken by a failed profile seed
 assert.ok(true, 'Firestore profile self-healing via _pullUserDataFromFirestore (verified by code structure)');
 
+// ═══════════════════════════════════════════════════════════════════
+//  TEST: tipoCambio (updateTipoCambio)
+// ═══════════════════════════════════════════════════════════════════
+{
+  const tc = require('./tipoCambio');
+  console.log('  tipoCambio: parseBcrpDay');
+  assert.strictEqual(tc.parseBcrpDay('02.Oct.26'), '2026-10-02');
+  assert.strictEqual(tc.parseBcrpDay('9.Set.26'), '2026-09-09');
+  assert.strictEqual(tc.parseBcrpDay('basura'), null);
+
+  console.log('  tipoCambio: latestFromBcrp toma el último día válido (ignora n.d. y BOM)');
+  const body = '\uFEFF' + JSON.stringify({ periods: [
+    { name: '01.Oct.26', values: ['3.4544'] },
+    { name: '02.Oct.26', values: ['3.43694'] },
+    { name: '05.Oct.26', values: ['n.d.'] }
+  ] });
+  assert.deepStrictEqual(tc.latestFromBcrp(body), { fecha: '2026-10-02', valor: 3.437 });
+  assert.strictEqual(tc.latestFromBcrp(JSON.stringify({ periods: [] })), null);
+
+  console.log('  tipoCambio: isSaneRate');
+  assert.ok(tc.isSaneRate({ valor: 3.44 }, null));
+  assert.ok(tc.isSaneRate({ valor: 3.44 }, { valor: 3.70 }));
+  assert.ok(!tc.isSaneRate({ valor: 34.4 }, null), 'fuera de rango');
+  assert.ok(!tc.isSaneRate({ valor: 3.0 }, { valor: 3.44 }), 'salto > 10%');
+  assert.ok(!tc.isSaneRate(null, { valor: 3.44 }));
+
+  console.log('  tipoCambio: bcrpUrl usa hora de Lima y 20 días de ventana');
+  // 2026-10-03 03:00 UTC = 2026-10-02 22:00 en Lima
+  assert.strictEqual(tc.bcrpUrl(new Date('2026-10-03T03:00:00Z')),
+    'https://estadisticas.bcrp.gob.pe/estadisticas/series/api/PD04640PD/json/2026-09-12/2026-10-02');
+}
+
 console.log('\n  All tests passed.\n');
