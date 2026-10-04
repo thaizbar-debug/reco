@@ -93,3 +93,22 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     await expect(popup.getByRole('heading', { name: 'Características' })).toBeVisible();
   });
 });
+
+test.describe('Modo demo', () => {
+  test('?demo=1 suma propiedades de prueba y muestra el aviso', async ({ page }) => {
+    await page.goto('http://localhost:3123/?demo=1', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof properties !== 'undefined' && properties.some(p => p.id.startsWith('DEMO-')), null, { timeout: 20000 });
+    await expect(page.locator('#demoBanner')).toBeVisible();
+    await page.click('#demoBanner button[data-pub="demo-inmobiliaria-andina"]');
+    await expect(page.locator('.ag-name')).toHaveText('Inmobiliaria Andina (demo)');
+    await expect(page.locator('.ag-av')).toHaveText('IA');
+    await expect(page.locator('#agCount')).toHaveText('12 propiedades');
+  });
+
+  test('una visita normal no carga datos de prueba', async ({ page }) => {
+    await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof properties !== 'undefined' && properties.length > 0, null, { timeout: 20000 });
+    expect(await page.evaluate(() => properties.filter(p => p.id.startsWith('DEMO-')).length)).toBe(0);
+    expect(await page.locator('#demoBanner').count()).toBe(0);
+  });
+});
