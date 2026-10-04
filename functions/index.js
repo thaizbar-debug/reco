@@ -113,7 +113,8 @@ function requireVerifiedAuth(request) {
   if (token.email_verified !== true) {
     throw new HttpsError(
       'failed-precondition',
-      'Verificá tu email antes de continuar. Revisá tu bandeja de entrada (y spam) por el link que te enviamos.'
+      'Verificá tu email antes de continuar. Revisá tu bandeja de entrada (y spam) por el link que te enviamos.',
+      { reason: 'email_not_verified' }
     );
   }
 }
@@ -167,56 +168,77 @@ exports.unlockProperty = onCall(
     const userRef = db.collection('users').doc(uid);
     const premiumRef = db.collection('propertiesPremium').doc(propertyId);
 
-    return db.runTransaction(async (tx) => {
-      const [userSnap, premiumSnap] = await Promise.all([tx.get(userRef), tx.get(premiumRef)]);
-
-      if (!premiumSnap.exists) {
-        // Until the migration PR lands, /propertiesPremium is empty and every
-        // call returns not-found. The client can already wire onto this
-        // callable and get the correct shape of error, so the switch-over PR
-        // becomes a data + frontend flip only.
-        throw new HttpsError('not-found', 'Propiedad no encontrada.');
-      }
-
-      const userData = userSnap.exists ? userSnap.data() : {};
-      const currentKeys = Number(userData.keysLeft) || 0;
-      const unlockedIds = Array.isArray(userData.unlockedIds) ? userData.unlockedIds : [];
-      const alreadyUnlocked = unlockedIds.includes(propertyId);
-
-      if (alreadyUnlocked) {
-        return { premium: premiumSnap.data(), keysLeft: currentKeys, alreadyUnlocked: true };
-      }
-
-      if (currentKeys < UNLOCK_COST) {
-        throw new HttpsError('failed-precondition', `Sin llaves suficientes. Necesitas ${UNLOCK_COST} llave para desbloquear este inmueble.`);
-      }
-
-      const premium = premiumSnap.data();
-      const propLabel = [premium.address, premium.district].filter(Boolean).join(', ') || propertyId;
-      const historyEntry = {
-        type: 'use',
-        qty: UNLOCK_COST,
-        propId: propertyId,
-        propLabel,
-        date: new Date().toISOString(),
-      };
-      const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
-      const nextUnlocked = [...unlockedIds, propertyId];
-
-      tx.set(userRef, {
-        keysLeft: currentKeys - UNLOCK_COST,
-        unlockedIds: nextUnlocked,
-        keyHistory: nextHistory,
-      }, { merge: true });
-
-      return {
-        premium,
-        keysLeft: currentKeys - UNLOCK_COST,
-        alreadyUnlocked: false,
-      };
-    });
+    try {
+      return await _unlockTx(userRef, premiumRef, propertyId);
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      // Unexpected failure (transaction contention, Firestore outage…).
+      // Log with context so it is traceable in Cloud Logging, and return
+      // a retryable code instead of a bare INTERNAL. The transaction
+      // either committed fully or not at all, and the call is idempotent,
+      // so the client can safely retry.
+      logger.error('[unlockProperty] unexpected error', {
+        uid, propertyId, err: e && e.message, code: e && e.code,
+      });
+      throw new HttpsError('unavailable', 'No pudimos desbloquear el inmueble en este momento. Reintentá.');
+    }
   }
 );
+
+function _unlockTx(userRef, premiumRef, propertyId) {
+  return db.runTransaction(async (tx) => {
+    const [userSnap, premiumSnap] = await Promise.all([tx.get(userRef), tx.get(premiumRef)]);
+
+    if (!premiumSnap.exists) {
+      // Until the migration PR lands, /propertiesPremium is empty and every
+      // call returns not-found. The client can already wire onto this
+      // callable and get the correct shape of error, so the switch-over PR
+      // becomes a data + frontend flip only.
+      throw new HttpsError('not-found', 'Propiedad no encontrada.');
+    }
+
+    const userData = userSnap.exists ? userSnap.data() : {};
+    const currentKeys = Number(userData.keysLeft) || 0;
+    const unlockedIds = Array.isArray(userData.unlockedIds) ? userData.unlockedIds : [];
+    const alreadyUnlocked = unlockedIds.includes(propertyId);
+
+    if (alreadyUnlocked) {
+      return { premium: premiumSnap.data(), keysLeft: currentKeys, alreadyUnlocked: true };
+    }
+
+    if (currentKeys < UNLOCK_COST) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Sin llaves suficientes. Necesitas ${UNLOCK_COST} llave para desbloquear este inmueble.`,
+        { reason: 'no_keys' }
+      );
+    }
+
+    const premium = premiumSnap.data();
+    const propLabel = [premium.address, premium.district].filter(Boolean).join(', ') || propertyId;
+    const historyEntry = {
+      type: 'use',
+      qty: UNLOCK_COST,
+      propId: propertyId,
+      propLabel,
+      date: new Date().toISOString(),
+    };
+    const nextHistory = [historyEntry, ...(Array.isArray(userData.keyHistory) ? userData.keyHistory : [])].slice(0, HISTORY_CAP);
+    const nextUnlocked = [...unlockedIds, propertyId];
+
+    tx.set(userRef, {
+      keysLeft: currentKeys - UNLOCK_COST,
+      unlockedIds: nextUnlocked,
+      keyHistory: nextHistory,
+    }, { merge: true });
+
+    return {
+      premium,
+      keysLeft: currentKeys - UNLOCK_COST,
+      alreadyUnlocked: false,
+    };
+  });
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // publishProperty — spend 3 keys, create one /publications doc with
