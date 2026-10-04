@@ -29,10 +29,11 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     await page.evaluate(() => openPublisherProfile('reco'));
     await expect(page.locator('#agOverlay')).toHaveClass(/open/);
     await expect(page.locator('.ag-name')).toHaveText('Equipo Reco');
-    const expected = await page.evaluate(() => properties.filter(p => p.op !== 'Histórico' && !p.userId).length);
+    // Misma regla que el buscador/portada: solo Comprar/Alquilar con fotos.
+    const expected = await page.evaluate(() => properties.filter(p => p.op !== 'Histórico' && !p.userId && driveAssets(p).photos.length > 0).length);
     await expect(page.locator('#agCount')).toHaveText(`${expected} propiedades`);
     await page.click('#agOpSeg button[data-op="Alquiler"]');
-    const nAlq = await page.evaluate(() => properties.filter(p => p.op === 'Alquiler' && !p.userId).length);
+    const nAlq = await page.evaluate(() => properties.filter(p => p.op === 'Alquiler' && !p.userId && driveAssets(p).photos.length > 0).length);
     await expect(page.locator('#agCount')).toContainText(`${nAlq} propiedades de ${expected}`);
     const ops = await page.$$eval('.ag-row .ag-op', els => [...new Set(els.map(e => e.textContent))]);
     expect(ops).toEqual(['Alquiler']);
@@ -44,6 +45,26 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     await page.click('.fr-agent-link');
     await expect(page.locator('#agOverlay')).toHaveClass(/open/);
     expect(await page.evaluate(() => location.hash)).toBe('#anunciante=reco');
+  });
+
+  test('el tipo de cambio se carga del JSON del BCRP y convierte soles a dólares', async ({ page }) => {
+    await page.waitForFunction(() => _TC.fecha === '2026-10-02' || _TC.fecha > '2026-10-02');
+    const r = await page.evaluate(() => ({ tc: _TC.valor, usd: _agUsd({ cur: 'S/', price: _TC.valor * 1000 }) }));
+    expect(r.tc).toBeGreaterThan(3);
+    expect(r.tc).toBeLessThan(4.5);
+    expect(Math.round(r.usd)).toBe(1000);
+  });
+
+  test('los totales del perfil cuadran con los contadores de la portada', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const hasPhoto = p => driveAssets(p).photos.length > 0;
+      const I = _agInsights(_publisherListings('reco'));
+      return { nV: I.nV, nA: I.nA,
+        landingV: properties.filter(p => p.op === 'Venta' && !p.userId && hasPhoto(p) && p.price > 0).length,
+        landingA: properties.filter(p => p.op === 'Alquiler' && !p.userId && hasPhoto(p) && p.price > 0).length };
+    });
+    expect(r.nV).toBe(r.landingV);
+    expect(r.nA).toBe(r.landingA);
   });
 
   test('Exportar PDF abre una ficha imprimible en una pestaña nueva', async ({ page, context }) => {

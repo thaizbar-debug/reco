@@ -6237,7 +6237,29 @@ function closeFullReport(){
 // de terceros y el texto queda vectorial/seleccionable (a diferencia de
 // html2canvas+jsPDF, que rasteriza la página). Todo el contenido
 // proviene de `esc()` y el documento lleva su propia CSP restrictiva.
-const _PDF_TC_REF = 3.70; // S/ por US$ (BCRP, promedio venta ago-2025)
+// Tipo de cambio S/ por US$ para convertir montos en soles. Se lee de
+// data/tc_pen_usd_bcrp.json (bloque `ultimo`, actualizado con
+// scripts/update-tc-bcrp.js desde la API del BCRP). El valor de abajo es
+// solo el respaldo si el JSON no carga.
+const _TC = { valor: 3.437, fecha: '2026-10-02', fuente: 'BCRP' };
+function _loadTipoCambio(){
+  return fetch('data/tc_pen_usd_bcrp.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d) return;
+      const u = d.ultimo;
+      if(u && +u.valor > 0){ _TC.valor = +u.valor; _TC.fecha = u.fecha; _TC.fuente = 'BCRP'; return; }
+      const m = d.mensual || {}, k = Object.keys(m).sort().pop();
+      if(k && +m[k] > 0){ _TC.valor = +m[k]; _TC.fecha = k; }
+    })
+    .catch(() => {});
+}
+_loadTipoCambio();
+function _tcLabel(){
+  const f = String(_TC.fecha||'').split('-');
+  const fecha = f.length === 3 ? `${f[2]}/${f[1]}/${f[0]}` : f.length === 2 ? `${f[1]}/${f[0]}` : _TC.fecha;
+  return `S/ ${_TC.valor.toFixed(3)} por US$ (${_TC.fuente}, ${fecha})`;
+}
 
 function _pdfMortgage(price){
   const down = price*0.20, loan = price-down, r = 0.095/12, n = 20*12;
@@ -6413,14 +6435,17 @@ function _publisherOf(p){
   }
   return { key: _AG_RECO_KEY, name: 'Equipo Reco', isReco: true };
 }
+// Misma regla de visibilidad que el buscador y los contadores de la
+// portada: solo Comprar/Alquilar con al menos una foto. Así los totales
+// del perfil cuadran con lo que el usuario realmente puede ver.
 function _publisherListings(key){
-  return properties.filter(p => p.op !== 'Histórico' && _publisherOf(p).key === key);
+  return properties.filter(p => p.op !== 'Histórico' && _publisherOf(p).key === key && driveAssets(p).photos.length > 0);
 }
 function _agInitials(name){
   const w = String(name).trim().split(/\s+/).filter(Boolean);
   return ((w[0]||'?')[0] + (w.length > 1 ? w[w.length-1][0] : (w[0]||'')[1] || '')).toUpperCase();
 }
-function _agUsd(p){ return p.cur === 'S/' ? p.price / _PDF_TC_REF : p.price; }
+function _agUsd(p){ return p.cur === 'S/' ? p.price / _TC.valor : p.price; }
 function _agDate(raw){
   if(!raw) return null;
   if(typeof raw.toDate === 'function') return raw.toDate();
@@ -6473,12 +6498,21 @@ function _agInsights(list){
   const dates = list.map(p=>_agDate(p.listedAt||p.publishedAt)).filter(Boolean).sort((a,b)=>a-b);
   const avgV  = _agTrim(vUsd);
   const rngV  = _agRange(vUsd);
+  const rngA  = _agRange(aUsd);
+  const sqmA  = alq.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  // Desglose por tipo de inmueble dentro de cada operación (nunca se
+  // mezclan precios de venta con rentas mensuales).
+  const byType = types.map(([t]) => {
+    const v = venta.filter(p=>p.type===t).map(_agUsd);
+    const a = alq.filter(p=>p.type===t).map(_agUsd);
+    return { type:t, nV:v.length, avgV:_agTrim(v), medV:_agMedian(v), nA:a.length, avgA:_agTrim(a), medA:_agMedian(a) };
+  });
   const segment = !venta.length ? '' : avgV >= 400000 ? 'segmento alto' : avgV >= 150000 ? 'segmento medio' : 'segmento económico';
   return {
     total: list.length, nV: venta.length, nA: alq.length,
     avgV, medV: _agMedian(vUsd), minV: rngV[0], maxV: rngV[1], trimmed: vUsd.length >= 10 || aUsd.length >= 10,
-    avgA: _agTrim(aUsd), medA: _agMedian(aUsd),
-    avgSqm: _agTrim(sqmV), avgArea: _agTrim(areas), avgBeds: _agAvg(beds),
+    avgA: _agTrim(aUsd), medA: _agMedian(aUsd), minA: rngA[0], maxA: rngA[1],
+    avgSqm: _agTrim(sqmV), avgSqmA: _agTrim(sqmA), avgArea: _agTrim(areas), avgBeds: _agAvg(beds), byType,
     dists, types, nNew, segment,
     first: dates[0] || null, last: dates[dates.length-1] || null
   };
@@ -6580,8 +6614,8 @@ function _agRender(keepScroll){
   const cards = [
     { l:'Propiedades activas', v: fmtNum(I.total), s: `${I.nV} en venta · ${I.nA} en alquiler` },
     I.nV ? { l:'Precio promedio de venta', v: usd(I.avgV), s: `Mediana ${usd(I.medV)} · rango típico ${usd(I.minV)} – ${usd(I.maxV)}` } : null,
-    I.nA ? { l:'Alquiler promedio mensual', v: usd(I.avgA), s: `Mediana ${usd(I.medA)} / mes` } : null,
-    I.avgSqm ? { l:'Precio promedio por m² (venta)', v: usd(I.avgSqm), s: I.avgArea ? `Área promedio ${fmtNum(Math.round(I.avgArea))} m²` : '' } : null,
+    I.nA ? { l:'Alquiler promedio mensual', v: usd(I.avgA), s: `Mediana ${usd(I.medA)} · rango típico ${usd(I.minA)} – ${usd(I.maxA)}` } : null,
+    I.avgSqm ? { l:'Precio promedio por m² (venta)', v: usd(I.avgSqm), s: I.avgSqmA ? `Alquiler: ${usd(I.avgSqmA)}/m² al mes` : (I.avgArea ? `Área promedio ${fmtNum(Math.round(I.avgArea))} m²` : '') } : null,
     topD ? { l:'Distrito principal', v: esc(topD[0]), s: `${topD[1]} propiedades · ${Math.round(topD[1]/I.total*100)}% de su cartera` } : null,
     topT ? { l:'Tipo predominante', v: esc(topT[0]), s: I.types.slice(0,3).map(t=>`${esc(t[0])} ${Math.round(t[1]/I.total*100)}%`).join(' · ') } : null,
     { l:'A estrenar', v: Math.round(I.nNew/I.total*100) + '%', s: `${I.nNew} de ${I.total}${I.avgBeds ? ` · ${I.avgBeds.toFixed(1)} dorm. promedio` : ''}` },
@@ -6624,7 +6658,19 @@ function _agRender(keepScroll){
       <section class="ag-kpis">
         ${cards.map(c=>`<div class="ag-kpi"><div class="ag-kpi-l">${c.l}</div><div class="ag-kpi-v">${c.v}</div>${c.s?`<div class="ag-kpi-s">${c.s}</div>`:''}</div>`).join('')}
       </section>
-      ${hasPen || I.trimmed ? `<div class="ag-note">${I.trimmed ? 'Promedios recortados: excluyen el 10% de valores más bajos y más altos para evitar distorsiones. ' : ''}${hasPen ? `Montos en soles convertidos a US$ con TC referencial S/ ${_PDF_TC_REF.toFixed(2)} (BCRP).` : ''}</div>` : ''}
+      <div class="ag-note">Venta y alquiler se calculan por separado.${I.trimmed ? ' Con 10 o más propiedades, los promedios excluyen el 10% de precios más bajos y el 10% más altos de cada operación.' : ''}${hasPen ? ` Montos en soles convertidos a US$ con TC ${esc(_tcLabel())}.` : ''}</div>
+
+      ${I.byType.length > 1 ? `<section class="ag-types">
+        <h2 class="fr-sec-title">Precios por tipo de inmueble <small>· promedio (mediana)</small></h2>
+        <div class="ag-table-wrap"><table class="ag-table">
+          <thead><tr><th>Tipo</th><th>Venta</th><th>Alquiler / mes</th></tr></thead>
+          <tbody>${I.byType.map(t => `<tr>
+            <td><strong>${esc(t.type)}</strong></td>
+            <td>${t.nV ? `${usd(t.avgV)} <span>(${usd(t.medV)})</span><em>${t.nV} prop.</em>` : '<span>—</span>'}</td>
+            <td>${t.nA ? `${usd(t.avgA)} <span>(${usd(t.medA)})</span><em>${t.nA} prop.</em>` : '<span>—</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </section>` : ''}
 
       ${I.dists.length > 1 ? `<section class="ag-dists">
         <h2 class="fr-sec-title">Dónde publica <small>· top distritos</small></h2>
@@ -8976,6 +9022,14 @@ button.fr-agent-link:hover .fr-agent-resp{color:var(--blue-dark)}
 .ag-kpi-s{font-size:12px;color:#555B6A;margin-top:4px;line-height:1.45}
 .ag-note{font-size:11px;color:#8E94A0;margin-top:8px}
 .ag-dists{margin-top:28px}
+.ag-types{margin-top:28px}
+.ag-table-wrap{overflow-x:auto;max-width:760px}
+.ag-table{width:100%;border-collapse:collapse;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;overflow:hidden;font-size:13px}
+.ag-table th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-table td{padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.06);color:#0E1117;white-space:nowrap}
+.ag-table tr:last-child td{border-bottom:none}
+.ag-table td span{color:#8E94A0;font-size:12px}
+.ag-table td em{display:block;font-style:normal;font-size:11px;color:#8E94A0}
 .ag-dbars{display:flex;flex-direction:column;gap:6px;max-width:640px}
 .ag-dbar{display:grid;grid-template-columns:minmax(110px,180px) 1fr 40px;align-items:center;gap:10px;background:none;border:none;padding:4px 0;font:inherit;cursor:pointer;text-align:left;color:#0E1117}
 .ag-dbar-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
