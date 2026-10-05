@@ -61,6 +61,18 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     expect(Math.round(r.usd)).toBe(1000);
   });
 
+  test('_featGroups agrupa etiquetas por categoría (incluye etiquetas antiguas)', async ({ page }) => {
+    const g = await page.evaluate(() => _featGroups(['Vista al mar', 'Avenida', 'Residencial', 'Piscina', 'Etiqueta rara', 'Vista al mar'])
+      .map(x => [x.title, x.items]));
+    const byTitle = Object.fromEntries(g);
+    expect(byTitle['Vistas']).toEqual(['Vista al mar']);
+    expect(byTitle['Tipo de vía de acceso']).toEqual(['Avenida']);
+    expect(byTitle['Carácter de la zona']).toEqual(['Residencial']);
+    expect(byTitle['Otros atributos']).toEqual(['Etiqueta rara']);
+    expect(g.flatMap(x => x[1]).filter(f => f === 'Vista al mar').length).toBe(1);
+    expect(g.flatMap(x => x[1])).toContain('Piscina');
+  });
+
   test('_tcApply: gana el TC con fecha más reciente y descarta valores absurdos', async ({ page }) => {
     const r = await page.evaluate(() => {
       _TC.valor = 3.437; _TC.fecha = '2026-10-02';
@@ -96,7 +108,16 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
     await popup.waitForLoadState('domcontentloaded');
     expect(await popup.title()).toMatch(/^Reco - /);
     await expect(popup.locator('h1')).toBeVisible();
-    await expect(popup.getByRole('heading', { name: 'Características' })).toBeVisible();
+    await expect(popup.getByRole('heading', { name: 'Características', exact: true })).toBeVisible();
+    // Etiquetas agrupadas por categoría, como en el formulario de publicación.
+    await expect(popup.getByRole('heading', { name: 'Amenidades y atributos' })).toBeVisible();
+    // Sin contexto de mercado ni simulación: se invita a verlos en Reco,
+    // con link al dominio público (nunca file:// ni localhost).
+    expect(await popup.getByRole('heading', { name: 'Simulación hipotecaria' }).count()).toBe(0);
+    expect(await popup.getByRole('heading', { name: 'Contexto de mercado' }).count()).toBe(0);
+    const cta = popup.locator('.cta a.btn');
+    await expect(cta).toHaveText(/Ver esta propiedad en Reco/);
+    expect(await cta.getAttribute('href')).toBe('https://recosac.com/#prop=' + encodeURIComponent(id));
   });
 });
 
