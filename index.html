@@ -3037,6 +3037,15 @@ function _updateLandingCounts(){
 
 let DRIVE_FILES = {};
 let properties = [];
+// id → [lat,lng]. Declared up front so the map/filter code never hits a
+// ReferenceError when a property is opened before loadData() finishes.
+let GEO = {};
+function _rebuildGeo(){
+  GEO = {};
+  properties.forEach(p=>{
+    if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
+  });
+}
 
 async function loadData(){
   document.getElementById('resList').innerHTML=`
@@ -3051,6 +3060,9 @@ async function loadData(){
     DRIVE_FILES = data.drive || {};
     Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
+    // Build coordinates now: the Firestore query below can take seconds and
+    // the home's featured cards are already clickable meanwhile.
+    _rebuildGeo();
     // Merge approved community publications into the same list. They render
     // and filter identically to static properties — the only difference is
     // the photos come from Firebase Storage instead of Drive.
@@ -3061,10 +3073,7 @@ async function loadData(){
     } catch(e){
       console.warn('[reco] could not load community publications:', e.message);
     }
-    GEO = {};
-    properties.forEach(p=>{
-      if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
-    });
+    _rebuildGeo();
     buildSuggestions();
     buildPriceHistogram();
     _resetPriceSliders();
@@ -5401,7 +5410,9 @@ function openDetail(id){
   document.getElementById('detailPanel').classList.add('open');
   document.getElementById('detailPanel').scrollTop = 0;
 
-  applyFilters();
+  // A failure refreshing the list/map must never leave the panel stuck on
+  // the skeleton — the detail itself does not depend on it.
+  try{ applyFilters(); }catch(e){ console.warn('[reco] applyFilters failed in openDetail:', e); }
 
   // Histórico requires a key — show gate if not yet unlocked
   if(p.op==='Histórico' && !S.unlockedIds.has(id)){
