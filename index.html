@@ -6479,6 +6479,41 @@ function openFullReport(id){
   // ── Galería secundaria (usa el mismo carrusel principal arriba, no duplicamos) ──
   const photoGalleryHTML = '';
 
+  // ── Características agrupadas ───────────────────────────────
+  const featGroupsHTML = (() => {
+    const feats = p.features || [];
+    if (!feats.length) return '';
+    const genSet = new Set(_PUB_FEATS_GEN);
+    const ambSet = new Set(_PUB_FEATS_AMB);
+    const vistaSet = new Set(_PUB_FEATS_VISTA);
+    const accesoSet = new Set([..._PUB_FEATS_ACCESO, ..._PUB_FEATS_ZONA]);
+    const legacySet = new Set(_PUB_FEATS_LEGACY);
+    const groups = [
+      { key:'gen', title:'Características generales', cls:'', items:[] },
+      { key:'amb', title:'Ambientes y servicios', cls:'', items:[] },
+      { key:'vista', title:'Vistas', cls:'fr-tag--vista', items:[] },
+      { key:'acceso', title:'Acceso y zona', cls:'fr-tag--zona', items:[] },
+    ];
+    for (const f of feats) {
+      const mapped = _PUB_FEAT_LEGACY_MAP[f];
+      const norm = mapped || f;
+      if (vistaSet.has(norm)) groups[2].items.push(f);
+      else if (accesoSet.has(norm)) groups[3].items.push(f);
+      else if (ambSet.has(norm)) groups[1].items.push(f);
+      else if (genSet.has(norm) || legacySet.has(norm)) groups[0].items.push(f);
+      else groups[0].items.push(f);
+    }
+    const filled = groups.filter(g => g.items.length > 0);
+    if (!filled.length) return '';
+    return `<div class="fr-sec fr-feat-groups">
+      <h2 class="fr-sec-title">🏷️ Características del inmueble</h2>
+      ${filled.map(g => `<div class="fr-feat-group">
+        <div class="fr-feat-group-title">${esc(g.title)}</div>
+        <div class="fr-tags">${g.items.map(f => `<span class="fr-tag ${g.cls}">${esc(f)}</span>`).join('')}</div>
+      </div>`).join('')}
+    </div>`;
+  })();
+
   // ── Render completo ──────────────────────────────────────────
   const overlay = document.getElementById('frOverlay');
   overlay.innerHTML = `
@@ -6500,15 +6535,12 @@ function openFullReport(id){
           <p class="fr-desc">${p.desc ? esc(p.desc) : esc(p.address+', '+p.district+(p.province&&p.province!==p.district?', '+p.province:'')+', '+p.department)}</p>
         </div>
 
-        ${p.features&&p.features.length?`
-        <div class="fr-tags" style="margin-top:-16px">
-          ${p.features.map(f=>`<span class="fr-tag">${esc(f)}</span>`).join('')}
-        </div>`:''}
-
         <!-- FICHA (unificada) -->
         ${isHist ? sunHTML : fichaHTML}
 
         ${zonifFullHTML}
+
+        ${featGroupsHTML}
 
         <div class="fr-sec">
           ${buildTasChart(p.district, true)}
@@ -8899,8 +8931,14 @@ function _applyLandingHash(){
 .fr-spec-lbl{font-size:11px;color:#8E94A0;}
 
 /* TAGS */
-.fr-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px;}
+.fr-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:0;}
 .fr-tag{font-size:11px;color:#555B6A;background:#FDFCFA;border:1px solid rgba(14,17,23,.12);border-radius:4px;padding:4px 9px;}
+.fr-tag--vista{color:#15803d;background:#f0fdf4;border-color:rgba(21,128,61,.18);}
+.fr-tag--zona{color:#92400e;background:#fffbeb;border-color:rgba(146,64,14,.18);}
+.fr-feat-groups{margin-bottom:28px;}
+.fr-feat-group{margin-bottom:16px;}
+.fr-feat-group:last-child{margin-bottom:0;}
+.fr-feat-group-title{font-size:12px;font-weight:700;color:#2A2F3A;margin-bottom:8px;}
 
 /* SECTIONS */
 .fr-sec{margin-bottom:36px;}
