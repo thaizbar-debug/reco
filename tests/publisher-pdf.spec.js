@@ -5,7 +5,13 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof properties !== 'undefined' && properties.length > 0, null, { timeout: 20000 });
+    // Espera la carga completa (incluye Firestore en CI), no solo el JSON.
+    await page.waitForFunction(() => window.__recoDataReady === true, null, { timeout: 20000 });
+  });
+
+  test('GEO existe desde el inicio (no falla si se filtra mientras Firestore carga)', async ({ page }) => {
+    await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
+    expect(await page.evaluate(() => typeof GEO)).toBe('object');
   });
 
   test('_publisherOf: comunidad usa userId y nunca el email; inventario propio es Equipo Reco', async ({ page }) => {
@@ -97,7 +103,7 @@ test.describe('Perfil del anunciante y ficha PDF', () => {
 test.describe('Modo demo', () => {
   test('?demo=1 suma propiedades de prueba y muestra el aviso', async ({ page }) => {
     await page.goto('http://localhost:3123/?demo=1', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof properties !== 'undefined' && properties.some(p => p.id.startsWith('DEMO-')), null, { timeout: 20000 });
+    await page.waitForFunction(() => window.__recoDataReady === true, null, { timeout: 20000 });
     await expect(page.locator('#demoBanner')).toBeVisible();
     await page.click('#demoBanner button[data-pub="demo-inmobiliaria-andina"]');
     await expect(page.locator('.ag-name')).toHaveText('Inmobiliaria Andina (demo)');
@@ -107,7 +113,8 @@ test.describe('Modo demo', () => {
 
   test('una visita normal no carga datos de prueba', async ({ page }) => {
     await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
-    await page.waitForFunction(() => typeof properties !== 'undefined' && properties.length > 0, null, { timeout: 20000 });
+    // Espera la carga completa (incluye Firestore en CI), no solo el JSON.
+    await page.waitForFunction(() => window.__recoDataReady === true, null, { timeout: 20000 });
     expect(await page.evaluate(() => properties.filter(p => p.id.startsWith('DEMO-')).length)).toBe(0);
     expect(await page.locator('#demoBanner').count()).toBe(0);
   });

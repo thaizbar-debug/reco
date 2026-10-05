@@ -3037,6 +3037,10 @@ function _updateLandingCounts(){
 
 let DRIVE_FILES = {};
 let properties = [];
+// Coordenadas por id de propiedad. Se declara aquí (antes era un global
+// implícito creado recién dentro de loadData) para que filtrar o abrir un
+// detalle mientras Firestore aún responde no lance "GEO is not defined".
+let GEO = {};
 
 // ── Modo demo ─────────────────────────────────────────────────
 // Con ?demo=1 en la URL, o al abrir index.html directo desde el disco
@@ -3120,6 +3124,7 @@ async function loadData(){
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
     _applyLandingHash();
+    window.__recoDataReady = true;
   } catch(err){
     console.error('Error cargando datos:', err);
     document.getElementById('resList').innerHTML=`
@@ -9215,7 +9220,7 @@ button.fr-agent-link:hover .fr-agent-resp{color:var(--blue-dark)}
 .ag-kpi-s{font-size:12px;color:#555B6A;margin-top:4px;line-height:1.45}
 .ag-note{font-size:11px;color:#8E94A0;margin-top:8px}
 .ag-dists{margin-top:28px}
-#demoBanner{position:fixed;left:12px;bottom:12px;z-index:400;max-width:calc(100vw - 24px);background:#7c2d12;color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#demoBanner{position:fixed;left:12px;bottom:12px;z-index:9600;max-width:calc(100vw - 24px);background:#7c2d12;color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 #demoBanner button{background:none;border:none;color:#fed7aa;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:0}
 #demoBanner .demo-x{text-decoration:none;margin-left:6px;color:#fff;opacity:.8}
 .ag-types{margin-top:28px}
