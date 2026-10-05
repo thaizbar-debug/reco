@@ -868,6 +868,50 @@ exports.cleanupHistDetailAccess = onSchedule(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// updateTipoCambio — guarda a diario el TC del BCRP en Firestore.
+//
+// La web convierte montos en soles a dólares (perfil del anunciante) con
+// /publicData/tipoCambio. Corre todos los días a las 18:30 hora de Lima,
+// después del cierre del mercado cambiario, y toma el último día hábil
+// publicado (serie PD04640PD, interbancario venta). Si el BCRP no
+// responde o el valor no pasa los controles de cordura, no escribe nada
+// y la web sigue usando el último valor bueno (o el JSON del repo).
+// ─────────────────────────────────────────────────────────────────────────────
+const tipoCambio = require('./tipoCambio');
+
+exports.updateTipoCambio = onSchedule(
+  { region: REGION, schedule: '30 18 * * *', timeZone: 'America/Lima', memory: '256MiB', retryCount: 2 },
+  async () => {
+    const url = tipoCambio.bcrpUrl(new Date());
+    const res = await fetch(url, { headers: { 'User-Agent': 'reco-tipo-cambio' }, signal: AbortSignal.timeout(20000) });
+    if (!res.ok) throw new Error(`BCRP HTTP ${res.status}`);
+    const nuevo = tipoCambio.latestFromBcrp(await res.text());
+
+    const ref = db.collection('publicData').doc('tipoCambio');
+    const prevSnap = await ref.get();
+    const previo = prevSnap.exists ? prevSnap.data() : null;
+
+    if (!tipoCambio.isSaneRate(nuevo, previo)) {
+      logger.warn('[updateTipoCambio] valor descartado', { nuevo, previo: previo && { fecha: previo.fecha, valor: previo.valor } });
+      return;
+    }
+    if (previo && previo.fecha === nuevo.fecha && previo.valor === nuevo.valor) {
+      logger.info('[updateTipoCambio] sin cambios', nuevo);
+      return;
+    }
+    await ref.set({
+      valor: nuevo.valor,
+      fecha: nuevo.fecha,
+      serie: tipoCambio.TC_SERIE,
+      nombre: 'Tipo de cambio interbancario venta, promedio del día (S/ por US$)',
+      fuente: 'BCRP',
+      actualizadoEn: FieldValue.serverTimestamp()
+    });
+    logger.info('[updateTipoCambio] actualizado', nuevo);
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // grantWelcomeKey — give every new user WELCOME_KEYS free keys.
 //
 // Fires when a /users/{uid} document is first created (by

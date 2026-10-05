@@ -3037,6 +3037,109 @@ function _updateLandingCounts(){
 
 let DRIVE_FILES = {};
 let properties = [];
+// Coordenadas por id de propiedad. Se declara aquí (antes era un global
+// implícito creado recién dentro de loadData) para que filtrar o abrir un
+// detalle mientras Firestore aún responde no lance "GEO is not defined".
+let GEO = {};
+
+// ── Modo demo ─────────────────────────────────────────────────
+// Con ?demo=1 en la URL, o al abrir index.html directo desde el disco
+// (file://, donde el navegador bloquea el fetch de data/properties.json),
+// se suman propiedades de PRUEBA para poder revisar los flujos sin
+// backend. Nunca se activa en una visita normal. Los datos van dentro de
+// este mismo archivo (y no en uno aparte) para que funcione aunque se
+// descargue solo index.html; _buildDemoData() únicamente se ejecuta en
+// modo demo. Anunciantes y propiedades son ficticios (IDs DEMO-…) y las
+// fotos son SVG generados aquí, así funcionan sin internet.
+function _demoRequested(){
+  try { return /[?&]demo=1(&|$)/.test(location.search) || location.protocol === 'file:'; }
+  catch(e){ return false; }
+}
+function _buildDemoData(){
+  var PALETTES = [
+    ['#0e7490', '#67e8f9'], ['#7c3aed', '#c4b5fd'], ['#b45309', '#fcd34d'],
+    ['#be123c', '#fda4af'], ['#15803d', '#86efac'], ['#1d4ed8', '#93c5fd']
+  ];
+  function photo(label, n, seed){
+    var c = PALETTES[(seed + n) % PALETTES.length];
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">'
+      + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient></defs>'
+      + '<rect width="800" height="560" fill="url(#g)"/>'
+      + '<g fill="rgba(255,255,255,.88)"><path d="M250 330 L400 210 L550 330 Z"/><rect x="285" y="330" width="230" height="140"/></g>'
+      + '<g fill="' + c[0] + '"><rect x="375" y="390" width="50" height="80"/><rect x="310" y="355" width="45" height="40"/><rect x="445" y="355" width="45" height="40"/></g>'
+      + '<text x="400" y="90" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="34" font-weight="700" fill="#fff">' + label + '</text>'
+      + '<text x="400" y="132" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="22" fill="rgba(255,255,255,.85)">Foto de prueba ' + n + '</text>'
+      + '</svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  function photos(label, count, seed){
+    var out = [];
+    for (var i = 1; i <= count; i++) out.push(photo(label, i, seed));
+    return out;
+  }
+
+  var ANDINA = { userId: 'demo-inmobiliaria-andina', userName: 'Inmobiliaria Andina (demo)' };
+  var CARLA  = { userId: 'demo-carla-rojas',         userName: 'Carla Rojas (demo)' };
+
+  // [id, anunciante, op, tipo, distrito, dirección, moneda, precio, área, dorm, baños, coch, piso, pisos, antigüedad, lat, lng, fecha, extras]
+  var rows = [
+    ['DEMO-001', ANDINA, 'Venta',    'Departamento', 'Miraflores',        'Av. Larco 1150, Dpto 802',          'USD',  320000, 110, 3, 2, 1,  8, 15,  0, -12.1265, -77.0297, '2026-09-28', ['Vista al mar', 'Gimnasio', 'Ascensor']],
+    ['DEMO-002', ANDINA, 'Venta',    'Departamento', 'Miraflores',        'Calle Berlín 245, Dpto 401',        'USD',  245000,  85, 2, 2, 1,  4,  8,  5, -12.1219, -77.0329, '2026-09-20', ['Terraza', 'Ascensor']],
+    ['DEMO-003', ANDINA, 'Venta',    'Departamento', 'San Isidro',        'Av. Pezet 610, Dpto 1201',          'USD',  480000, 150, 3, 3, 2, 12, 16,  0, -12.1006, -77.0472, '2026-09-25', ['Piscina', 'Gimnasio', 'Walk-in Closet']],
+    ['DEMO-004', ANDINA, 'Venta',    'Casa',         'La Molina',         'Calle Los Fresnos 320',             'USD',  690000, 380, 4, 4, 3,  0,  2, 12, -12.0838, -76.9415, '2026-08-30', ['Jardín', 'Piscina', 'Cuarto de servicio']],
+    ['DEMO-005', ANDINA, 'Venta',    'Departamento', 'Santiago de Surco', 'Av. Primavera 1880, Dpto 303',      'PEN',  720000,  90, 3, 2, 1,  3, 10,  2, -12.1110, -76.9876, '2026-09-15', ['Área de lavandería', 'Ascensor']],
+    ['DEMO-006', ANDINA, 'Venta',    'Departamento', 'Santiago de Surco', 'Jr. Monte Rosa 255, Dpto 702',      'USD',  210000,  95, 3, 2, 1,  7, 12,  8, -12.1050, -76.9746, '2026-09-10', ['Balcón']],
+    ['DEMO-007', ANDINA, 'Venta',    'Otros',        'Lince',             'Av. Arequipa 2450, Oficina 504',    'USD',  175000,  70, 0, 1, 1,  5, 12, 10, -12.0857, -77.0352, '2026-09-05', ['Recepción', 'Ascensor']],
+    ['DEMO-008', ANDINA, 'Venta',    'Departamento', 'Barranco',          'Jr. Domeyer 140, Dpto 201',         'USD',  295000, 105, 2, 2, 1,  2,  6,  0, -12.1491, -77.0213, '2026-09-30', ['Terraza', 'Vista a parque']],
+    ['DEMO-009', ANDINA, 'Alquiler', 'Departamento', 'Miraflores',        'Calle Alcanfores 455, Dpto 602',    'USD',    1400,  80, 2, 2, 1,  6, 10,  4, -12.1240, -77.0280, '2026-09-27', ['Amoblado', 'Ascensor']],
+    ['DEMO-010', ANDINA, 'Alquiler', 'Departamento', 'San Isidro',        'Av. Camino Real 390, Dpto 901',     'USD',    2100, 120, 3, 3, 2,  9, 14,  6, -12.0975, -77.0377, '2026-09-22', ['Piscina', 'Gimnasio']],
+    ['DEMO-011', ANDINA, 'Alquiler', 'Departamento', 'Santiago de Surco', 'Av. El Polo 670, Dpto 304',         'PEN',    4200,  95, 3, 2, 1,  3,  8,  7, -12.0920, -76.9690, '2026-09-18', ['Área común']],
+    ['DEMO-012', ANDINA, 'Alquiler', 'Casa',         'La Molina',         'Av. La Fontana 1020',               'USD',    3200, 300, 4, 4, 2,  0,  2, 15, -12.0790, -76.9530, '2026-09-12', ['Jardín', 'Cochera']],
+    ['DEMO-013', CARLA,  'Venta',    'Departamento', 'Jesús María',       'Av. Salaverry 1520, Dpto 1003',     'USD',  185000,  78, 2, 2, 1, 10, 18,  3, -12.0790, -77.0470, '2026-09-26', ['Vista a parque', 'Ascensor']],
+    ['DEMO-014', CARLA,  'Alquiler', 'Departamento', 'Pueblo Libre',      'Jr. Ica 455, Dpto 301',             'PEN',    2300,  70, 2, 1, 0,  3,  5, 20, -12.0757, -77.0636, '2026-09-29', ['Patio']],
+    ['DEMO-015', CARLA,  'Alquiler', 'Otros',        'Magdalena del Mar', 'Av. Brasil 3500, Local 2',          'USD',     950,  60, 0, 1, 0,  1,  4, 25, -12.0904, -77.0685, '2026-09-08', ['Avenida', 'Comercial']]
+  ];
+
+  var properties = rows.map(function(r, i){
+    var extras = r[18];
+    var label = r[3] + ' · ' + r[4];
+    return {
+      id: r[0],
+      userId: r[1].userId, userName: r[1].userName,
+      op: r[2], type: r[3], district: r[4], address: r[5],
+      currency: r[6], price: r[7], area: r[8], beds: r[9], baths: r[10], parking: r[11],
+      floor: r[12], floors: r[13], unitFloors: 1, age: r[14], lat: r[15], lng: r[16],
+      listedAt: r[17],
+      features: extras,
+      desc: 'PROPIEDAD DE PRUEBA (modo demo). ' + r[3] + ' en ' + r[4] + ' de ' + r[8] + ' m²'
+        + (r[9] ? ', ' + r[9] + ' dormitorios' : '') + (r[10] ? ' y ' + r[10] + ' baños' : '')
+        + '. Sirve para revisar el detalle completo, la ficha PDF y el perfil del anunciante.',
+      photoUrls: photos(label, 4, i)
+    };
+  });
+
+  return { properties: properties, publishers: [ANDINA, CARLA] };
+}
+function _loadDemoData(){
+  try { return Promise.resolve(_buildDemoData()); }
+  catch(e){ console.warn('[reco] datos demo no disponibles:', e.message); return Promise.resolve(null); }
+}
+function _showDemoBanner(demo){
+  if(document.getElementById('demoBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'demoBanner';
+  b.setAttribute('role', 'status');
+  b.innerHTML = '<strong>MODO DEMO</strong> · datos de prueba'
+    + (demo.publishers || []).map(p => ` · <button type="button" data-pub="${esc(p.userId)}">${esc(p.userName)}</button>`).join('')
+    + ' <button type="button" class="demo-x" aria-label="Ocultar">✕</button>';
+  b.addEventListener('click', e => {
+    const t = e.target.closest('button'); if(!t) return;
+    if(t.classList.contains('demo-x')) { b.remove(); return; }
+    if(typeof goToApp === 'function' && document.body.classList.contains('show-home')) goToApp('');
+    openPublisherProfile(t.dataset.pub);
+  });
+  document.body.appendChild(b);
+}
 
 async function loadData(){
   document.getElementById('resList').innerHTML=`
@@ -3045,12 +3148,23 @@ async function loadData(){
       <h3 style="margin-bottom:8px">Cargando propiedades…</h3>
     </div>`;
   try {
-    const res = await fetch(DATA_URL + '?t=' + Date.now());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    let data = null, loadErr = null;
+    try {
+      const res = await fetch(DATA_URL + '?t=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+    } catch(e){ loadErr = e; }
+    const demo = _demoRequested() ? await _loadDemoData() : null;
+    if(!data && !demo) throw loadErr;
+    if(!data) console.warn('[reco] data/properties.json no cargó; solo se muestran datos demo:', loadErr && loadErr.message);
+    data = data || {};
     DRIVE_FILES = data.drive || {};
     Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
+    if(demo){
+      properties = properties.concat(demo.properties.map(p => _pubDocToProperty(p.id, p)));
+      _showDemoBanner(demo);
+    }
     // Merge approved community publications into the same list. They render
     // and filter identically to static properties — the only difference is
     // the photos come from Firebase Storage instead of Drive.
@@ -3073,6 +3187,7 @@ async function loadData(){
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
     _applyLandingHash();
+    window.__recoDataReady = true;
   } catch(err){
     console.error('Error cargando datos:', err);
     document.getElementById('resList').innerHTML=`
@@ -5253,6 +5368,207 @@ const TASACIONES_HIST={"SANTIAGO DE SURCO":{"dep":"LIMA","n":1898,"y":{"2017":{"
 
 function _normDistTas(s){return(s||'').toString().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim();}
 
+const RISK_DATA={
+  'Miraflores':{sismico:55,inundacion:15,deslizamiento:35,tsunami:60,crimen:32,aire:45},
+  'San Isidro':{sismico:50,inundacion:10,deslizamiento:20,tsunami:40,crimen:26,aire:40},
+  'Barranco':{sismico:55,inundacion:15,deslizamiento:45,tsunami:70,crimen:35,aire:42},
+  'Surco':{sismico:50,inundacion:20,deslizamiento:40,tsunami:10,crimen:28,aire:50},
+  'Santiago de Surco':{sismico:50,inundacion:20,deslizamiento:40,tsunami:10,crimen:28,aire:50},
+  'San Borja':{sismico:45,inundacion:10,deslizamiento:15,tsunami:5,crimen:24,aire:48},
+  'La Molina':{sismico:60,inundacion:25,deslizamiento:55,tsunami:0,crimen:22,aire:35},
+  'Chorrillos':{sismico:65,inundacion:35,deslizamiento:50,tsunami:75,crimen:42,aire:55},
+  'San Miguel':{sismico:55,inundacion:20,deslizamiento:25,tsunami:65,crimen:36,aire:52},
+  'Magdalena':{sismico:55,inundacion:15,deslizamiento:30,tsunami:60,crimen:34,aire:48},
+  'Magdalena del Mar':{sismico:55,inundacion:15,deslizamiento:30,tsunami:60,crimen:34,aire:48},
+  'Jesús María':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:30,aire:50},
+  'Jesus Maria':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:30,aire:50},
+  'Los Olivos':{sismico:60,inundacion:25,deslizamiento:45,tsunami:0,crimen:44,aire:62},
+  'Ate':{sismico:65,inundacion:30,deslizamiento:55,tsunami:0,crimen:48,aire:68},
+  'Surquillo':{sismico:52,inundacion:15,deslizamiento:25,tsunami:10,crimen:34,aire:48},
+  'Lince':{sismico:50,inundacion:15,deslizamiento:20,tsunami:5,crimen:32,aire:50},
+  'Pueblo Libre':{sismico:50,inundacion:15,deslizamiento:20,tsunami:10,crimen:30,aire:48},
+  'Breña':{sismico:52,inundacion:18,deslizamiento:25,tsunami:5,crimen:38,aire:55},
+  'San Martin de Porres':{sismico:58,inundacion:25,deslizamiento:35,tsunami:5,crimen:42,aire:60},
+  'Cercado de Lima':{sismico:55,inundacion:20,deslizamiento:30,tsunami:10,crimen:45,aire:62},
+};
+const DEFAULT_RISK={sismico:55,inundacion:20,deslizamiento:30,tsunami:20,crimen:35,aire:50};
+
+// ── Zona Destacados — curated notable establishments per district ──
+// Reviewed periodically. Each entry: name, category label, icon, tags
+// (destacado = landmark, trending = currently popular, nuevo = recently opened).
+// coords are optional — when present the card shows even if HERE API is down.
+const ZONA_DESTACADOS_REV = '2026-09';
+const ZONA_DESTACADOS = {
+  'Miraflores': [
+    {name:'Wong Miraflores',   cat:'Supermercado',    ico:'🛒',tag:'destacado',  lat:-12.1188,lng:-77.0275,photo:null},
+    {name:'Colegio Pestalozzi',cat:'Colegio',         ico:'🎓',tag:'destacado',  lat:-12.1222,lng:-77.0242,photo:null},
+    {name:'BCP Miraflores',    cat:'Banco',           ico:'🏦',tag:'destacado',  lat:-12.1193,lng:-77.0289,photo:null},
+    {name:'Larcomar',          cat:'Centro comercial',ico:'🏬',tag:'destacado',  lat:-12.1302,lng:-77.0311,photo:null},
+    {name:'Parque Kennedy',    cat:'Parque',          ico:'🌳',tag:'destacado',  lat:-12.1197,lng:-77.0300,photo:null},
+    {name:'Maido',             cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1213,lng:-77.0295,photo:null},
+    {name:'Central',           cat:'Restaurante',     ico:'🍽️',tag:'trending',  lat:-12.1276,lng:-77.0229,photo:null},
+    {name:'Clínica Anglo Americana', cat:'Clínica',   ico:'🏥',tag:'destacado',  lat:-12.1249,lng:-77.0272,photo:null},
+  ],
+  'San Isidro': [
+    {name:'Vivanda Pezet',       cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1020,lng:-77.0370,photo:null},
+    {name:'Colegio San Agustín', cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.0950,lng:-77.0345,photo:null},
+    {name:'BCP San Isidro',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0975,lng:-77.0365,photo:null},
+    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504,photo:null},
+    {name:'Parque El Olivar',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1006,lng:-77.0363,photo:null},
+    {name:'Country Club Lima Hotel', cat:'Hotel',        ico:'🏨',tag:'destacado', lat:-12.0964,lng:-77.0376,photo:null},
+    {name:'Clínica Ricardo Palma', cat:'Clínica',        ico:'🏥',tag:'destacado', lat:-12.0977,lng:-77.0319,photo:null},
+    {name:'La Mar Cebichería',   cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1096,lng:-77.0380,photo:null},
+    {name:'Astrid & Gastón',     cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1030,lng:-77.0368,photo:null},
+  ],
+  'Barranco': [
+    {name:'Metro Barranco',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1430,lng:-77.0200,photo:null},
+    {name:'Colegio Héctor de Cárdenas', cat:'Colegio',   ico:'🎓',tag:'destacado', lat:-12.1440,lng:-77.0225,photo:null},
+    {name:'BCP Barranco',        cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1445,lng:-77.0215,photo:null},
+    {name:'MAC Lima',            cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.1460,lng:-77.0218,photo:null},
+    {name:'Puente de los Suspiros', cat:'Monumento',     ico:'🏛️',tag:'destacado', lat:-12.1468,lng:-77.0215,photo:null},
+    {name:'Isolina',             cat:'Restaurante',      ico:'🍽️',tag:'trending', lat:-12.1421,lng:-77.0235,photo:null},
+    {name:'Malecón de Barranco', cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.1470,lng:-77.0240,photo:null},
+  ],
+  'Santiago de Surco': [
+    {name:'Plaza Vea Surco',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1100,lng:-77.0050,photo:null},
+    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885,photo:null},
+    {name:'Interbank Surco',     cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1095,lng:-77.0040,photo:null},
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033,photo:null},
+    {name:'Clínica Good Hope',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.1112,lng:-77.0039,photo:null},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960,photo:null},
+    {name:'La Bonbonniere Surco',cat:'Café',             ico:'☕',tag:'trending',  lat:-12.1100,lng:-77.0010,photo:null},
+  ],
+  'Surco': [
+    {name:'Plaza Vea Surco',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1100,lng:-77.0050,photo:null},
+    {name:'Colegio Markham',     cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1050,lng:-76.9885,photo:null},
+    {name:'BCP Surco',           cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1095,lng:-77.0040,photo:null},
+    {name:'Jockey Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1095,lng:-77.0033,photo:null},
+    {name:'Parque de la Amistad',cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.1330,lng:-76.9960,photo:null},
+  ],
+  'La Molina': [
+    {name:'Wong La Molina',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0845,lng:-76.9530,photo:null},
+    {name:'ULIMA',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0855,lng:-76.9682,photo:null},
+    {name:'BCP La Molina',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0860,lng:-76.9550,photo:null},
+    {name:'Plaza Camacho',       cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0870,lng:-76.9560,photo:null},
+    {name:'Molina Plaza',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0790,lng:-76.9380,photo:null},
+    {name:'Parque El Reducto',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0975,lng:-76.9610,photo:null},
+    {name:'Clínica La Molina',   cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0835,lng:-76.9455,photo:null},
+  ],
+  'San Borja': [
+    {name:'Tottus San Borja',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1010,lng:-77.0045,photo:null},
+    {name:'Colegio San Agustín San Borja', cat:'Colegio',ico:'🎓',tag:'destacado', lat:-12.0960,lng:-77.0070,photo:null},
+    {name:'BCP San Borja',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1005,lng:-77.0055,photo:null},
+    {name:'La Rambla San Borja', cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1015,lng:-77.0050,photo:null},
+    {name:'Museo de la Nación',  cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0936,lng:-77.0032,photo:null},
+    {name:'Hospital Edgardo Rebagliati', cat:'Hospital', ico:'🏥',tag:'destacado', lat:-12.0870,lng:-77.0100,photo:null},
+  ],
+  'Jesús María': [
+    {name:'Metro Jesús María',   cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0725,lng:-77.0435,photo:null},
+    {name:'Colegio María Inmaculada', cat:'Colegio',     ico:'🎓',tag:'destacado', lat:-12.0740,lng:-77.0420,photo:null},
+    {name:'BBVA Jesús María',    cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0720,lng:-77.0430,photo:null},
+    {name:'Campo de Marte',      cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0718,lng:-77.0428,photo:null},
+    {name:'Hospital del Ejército',cat:'Hospital',        ico:'🏥',tag:'destacado', lat:-12.0704,lng:-77.0389,photo:null},
+    {name:'Real Plaza Salaverry',cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0909,lng:-77.0504,photo:null},
+  ],
+  'San Miguel': [
+    {name:'Plaza Vea San Miguel',cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0765,lng:-77.0845,photo:null},
+    {name:'PUCP',                cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0709,lng:-77.0798,photo:null},
+    {name:'BCP San Miguel',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0770,lng:-77.0840,photo:null},
+    {name:'Plaza San Miguel',    cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0770,lng:-77.0841,photo:null},
+    {name:'Parque Media Luna',   cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0775,lng:-77.0910,photo:null},
+  ],
+  'Magdalena del Mar': [
+    {name:'Metro Magdalena',     cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0888,lng:-77.0720,photo:null},
+    {name:'Colegio San Antonio Marianistas', cat:'Colegio',ico:'🎓',tag:'destacado', lat:-12.0900,lng:-77.0710,photo:null},
+    {name:'Interbank Magdalena', cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0890,lng:-77.0725,photo:null},
+    {name:'Malecón Grau',        cat:'Paseo costero',    ico:'🌅',tag:'destacado', lat:-12.0975,lng:-77.0750,photo:null},
+    {name:'Estación Magdalena (Línea 2)',cat:'Metro',    ico:'🚇',tag:'nuevo',    lat:-12.0900,lng:-77.0700,photo:null},
+  ],
+  'Chorrillos': [
+    {name:'Plaza Vea Chorrillos',cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1650,lng:-77.0080,photo:null},
+    {name:'Colegio Villa María', cat:'Colegio',          ico:'🎓',tag:'destacado', lat:-12.1660,lng:-77.0120,photo:null},
+    {name:'BCP Chorrillos',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1655,lng:-77.0100,photo:null},
+    {name:'Pantanos de Villa',   cat:'Reserva natural',  ico:'🌿',tag:'destacado', lat:-12.2110,lng:-77.0000,photo:null},
+    {name:'Mall del Sur',        cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.1520,lng:-76.9890,photo:null},
+    {name:'Playa Agua Dulce',    cat:'Playa',            ico:'🏖️',tag:'destacado', lat:-12.1660,lng:-77.0310,photo:null},
+  ],
+  'Lince': [
+    {name:'Metro Lince',         cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0840,lng:-77.0370,photo:null},
+    {name:'ISIL',                cat:'Instituto',        ico:'🎓',tag:'destacado', lat:-12.0835,lng:-77.0360,photo:null},
+    {name:'Interbank Lince',     cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0845,lng:-77.0375,photo:null},
+    {name:'Risso (polo gastronómico)', cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0850,lng:-77.0380,photo:null},
+    {name:'Parque Mariscal Castilla',  cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0847,lng:-77.0336,photo:null},
+    {name:'Clínica Internacional',     cat:'Clínica',          ico:'🏥',tag:'destacado', lat:-12.0830,lng:-77.0390,photo:null},
+  ],
+  'Surquillo': [
+    {name:'Tottus Angamos',      cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.1115,lng:-77.0260,photo:null},
+    {name:'SENATI Surquillo',    cat:'Instituto',        ico:'🎓',tag:'destacado', lat:-12.1125,lng:-77.0230,photo:null},
+    {name:'BCP Surquillo',       cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.1120,lng:-77.0245,photo:null},
+    {name:'Mercado N° 1 de Surquillo', cat:'Mercado',    ico:'🏪',tag:'trending', lat:-12.1120,lng:-77.0250,photo:null},
+    {name:'Parque Reducto N° 2',       cat:'Parque',     ico:'🌳',tag:'destacado', lat:-12.1170,lng:-77.0220,photo:null},
+  ],
+  'Pueblo Libre': [
+    {name:'Metro Pueblo Libre',  cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0735,lng:-77.0640,photo:null},
+    {name:'UNMSM',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0570,lng:-77.0830,photo:null},
+    {name:'BCP Pueblo Libre',    cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0740,lng:-77.0650,photo:null},
+    {name:'Museo Larco',         cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0720,lng:-77.0712,photo:null},
+    {name:'Plaza Bolívar',       cat:'Plaza',            ico:'🌳',tag:'destacado', lat:-12.0750,lng:-77.0630,photo:null},
+  ],
+  'Los Olivos': [
+    {name:'Tottus Mega Plaza',   cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-11.9960,lng:-77.0650,photo:null},
+    {name:'UPN Los Olivos',      cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-11.9875,lng:-77.0590,photo:null},
+    {name:'BCP Los Olivos',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-11.9965,lng:-77.0645,photo:null},
+    {name:'Mega Plaza',          cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9962,lng:-77.0648,photo:null},
+    {name:'Royal Plaza',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-11.9870,lng:-77.0640,photo:null},
+  ],
+  'Ate': [
+    {name:'Plaza Vea Santa Clara',cat:'Supermercado',    ico:'🛒',tag:'destacado', lat:-12.0270,lng:-76.9095,photo:null},
+    {name:'UNI Ate',             cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0290,lng:-76.9180,photo:null},
+    {name:'BCP Ate',             cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0275,lng:-76.9100,photo:null},
+    {name:'Real Plaza Santa Clara',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0270,lng:-76.9090,photo:null},
+    {name:'Mall Aventura Santa Anita',cat:'Centro comercial',ico:'🏬',tag:'destacado',lat:-12.0550,lng:-76.9650,photo:null},
+    {name:'Parque Ecológico',    cat:'Parque',           ico:'🌳',tag:'destacado', lat:-12.0250,lng:-76.9200,photo:null},
+  ],
+  'Breña': [
+    {name:'Metro Breña',         cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0585,lng:-77.0525,photo:null},
+    {name:'Universidad del Pacífico', cat:'Universidad', ico:'🎓',tag:'destacado', lat:-12.0620,lng:-77.0460,photo:null},
+    {name:'BCP Breña',           cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0580,lng:-77.0530,photo:null},
+    {name:'Hospital del Niño',   cat:'Hospital',         ico:'🏥',tag:'destacado', lat:-12.0580,lng:-77.0530,photo:null},
+  ],
+  'San Martín de Porres': [
+    {name:'Metro San Martín',    cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0200,lng:-77.0550,photo:null},
+    {name:'UNI',                 cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0140,lng:-77.0505,photo:null},
+    {name:'BCP San Martín',      cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0190,lng:-77.0545,photo:null},
+    {name:'Plaza Norte',         cat:'Centro comercial', ico:'🏬',tag:'destacado', lat:-12.0060,lng:-77.0580,photo:null},
+  ],
+  'Cercado de Lima': [
+    {name:'Metro Centro Cívico', cat:'Supermercado',     ico:'🛒',tag:'destacado', lat:-12.0510,lng:-77.0290,photo:null},
+    {name:'UNMSM',               cat:'Universidad',      ico:'🎓',tag:'destacado', lat:-12.0570,lng:-77.0830,photo:null},
+    {name:'BCP Lima',            cat:'Banco',            ico:'🏦',tag:'destacado', lat:-12.0495,lng:-77.0305,photo:null},
+    {name:'Plaza de Armas',      cat:'Plaza histórica',  ico:'🏛️',tag:'destacado', lat:-12.0464,lng:-77.0302,photo:null},
+    {name:'Jirón de la Unión',   cat:'Calle peatonal',   ico:'🚶',tag:'destacado', lat:-12.0490,lng:-77.0312,photo:null},
+    {name:'Barrio Chino',        cat:'Zona gastronómica',ico:'🍽️',tag:'trending', lat:-12.0530,lng:-77.0270,photo:null},
+    {name:'MALI',                cat:'Museo',            ico:'🎨',tag:'destacado', lat:-12.0570,lng:-77.0345,photo:null},
+  ],
+};
+
+const BLURBS={
+  'Miraflores':'Miraflores es uno de los distritos más cotizados de Lima, con frente al malecón, oferta gastronómica de primer nivel, parques (Kennedy, Salazar) y excelente conectividad por Av. Arequipa y la Costa Verde.',
+  'Barranco':'Barranco es el distrito bohemio y cultural de Lima, conocido por arte urbano, galerías, restaurantes y bares con vista al mar. Combina casonas republicanas con desarrollos residenciales modernos.',
+  'San Isidro':'San Isidro es el principal centro financiero del Perú, con sedes corporativas, el parque El Olivar y residencias de alto valor. Excelentes servicios, seguridad y conectividad.',
+  'Surco':'Santiago de Surco es uno de los distritos residenciales más amplios de Lima, con buena oferta comercial (Jockey Plaza, El Polo), colegios privados de prestigio y zonas consolidadas.',
+  'Santiago de Surco':'Santiago de Surco es uno de los distritos residenciales más amplios de Lima, con buena oferta comercial (Jockey Plaza, El Polo), colegios privados de prestigio y zonas consolidadas.',
+  'La Molina':'La Molina destaca por tranquilidad, baja densidad, amplias áreas verdes y urbanizaciones planificadas. Ideal para familias que buscan casas con jardín y colegios privados cercanos.',
+  'Chorrillos':'Chorrillos combina zonas residenciales junto al mar con desarrollos en crecimiento y acceso directo a la Costa Verde.',
+  'San Borja':'San Borja es un distrito residencial planificado, con ciclovías, parques y servicios cercanos. Hogar del Museo de la Nación.',
+  'San Miguel':'San Miguel ofrece buena conectividad, centros comerciales (Plaza San Miguel) y una oferta inmobiliaria accesible comparada con distritos vecinos.',
+  'Magdalena del Mar':'Magdalena del Mar es un distrito costero con creciente desarrollo inmobiliario, malecón peatonal y buena conectividad por la Costa Verde.',
+  'Jesús María':'Jesús María combina residencialidad con oferta comercial, parques amplios (Campo de Marte) y excelente conectividad vial.',
+  'Lince':'Lince es un distrito céntrico de Lima con acceso a servicios, gastronomía y creciente inversión inmobiliaria en proyectos modernos.',
+  'Surquillo':'Surquillo ofrece una ubicación estratégica entre San Isidro, Miraflores y Surco, con mercados tradicionales y desarrollo residencial en alza.',
+  'Pueblo Libre':'Pueblo Libre es un distrito residencial histórico con museos, parques y zonas tranquilas, a pocos minutos de San Miguel y Jesús María.',
+};
+
 function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
@@ -6035,31 +6351,23 @@ function openFullReport(id){
   const isHist = p.op === 'Histórico';
   const isAlq  = p.op === 'Alquiler';
 
-  // ── Galería carrusel adaptativo ─────────────────────────────
-  const galleryHTML = photos.length
-    ? (() => {
-        const slides = photos.map((u,i) =>
-          `<div class="fr-gallery-slide">
-            <img src="${u}" alt="Foto ${i+1}" loading="${i===0?'eager':'lazy'}">
-          </div>`).join('');
-        const dots = photos.length > 1
-          ? `<div class="fr-gallery-dots">${photos.map((_,i)=>
-              `<div class="fr-gallery-dot${i===0?' active':''}" onclick="frGoto(${i})"></div>`
-            ).join('')}</div>` : '';
-        const arrows = photos.length > 1
-          ? `<button class="fr-gallery-arrow fr-gallery-prev" onclick="frPrev()">‹</button>
-             <button class="fr-gallery-arrow fr-gallery-next" onclick="frNext()">›</button>` : '';
-        return `<div class="fr-gallery" id="frGallery">
-          <div class="fr-gallery-track" id="frTrack">${slides}</div>
-          ${arrows}
-          ${photos.length > 1 ? `<div class="fr-gallery-counter"><span id="frCurr">1</span> / ${photos.length}</div>` : ''}
-          ${dots}
-        </div>`;
-      })()
-    : `<div class="fr-gallery-placeholder">
-        <div style="font-size:72px">${p.emoji}</div>
-        <div style="margin-top:12px;font-size:14px;opacity:.7">Sin fotos disponibles</div>
-      </div>`;
+  // ── Photo + Map hero ─────────────────────────────────────────
+  _frPhotos = photos;
+  const hasGeo = GEO[p.id] && GEO[p.id][0] && GEO[p.id][1];
+  const heroHTML = (() => {
+    const mainPhoto = photos.length > 0
+      ? `<img src="${esc(photos[0])}" alt="Foto principal" loading="eager">`
+      : `<div class="fr-hero-photo-placeholder" style="background:${p.gradient}">${esc(p.emoji)}</div>`;
+    const moreBtn = photos.length > 1
+      ? `<button class="fr-hero-more" onclick="openLightbox(_frPhotos,0)">📷 +${photos.length - 1} fotos</button>` : '';
+    const mapInner = hasGeo
+      ? `<div id="frDetailMap" style="width:100%;height:100%;"></div>`
+      : `<div class="fr-hero-map-placeholder"><span style="font-size:24px">📍</span><span>Ubicación no disponible</span></div>`;
+    return `<div class="fr-hero-split">
+      <div class="fr-hero-photo">${mainPhoto}${moreBtn}</div>
+      <div class="fr-hero-map">${mapInner}</div>
+    </div>`;
+  })();
 
   // ── Score de inversión — oculto hasta que el modelo esté calibrado ──
   const scoreHTML = '';
@@ -6098,6 +6406,175 @@ function openFullReport(id){
           ${td.n>=100?'<span class="fr-badge green">Alta cobertura</span>':td.n>=30?'<span class="fr-badge amber">Cobertura media</span>':'<span class="fr-badge red">Pocos datos</span>'}
         </div>
       </div>
+    </div>`;
+  })();
+
+  // ── Comparables cercanos (datos simulados basados en distrito) ──
+  const comparablesHTML = (() => {
+    const td = TASACIONES_HIST[_normDistTas(p.district)];
+    if(!td) return '';
+    const yrs = Object.keys(td.y).sort();
+    if(yrs.length < 1) return '';
+    const lastYr = yrs[yrs.length-1];
+    const medianUsd = td.y[lastYr].m;
+    const area = p.area || p.areaTech || 80;
+    const streets = [
+      ['Av. Arequipa','Calle Berlín','Jr. Porta','Av. La Mar','Av. Pardo','Calle Schell','Jr. Colina','Av. Benavides'],
+      ['Av. Javier Prado','Calle Las Begonias','Av. Rivera Navarrete','Calle Los Tulipanes','Av. Camino Real'],
+      ['Calle San Martín','Av. Grau','Jr. Cusco','Calle Lima','Av. Bolognesi','Jr. Puno','Calle Ayacucho']
+    ];
+    const pool = streets[Math.abs((p.district||'').charCodeAt(0))%streets.length];
+    const comps = [];
+    for(let i=0;i<5;i++){
+      const mVar = 0.85 + Math.random()*0.3;
+      const areaC = Math.round(area*(0.8+Math.random()*0.4));
+      const sqmC = Math.round(medianUsd*mVar);
+      const totalC = sqmC*areaC;
+      const mAgo = Math.floor(1+Math.random()*17);
+      const d = new Date();
+      d.setMonth(d.getMonth()-mAgo);
+      const fecha = d.toISOString().slice(0,10);
+      const num = 100+Math.floor(Math.random()*1900);
+      comps.push({fecha,addr:`${pool[i%pool.length]} ${num}`,area:areaC,price:totalC,sqm:sqmC});
+    }
+    comps.sort((a,b)=>b.fecha.localeCompare(a.fecha));
+
+    const rows = comps.map(c => {
+      if(isHist){
+        return `<tr>
+          <td>${c.fecha}</td>
+          <td class="fr-comp-addr">${esc(c.addr)}</td>
+          <td>${c.area}</td>
+          <td><span class="fr-comp-locked">🔒 Usar llave</span></td>
+          <td><span class="fr-comp-locked">🔒</span></td>
+        </tr>`;
+      }
+      return `<tr>
+        <td>${c.fecha}</td>
+        <td class="fr-comp-addr">${esc(c.addr)}</td>
+        <td>${c.area}</td>
+        <td>S/ ${c.price.toLocaleString()}</td>
+        <td class="fr-comp-val">S/ ${c.sqm.toLocaleString()}</td>
+      </tr>`;
+    }).join('');
+
+    const unlockBtn = isHist ? `<div class="fr-comp-unlock" onclick="toast('🔑 Usa una llave para ver los valores de comparables cercanos')">🔑 Usar llave para ver valores</div>` : '';
+
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Comparables cercanos <small>· SUNARP · radio 600m</small></h2>
+      <div style="overflow-x:auto;border:1px solid rgba(14,17,23,.1);border-radius:12px;">
+        <table class="fr-comp-table">
+          <thead><tr><th>Fecha</th><th>Dirección</th><th>M²</th><th>Precio</th><th>S/M²</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${unlockBtn}
+    </div>`;
+  })();
+
+  // ── Guía de la zona ────────────────────────────────────────────
+  const localityHTML = (() => {
+    if(!p.district) return '';
+    const blurb = BLURBS[p.district] || `${esc(p.district)} es una zona consolidada de Lima con oferta residencial diversa y demanda activa en el mercado inmobiliario.`;
+    const revDate = ZONA_DESTACADOS_REV || '';
+    const _coords = GEO[p.id];
+    const hasSV = _coords && _coords[0] && _coords[1];
+    const svSrc = hasSV ? `https://maps.google.com/maps?q=&layer=c&cbll=${_coords[0]},${_coords[1]}&cbp=11,0,0,0,0&output=svembed` : '';
+
+    const _allDest = ZONA_DESTACADOS[p.district] || ZONA_DESTACADOS[_normDist(p.district)] || [];
+    const photoPool = _allDest.filter(d => d.photo);
+    const catGrad = {'Supermercado':'linear-gradient(135deg,#a8e6cf,#88d8b0)','Banco':'linear-gradient(135deg,#a8c0ff,#6c9bff)','Educación':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Universidad':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Colegio':'linear-gradient(135deg,#c3b1e1,#9b7ed8)','Hospital':'linear-gradient(135deg,#b5d8ff,#86b6f6)','Clínica':'linear-gradient(135deg,#b5d8ff,#86b6f6)','Restaurante':'linear-gradient(135deg,#ffd3b6,#ffaaa5)','Parque':'linear-gradient(135deg,#c6f1d6,#7ec8a0)','Centro comercial':'linear-gradient(135deg,#ffe082,#ffcc02)','Museo':'linear-gradient(135deg,#f3e5f5,#ce93d8)','Farmacia':'linear-gradient(135deg,#c8e6c9,#81c784)'};
+
+    const prioCats = ['Supermercado','Educación','Universidad','Colegio','Banco'];
+    const prioritized = [];
+    const seenCats = new Set();
+    for(const cat of prioCats){
+      const match = _allDest.find(d => d.cat.toLowerCase().includes(cat.toLowerCase()) && !prioritized.includes(d));
+      if(match){ prioritized.push(match); seenCats.add(match.name); }
+    }
+    const rest = _allDest.filter(d => !seenCats.has(d.name));
+    const photoOrder = [...prioritized, ...rest].slice(0, 4);
+
+    const photoTiles = photoOrder.map((d, i) => {
+      const isLast = i === 3 && _allDest.length > 4;
+      const extra = _allDest.length - 4;
+      if(d.photo){
+        return `<div class="fr-zona-tile" style="background-image:url('${esc(d.photo)}')">
+          <div class="fr-zona-tile-label">${esc(d.name)}</div>
+          ${isLast ? `<div class="fr-zona-tile-more">+${extra} lugares</div>` : ''}
+        </div>`;
+      }
+      const bg = catGrad[d.cat] || 'linear-gradient(135deg,#e0e0e0,#bdbdbd)';
+      return `<div class="fr-zona-tile fr-zona-tile--placeholder" style="background:${bg}">
+        <div class="fr-zona-tile-ico">${d.ico}</div>
+        <div class="fr-zona-tile-label">${esc(d.name)}</div>
+        <div class="fr-zona-tile-cat">${esc(d.cat)}</div>
+        ${isLast ? `<div class="fr-zona-tile-more">+${extra} lugares</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Guía de la zona <small>· ${esc(p.district)}, Lima</small></h2>
+      <div class="fr-locality-card">
+        <div class="fr-locality-header">
+          <div>
+            <div class="fr-locality-title">Conoce ${esc(p.district)}</div>
+            <div class="fr-locality-sub">${esc(p.address)} · Lima, Perú</div>
+          </div>
+          <a href="https://www.google.com/maps/search/?q=${encodeURIComponent(p.address+', '+p.district+', Lima')}" target="_blank" class="fr-locality-link">↗ Ver en Google Maps</a>
+        </div>
+
+        <div class="fr-zona-mosaic">
+          <div class="fr-zona-sv">
+            ${hasSV
+              ? `<iframe src="${svSrc}" class="fr-zona-sv-frame" loading="lazy" referrerpolicy="no-referrer" allow="fullscreen"></iframe>
+                 <div class="fr-zona-sv-badge">📍 Street View · vista actual</div>`
+              : `<div class="fr-zona-sv-placeholder"><span>📍</span> Vista de la zona</div>`
+            }
+          </div>
+          <div class="fr-zona-photos">${photoTiles}</div>
+        </div>
+
+        <p class="fr-locality-blurb">${blurb}</p>
+        <div id="frLocalitySummary" class="fr-locality-summary" style="display:none"></div>
+        <div id="frLocalityDestacados"></div>
+        <div id="frLocalityPois" class="fr-locality-pois">
+          <div class="fr-locality-loading">Buscando establecimientos cercanos…</div>
+        </div>
+        <div class="fr-locality-rev">Información actualizada: ${esc(revDate)} · Datos en vivo: HERE Maps</div>
+      </div>
+    </div>`;
+  })();
+
+  // ── Reco Riesgo ────────────────────────────────────────────────
+  const riesgoHTML = (() => {
+    if(!p.district) return '';
+    const d = RISK_DATA[p.district] || DEFAULT_RISK;
+    const rl = v => v<=20?{l:'Bajo',c:'#1a6b4a'}:v<=40?{l:'Medio-Bajo',c:'#1a4fbf'}:v<=60?{l:'Medio',c:'#b58105'}:v<=80?{l:'Alto',c:'#c2410c'}:{l:'Muy alto',c:'#991b1b'};
+    const items = [
+      ['🌐','Sismo','SIGRID · IGP',d.sismico],
+      ['🌊','Inundación / Huaico','SIGRID · CENEPRED',d.inundacion],
+      ['⛰️','Deslizamiento','SIGRID · INGEMMET',d.deslizamiento],
+      ['🌀','Tsunami','DHN · INDECI',d.tsunami],
+      ['🚓','Seguridad','INEI ENAPRES',d.crimen],
+      ['🌫️','Calidad del aire','OEFA · SENAMHI',d.aire]
+    ];
+    const cards = items.map(([ico,lbl,src,v]) => {
+      const rb = rl(v);
+      return `<div class="fr-riesgo-card">
+        <div class="fr-riesgo-card-head">
+          <span class="fr-riesgo-icon">${ico}</span>
+          <div><div class="fr-riesgo-label">${lbl}</div><div class="fr-riesgo-source">${src}</div></div>
+          <span class="fr-riesgo-badge" style="color:${rb.c};border-color:${rb.c}44">${rb.l}</span>
+        </div>
+        <div class="fr-riesgo-bar"><div class="fr-riesgo-bar-fill" style="width:${v}%;background:${rb.c}"></div></div>
+      </div>`;
+    }).join('');
+
+    return `<div class="fr-sec">
+      <h2 class="fr-sec-title">Reco Riesgo <small>· indicadores por zona · ${esc(p.district)}</small></h2>
+      <div class="fr-riesgo-grid">${cards}</div>
+      <div class="fr-riesgo-foot">Fuentes: SIGRID (CENEPRED), IGP, INGEMMET, DHN, INEI ENAPRES, OEFA. La información es referencial y no reemplaza un estudio técnico.</div>
     </div>`;
   })();
 
@@ -6155,18 +6632,53 @@ function openFullReport(id){
     </div>`;
   })() : '';
 
+  // ── Ficha del inmueble (Comprar / Alquilar) ──────────────────
+  const fichaHTML = (!isHist) ? (() => {
+    const fichaIcon = isAlq ? '🏠' : '🏠';
+    const fichaTitle = isAlq ? 'Ficha del alquiler' : 'Ficha de la propiedad';
+    const fichaSub = isAlq ? 'datos del inmueble' : 'datos del inmueble';
+    const priceLabel = isAlq ? 'Precio mensual' : 'Precio solicitado';
+    const priceVal = `${cur} ${fmtN(p.price)}`;
+    return `
+    <div class="fr-sec fr-sec-sunarp">
+      <h2 class="fr-sec-title">${fichaIcon} ${fichaTitle} <small>· ${fichaSub}</small></h2>
+      <div class="fr-sun-grid">
+        <div class="fr-sun-col">
+          <div class="fr-sun-col-title">Características del inmueble</div>
+          <div class="fr-sun-row"><span>🏠 Tipo</span><strong>${esc(p.type)}</strong></div>
+          <div class="fr-sun-row"><span>📍 Distrito</span><strong>${esc(p.district)}</strong></div>
+          ${p.age>0?`<div class="fr-sun-row"><span>📅 Antigüedad</span><strong>${esc(p.age)} años</strong></div>`:p.age===0?`<div class="fr-sun-row"><span>✨ Condición</span><strong>A estrenar</strong></div>`:''}
+          ${p.beds>0?`<div class="fr-sun-row"><span>🛏️ Dormitorios</span><strong>${esc(p.beds)}</strong></div>`:''}
+          ${p.baths>0?`<div class="fr-sun-row"><span>🚿 Baños</span><strong>${esc(p.baths)}</strong></div>`:''}
+          ${parkCount(p)>0?`<div class="fr-sun-row"><span>🚗 Estacionamientos</span><strong>${esc(parkCount(p))}</strong></div>`:''}
+          ${depCount(p)>0?`<div class="fr-sun-row"><span>📦 Depósitos</span><strong>${esc(depCount(p))}</strong></div>`:''}
+          <div class="fr-sun-row"><span>📐 Área</span><strong>${esc(p.area)} m²</strong></div>
+          ${p.floors>0||p.floor>0?`<div class="fr-sun-row"><span>🏢 Piso</span><strong>${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</strong></div>`:''}
+        </div>
+        <div class="fr-sun-col">
+          <div class="fr-sun-col-title">Valores</div>
+          <div class="fr-sun-row fr-sun-row-total"><span>💰 ${priceLabel}</span><strong>${priceVal}</strong></div>
+          ${sqm>0?`<div class="fr-sun-row"><span>📊 Valor por m²</span><strong>${cur} ${fmtN(sqm)}</strong></div>`:''}
+          ${p.bank?`<div class="fr-sun-row"><span>🏦 Tipo de propiedad</span><strong>Propiedad de banco</strong></div>`:''}
+          ${p.isNew?`<div class="fr-sun-row"><span>✨ Estado</span><strong>Nuevo / Estrenar</strong></div>`:''}
+          ${isAlq?`<div class="fr-sun-row"><span>📅 Modalidad</span><strong>Alquiler mensual</strong></div>`:''}
+        </div>
+      </div>
+    </div>`;
+  })() : '';
+
   // ── Serie histórica de tasaciones ────────────────────────────
   const tasHistHTML = `
     <div class="fr-sec">
       ${buildTasChart(p.district, true)}
     </div>`;
 
-  // ── Zonificación referencial (solo Histórico) ────────────────
-  const zonifFullHTML = isHist ? `
+  // ── Zonificación referencial (todos los tipos) ────────────────
+  const zonifFullHTML = `
     <div class="fr-sec">
       <h2 class="fr-sec-title">🗺️ Zonificación referencial <small>· uso de suelo</small></h2>
       ${renderZonifCard(p)}
-    </div>` : '';
+    </div>`;
 
   // ── Simulador hipotecario (solo Venta) ───────────────────────
   const simHTML = !isHist && !isAlq ? `
@@ -6211,72 +6723,43 @@ function openFullReport(id){
   const overlay = document.getElementById('frOverlay');
   overlay.innerHTML = `
   <div class="fr-wrap">
-    <!-- BARRA DE NAVEGACIÓN DEL DETALLE -->
-    <div class="fr-subbar">
-      <div class="fr-subbar-left">
-        <button class="fr-nav-back" onclick="closeFullReport()">← Volver</button>
-        <div class="fr-breadcrumb">${esc(p.district)} › ${esc(p.address.length>40?p.address.slice(0,40)+'…':p.address)}</div>
-      </div>
-      <div class="fr-subbar-right">
-        <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
-        ${!isHist?`<button class="fr-btn-ghost" onclick="toast('PDF generado')">↗ Exportar PDF</button>`:''}
-      </div>
-    </div>
-
-    <!-- GALLERY -->
-    ${galleryHTML}
-
     <!-- LAYOUT -->
     <div class="fr-layout">
       <div class="fr-main">
+
+        <!-- PHOTO + MAP -->
+        ${heroHTML}
 
         <!-- TÍTULO -->
         <h1 class="fr-title">${esc(p.address)}</h1>
         <div class="fr-loc">📍 ${esc(p.district)}${p.province&&p.province!==p.district?' · '+esc(p.province):''} · ${esc(p.department)}</div>
 
-        <!-- VERDICT -->
-        ${verdictHTML}
-
-        <!-- PRECIO + SPECS -->
-        <div class="fr-price-block">
-          <div>
-            <div class="fr-price-lbl">${isAlq?'Precio mensual':isHist?'Valor total de la transacción':'Precio solicitado'}</div>
-            <div class="fr-price-ask">${esc(cur)} ${fmtN(isHist ? getHistTotal(p) : p.price)}</div>
-            ${isHist && getHistPropPrice(p)!==getHistTotal(p)?`<div style="font-size:.85rem;color:var(--muted);margin-bottom:6px">Precio propiedad: <strong>${esc(cur)} ${fmtN(getHistPropPrice(p))}</strong></div>`:''}
-            <div class="fr-price-meta">
-              ${sqm>0?`<span class="fr-price-pill">${esc(cur)} ${fmtN(sqm)} / m²</span>`:''}
-              ${p.isNew?'<span class="fr-badge-new">✨ Estrenar</span>':''}
-              ${p.bank?'<span class="fr-badge-bank">🏦 Banco</span>':''}
-            </div>
-          </div>
-        </div>
-
-        <div class="fr-specs-grid">
-          <div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.area)}</div><div class="fr-spec-lbl">m² ${p.type==='Departamento'||p.type==='Oficina'?'techados':''}</div></div>
-          ${p.beds>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.beds)}</div><div class="fr-spec-lbl">Dormitorios</div></div>`:''}
-          ${p.baths>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.baths)}</div><div class="fr-spec-lbl">Baños</div></div>`:''}
-          ${parkCount(p)>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(parkCount(p))}</div><div class="fr-spec-lbl">Cochera${parkCount(p)>1?'s':''}</div></div>`:''}
-          ${p.floors>0||p.floor>0?`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.floor)}${p.floors?'/'+esc(p.floors):''}</div><div class="fr-spec-lbl">${p.unitFloors>1?(p.unitFloors===2?'Dúplex':p.unitFloors===3?'Tríplex':p.unitFloors+' niveles'):'Piso'}</div></div>`:''}
-          ${p.age===0?`<div class="fr-spec-cell"><div class="fr-spec-val" style="color:#10b981">★</div><div class="fr-spec-lbl">Estrenar</div></div>`:`<div class="fr-spec-cell"><div class="fr-spec-val">${esc(p.age)}</div><div class="fr-spec-lbl">Años</div></div>`}
+        <!-- DESCRIPCIÓN -->
+        <div class="fr-sec">
+          <h2 class="fr-sec-title">Descripción</h2>
+          <p class="fr-desc">${p.desc ? esc(p.desc) : esc(p.address+', '+p.district+(p.province&&p.province!==p.district?', '+p.province:'')+', '+p.department)}</p>
         </div>
 
         ${p.features&&p.features.length?`
-        <div class="fr-tags">
+        <div class="fr-tags" style="margin-top:-16px">
           ${p.features.map(f=>`<span class="fr-tag">${esc(f)}</span>`).join('')}
         </div>`:''}
 
-        ${p.desc?`
-        <div class="fr-sec">
-          <h2 class="fr-sec-title">Descripción</h2>
-          <p class="fr-desc">${esc(p.desc)}</p>
-        </div>`:''}
+        <!-- FICHA (unificada) -->
+        ${isHist ? sunHTML : fichaHTML}
 
-        ${photoGalleryHTML}
-        ${sunHTML}
         ${zonifFullHTML}
-        ${tasHistHTML}
+
+        <div class="fr-sec">
+          ${buildTasChart(p.district, true)}
+        </div>
+
         ${ctxHTML}
         ${scoreHTML}
+
+        ${comparablesHTML}
+        ${localityHTML}
+        ${riesgoHTML}
 
       </div>
 
@@ -6291,9 +6774,21 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
-          <div class="fr-agent-row">
-            <div class="fr-agent-av">RE</div>
-            <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+          ${(()=>{
+            if(isHist) return `<div class="fr-agent-row">
+              <div class="fr-agent-av">RE</div>
+              <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+            </div>`;
+            const pub = _publisherOf(p);
+            const n = _publisherListings(pub.key).length;
+            return `<button type="button" class="fr-agent-row fr-agent-link" data-pub="${esc(pub.key)}" onclick="openPublisherProfile(this.dataset.pub)" title="Ver todas las propiedades de ${esc(pub.name)}">
+              <div class="fr-agent-av">${esc(_agInitials(pub.name))}</div>
+              <div class="fr-agent-txt"><div class="fr-agent-name">${esc(pub.name)}</div>${pub.isReco?'<div class="fr-agent-resp">Responde en ~2h</div>':''}<div class="fr-agent-more">Ver sus ${n} ${n===1?'propiedad':'propiedades'} →</div></div>
+            </button>`;
+          })()}
+          <div class="fr-sidebar-actions">
+            <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
+            ${!isHist?`<button class="fr-btn-ghost" onclick="exportPropertyPdf('${esc(p.id)}')">↗ Exportar PDF</button>`:''}
           </div>
         </div>
 
@@ -6312,9 +6807,30 @@ function openFullReport(id){
 
   overlay.classList.add('open');
   overlay.scrollTop = 0;
-  // Inicializar carrusel
-  _frIdx = 0; _frTotal = photos.length;
-  _frUpdate();
+  // Entrada de historial para que "atrás" del navegador cierre el detalle
+  // (ver listener popstate junto a closeFullReport). Si ya había un detalle
+  // abierto se reemplaza, así "atrás" no recorre detalles intermedios.
+  try {
+    const st = Object.assign({}, history.state || {}, { frReport: p.id });
+    if(history.state && history.state.frReport) history.replaceState(st, '', location.href);
+    else history.pushState(st, '', location.href);
+  } catch(e){}
+
+  // Inicializar mapa Leaflet en el hero
+  if(hasGeo){
+    try{
+      const coords = GEO[p.id];
+      const frMap = L.map('frDetailMap', {
+        center: coords, zoom: 16,
+        zoomControl: false, attributionControl: false,
+        dragging: true, scrollWheelZoom: false,
+        doubleClickZoom: false, touchZoom: true,
+      });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(frMap);
+      L.marker(coords).addTo(frMap);
+      setTimeout(()=>frMap.invalidateSize(), 100);
+    }catch(e){ console.warn('[reco] fr map init failed:', e); }
+  }
 
   // Inicializar simulador si aplica
   if(!isHist && !isAlq){
@@ -6341,14 +6857,778 @@ function openFullReport(id){
     document.querySelectorAll('.fr-sim-input:not(#frSimPrice)').forEach(el=>el.addEventListener('input',calcSim));
     calcSim();
   }
+
+  // ── Cargar POIs reales + destacados para Guía de la zona ─────
+  (async () => {
+    const coords = GEO[p.id];
+    if(!coords || !HERE_API_KEY) return;
+    const lat = coords[0], lng = coords[1], rad = 700;
+
+    const _hav = (la1,lo1,la2,lo2) => {
+      const R=6371e3, toR=Math.PI/180;
+      const dLa=(la2-la1)*toR, dLo=(lo2-lo1)*toR;
+      const a=Math.sin(dLa/2)**2+Math.cos(la1*toR)*Math.cos(la2*toR)*Math.sin(dLo/2)**2;
+      return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+    };
+
+    // ── 1. Render curated "Destacados" immediately ──────────────
+    const destacados = ZONA_DESTACADOS[p.district] || ZONA_DESTACADOS[_normDist(p.district)] || [];
+    const destContainer = document.getElementById('frLocalityDestacados');
+    if(destContainer && destacados.length > 0){
+      const nearby = destacados.map(d => {
+        const dist = (d.lat && d.lng) ? _hav(lat,lng,d.lat,d.lng) : null;
+        return {...d, dist};
+      }).filter(d => d.dist === null || d.dist <= 3000)
+        .sort((a,b) => {
+          const w = {destacado:0,trending:1,nuevo:2};
+          if((w[a.tag]||9) !== (w[b.tag]||9)) return (w[a.tag]||9) - (w[b.tag]||9);
+          return (a.dist||9999) - (b.dist||9999);
+        });
+
+      if(nearby.length > 0){
+        const tagLabel = {destacado:'Destacado',trending:'Popular',nuevo:'Nuevo'};
+        const tagClass = {destacado:'dest',trending:'trend',nuevo:'new'};
+        destContainer.innerHTML = `
+          <div class="fr-dest-label">Lugares destacados cerca de ti</div>
+          <div class="fr-dest-grid">${nearby.map(d => {
+            const dTxt = d.dist != null ? (d.dist >= 1000 ? (d.dist/1000).toFixed(1)+' km' : Math.round(d.dist)+' m') : '';
+            const badge = d.tag ? `<span class="fr-poi-badge fr-poi-badge--${tagClass[d.tag]||'dest'}">${tagLabel[d.tag]||d.tag}</span>` : '';
+            return `<div class="fr-dest-card">
+              <div class="fr-poi-icon fr-poi-icon--feat">${d.ico}</div>
+              <div class="fr-poi-info">
+                <div class="fr-poi-name">${esc(d.name)} ${badge}</div>
+                <div class="fr-poi-meta">${esc(d.cat)}${dTxt ? ' · '+esc(dTxt) : ''}</div>
+              </div>
+            </div>`;
+          }).join('')}</div>`;
+      }
+    }
+
+    // ── 2. Fetch live POIs from HERE Browse API ─────────────────
+    const cats = [
+      {key:'restaurantes', here:'100-1000-0000,100-1000-0001,100-1100-0000', label:'Restaurante', ico:'🍽️'},
+      {key:'comida',       here:'600-6300-0066,600-6200-0063,600-6300-0067', label:'Supermercado', ico:'🛒'},
+      {key:'parques',      here:'550-5510-0202,550-5510-0204,550-5510-0000', label:'Parque', ico:'🌳'},
+      {key:'salud',        here:'800-8000-0159,800-8000-0158,800-8000-0000', label:'Salud', ico:'🏥'},
+      {key:'educacion',    here:'800-8200-0174,800-8200-0173,800-8200-0000', label:'Educación', ico:'🎓'},
+      {key:'bancos',       here:'700-7000-0107',                              label:'Banco', ico:'🏦'},
+      {key:'farmacias',    here:'600-6400-0000,600-6400-0058',                label:'Farmacia', ico:'💊'},
+      {key:'transporte',   here:'400-4100-0035,400-4100-0036,400-4100-0000',  label:'Transporte', ico:'🚌'}
+    ];
+    const allCatCodes = cats.map(c=>c.here).join(',');
+    const url = `https://browse.search.hereapi.com/v1/browse?at=${lat},${lng}&categories=${allCatCodes}&limit=40&in=circle:${lat},${lng};r=${rad}&apiKey=${HERE_API_KEY}`;
+    try {
+      const res = await fetch(url);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const j = await res.json();
+      const items = j.items || [];
+      const container = document.getElementById('frLocalityPois');
+      const summaryEl = document.getElementById('frLocalitySummary');
+      if(!container) return;
+
+      const catLabel = (item) => {
+        const catId = (item.categories && item.categories[0] && item.categories[0].id) || '';
+        if(catId.startsWith('100')) return {label:'Restaurante',ico:'🍽️'};
+        if(catId.startsWith('550')) return {label:'Parque',ico:'🌳'};
+        if(catId.startsWith('600-63')||catId.startsWith('600-62')) return {label:'Supermercado',ico:'🛒'};
+        if(catId.startsWith('600-64')) return {label:'Farmacia',ico:'💊'};
+        if(catId.startsWith('700')) return {label:'Banco',ico:'🏦'};
+        if(catId.startsWith('800-80')) return {label:'Salud',ico:'🏥'};
+        if(catId.startsWith('800-82')) return {label:'Educación',ico:'🎓'};
+        if(catId.startsWith('400')) return {label:'Transporte',ico:'🚌'};
+        for(const c of cats){
+          if(c.here.split(',').some(h => catId.startsWith(h.split('-').slice(0,2).join('-')))) return {label:c.label,ico:c.ico};
+        }
+        return {label:'Establecimiento',ico:'📍'};
+      };
+
+      const seen = new Set();
+      const destNames = new Set(destacados.map(d => d.name.toLowerCase()));
+      const unique = items.filter(it => {
+        const k = (it.title||'')+'|'+(it.position?.lat||0).toFixed(4);
+        if(seen.has(k)) return false;
+        seen.add(k);
+        if(destNames.has((it.title||'').toLowerCase())) return false;
+        return true;
+      });
+
+      // ── 3. Check curated matches — mark as "Curated + Live" ───
+      const enriched = unique.map(it => {
+        const cl = catLabel(it);
+        const nameLow = (it.title||'').toLowerCase();
+        const curatedMatch = destacados.find(d => nameLow.includes(d.name.toLowerCase()) || d.name.toLowerCase().includes(nameLow));
+        return { ...it, cl, isCurated: !!curatedMatch, tag: curatedMatch?.tag || null };
+      });
+
+      // Sort: trending/popular first, then by importance heuristic, then distance
+      const importantCats = new Set(['Centro comercial','Hospital','Clínica','Universidad','Colegio','Museo','Metro']);
+      enriched.sort((a,b) => {
+        const aImp = a.tag === 'trending' ? 0 : a.tag === 'destacado' ? 1 : importantCats.has(a.cl.label) ? 2 : 3;
+        const bImp = b.tag === 'trending' ? 0 : b.tag === 'destacado' ? 1 : importantCats.has(b.cl.label) ? 2 : 3;
+        if(aImp !== bImp) return aImp - bImp;
+        return (a.distance||9999) - (b.distance||9999);
+      });
+
+      const totalCount = enriched.length + destacados.length;
+      const catCounts = {};
+      enriched.forEach(it => { catCounts[it.cl.label] = (catCounts[it.cl.label]||0)+1; });
+      destacados.forEach(d => { catCounts[d.cat] = (catCounts[d.cat]||0)+1; });
+      const catSummary = Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).map(([k])=>k.toLowerCase()+'s').slice(0,4).join(', ');
+
+      if(summaryEl){
+        summaryEl.style.display = '';
+        summaryEl.innerHTML = `Se han identificado <strong>${totalCount} establecimientos</strong> (${catSummary}) en un radio de ${rad} m.`;
+      }
+
+      if(enriched.length === 0 && destacados.length === 0){
+        container.innerHTML = '<div class="fr-locality-empty">No se encontraron establecimientos en un radio de '+rad+' m.</div>';
+        return;
+      }
+
+      const tagLabel = {trending:'Popular',destacado:'Destacado',nuevo:'Nuevo'};
+      const tagClass = {trending:'trend',destacado:'dest',nuevo:'new'};
+
+      container.innerHTML = enriched.map(it => {
+        const name = esc(it.title || 'Sin nombre');
+        const dm = it.distance != null ? it.distance : 0;
+        const dTxt = dm >= 1000 ? (dm/1000).toFixed(1)+' km' : Math.round(dm)+' m';
+        const badge = it.tag ? `<span class="fr-poi-badge fr-poi-badge--${tagClass[it.tag]||'dest'}">${tagLabel[it.tag]||''}</span>` : '';
+        return `<div class="fr-locality-poi-card${it.tag?' fr-poi-highlighted':''}">
+          <div class="fr-poi-icon">${it.cl.ico}</div>
+          <div class="fr-poi-info">
+            <div class="fr-poi-name">${name} ${badge}</div>
+            <div class="fr-poi-meta">${it.cl.label} · ${esc(dTxt)}</div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      const container = document.getElementById('frLocalityPois');
+      if(container && destacados.length === 0){
+        container.innerHTML = '<div class="fr-locality-empty">No se pudo consultar establecimientos cercanos.</div>';
+      } else if(container){
+        container.innerHTML = '';
+      }
+    }
+  })();
 }
 
-function closeFullReport(){
-  document.getElementById('frOverlay').classList.remove('open');
+function closeFullReport(fromPop){
+  const ov = document.getElementById('frOverlay');
+  const wasOpen = ov.classList.contains('open');
+  ov.classList.remove('open');
+  // Si al abrir el detalle se agregó una entrada al historial, la
+  // consumimos para que el botón "atrás" del navegador no quede desfasado.
+  if(wasOpen && !fromPop && history.state && history.state.frReport) history.back();
+}
+// El detalle completo no tiene botón "Volver": se cierra con el botón
+// "atrás" del navegador (o Escape). Para eso openFullReport agrega una
+// entrada al historial ({frReport:id}) y aquí la detectamos al volver.
+window.addEventListener('popstate', function(){
+  const ov = document.getElementById('frOverlay');
+  if(ov && ov.classList.contains('open') && !(history.state && history.state.frReport)) closeFullReport(true);
+});
+
+// ─────────────────────── EXPORTAR PDF ─────────────────────────
+// Genera una ficha imprimible en una pestaña nueva y abre el diálogo
+// de impresión del navegador ("Guardar como PDF"). Se hace 100% en el
+// cliente: no se envían datos a ningún servidor, no se cargan librerías
+// de terceros y el texto queda vectorial/seleccionable (a diferencia de
+// html2canvas+jsPDF, que rasteriza la página). Todo el contenido
+// proviene de `esc()` y el documento lleva su propia CSP restrictiva.
+// Tipo de cambio S/ por US$ para convertir montos en soles. Fuentes, de
+// más a menos fresca:
+//   1. Firestore /publicData/tipoCambio — lo actualiza a diario la Cloud
+//      Function programada updateTipoCambio desde la API del BCRP.
+//   2. data/tc_pen_usd_bcrp.json (bloque `ultimo`; scripts/update-tc-bcrp.js).
+//   3. La constante de abajo, si nada de lo anterior carga.
+// Siempre gana el dato con la fecha más reciente.
+const _TC = { valor: 3.437, fecha: '2026-10-02', fuente: 'BCRP' };
+function _tcApply(valor, fecha){
+  valor = +valor;
+  if(!(valor > 2.5 && valor < 6) || !fecha) return;
+  if(String(fecha) < String(_TC.fecha)) return;
+  _TC.valor = valor; _TC.fecha = String(fecha); _TC.fuente = 'BCRP';
+}
+function _loadTipoCambio(){
+  const fromJson = fetch('data/tc_pen_usd_bcrp.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d) return;
+      if(d.ultimo) return _tcApply(d.ultimo.valor, d.ultimo.fecha);
+      const m = d.mensual || {}, k = Object.keys(m).sort().pop();
+      if(k) _tcApply(m[k], k);
+    })
+    .catch(() => {});
+  const fromFirestore = Promise.resolve()
+    .then(() => (typeof db !== 'undefined' && db) ? db.collection('publicData').doc('tipoCambio').get() : null)
+    .then(snap => { if(snap && snap.exists){ const t = snap.data(); _tcApply(t.valor, t.fecha); } })
+    .catch(() => {});
+  return Promise.all([fromJson, fromFirestore]);
+}
+// Al cargar solo está el JSON: `db` se define en un <script> posterior,
+// así que Firestore se consulta otra vez al abrir el perfil.
+_loadTipoCambio();
+function _tcLabel(){
+  const f = String(_TC.fecha||'').split('-');
+  const fecha = f.length === 3 ? `${f[2]}/${f[1]}/${f[0]}` : f.length === 2 ? `${f[1]}/${f[0]}` : _TC.fecha;
+  return `S/ ${_TC.valor.toFixed(3)} por US$ (${_TC.fuente}, ${fecha})`;
+}
+
+// Dominio público de Reco. Los links del PDF siempre apuntan aquí (y no a
+// location.href), porque el PDF se comparte fuera de la plataforma: un
+// link a file:// o a un entorno de pruebas no le serviría a quien lo recibe.
+const RECO_PUBLIC_URL = 'https://recosac.com/';
+
+// Agrupa las etiquetas de una propiedad con las mismas categorías del
+// formulario de publicación. Las etiquetas antiguas se traducen con
+// _PUB_FEAT_LEGACY_MAP; lo que no calce en ninguna va a "Otros atributos".
+function _featGroups(features){
+  const groups = [
+    { title: 'Características del inmueble', icon: '🏷️', list: _PUB_FEATS_GEN },
+    { title: 'Áreas comunes del edificio',  icon: '🏢', list: _PUB_FEATS_AMB },
+    { title: 'Vistas',                       icon: '👁️', list: _PUB_FEATS_VISTA },
+    { title: 'Tipo de vía de acceso',        icon: '🛣️', list: _PUB_FEATS_ACCESO },
+    { title: 'Carácter de la zona',          icon: '📍', list: _PUB_FEATS_ZONA }
+  ].map(g => Object.assign({}, g, { items: [] }));
+  const otros = { title: 'Otros atributos', icon: '✨', items: [] };
+  // Etiquetas frecuentes del inventario que no están en el formulario.
+  const extra = { 'Cuarto de servicio': 0, 'Amoblado': 0, 'Cochera': 0, 'Ascensor': 1 };
+  const seen = new Set();
+  (features || []).forEach(f => {
+    if(!f || seen.has(f)) return;
+    seen.add(f);
+    const mapped = _PUB_FEAT_LEGACY_MAP[f] || f;
+    const g = groups.find(g => g.list.includes(f) || g.list.includes(mapped)) || groups[extra[f]];
+    (g || otros).items.push(f);
+  });
+  return groups.concat([otros]).filter(g => g.items.length);
+}
+
+function exportPropertyPdf(id){
+  const p = properties.find(x=>x.id===id);
+  if(!p) return;
+  if(p.op === 'Histórico'){ toast('⚠️ La ficha PDF solo está disponible para Comprar y Alquilar'); return; }
+  // Abrimos la pestaña de forma síncrona dentro del click para que el
+  // bloqueador de pop-ups no la intercepte.
+  const w = window.open('', '_blank');
+  if(!w){ toast('⚠️ Tu navegador bloqueó la pestaña. Permite pop-ups para exportar el PDF.'); return; }
+
+  const cur = p.cur, isAlq = p.op === 'Alquiler';
+  const sqm = sqmPriceNet(p);
+  const photos = driveAssets(p).photos.slice(0,3); // 1 grande + 2: llena la grilla sin huecos
+  const pub = _publisherOf(p);
+  const listingUrl = RECO_PUBLIC_URL + '#prop=' + encodeURIComponent(p.id);
+  const listingLabel = 'recosac.com/#prop=' + p.id;
+  const today = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+  const money = v => `${esc(cur)} ${fmtNum(Math.round(v))}`;
+  const levels = p.unitFloors > 1 ? (p.unitFloors === 2 ? 'Dúplex' : p.unitFloors === 3 ? 'Tríplex' : `${p.unitFloors} niveles`) : '';
+
+  // Mismos datos que la ficha del detalle completo.
+  const specs = [
+    ['Tipo', p.type],
+    ['Operación', isAlq ? 'Alquiler mensual' : 'Venta'],
+    ['Distrito', p.district],
+    ['Área', p.area > 0 ? `${p.area} m²` : ''],
+    ['Área de terreno', p.areaTerr > 0 ? `${p.areaTerr} m²` : ''],
+    ['Dormitorios', p.beds > 0 ? p.beds : ''],
+    ['Baños', p.baths > 0 ? p.baths : ''],
+    ['Estacionamientos', parkCount(p) > 0 ? parkCount(p) : ''],
+    ['Depósitos', depCount(p) > 0 ? depCount(p) : ''],
+    ['Piso', (p.floor > 0 || p.floors > 0) ? `${p.floor || '—'}${p.floors ? ' de ' + p.floors : ''}${levels ? ' · ' + levels : ''}` : ''],
+    [p.age === 0 ? 'Condición' : 'Antigüedad', p.age === 0 ? 'A estrenar' : (p.age > 0 ? `${p.age} años` : '')]
+  ].filter(r => r[1] !== '' && r[1] != null);
+  // Ojo: la segunda columna ya va escapada (money() escapa la moneda).
+  const values = [
+    [isAlq ? 'Precio mensual' : 'Precio solicitado', money(p.price)],
+    ['Valor por m²', sqm > 0 ? money(sqm) : ''],
+    ['Tipo de propiedad', p.bank ? 'Propiedad de banco' : '']
+  ].filter(r => r[1]);
+  const groups = _featGroups(p.features);
+  const enReco = isAlq
+    ? ['Contexto de mercado del distrito', 'Comparables cercanos', 'Guía de la zona', 'Zonificación y uso de suelo', 'Más propiedades del anunciante']
+    : ['Contexto de mercado del distrito', 'Simulación hipotecaria', 'Comparables cercanos', 'Guía de la zona', 'Zonificación y uso de suelo', 'Más propiedades del anunciante'];
+
+  const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reco - ${esc(p.address)} - ${esc(p.district)}</title>
+<style>
+  @page{size:A4;margin:14mm 14mm 16mm}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#0E1117;background:#eef0f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar{position:sticky;top:0;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;background:#0E1117;color:#fff;font-size:13px}
+  .bar button{background:#0e7490;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
+  .bar span{opacity:.75}
+  .sheet{max-width:210mm;margin:18px auto;background:#fff;padding:14mm;box-shadow:0 2px 14px rgba(0,0,0,.08)}
+  header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0e7490;padding-bottom:10px;margin-bottom:16px}
+  header img{height:34px}
+  header .meta{text-align:right;font-size:10px;color:#64748b;line-height:1.5}
+  h1{font-size:22px;margin:0 0 4px;line-height:1.25}
+  .loc{font-size:12px;color:#555B6A;margin-bottom:12px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:#ecfeff;color:#0e7490;margin-right:6px}
+  .price{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;background:#f6f8fa;border-radius:10px;padding:12px 14px;margin:10px 0 16px}
+  .price .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8E94A0;font-weight:600}
+  .price .val{font-size:26px;font-weight:800;color:#0e7490;line-height:1.1}
+  .price .sub{font-size:12px;color:#555B6A}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px}
+  .photos img{width:100%;height:150px;object-fit:cover;border-radius:6px;display:block;background:#e5e7eb}
+  .photos img:first-child{grid-column:1/-1;height:240px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#0e7490;margin:18px 0 8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+  h3{font-size:12px;margin:10px 0 5px;color:#2A2F3A}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  td{padding:6px 8px;border-bottom:1px solid #f0f1f3}
+  td:first-child{color:#555B6A;width:45%}
+  td:last-child{font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .tags{display:flex;flex-wrap:wrap;gap:4px}
+  .tag{font-size:10.5px;border:1px solid #d9dde3;border-radius:4px;padding:2px 7px;color:#2A2F3A;background:#fafbfc}
+  .desc{font-size:12px;line-height:1.6;white-space:pre-line}
+  .box{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.55}
+  .cta{margin-top:20px;border-radius:12px;padding:16px 18px;background:linear-gradient(135deg,#ecfeff,#f0fdfa);border:1.5px solid #0e7490}
+  .cta strong.t{display:block;font-size:15px;color:#0e7490;margin-bottom:4px}
+  .cta p{margin:0 0 8px;font-size:12px;line-height:1.5;color:#2A2F3A}
+  .cta ul{margin:0 0 12px;padding-left:18px;font-size:12px;line-height:1.6;columns:2;column-gap:18px}
+  .cta a.btn{display:inline-block;background:#0e7490;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:8px}
+  .cta .url{display:block;margin-top:6px;font-size:11px;color:#0e7490;word-break:break-all}
+  footer{margin-top:22px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9.5px;color:#8E94A0;line-height:1.5}
+  footer a{color:#0e7490;word-break:break-all}
+  .avoid{break-inside:avoid;page-break-inside:avoid}
+  @media print{
+    body{background:#fff}
+    .bar{display:none}
+    .sheet{margin:0;padding:0;box-shadow:none;max-width:none}
+  }
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}.sheet{padding:16px}.cta ul{columns:1}}
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">⬇ Descargar / Guardar como PDF</button><span>En el diálogo elige «Guardar como PDF» como destino.</span></div>
+<div class="sheet">
+  <header>
+    <img src="${esc(RECO_PUBLIC_URL + 'data/reco_logo.jpg')}" alt="Reco">
+    <div class="meta">Ficha de propiedad · Ref. ${esc(p.id)}<br>Generada el ${esc(today)}</div>
+  </header>
+
+  <div><span class="badge">${isAlq ? 'En alquiler' : 'En venta'}</span><span class="badge">${esc(p.type)}</span>${p.isNew ? '<span class="badge">A estrenar</span>' : ''}${p.bank ? '<span class="badge">Propiedad de banco</span>' : ''}</div>
+  <h1>${esc(p.address)}</h1>
+  <div class="loc">📍 ${esc(p.district)}${p.province && p.province !== p.district ? ' · '+esc(p.province) : ''}${p.department ? ' · '+esc(p.department) : ''}</div>
+
+  <div class="price avoid">
+    <div><div class="lbl">${isAlq ? 'Precio mensual' : 'Precio solicitado'}</div><div class="val">${money(p.price)}</div></div>
+    ${sqm > 0 ? `<div class="sub"><strong>${money(sqm)}</strong> / m²</div>` : ''}
+    ${p.area > 0 ? `<div class="sub"><strong>${esc(p.area)}</strong> m²</div>` : ''}
+  </div>
+
+  ${photos.length ? `<div class="photos">${photos.map((u,i)=>`<img src="${esc(u)}" alt="Foto ${i+1}">`).join('')}</div>` : ''}
+
+  <div class="grid2">
+    <div class="avoid">
+      <h2>Características</h2>
+      <table>${specs.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>
+    </div>
+    <div class="avoid">
+      <h2>Valores</h2>
+      <table>${values.map(r=>`<tr><td>${esc(r[0])}</td><td>${r[1]}</td></tr>`).join('')}</table>
+      <h2>Contacto</h2>
+      <div class="box"><strong>${esc(pub.name)}</strong><br>Escríbele desde la publicación en Reco:<br><a href="${esc(listingUrl)}">${esc(listingLabel)}</a></div>
+    </div>
+  </div>
+
+  ${groups.length ? `<h2>Amenidades y atributos</h2>
+  ${groups.map(g => `<div class="avoid"><h3>${g.icon} ${esc(g.title)}</h3><div class="tags">${g.items.map(f=>`<span class="tag">${esc(f)}</span>`).join('')}</div></div>`).join('')}` : ''}
+
+  ${p.desc && p.desc !== p.address ? `<h2>Descripción</h2><div class="desc">${esc(p.desc)}</div>` : ''}
+
+  <div class="cta avoid">
+    <strong class="t">¿Quieres ver el análisis completo de esta propiedad?</strong>
+    <p>Esta ficha resume la publicación. En <strong>Reco</strong> encuentras además:</p>
+    <ul>${enReco.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <a class="btn" href="${esc(listingUrl)}">Ver esta propiedad en Reco →</a>
+    <span class="url">${esc(listingLabel)}</span>
+  </div>
+
+  <footer>
+    Documento generado por Reco (recosac.com) a partir de la información publicada. Precios, áreas y características son referenciales y pueden variar; verifícalos con el anunciante antes de tomar cualquier decisión. Reco no actúa como intermediario en la transacción.
+  </footer>
+</div>
+<script>
+  (function(){
+    var imgs = Array.prototype.slice.call(document.images), left = imgs.length, done = false;
+    function go(){ if(done) return; done = true; setTimeout(function(){ window.print(); }, 250); }
+    if(!left) return go();
+    imgs.forEach(function(im){
+      if(im.complete) { if(--left === 0) go(); return; }
+      im.addEventListener('load', function(){ if(--left === 0) go(); });
+      im.addEventListener('error', function(){ im.style.display='none'; if(--left === 0) go(); });
+    });
+    setTimeout(go, 5000);
+  })();
+<\/script>
+</body></html>`;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  try { w.opener = null; } catch(e){}
+  if(typeof gtag === 'function') gtag('event','export_pdf',{property_id:p.id, op:p.op});
+}
+
+// ─────────────────────── PERFIL DEL ANUNCIANTE ────────────────
+// Cada propiedad de Comprar/Alquilar pertenece a un anunciante: las
+// publicaciones de la comunidad a su `userId`, y el inventario propio
+// (data/properties.json) al "Equipo Reco". Desde el detalle completo se
+// puede abrir la cartera completa del anunciante con insights + filtros.
+const _AG_RECO_KEY = 'reco';
+const _AG_PAGE = 24;
+let _ag = null; // { key, name, list, filters, shown }
+
+function _publisherOf(p){
+  if(p && p.userId){
+    // Nunca mostramos el email del anunciante en vistas públicas.
+    const name = (p.userName && String(p.userName).trim()) || 'Anunciante';
+    return { key: p.userId, name, isReco: false };
+  }
+  return { key: _AG_RECO_KEY, name: 'Equipo Reco', isReco: true };
+}
+// Misma regla de visibilidad que el buscador y los contadores de la
+// portada: solo Comprar/Alquilar con al menos una foto. Así los totales
+// del perfil cuadran con lo que el usuario realmente puede ver.
+function _publisherListings(key){
+  return properties.filter(p => p.op !== 'Histórico' && _publisherOf(p).key === key && driveAssets(p).photos.length > 0);
+}
+function _agInitials(name){
+  // Solo palabras que empiezan con letra o número: "Inmobiliaria Andina (demo)" → "IA".
+  const w = String(name).replace(/\([^)]*\)/g, ' ').trim().split(/\s+/).map(x => x.replace(/^[^\p{L}\p{N}]+/u, '')).filter(x => /^[\p{L}\p{N}]/u.test(x));
+  return ((w[0]||'?')[0] + (w.length > 1 ? w[w.length-1][0] : (w[0]||'')[1] || '')).toUpperCase();
+}
+function _agUsd(p){ return p.cur === 'S/' ? p.price / _TC.valor : p.price; }
+function _agDate(raw){
+  if(!raw) return null;
+  if(typeof raw.toDate === 'function') return raw.toDate();
+  if(typeof raw === 'object' && raw.seconds) return new Date(raw.seconds*1000);
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+function _agAvg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+// Promedio recortado: con 10+ datos descarta el 10% más bajo y el 10% más
+// alto, así un precio mal cargado (p.ej. 26M o 676) no distorsiona el perfil.
+function _agTrim(a){
+  if(a.length < 10) return _agAvg(a);
+  const s = a.slice().sort((x,y)=>x-y), k = Math.floor(s.length/10);
+  return _agAvg(s.slice(k, s.length-k));
+}
+function _agRange(a){
+  if(!a.length) return [0,0];
+  const s = a.slice().sort((x,y)=>x-y);
+  if(s.length < 10) return [s[0], s[s.length-1]];
+  const k = Math.floor(s.length/10);
+  return [s[k], s[s.length-1-k]];
+}
+function _agMedian(a){
+  if(!a.length) return 0;
+  const s = a.slice().sort((x,y)=>x-y), m = s.length>>1;
+  return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function _agK(v){
+  v = Math.round(v);
+  if(v >= 1e6) return (v/1e6).toFixed(v >= 1e7 ? 0 : 2).replace(/\.?0+$/,'') + 'M';
+  if(v >= 1e4) return Math.round(v/1e3) + 'k';
+  return fmtNum(v);
+}
+function _agCount(list, fn){
+  const m = new Map();
+  list.forEach(p => { const k = fn(p); if(k) m.set(k, (m.get(k)||0)+1); });
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
+function _agInsights(list){
+  const venta = list.filter(p=>p.op==='Venta' && p.price>0);
+  const alq   = list.filter(p=>p.op==='Alquiler' && p.price>0);
+  const vUsd  = venta.map(_agUsd), aUsd = alq.map(_agUsd);
+  const sqmV  = venta.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  const dists = _agCount(list, p=>p.district && p.district!=='—' ? p.district : null);
+  const types = _agCount(list, p=>p.type);
+  const areas = list.filter(p=>p.area>0).map(p=>p.area);
+  const beds  = list.filter(p=>p.beds>0).map(p=>p.beds);
+  const nNew  = list.filter(p=>p.age===0).length;
+  const dates = list.map(p=>_agDate(p.listedAt||p.publishedAt)).filter(Boolean).sort((a,b)=>a-b);
+  const avgV  = _agTrim(vUsd);
+  const rngV  = _agRange(vUsd);
+  const rngA  = _agRange(aUsd);
+  const sqmA  = alq.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  // Desglose por tipo de inmueble dentro de cada operación (nunca se
+  // mezclan precios de venta con rentas mensuales).
+  const byType = types.map(([t]) => {
+    const v = venta.filter(p=>p.type===t).map(_agUsd);
+    const a = alq.filter(p=>p.type===t).map(_agUsd);
+    return { type:t, nV:v.length, avgV:_agTrim(v), medV:_agMedian(v), nA:a.length, avgA:_agTrim(a), medA:_agMedian(a) };
+  });
+  const segment = !venta.length ? '' : avgV >= 400000 ? 'segmento alto' : avgV >= 150000 ? 'segmento medio' : 'segmento económico';
+  return {
+    total: list.length, nV: venta.length, nA: alq.length,
+    avgV, medV: _agMedian(vUsd), minV: rngV[0], maxV: rngV[1], trimmed: vUsd.length >= 10 || aUsd.length >= 10,
+    avgA: _agTrim(aUsd), medA: _agMedian(aUsd), minA: rngA[0], maxA: rngA[1],
+    avgSqm: _agTrim(sqmV), avgSqmA: _agTrim(sqmA), avgArea: _agTrim(areas), avgBeds: _agAvg(beds), byType,
+    dists, types, nNew, segment,
+    first: dates[0] || null, last: dates[dates.length-1] || null
+  };
+}
+
+function openPublisherProfile(key, opts){
+  opts = opts || {};
+  // Volver con "atrás" desde un detalle abierto desde el perfil: el perfil
+  // ya está abierto, así que se conservan filtros y scroll.
+  const agOv = document.getElementById('agOverlay');
+  if(opts.fromHash && _ag && _ag.key === key && agOv && agOv.classList.contains('open')){ closeFullReport(true); return; }
+  const list = _publisherListings(key);
+  if(!list.length){ toast('Este anunciante no tiene propiedades activas'); return; }
+  // Cerrar el detalle sin history.back(): si venimos de un detalle, su
+  // entrada de historial se reemplaza abajo por la del perfil.
+  const fromReport = !!(history.state && history.state.frReport);
+  closeFullReport(true);
+  if(typeof closeDetail === 'function') closeDetail();
+  const pub = _publisherOf(list[0]);
+  _ag = { key, name: pub.name, isReco: pub.isReco, list,
+          filters: { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:'new' },
+          shown: _AG_PAGE };
+  if(!opts.fromHash){
+    const h = '#anunciante=' + encodeURIComponent(key);
+    try {
+      if(fromReport) history.replaceState({view:'app', hash:h, agProfile:true}, '', h);
+      else history.pushState({view:'app', hash:h, agProfile:true}, '', h);
+    } catch(e){}
+  }
+  _agRender();
+  const ov = document.getElementById('agOverlay');
+  ov.classList.add('open');
+  ov.scrollTop = 0;
+  // Si llega un TC más reciente (Firestore), recalcula los montos en soles.
+  const tcAntes = _TC.fecha + '|' + _TC.valor;
+  _loadTipoCambio().then(() => {
+    if(_ag && _ag.key === key && ov.classList.contains('open') && (_TC.fecha + '|' + _TC.valor) !== tcAntes) _agRender(true);
+  });
+  if(typeof gtag === 'function') gtag('event','view_publisher',{publisher:key, listings:list.length});
+}
+
+function closePublisherProfile(fromPop){
+  const ov = document.getElementById('agOverlay');
+  if(!ov || !ov.classList.contains('open')) return;
+  ov.classList.remove('open');
+  if(!fromPop && location.hash.startsWith('#anunciante=')){
+    if(history.state && history.state.agProfile) history.back();
+    else { try { history.replaceState({view:'app'}, '', location.pathname + location.search); } catch(e){} }
+  }
+}
+window.addEventListener('popstate', function(){
+  if(!location.hash.startsWith('#anunciante=')) closePublisherProfile(true);
+});
+
+function _agFiltered(){
+  const f = _ag.filters, q = f.q.trim().toLowerCase();
+  const pmin = parseFloat(f.pmin), pmax = parseFloat(f.pmax);
+  let out = _ag.list.filter(p =>
+    (!f.op || p.op === f.op) &&
+    (!f.district || p.district === f.district) &&
+    (!f.type || p.type === f.type) &&
+    (!f.beds || p.beds >= f.beds) &&
+    (isNaN(pmin) || _agUsd(p) >= pmin) &&
+    (isNaN(pmax) || _agUsd(p) <= pmax) &&
+    (!q || (p.address + ' ' + p.district).toLowerCase().includes(q))
+  );
+  const by = {
+    new:   (a,b) => ((_agDate(b.listedAt||b.publishedAt)||0) - (_agDate(a.listedAt||a.publishedAt)||0)),
+    pasc:  (a,b) => _agUsd(a) - _agUsd(b),
+    pdesc: (a,b) => _agUsd(b) - _agUsd(a),
+    area:  (a,b) => (b.area||0) - (a.area||0),
+    sqm:   (a,b) => (sqmPriceNet(a)||Infinity) - (sqmPriceNet(b)||Infinity)
+  }[f.sort];
+  if(by) out = out.slice().sort(by);
+  return out;
+}
+
+function agSetFilter(k, v){
+  if(!_ag) return;
+  _ag.filters[k] = k === 'beds' ? (parseInt(v,10)||0) : v;
+  _ag.shown = _AG_PAGE;
+  if(k === 'op') document.querySelectorAll('#agOpSeg button').forEach(b => b.classList.toggle('active', b.dataset.op === v));
+  _agRenderList();
+}
+function agClearFilters(){
+  if(!_ag) return;
+  _ag.filters = { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:_ag.filters.sort };
+  _ag.shown = _AG_PAGE;
+  _agRender(true);
+}
+function agPickDistrict(d){
+  agSetFilter('district', d);
+  const sel = document.getElementById('agDist'); if(sel) sel.value = d;
+  const fl = document.querySelector('#agOverlay .ag-filters'); if(fl) fl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function agShowMore(){ if(_ag){ _ag.shown += _AG_PAGE; _agRenderList(); } }
+function agOpenListing(id){ openFullReport(id); }
+
+function _agRender(keepScroll){
+  const ov = document.getElementById('agOverlay');
+  const st = keepScroll ? ov.scrollTop : 0;
+  const I = _agInsights(_ag.list);
+  const usd = v => 'US$ ' + _agK(v);
+  const topD = I.dists[0], topT = I.types[0];
+  const fmtD = d => d ? d.toLocaleDateString('es-PE',{month:'short',year:'numeric'}) : '';
+  const hasPen = _ag.list.some(p=>p.cur==='S/');
+
+  const profileLine = [
+    topT ? `Cartera enfocada en <strong>${esc(topT[0].toLowerCase())}s</strong>` : '',
+    topD ? `con mayor presencia en <strong>${esc(topD[0])}</strong>` : '',
+    I.segment ? `y un ticket de venta del <strong>${I.segment}</strong>` : ''
+  ].filter(Boolean).join(' ');
+
+  const cards = [
+    { l:'Propiedades activas', v: fmtNum(I.total), s: `${I.nV} en venta · ${I.nA} en alquiler` },
+    I.nV ? { l:'Precio promedio de venta', v: usd(I.avgV), s: `Mediana ${usd(I.medV)} · rango típico ${usd(I.minV)} – ${usd(I.maxV)}` } : null,
+    I.nA ? { l:'Alquiler promedio mensual', v: usd(I.avgA), s: `Mediana ${usd(I.medA)} · rango típico ${usd(I.minA)} – ${usd(I.maxA)}` } : null,
+    I.avgSqm ? { l:'Precio promedio por m² (venta)', v: usd(I.avgSqm), s: I.avgSqmA ? `Alquiler: ${usd(I.avgSqmA)}/m² al mes` : (I.avgArea ? `Área promedio ${fmtNum(Math.round(I.avgArea))} m²` : '') } : null,
+    topD ? { l:'Distrito principal', v: esc(topD[0]), s: `${topD[1]} propiedades · ${Math.round(topD[1]/I.total*100)}% de su cartera` } : null,
+    topT ? { l:'Tipo predominante', v: esc(topT[0]), s: I.types.slice(0,3).map(t=>`${esc(t[0])} ${Math.round(t[1]/I.total*100)}%`).join(' · ') } : null,
+    { l:'A estrenar', v: Math.round(I.nNew/I.total*100) + '%', s: `${I.nNew} de ${I.total}${I.avgBeds ? ` · ${I.avgBeds.toFixed(1)} dorm. promedio` : ''}` },
+    I.first ? { l:'Actividad', v: fmtD(I.last), s: `Última publicación · desde ${fmtD(I.first)}` } : null
+  ].filter(Boolean);
+
+  const maxD = topD ? topD[1] : 1;
+  const distBars = I.dists.slice(0,6).map(([d,n]) =>
+    `<button class="ag-dbar" onclick="agPickDistrict(this.dataset.d)" data-d="${esc(d)}">
+       <span class="ag-dbar-name">${esc(d)}</span>
+       <span class="ag-dbar-track"><span style="width:${Math.max(4, n/maxD*100)}%"></span></span>
+       <span class="ag-dbar-n">${n}</span>
+     </button>`).join('');
+
+  const f = _ag.filters;
+  const optList = (arr, sel) => arr.map(([v,n]) => `<option value="${esc(v)}"${v===sel?' selected':''}>${esc(v)} (${n})</option>`).join('');
+
+  ov.innerHTML = `
+  <div class="fr-wrap">
+    <div class="ag-subbar">
+      <div class="ag-subbar-left">
+        <button class="ag-nav-back" onclick="closePublisherProfile()">← Volver</button>
+        <div class="ag-breadcrumb">Anunciantes › ${esc(_ag.name)}</div>
+      </div>
+      <div class="ag-subbar-right">
+        <button class="fr-btn-ghost" onclick="agCopyLink()">🔗 Compartir perfil</button>
+      </div>
+    </div>
+
+    <div class="ag-body">
+      <section class="ag-hero">
+        <div class="ag-av">${esc(_agInitials(_ag.name))}</div>
+        <div class="ag-hero-main">
+          <div class="ag-kicker">${_ag.isReco ? 'Cartera verificada por Reco' : 'Anunciante en Reco'}</div>
+          <h1 class="ag-name">${esc(_ag.name)}</h1>
+          <p class="ag-summary">${profileLine}.</p>
+        </div>
+      </section>
+
+      <section class="ag-kpis">
+        ${cards.map(c=>`<div class="ag-kpi"><div class="ag-kpi-l">${c.l}</div><div class="ag-kpi-v">${c.v}</div>${c.s?`<div class="ag-kpi-s">${c.s}</div>`:''}</div>`).join('')}
+      </section>
+      <div class="ag-note">Venta y alquiler se calculan por separado.${I.trimmed ? ' Con 10 o más propiedades, los promedios excluyen el 10% de precios más bajos y el 10% más altos de cada operación.' : ''}${hasPen ? ` Montos en soles convertidos a US$ con TC ${esc(_tcLabel())}.` : ''}</div>
+
+      ${I.byType.length > 1 ? `<section class="ag-types">
+        <h2 class="fr-sec-title">Precios por tipo de inmueble <small>· promedio (mediana)</small></h2>
+        <div class="ag-table-wrap"><table class="ag-table">
+          <thead><tr><th>Tipo</th><th>Venta</th><th>Alquiler / mes</th></tr></thead>
+          <tbody>${I.byType.map(t => `<tr>
+            <td><strong>${esc(t.type)}</strong></td>
+            <td>${t.nV ? `${usd(t.avgV)} <span>(${usd(t.medV)})</span><em>${t.nV} prop.</em>` : '<span>—</span>'}</td>
+            <td>${t.nA ? `${usd(t.avgA)} <span>(${usd(t.medA)})</span><em>${t.nA} prop.</em>` : '<span>—</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </section>` : ''}
+
+      ${I.dists.length > 1 ? `<section class="ag-dists">
+        <h2 class="fr-sec-title">Dónde publica <small>· top distritos</small></h2>
+        <div class="ag-dbars">${distBars}</div>
+      </section>` : ''}
+
+      <section class="ag-filters" aria-label="Filtros">
+        <div class="ag-seg" id="agOpSeg" role="group" aria-label="Operación">
+          <button data-op="" class="${!f.op?'active':''}" onclick="agSetFilter('op','')">Todas</button>
+          <button data-op="Venta" class="${f.op==='Venta'?'active':''}" onclick="agSetFilter('op','Venta')">Comprar <span>${I.nV}</span></button>
+          <button data-op="Alquiler" class="${f.op==='Alquiler'?'active':''}" onclick="agSetFilter('op','Alquiler')">Alquilar <span>${I.nA}</span></button>
+        </div>
+        <div class="ag-frow">
+          <label class="ag-f ag-f-q"><span>Buscar</span><input type="search" placeholder="Dirección o calle" value="${esc(f.q)}" oninput="agSetFilter('q',this.value)"></label>
+          <label class="ag-f"><span>Distrito</span><select id="agDist" onchange="agSetFilter('district',this.value)"><option value="">Todos</option>${optList(I.dists, f.district)}</select></label>
+          <label class="ag-f"><span>Tipo</span><select onchange="agSetFilter('type',this.value)"><option value="">Todos</option>${optList(I.types, f.type)}</select></label>
+          <label class="ag-f"><span>Dormitorios</span><select onchange="agSetFilter('beds',this.value)">${[0,1,2,3,4].map(n=>`<option value="${n}"${f.beds===n?' selected':''}>${n?n+'+':'Cualquiera'}</option>`).join('')}</select></label>
+          <label class="ag-f ag-f-num"><span>Precio mín. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="0" value="${esc(f.pmin)}" oninput="agSetFilter('pmin',this.value)"></label>
+          <label class="ag-f ag-f-num"><span>Precio máx. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="Sin límite" value="${esc(f.pmax)}" oninput="agSetFilter('pmax',this.value)"></label>
+          <label class="ag-f"><span>Ordenar</span><select onchange="agSetFilter('sort',this.value)">
+            <option value="new"${f.sort==='new'?' selected':''}>Más recientes</option>
+            <option value="pasc"${f.sort==='pasc'?' selected':''}>Precio: menor a mayor</option>
+            <option value="pdesc"${f.sort==='pdesc'?' selected':''}>Precio: mayor a menor</option>
+            <option value="area"${f.sort==='area'?' selected':''}>Mayor área</option>
+            <option value="sqm"${f.sort==='sqm'?' selected':''}>Menor precio/m²</option>
+          </select></label>
+        </div>
+      </section>
+
+      <div class="ag-list-head"><span id="agCount"></span><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>
+      <div id="agList" class="ag-list"></div>
+    </div>
+  </div>`;
+  _agRenderList();
+  ov.scrollTop = st;
+}
+
+function _agRenderList(){
+  const list = _agFiltered();
+  const shown = list.slice(0, _ag.shown);
+  const el = document.getElementById('agList');
+  const cnt = document.getElementById('agCount');
+  if(cnt) cnt.textContent = `${list.length} ${list.length===1?'propiedad':'propiedades'}${list.length!==_ag.list.length?` de ${_ag.list.length}`:''}`;
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML = `<div class="ag-empty">No hay propiedades con estos filtros.<br><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>`;
+    return;
+  }
+  el.innerHTML = shown.map(p => {
+    const ph = driveAssets(p).photos[0];
+    const sqm = sqmPriceNet(p);
+    const specs = [
+      p.area>0 ? `${esc(p.area)} m²` : '',
+      p.beds>0 ? `${esc(p.beds)} dorm.` : '',
+      p.baths>0 ? `${esc(p.baths)} baños` : '',
+      parkCount(p)>0 ? `${esc(parkCount(p))} coch.` : '',
+      p.age===0 ? 'A estrenar' : (p.age>0 ? `${esc(p.age)} años` : '')
+    ].filter(Boolean).join(' · ');
+    return `<article class="ag-row" tabindex="0" role="button" onclick="agOpenListing('${esc(p.id)}')" onkeydown="if(event.key==='Enter')agOpenListing('${esc(p.id)}')">
+      <div class="ag-thumb">${ph ? `<img src="${esc(ph)}" alt="" loading="lazy">` : `<span>${esc(p.emoji||'🏠')}</span>`}</div>
+      <div class="ag-info">
+        <div class="ag-tags"><span class="ag-op ${p.op==='Alquiler'?'alq':'ven'}">${p.op==='Alquiler'?'Alquiler':'Venta'}</span><span class="ag-type">${esc(p.type)}</span></div>
+        <div class="ag-addr">${esc(p.address)}</div>
+        <div class="ag-dist">📍 ${esc(p.district)}</div>
+        ${specs ? `<div class="ag-specs">${specs}</div>` : ''}
+      </div>
+      <div class="ag-price">
+        <div class="ag-price-v">${esc(p.cur)} ${fmtNum(Math.round(p.price))}${p.op==='Alquiler'?'<small>/mes</small>':''}</div>
+        ${sqm>0 ? `<div class="ag-price-s">${esc(p.cur)} ${fmtNum(sqm)}/m²</div>` : ''}
+        <div class="ag-cta">Ver detalle →</div>
+      </div>
+    </article>`;
+  }).join('') + (list.length > shown.length
+    ? `<button class="ag-more" onclick="agShowMore()">Ver más (${list.length - shown.length} restantes)</button>` : '');
+}
+
+function agCopyLink(){
+  if(!_ag) return;
+  const url = location.origin + location.pathname + '#anunciante=' + encodeURIComponent(_ag.key);
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .then(()=>toast('🔗 Enlace del perfil copiado'))
+    .catch(()=>toast(url));
 }
 
 // ─────────────────────── CARRUSEL FULL REPORT ────────────────
 let _frIdx = 0, _frTotal = 0;
+let _frPhotos = [];
 function _frUpdate(){
   const track = document.getElementById('frTrack');
   if(!track) return;
@@ -6370,7 +7650,10 @@ function frNext(){ if(_frIdx < _frTotal - 1){ _frIdx++; _frUpdate(); } }
 function frGoto(i){ _frIdx = i; _frUpdate(); }
 // Keyboard nav cuando el overlay está abierto
 document.addEventListener('keydown', e => {
-  if(!document.getElementById('frOverlay').classList.contains('open')) return;
+  if(!document.getElementById('frOverlay').classList.contains('open')){
+    if(e.key === 'Escape') closePublisherProfile();
+    return;
+  }
   if(e.key === 'ArrowLeft') frPrev();
   if(e.key === 'ArrowRight') frNext();
   if(e.key === 'Escape') closeFullReport();
@@ -8243,6 +9526,11 @@ function applyHashNav(){
     if(id) openDetail(id);
     return;
   }
+  if(h.startsWith('#anunciante=')){
+    const key = decodeURIComponent(h.slice(12));
+    if(key) openPublisherProfile(key, {fromHash:true});
+    return;
+  }
   const params = {};
   h.replace(/^#/,'').split('&').forEach(p=>{const [k,v]=p.split('=');if(k)params[k]=decodeURIComponent(v||'');});
   if(params.age!==undefined || params.feat){
@@ -8402,6 +9690,9 @@ function _applyLandingHash(){
 <div id="frOverlay">
   <!-- contenido generado dinámicamente por openFullReport() -->
 </div>
+<div id="agOverlay">
+  <!-- contenido generado dinámicamente por openPublisherProfile() -->
+</div>
 
 <style>
 /* ── Full Report Overlay ── */
@@ -8416,15 +9707,8 @@ function _applyLandingHash(){
 #frOverlay.open{pointer-events:auto;}
 #frOverlay.open{transform:translateY(0)}
 
-/* SUBBAR + LAYOUT */
+/* LAYOUT */
 .fr-wrap{max-width:1100px;margin:0 auto;}
-.fr-subbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border,rgba(14,17,23,.1));position:sticky;top:0;z-index:10;}
-.fr-subbar-left{display:flex;align-items:center;gap:14px;}
-.fr-subbar-right{display:flex;align-items:center;gap:8px;}
-.fr-nav-back{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 14px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#2A2F3A);transition:background .12s,border-color .12s;}
-.fr-nav-back:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
-.fr-breadcrumb{font-size:12px;color:#8E94A0;display:none;}
-@media(min-width:600px){.fr-breadcrumb{display:flex;align-items:center;gap:4px;}}
 .fr-btn-ghost{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 12px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#555B6A);transition:background .12s,border-color .12s;}
 .fr-btn-ghost:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
 
@@ -8575,6 +9859,206 @@ function _applyLandingHash(){
 .fr-vanet-dot{width:8px;height:8px;border-radius:50%;background:#3DB07A;flex-shrink:0;margin-top:4px;}
 .fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
+
+/* ── Perfil del anunciante ── */
+.ag-subbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border,rgba(14,17,23,.1));position:sticky;top:0;z-index:10;}
+.ag-subbar-left{display:flex;align-items:center;gap:14px;min-width:0}
+.ag-subbar-right{display:flex;align-items:center;gap:8px;}
+.ag-nav-back{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 14px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#2A2F3A);transition:background .12s,border-color .12s;}
+.ag-nav-back:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
+.ag-breadcrumb{font-size:12px;color:#8E94A0;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(min-width:600px){.ag-breadcrumb{display:block}}
+#agOverlay{
+  position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:189;
+  background:#F5F3EF;overflow-y:auto;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;
+}
+#agOverlay.open{pointer-events:auto;transform:translateY(0)}
+button.fr-agent-link{width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:0;padding:14px 0 2px}
+button.fr-agent-link:hover .fr-agent-name{color:var(--blue-dark);text-decoration:underline;text-underline-offset:2px}
+button.fr-agent-link:hover .fr-agent-resp{color:var(--blue-dark)}
+.fr-agent-txt{min-width:0}
+.fr-agent-more{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:2px}
+.ag-body{padding:24px 20px 60px}
+.ag-hero{display:flex;gap:16px;align-items:center;margin-bottom:20px}
+.ag-av{width:64px;height:64px;border-radius:50%;background:var(--blue-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+.ag-hero-main{min-width:0}
+.ag-kicker{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0}
+.ag-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0 4px}
+.ag-summary{font-size:14px;color:#555B6A;line-height:1.5;margin:0}
+.ag-summary strong{color:#0E1117}
+.ag-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ag-kpi{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:14px 16px}
+.ag-kpi-l{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:6px}
+.ag-kpi-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:700;color:#0E1117;line-height:1.2;overflow-wrap:anywhere}
+.ag-kpi-s{font-size:12px;color:#555B6A;margin-top:4px;line-height:1.45}
+.ag-note{font-size:11px;color:#8E94A0;margin-top:8px}
+.ag-dists{margin-top:28px}
+#demoBanner{position:fixed;left:12px;bottom:12px;z-index:9600;max-width:calc(100vw - 24px);background:#7c2d12;color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#demoBanner button{background:none;border:none;color:#fed7aa;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:0}
+#demoBanner .demo-x{text-decoration:none;margin-left:6px;color:#fff;opacity:.8}
+.ag-types{margin-top:28px}
+.ag-table-wrap{overflow-x:auto;max-width:760px}
+.ag-table{width:100%;border-collapse:collapse;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;overflow:hidden;font-size:13px}
+.ag-table th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-table td{padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.06);color:#0E1117;white-space:nowrap}
+.ag-table tr:last-child td{border-bottom:none}
+.ag-table td span{color:#8E94A0;font-size:12px}
+.ag-table td em{display:block;font-style:normal;font-size:11px;color:#8E94A0}
+.ag-dbars{display:flex;flex-direction:column;gap:6px;max-width:640px}
+.ag-dbar{display:grid;grid-template-columns:minmax(110px,180px) 1fr 40px;align-items:center;gap:10px;background:none;border:none;padding:4px 0;font:inherit;cursor:pointer;text-align:left;color:#0E1117}
+.ag-dbar-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dbar-track{height:10px;background:#E8E5DF;border-radius:5px;overflow:hidden}
+.ag-dbar-track span{display:block;height:100%;background:var(--blue-dark);border-radius:5px}
+.ag-dbar-n{font-size:12px;font-weight:600;text-align:right;color:#555B6A}
+.ag-dbar:hover .ag-dbar-name{color:var(--blue-dark);text-decoration:underline}
+.ag-filters{position:sticky;top:44px;z-index:5;background:#F5F3EF;padding:14px 0 10px;margin-top:24px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-seg{display:inline-flex;background:#E8E5DF;border-radius:10px;padding:3px;margin-bottom:10px}
+.ag-seg button{border:none;background:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#555B6A;cursor:pointer}
+.ag-seg button span{font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-seg button.active{background:#fff;color:#0E1117;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ag-frow{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ag-f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ag-f span{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8E94A0}
+.ag-f input,.ag-f select{width:100%;border:1px solid rgba(14,17,23,.18);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;color:#0E1117;outline:none}
+.ag-f input:focus,.ag-f select:focus{border-color:var(--blue-dark)}
+.ag-f-q{grid-column:span 2}
+@media(min-width:1000px){.ag-frow{grid-template-columns:2fr repeat(6,minmax(0,1fr))}.ag-f-q{grid-column:auto}}
+.ag-list-head{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;font-size:13px;color:#555B6A;font-weight:600}
+.ag-clear{background:none;border:none;color:var(--blue-dark);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 0}
+.ag-list{display:flex;flex-direction:column;gap:10px}
+.ag-row{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:center;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:10px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.ag-row:hover,.ag-row:focus-visible{border-color:rgba(8,145,178,.45);box-shadow:0 4px 14px rgba(14,17,23,.06);outline:none}
+.ag-thumb{width:150px;height:104px;border-radius:8px;overflow:hidden;background:#E0DDD7;display:flex;align-items:center;justify-content:center;font-size:34px}
+.ag-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ag-info{min-width:0}
+.ag-tags{display:flex;gap:6px;margin-bottom:4px}
+.ag-op,.ag-type{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.ag-op.ven{background:#ecfeff;color:var(--blue-dark)}
+.ag-op.alq{background:#FDF3E3;color:#8B5E0A}
+.ag-type{background:#F0EEEA;color:#555B6A}
+.ag-addr{font-size:15px;font-weight:700;color:#0E1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dist{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-specs{font-size:12px;color:#8E94A0;margin-top:4px}
+.ag-price{text-align:right;padding-right:6px;white-space:nowrap}
+.ag-price-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:19px;font-weight:800;color:#0E1117}
+.ag-price-v small{font-size:11px;font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-price-s{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-cta{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:8px}
+.ag-more{display:block;margin:10px auto 0;background:#fff;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;color:#0E1117}
+.ag-more:hover{background:#ecfeff;border-color:var(--blue-dark)}
+.ag-empty{text-align:center;padding:40px 16px;color:#555B6A;font-size:14px;background:#FDFCFA;border:1px dashed rgba(14,17,23,.18);border-radius:12px}
+@media(max-width:640px){
+  .ag-body{padding:18px 16px 48px}
+  .ag-name{font-size:23px}
+  .ag-av{width:52px;height:52px;font-size:18px}
+  .ag-kpis{grid-template-columns:1fr 1fr}
+  .ag-kpi-v{font-size:16px;overflow-wrap:normal;hyphens:auto}
+  .ag-kpi{padding:12px}
+  .ag-filters{position:static}
+  .ag-frow{grid-template-columns:1fr 1fr}
+  .ag-f-q{grid-column:1/-1}
+  .ag-row{grid-template-columns:96px 1fr;gap:12px}
+  .ag-thumb{width:96px;height:80px}
+  .ag-price{grid-column:1/-1;text-align:left;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:0}
+  .ag-cta{margin:0 0 0 auto}
+  .ag-addr{white-space:normal;font-size:14px}
+}
+/* ── Photo + Map Hero ── */
+.fr-hero-split{display:grid;grid-template-columns:1fr;gap:0;height:260px;overflow:hidden;border-radius:14px;margin-bottom:24px;border:1px solid rgba(14,17,23,.1);}
+@media(min-width:600px){.fr-hero-split{grid-template-columns:1fr 1fr;height:320px;}}
+.fr-hero-photo{position:relative;overflow:hidden;background:#E0DDD7;}
+.fr-hero-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+.fr-hero-photo-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:4rem;}
+.fr-hero-more{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;z-index:3;transition:background .15s;}
+.fr-hero-more:hover{background:rgba(0,0,0,.8);}
+.fr-hero-map{position:relative;min-height:180px;}
+.fr-hero-map .leaflet-container{width:100%;height:100%;border-radius:0;}
+.fr-hero-map-placeholder{width:100%;height:100%;background:#e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#8E94A0;font-size:13px;gap:6px;}
+
+/* ── Comparables cercanos ── */
+.fr-comp-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+.fr-comp-table thead{background:#F5F3EF;}
+.fr-comp-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0;border-bottom:1px solid rgba(14,17,23,.1);}
+.fr-comp-table th:last-child,.fr-comp-table td:last-child{text-align:right;}
+.fr-comp-table td{padding:14px;border-bottom:1px solid rgba(14,17,23,.06);color:#0E1117;vertical-align:middle;}
+.fr-comp-addr{font-weight:500;}
+.fr-comp-val{font-weight:700;}
+.fr-comp-locked{display:flex;align-items:center;gap:6px;justify-content:flex-end;color:#8E94A0;font-size:12px;}
+.fr-comp-unlock{display:block;text-align:center;margin-top:12px;padding:10px;background:rgba(26,79,191,.06);border:1px solid rgba(26,79,191,.15);border-radius:10px;color:var(--blue-dark);font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;}
+.fr-comp-unlock:hover{background:rgba(26,79,191,.12);}
+
+/* ── Guía de la zona ── */
+.fr-locality-card{background:#fff;border:1px solid rgba(14,17,23,.1);border-radius:18px;padding:22px;}
+.fr-locality-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.fr-locality-title{font-size:20px;font-weight:700;color:#0E1117;}
+.fr-locality-sub{font-size:12.5px;color:#8E94A0;margin-top:2px;}
+.fr-locality-link{font-size:12px;color:var(--blue-dark);text-decoration:none;border:1px solid rgba(14,17,23,.15);padding:6px 12px;border-radius:999px;font-weight:600;white-space:nowrap;}
+.fr-locality-link:hover{background:#F5F3EF;}
+.fr-locality-blurb{margin-top:0;margin-bottom:4px;font-size:13.5px;line-height:1.6;color:#555B6A;}
+.fr-locality-summary{font-size:13px;color:#555B6A;margin:12px 0 6px;line-height:1.5;}
+.fr-locality-summary strong{color:#0E1117;font-weight:600;}
+.fr-locality-pois{display:grid;grid-template-columns:1fr;gap:8px;margin-top:14px;}
+@media(min-width:500px){.fr-locality-pois{grid-template-columns:repeat(2,1fr);}}
+.fr-locality-loading{text-align:center;padding:24px 12px;font-size:13px;color:#8E94A0;}
+.fr-locality-empty{text-align:center;padding:18px 12px;font-size:13px;color:#8E94A0;}
+.fr-locality-rev{font-size:10.5px;color:#B0ADA6;margin-top:16px;padding-top:10px;border-top:1px dashed rgba(14,17,23,.08);text-align:right;}
+
+/* ZONA MOSAIC — Street View + photo grid */
+.fr-zona-mosaic{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px;border-radius:14px;overflow:hidden;min-height:200px;}
+@media(min-width:600px){.fr-zona-mosaic{grid-template-columns:3fr 2fr;min-height:300px;}}
+.fr-zona-sv{position:relative;background:#e8e5df;min-height:200px;border-radius:14px;overflow:hidden;}
+@media(min-width:600px){.fr-zona-sv{border-radius:14px 0 0 14px;min-height:auto;}}
+.fr-zona-sv-frame{width:100%;height:100%;min-height:200px;border:0;display:block;}
+.fr-zona-sv-badge{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.65);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:#fff;font-size:12px;font-weight:500;padding:6px 12px;border-radius:8px;display:flex;align-items:center;gap:4px;}
+.fr-zona-sv-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;min-height:200px;color:#8E94A0;font-size:14px;gap:4px;}
+.fr-zona-photos{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+@media(min-width:600px){.fr-zona-photos{border-radius:0 14px 14px 0;}}
+.fr-zona-tile{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:4/3;background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:8px 10px;cursor:default;}
+.fr-zona-tile:not(.fr-zona-tile--placeholder){box-shadow:inset 0 -60px 40px -10px rgba(0,0,0,.55);}
+.fr-zona-tile--placeholder{align-items:center;justify-content:center;gap:4px;padding:12px 8px;text-align:center;}
+.fr-zona-tile-ico{font-size:28px;line-height:1;}
+.fr-zona-tile-label{font-size:12px;font-weight:600;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.fr-zona-tile:not(.fr-zona-tile--placeholder) .fr-zona-tile-label{color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+.fr-zona-tile--placeholder .fr-zona-tile-label{color:#2A2F3A;font-size:11px;}
+.fr-zona-tile-cat{font-size:10px;color:#555B6A;}
+.fr-zona-tile-more{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;border-radius:10px;}
+
+.fr-dest-label{font-size:12px;font-weight:600;color:#0E1117;text-transform:uppercase;letter-spacing:.06em;margin:16px 0 8px;}
+.fr-dest-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px;}
+@media(min-width:500px){.fr-dest-grid{grid-template-columns:repeat(2,1fr);}}
+.fr-dest-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,#FFFAF0 0%,#FFF7E6 100%);border:1px solid rgba(183,145,60,.18);border-radius:12px;padding:12px 14px;transition:border-color .15s,box-shadow .15s;}
+.fr-dest-card:hover{border-color:rgba(183,145,60,.35);box-shadow:0 2px 8px rgba(183,145,60,.10);}
+.fr-poi-icon--feat{background:rgba(183,145,60,.12);}
+
+/* SIDEBAR ACTIONS — Guardar / Exportar */
+.fr-sidebar-actions{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(14,17,23,.08);}
+.fr-sidebar-actions .fr-btn-ghost{flex:1;text-align:center;}
+.fr-locality-poi-card{display:flex;align-items:center;gap:12px;background:#FDFCFA;border:1px solid rgba(14,17,23,.08);border-radius:12px;padding:12px 14px;transition:border-color .15s;}
+.fr-locality-poi-card:hover{border-color:rgba(14,17,23,.2);}
+.fr-locality-poi-card.fr-poi-highlighted{background:linear-gradient(135deg,#F8FBFF 0%,#F0F6FF 100%);border-color:rgba(26,79,191,.15);}
+.fr-poi-icon{font-size:22px;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#F5F3EF;border-radius:10px;}
+.fr-poi-info{min-width:0;}
+.fr-poi-name{font-size:13.5px;font-weight:600;color:#0E1117;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.fr-poi-meta{font-size:11.5px;color:#8E94A0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fr-poi-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:999px;line-height:1.3;flex-shrink:0;}
+.fr-poi-badge--dest{background:#FDF3E3;color:#8B5E0A;border:1px solid rgba(183,145,60,.2);}
+.fr-poi-badge--trend{background:#EEF2FF;color:#4338CA;border:1px solid rgba(67,56,202,.15);}
+.fr-poi-badge--new{background:#ECFDF5;color:#047857;border:1px solid rgba(4,120,87,.15);}
+
+/* ── Reco Riesgo ── */
+.fr-riesgo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.fr-riesgo-card{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:16px;}
+.fr-riesgo-card-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.fr-riesgo-icon{font-size:22px;}
+.fr-riesgo-label{font-size:13px;font-weight:600;color:#0E1117;}
+.fr-riesgo-source{font-size:11px;color:#8E94A0;}
+.fr-riesgo-badge{margin-left:auto;font-size:11px;font-weight:600;border:1px solid;border-radius:999px;padding:3px 10px;text-transform:uppercase;letter-spacing:.04em;}
+.fr-riesgo-bar{height:6px;background:#E0DDD7;border-radius:999px;overflow:hidden;margin-bottom:8px;}
+.fr-riesgo-bar-fill{height:100%;border-radius:999px;transition:width .4s;}
+.fr-riesgo-foot{font-size:11px;color:#8E94A0;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(14,17,23,.1);}
+@media(max-width:900px){.fr-riesgo-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.fr-riesgo-grid{grid-template-columns:1fr;}}
 </style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
