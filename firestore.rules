@@ -325,6 +325,49 @@ service cloud.firestore {
                     || isAdmin();
     }
 
+    // /importDrafts/{draftId}
+    //
+    // Borradores del roadmap de carga inteligente: cada fila importada
+    // (Excel, texto, WhatsApp…) queda aquí hasta que el dueño la publica o
+    // la descarta. Son privados: solo el dueño los ve.
+    // - create: el cliente solo crea borradores de Excel/CSV (los parsea en
+    //           el navegador). Los de IA (text, whatsapp…) los escribe
+    //           extractListings con el admin SDK.
+    // - update: solo la fila y metadatos de edición; uid, source, batchId
+    //           y la marca de IA (aiFields) no se tocan.
+    // - delete: el dueño (descartar). publishProperty también lo borra al
+    //           publicar, dentro de su transacción.
+    // expiresAt alimenta la política TTL (firestore.indexes.json).
+    match /importDrafts/{draftId} {
+      allow read, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.uid == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['uid', 'batchId', 'source', 'sourceName', 'row', 'aiFields', 'inferredFields', 'notes', 'fingerprint', 'status', 'createdAt', 'updatedAt', 'expiresAt', 'edited'])
+                    && request.resource.data.source in ['excel', 'csv']
+                    && request.resource.data.status == 'draft'
+                    && request.resource.data.row is map
+                    && request.resource.data.row.size() <= 40
+                    && request.resource.data.batchId is string
+                    && request.resource.data.batchId.size() <= 40
+                    && request.resource.data.expiresAt is timestamp
+                    && request.resource.data.expiresAt < request.time + duration.value(31, 'd');
+      allow update: if request.auth != null
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['row', 'edited', 'fingerprint', 'updatedAt'])
+                    && request.resource.data.row is map
+                    && request.resource.data.row.size() <= 40;
+    }
+
+    // /importUsage/{uid} y /importEvents/{id}: rate limit y métricas de
+    // extractListings. Solo el admin SDK escribe; los admins leen eventos.
+    match /importUsage/{uid} {
+      allow read, write: if false;
+    }
+    match /importEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

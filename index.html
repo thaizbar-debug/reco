@@ -14,6 +14,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
+<!-- Núcleo de importación compartido con las Cloud Functions (window.RecoImport) -->
+<script src="functions/shared/import-core.js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 // HERE API key. Owned by the thaizbar@gmail.com account on
@@ -6622,6 +6624,7 @@ function renderPublish(){
     </div>
   </section>`;
   if(_pubTab==='single') _rps();
+  else if(_pubBulkStep===1) _pubDraftsLoad();
 }
 
 function _rps(){
@@ -7211,7 +7214,8 @@ function _pubBulkGo(step){
   if(el && el.scrollIntoView) try{ el.scrollIntoView({block:'nearest'}); }catch(_){ }
 }
 function _pubBulkReset(){
-  _pubBulkRows=[]; _pubBulkFileName='';
+  _pubDraftsDelete(_pubBulkRows.map(a=>a.draftId));
+  _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkBatchId=''; _pubBulkSource='excel';
   if(typeof _pubBulkRaw!=='undefined'){ _pubBulkRaw=[]; _pubBulkHeaders=[]; _pubBulkMap={}; }
   _pubBulkGo(1);
 }
@@ -7251,7 +7255,8 @@ function _pubBulkStepBodyHTML(){
   return _pubBulkUploadHTML();
 }
 function _pubBulkUploadHTML(){
-  return `<div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla en Excel, rellena una fila por inmueble y súbela aquí. La hoja <em>Instrucciones</em> explica qué va en cada columna y qué valores admite.<br><strong>¿Ya tienes tu propio Excel?</strong> Súbelo igual: te preguntaremos a qué corresponde cada columna.</div></div>
+  return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
+    <div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla en Excel, rellena una fila por inmueble y súbela aquí. La hoja <em>Instrucciones</em> explica qué va en cada columna y qué valores admite.<br><strong>¿Ya tienes tu propio Excel?</strong> Súbelo igual: te preguntaremos a qué corresponde cada columna.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
@@ -7268,16 +7273,21 @@ const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propi
 function _pubBulkEdit(i,key,val){
   const a=_pubBulkRows[i]; if(!a) return;
   a.row[key]=String(val==null?'':val).trim();
+  if(!a.edited) a.edited={};
+  a.edited[key]=1;
   const v=_pubBulkValidateRow(a.row);
   a.valid=v.valid; a.errors=v.errors; a.warnings=v.warnings||[];
+  _pubDraftSync(a);
   _pubBulkRefresh();
 }
 function _pubBulkRemoveRow(i){
-  _pubBulkRows.splice(i,1);
+  const gone=_pubBulkRows.splice(i,1)[0];
+  _pubDraftsDelete([gone&&gone.draftId]);
   if(!_pubBulkRows.length){ _pubBulkReset(); return; }
   _pubBulkRefresh();
 }
 function _pubBulkDropInvalid(){
+  _pubDraftsDelete(_pubBulkRows.filter(a=>!a.valid).map(a=>a.draftId));
   _pubBulkRows=_pubBulkRows.filter(a=>a.valid);
   if(!_pubBulkRows.length){ toast('⚠️ No quedó ninguna fila válida'); _pubBulkReset(); return; }
   _pubBulkRefresh();
@@ -7291,17 +7301,22 @@ function _pubBulkCounts(){
   return { total:_pubBulkRows.length, valid, invalid:_pubBulkRows.length-valid };
 }
 function _pubBulkValidateHTML(){
+  _pubBulkMarkDupes();
   const c=_pubBulkCounts();
   if(!c.total) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay filas cargadas.</div>';
   const cost=c.valid*_PUB_BULK_COST_PER;
   const shortKeys=cost>0 && cost>S.keysLeft;
   const warnRows=_pubBulkRows.filter(a=>a.warnings&&a.warnings.length);
+  const hasAi=_pubBulkRows.some(a=>(a.aiFields||[]).length);
+  const dupeRows=_pubBulkRows.filter(a=>a.dupe).length;
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;font-weight:600">${esc(_pubBulkFileName||'Archivo cargado')} · ${c.total} fila${c.total!==1?'s':''} · <span style="color:var(--green)">${c.valid} lista${c.valid!==1?'s':''}</span>${c.invalid?` · <span style="color:var(--red)">${c.invalid} con errores</span>`:''}</div>
       <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
     </div>
     ${c.invalid?`<div class="pub-tip" style="margin-top:10px"><span>✏️</span><div>Corrige las celdas marcadas en rojo directamente en la tabla. También puedes eliminar una fila o descartar todas las que tienen errores.</div></div>`:''}
+    ${hasAi?`<div class="pub-tip" style="margin-top:10px"><span>✨</span><div>Las celdas con <strong>borde punteado</strong> las completamos automáticamente a partir de tu texto. Revísalas: en <span style="color:#d97706">naranja</span> están las que deducimos sin que estuvieran escritas.</div></div>`:''}
+    ${dupeRows?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⧉ ${dupeRows} fila${dupeRows!==1?'s':''} parece${dupeRows!==1?'n':''} repetida${dupeRows!==1?'s':''}. No bloquea el envío, pero revísalo para no publicar dos veces el mismo inmueble.</div>`:''}
     ${warnRows.length?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⚠️ ${warnRows.length} fila${warnRows.length!==1?'s':''} con advertencias (no bloquean): ${warnRows.slice(0,3).map((a,i)=>'fila '+(i+1)+': '+a.warnings[0]).join('; ')}${warnRows.length>3?' ...':''}</div>`:''}
     <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
       <table class="pub-preview-table">
@@ -7310,8 +7325,8 @@ function _pubBulkValidateHTML(){
           const bad=k=>!a.valid && a.errors.some(e=>e.toLowerCase().indexOf(_pubBulkErrKey(k))===0);
           return `<tr style="background:${a.valid?'transparent':'#fff8f8'}">
             <td>${i+1}</td>
-            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border:1px solid ${bad(k)?'var(--red)':'var(--border)'};border-radius:5px;padding:4px 6px;font-size:11px;background:#fff"></td>`).join('')}
-            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}</td>
+            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" title="${esc(_pubBulkCellTitle(a,k))}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border-radius:5px;padding:4px 6px;font-size:11px;background:#fff;${_pubBulkCellStyle(a,k,bad(k))}"></td>`).join('')}
+            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}${a.dupe?`<br><span style="color:#b08000" title="${esc(a.dupe)}">⧉ Repetido</span>`:''}${a.notes&&a.notes.length?`<br><span style="color:var(--muted)" title="${esc(a.notes.join(' '))}">ℹ ${a.notes.length}</span>`:''}</td>
             <td><button onclick="_pubBulkRemoveRow(${i})" title="Eliminar fila" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button></td>
           </tr>`;
         }).join('')}</tbody>
@@ -7326,6 +7341,17 @@ function _pubBulkValidateHTML(){
         ${c.invalid?`Corrige ${c.invalid} fila${c.invalid!==1?'s':''} para continuar`:shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:`Continuar a fotos → ${c.valid} inmueble${c.valid!==1?'s':''}`}
       </button>
     </div>`;
+}
+// Campos completados automáticamente y aún sin tocar: borde punteado
+// (naranja si la IA los dedujo sin que estuvieran escritos).
+function _pubBulkCellStyle(a,k,bad){
+  if(bad) return 'border:1px solid var(--red)';
+  if(!(a.aiFields||[]).includes(k) || (a.edited&&a.edited[k])) return 'border:1px solid var(--border)';
+  return (a.inferred||[]).includes(k) ? 'border:1px dashed #d97706;background:#fff7ed' : 'border:1px dashed #c9a227';
+}
+function _pubBulkCellTitle(a,k){
+  if(!(a.aiFields||[]).includes(k) || (a.edited&&a.edited[k])) return '';
+  return (a.inferred||[]).includes(k) ? 'Deducido automáticamente: confírmalo' : 'Detectado automáticamente: revísalo';
 }
 function _pubBulkErrKey(k){
   return ({direccion:'dirección',distrito:'distrito',titulo:'título',descripcion:'descripción',
@@ -7817,36 +7843,170 @@ function _pubBulkApplyMap(){
       const h=_pubBulkMap[key];
       out[key]=h?String(src[h]==null?'':src[h]).trim():'';
     });
-    out.precio=_pubCleanNumber(out.precio);
-    out.area_techada=_pubCleanNumber(out.area_techada);
-    out.area_terreno=_pubCleanNumber(out.area_terreno);
-    ['nro_dormitorios','nro_banos','nro_estacionamientos','piso','niveles','nro_pisos','antiguedad'].forEach(k=>{ out[k]=_pubCleanNumber(out[k]); });
-    out.tipo_propiedad=_pubMatchOption(out.tipo_propiedad,_PUB_BULK_TYPES)||out.tipo_propiedad;
-    out.tipo_publicacion=_pubMatchOption(out.tipo_publicacion,_PUB_BULK_OPS)||out.tipo_publicacion;
-    out.tipo_moneda=_pubMatchCurrency(out.tipo_moneda);
     return out;
   });
   _pubBulkLoadRows(rows);
 }
-function _pubCleanNumber(v){
-  const s=String(v==null?'':v).replace(/[^0-9,.\-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.');
-  return s;
+// Precio, áreas, ambientes, tipo, operación, moneda y distrito se
+// normalizan con RecoImport (functions/shared/import-core.js), el mismo
+// código que usa el servidor: "US$ 185,000", "S/ 450 mil", "3 dorm"…
+function _pubNormalizeImportRow(r){
+  if(typeof RecoImport==='undefined') return { row:r, notes:[] };
+  const n=RecoImport.normalizeRow(r);
+  return { row:n.row, notes:_pubImportNotes(n.changes) };
 }
-function _pubMatchOption(v,list){
-  const n=_pubNormHeader(v);
-  return list.find(o=>_pubNormHeader(o)===n) || list.find(o=>n && _pubNormHeader(o).indexOf(n)===0) || '';
+function _pubImportNotes(changes){
+  return (changes||[]).filter(c=>c.pii).map(c=>`Quitamos ${c.pii} dato${c.pii!==1?'s':''} de contacto de ${c.field}.`);
 }
-function _pubMatchCurrency(v){
-  const n=_pubNormHeader(v);
-  if(!n) return 'USD';
-  if(/(usd|dolar|dolares|us|\$)/.test(n)) return 'USD';
-  if(/(pen|sol|soles|s\/)/.test(n)) return 'PEN';
-  return String(v).toUpperCase();
+function _pubBulkEntry(row,extra){
+  return { row, photos:[], draftId:null, source:_pubBulkSource, aiFields:[], inferred:[], edited:{}, notes:[], dupe:'', ...extra, ...(_pubBulkValidateRow(row)) };
 }
 function _pubBulkLoadRows(rows){
-  _pubBulkRows = rows.map(r => ({ row:r, photos:[], ...(_pubBulkValidateRow(r)) }));
+  _pubBulkSource = /\.csv$/i.test(_pubBulkFileName||'') ? 'csv' : 'excel';
+  _pubBulkBatchId = '';
+  _pubBulkRows = rows.map(r => { const n=_pubNormalizeImportRow(r); return _pubBulkEntry(n.row,{notes:n.notes}); });
   _pubBulkPhotoIdx=0;
   _pubBulkGo(2);
+  _pubDraftsSave();
+  _pubLoadOwnFingerprints();
+}
+function _pubBulkSubmitPayload(a){
+  const d=_pubBulkRowToPubData(a.row);
+  if(a.source && a.source!=='excel' && a.source!=='csv') d.source=a.source;
+  if(a.draftId){ d.importDraftId=a.draftId; d.importEdits=Object.keys(a.edited||{}).length; }
+  return d;
+}
+
+// ── Borradores de importación (/importDrafts) — roadmap Fase 0 ──
+// Cada fila cargada se guarda como borrador para poder retomarla otro día.
+// publishProperty borra el borrador al publicar; si nadie lo publica, la
+// política TTL lo elimina a los 30 días. Las fotos no se guardan en el
+// borrador (son demasiado pesadas para Firestore).
+let _pubBulkBatchId = '';
+let _pubBulkSource = 'excel';
+let _pubDraftGroups = [];
+let _pubOwnFingerprints = null;
+const _PUB_DRAFT_TTL_DAYS = 30;
+const _pubDraftTimers = {};
+const _PUB_IMPORT_SOURCE_LABELS = { excel:'Excel', csv:'CSV', text:'Texto pegado', whatsapp:'WhatsApp', url:'Enlace', pdf:'PDF', feed:'Feed' };
+
+async function _pubDraftsSave(){
+  if(!auth.currentUser || typeof RecoImport==='undefined') return;
+  const pending=_pubBulkRows.filter(a=>!a.draftId);
+  if(!pending.length) return;
+  const col=db.collection('importDrafts');
+  if(!_pubBulkBatchId) _pubBulkBatchId=col.doc().id;
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
+  const expiresAt=firebase.firestore.Timestamp.fromMillis(Date.now()+_PUB_DRAFT_TTL_DAYS*864e5);
+  // _PUB_BULK_MAX (200) < 500, el límite de escrituras por batch.
+  const batch=db.batch();
+  pending.forEach(a=>{
+    const ref=col.doc(); a.draftId=ref.id;
+    batch.set(ref,{ uid:auth.currentUser.uid, batchId:_pubBulkBatchId, source:_pubBulkSource,
+      sourceName:(_pubBulkFileName||'').slice(0,120)||null, row:a.row, aiFields:[], notes:a.notes||[],
+      fingerprint:RecoImport.fingerprint(a.row), status:'draft', edited:[], createdAt:ts, updatedAt:ts, expiresAt });
+  });
+  try{ await batch.commit(); }
+  catch(e){ console.warn('[reco] no se pudieron guardar los borradores:', e); pending.forEach(a=>{ a.draftId=null; }); }
+}
+function _pubDraftSync(a){
+  if(!a || !a.draftId) return;
+  const id=a.draftId;
+  clearTimeout(_pubDraftTimers[id]);
+  _pubDraftTimers[id]=setTimeout(()=>{
+    delete _pubDraftTimers[id];
+    db.collection('importDrafts').doc(id).update({ row:a.row, edited:Object.keys(a.edited||{}),
+      fingerprint:(typeof RecoImport!=='undefined'?RecoImport.fingerprint(a.row):''),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp() })
+      .catch(e=>console.warn('[reco] borrador no actualizado:', id, e));
+  },800);
+}
+function _pubDraftsDelete(ids){
+  ids=(ids||[]).filter(Boolean);
+  if(!ids.length || !auth.currentUser) return;
+  ids.forEach(id=>{ clearTimeout(_pubDraftTimers[id]); delete _pubDraftTimers[id]; });
+  for(let i=0;i<ids.length;i+=400){
+    const batch=db.batch();
+    ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('importDrafts').doc(id)));
+    batch.commit().catch(e=>console.warn('[reco] borradores no eliminados:', e));
+  }
+}
+async function _pubDraftsLoad(){
+  if(!auth.currentUser || !document.getElementById('pubDraftsBanner')) return;
+  try{
+    const snap=await db.collection('importDrafts').where('uid','==',auth.currentUser.uid).get();
+    const groups={};
+    snap.docs.forEach(d=>{
+      const x=d.data();
+      const g=groups[x.batchId]||(groups[x.batchId]={ batchId:x.batchId, source:x.source, sourceName:x.sourceName, at:0, docs:[] });
+      g.docs.push({ id:d.id, ...x });
+      const t=x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0;
+      if(t>g.at) g.at=t;
+    });
+    _pubDraftGroups=Object.values(groups).sort((a,b)=>b.at-a.at);
+  }catch(e){ console.warn('[reco] no se pudieron leer los borradores:', e); return; }
+  const el=document.getElementById('pubDraftsBanner');
+  if(el) el.innerHTML=_pubDraftsBannerHTML();
+}
+function _pubDraftsBannerHTML(){
+  if(!_pubDraftGroups.length) return '';
+  return `<div class="pub-tip" style="margin-bottom:12px"><span>📝</span><div style="flex:1">
+    <strong>Tienes inmuebles sin publicar.</strong> Retómalos donde los dejaste (las fotos hay que volver a adjuntarlas).
+    ${_pubDraftGroups.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div style="font-size:12px">${g.docs.length} inmueble${g.docs.length!==1?'s':''} · ${esc(g.sourceName||_PUB_IMPORT_SOURCE_LABELS[g.source]||'Importación')}${g.at?` · <span style="color:var(--muted)">${new Date(g.at).toLocaleDateString('es-PE')}</span>`:''}</div>
+      <div style="display:flex;gap:6px">
+        <button class="pub-btn primary" style="font-size:12px;padding:6px 12px" onclick="_pubDraftsResume('${esc(g.batchId)}')">Retomar</button>
+        <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubDraftsDiscard('${esc(g.batchId)}')">Descartar</button>
+      </div>
+    </div>`).join('')}
+  </div></div>`;
+}
+function _pubDraftsResume(batchId){
+  const g=_pubDraftGroups.find(x=>x.batchId===batchId);
+  if(g) _pubBulkLoadDrafts(g.docs,{ batchId:g.batchId, source:g.source, sourceName:g.sourceName });
+}
+function _pubDraftsDiscard(batchId){
+  const g=_pubDraftGroups.find(x=>x.batchId===batchId);
+  if(!g || !confirm(`¿Descartar ${g.docs.length} inmueble${g.docs.length!==1?'s':''} sin publicar?`)) return;
+  _pubDraftsDelete(g.docs.map(d=>d.id));
+  _pubDraftGroups=_pubDraftGroups.filter(x=>x!==g);
+  const el=document.getElementById('pubDraftsBanner');
+  if(el) el.innerHTML=_pubDraftsBannerHTML();
+}
+// Carga borradores en la bandeja de revisión. Lo usan "Retomar" y, en la
+// Fase 1, el resultado de extractListings (texto, WhatsApp, enlaces…).
+function _pubBulkLoadDrafts(drafts,meta){
+  _pubBulkBatchId=meta.batchId||'';
+  _pubBulkSource=meta.source||'excel';
+  _pubBulkFileName=meta.sourceName||_PUB_IMPORT_SOURCE_LABELS[_pubBulkSource]||'';
+  _pubBulkRows=drafts.map(d=>_pubBulkEntry(Object.assign({},d.row),{
+    draftId:d.id, source:d.source||_pubBulkSource, aiFields:d.aiFields||[], inferred:d.inferredFields||[],
+    edited:(d.edited||[]).reduce((o,k)=>{ o[k]=1; return o; },{}), notes:d.notes||[] }));
+  _pubDraftGroups=_pubDraftGroups.filter(x=>x.batchId!==_pubBulkBatchId);
+  _pubBulkPhotoIdx=0;
+  _pubBulkGo(2);
+  _pubLoadOwnFingerprints();
+}
+// Duplicados: contra las publicaciones propias y dentro del mismo lote.
+async function _pubLoadOwnFingerprints(){
+  if(!auth.currentUser || typeof RecoImport==='undefined') return;
+  try{
+    const snap=await db.collection('publications').where('userId','==',auth.currentUser.uid).get();
+    _pubOwnFingerprints=new Set(snap.docs.map(d=>RecoImport.fingerprint(d.data())).filter(Boolean));
+    if(_pubBulkStep===2) _pubBulkRefresh();
+  }catch(e){ console.warn('[reco] no se pudieron leer tus publicaciones para detectar duplicados:', e); }
+}
+function _pubBulkMarkDupes(){
+  if(typeof RecoImport==='undefined') return;
+  const seen={};
+  _pubBulkRows.forEach((a,i)=>{
+    const fp=RecoImport.fingerprint(a.row);
+    a.dupe='';
+    if(!fp) return;
+    if(_pubOwnFingerprints && _pubOwnFingerprints.has(fp)) a.dupe='Ya tienes una publicación con el mismo distrito, operación, tipo, área, precio y dormitorios.';
+    else if(seen[fp]) a.dupe='Repite los datos de la fila '+seen[fp]+'.';
+    else seen[fp]=i+1;
+  });
 }
 
 async function _pubBulkSubmit(){
@@ -7866,10 +8026,12 @@ async function _pubBulkSubmit(){
     if(aborted) break;
     const r = valid[i].row;
     const rowPhotos = valid[i].photos || [];
+    const payload = _pubBulkSubmitPayload(valid[i]);
     if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
     try {
-      const res = await call(_pubBulkRowToPubData(r));
+      const res = await call(payload);
       ok++;
+      valid[i].draftId = null; // publishProperty ya borró el borrador
       const pubId = res && res.data && res.data.publicationId;
       if(pubId && rowPhotos.length){
         try{
@@ -7911,7 +8073,7 @@ async function _pubBulkSubmit(){
   if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
   toast(failed.length ? `⚠️ ${ok} publicadas · ${failed.length} fallaron` : `🚀 ¡${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}!`);
   if(!failed.length){
-    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1;
+    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1; _pubBulkBatchId=''; _pubBulkSource='excel';
     setTimeout(()=>closePublish(),2200);
   }
 }
