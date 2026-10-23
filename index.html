@@ -227,7 +227,8 @@ header .spacer{flex:1}
   position:absolute;top:calc(100% + 6px);left:0;right:0;
   background:#fff;border-radius:var(--r);
   box-shadow:0 8px 28px rgba(0,0,0,.18);
-  z-index:300;overflow:hidden;display:none;
+  z-index:300;overflow-x:hidden;overflow-y:auto;display:none;
+  max-height:min(360px,60vh);overscroll-behavior:contain;
 }
 .sg-item{
   display:flex;align-items:center;gap:12px;
@@ -415,7 +416,8 @@ header .spacer{flex:1}
 .hist-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-44%);opacity:0;pointer-events:none;
   width:min(580px,94vw);background:#fff;border-radius:18px;
   box-shadow:0 24px 80px rgba(0,0,0,.22);z-index:501;
-  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow:hidden}
+  max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 .hist-modal.open{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
 .hist-modal-close{position:absolute;top:14px;right:16px;background:var(--light);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer}
 .hist-modal-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
@@ -1013,7 +1015,7 @@ header .spacer{flex:1}
 /* ══════════════ GATE PANEL ══════════════ */
 .detail-gate{
   flex:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
+  align-items:center;justify-content:center;justify-content:safe center;
   padding:36px 28px;text-align:center;gap:10px;
   overflow-y:auto;
 }
@@ -1063,7 +1065,8 @@ header .spacer{flex:1}
   background:#fff;border-radius:14px;
   width:90%;max-width:500px;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
-  overflow:hidden;
+  max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
   transform:scale(.96) translateY(8px);
   transition:transform .2s;
 }
@@ -1221,7 +1224,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 #homeView .search-box .btn-search:hover{opacity:.9}
 
 /* AUTOCOMPLETE */
-#homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow:hidden;display:none}
+#homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow-x:hidden;overflow-y:auto;max-height:min(360px,60vh);overscroll-behavior:contain;display:none}
 #homeView .sg-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .1s}
 #homeView .sg-item:hover{background:var(--light)}
 #homeView .sg-item+.sg-item{border-top:1px solid var(--border)}
@@ -1346,7 +1349,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 /* MODAL ANUNCIARSE */
 .anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
 .anun-overlay.open{opacity:1;pointer-events:auto}
-#homeView .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+#homeView .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;max-height:90dvh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
 .anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
 #homeView .anun-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 #homeView .anun-close{background:none;border:1.5px solid var(--border);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0;color:var(--muted);transition:background .12s}
@@ -1392,6 +1395,22 @@ body.show-home .floating-advisor-btn{display:none}
 body.show-legal .floating-advisor-btn{display:none}
 @media(max-width:600px){.floating-advisor-btn{bottom:80px;right:14px;font-size:.78rem;padding:9px 14px}}
 @media(max-width:600px){.global-legal-bar{flex-direction:column;text-align:center;padding:10px 12px}}
+/* Móvil: la barra legal es fija; --legal-h (medida por JS) evita que tape la lista, el mapa y los botones flotantes */
+@media(max-width:900px){
+  .app-body{bottom:var(--legal-h,0px)}
+  .mobile-map-toggle{bottom:calc(var(--legal-h,0px) + 14px)}
+  .floating-advisor-btn{bottom:calc(var(--legal-h,0px) + 62px)}
+  .adv-layout{flex-direction:column}
+  .adv-right{width:100%}
+  .hist-modal-trio{grid-template-columns:1fr}
+  .hmt-col{padding:22px 20px;border-right:none;border-bottom:1px solid var(--border)}
+  .hmt-col:last-child{border-bottom:none}
+  .hist-compare{grid-template-columns:1fr}
+  .hist-col{border-right:none;border-bottom:1px solid var(--border)}
+  .res-list,.detail-body,.adv-panel,.area-modal-body{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .res-list{padding-bottom:120px}
+  .adv-panel{padding-bottom:64px}
+}
 
 /* COOKIE CONSENT BANNER — slim full-width bar */
 .cookie-banner{position:fixed;bottom:34px;left:0;right:0;z-index:9500;background:#f5f5f5;border-top:1px solid #ddd;padding:10px 5%;display:none;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;animation:cookieSlideUp .25s ease}
@@ -1588,7 +1607,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 /* ══ AUTH MODAL ══ */
 .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10001;display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .auth-overlay.open{display:flex}
-.auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
+.auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
 .auth-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
 .auth-head{padding:28px 28px 0}
 .auth-logo{margin-bottom:14px;text-align:center}.auth-logo img{height:70px;width:auto}
@@ -5037,8 +5056,21 @@ function toggleAdv(){
   const b=document.getElementById('advBtn');
   const open=p.classList.toggle('open');
   b.classList.toggle('open',open);
+  fitAdvPanel();
   setTimeout(recalcBody,250);
 }
+
+// Limita el alto del panel de filtros al espacio visible (en móvil 70vh se salía de la pantalla)
+function fitAdvPanel(){
+  const p=document.getElementById('advPanel');
+  if(!p) return;
+  if(!p.classList.contains('open')){p.style.maxHeight='';return;}
+  const bar=document.getElementById('globalLegalBar');
+  const barH=bar&&getComputedStyle(bar).display!=='none'?bar.offsetHeight:0;
+  const avail=window.innerHeight-p.getBoundingClientRect().top-barH-12;
+  p.style.maxHeight=Math.max(160,Math.min(window.innerHeight*.7,avail))+'px';
+}
+window.addEventListener('resize',fitAdvPanel);
 
 function recalcBody(){
   const hero=document.getElementById('hero').offsetHeight;
@@ -8776,6 +8808,17 @@ function _applyLandingHash(){
     <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;">Libro de Reclamaciones</a>
   </div>
 </div>
+
+<script>
+(function(){
+  const bar=document.getElementById('globalLegalBar');
+  if(!bar) return;
+  const sync=()=>document.documentElement.style.setProperty('--legal-h',bar.offsetHeight+'px');
+  sync();
+  if(window.ResizeObserver) new ResizeObserver(sync).observe(bar);
+  else window.addEventListener('resize',sync);
+})();
+</script>
 
 <!-- COOKIE CONSENT BANNER -->
 <div class="cookie-banner" id="cookieBanner">
