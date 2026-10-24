@@ -348,6 +348,61 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
     expect(num).toBe(1);
   });
 
+  // ── Estado: "En planos" = "En proyecto", antigüedad 0 ─────────────
+  test('_pubBulkEstado acepta En planos / preventa como En proyecto', async ({ page }) => {
+    const r = await page.evaluate(() => [
+      _pubBulkEstado('En planos'), _pubBulkEstado('en proyecto'), _pubBulkEstado('Preventa'),
+      _pubBulkEstado('En construcción'), _pubBulkEstado('Construido'), _pubBulkEstado('Estreno'),
+      _pubBulkEstado(''), _pubBulkEstado('Bueno'),
+    ]);
+    expect(r).toEqual(['En proyecto', 'En proyecto', 'En proyecto', 'En construcción', 'Construido', 'Construido', '', '']);
+  });
+
+  test('_pubBulkRowToPubData: En planos → En proyecto con antigüedad 0', async ({ page }) => {
+    const d = await page.evaluate(() => _pubBulkRowToPubData({
+      direccion: 'A 1', distrito: 'Lince', precio: '1', area_techada: '1', titulo: 't', descripcion: 'd',
+      estado: 'En planos', antiguedad: '7',
+    }));
+    expect(d.estado).toBe('En proyecto');
+    expect(d.age).toBe(0);
+  });
+
+  test('_pubBulkValidateRow avisa estado no reconocido y antigüedad en proyecto', async ({ page }) => {
+    const w = await page.evaluate(() => {
+      const base = { direccion: 'A 1', distrito: 'Lince', precio: '1', area_techada: '1', titulo: 't', descripcion: 'd' };
+      return [
+        _pubBulkValidateRow({ ...base, estado: 'Bueno' }),
+        _pubBulkValidateRow({ ...base, estado: 'En planos', antiguedad: '3' }),
+        _pubBulkValidateRow({ ...base, estado: 'Construido', antiguedad: '3' }),
+      ];
+    });
+    expect(w[0].valid).toBe(true);
+    expect(w[0].warnings.join(' ')).toContain('Estado no reconocido');
+    expect(w[1].warnings.join(' ')).toContain('antigüedad se publicará como 0');
+    expect(w[2].warnings).toEqual([]);
+  });
+
+  test('plantilla documenta En proyecto (y acepta En planos)', async ({ page }) => {
+    const h = await page.evaluate(() => _PUB_TPL_HELP.find(x => x[0] === 'estado'));
+    expect(h[2]).toBe('Construido / En proyecto / En construcción');
+    expect(h[3]).toContain('En planos');
+  });
+
+  test('formulario individual: elegir En proyecto fija antigüedad 0', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      _pd = { age: 12, estado: 'Construido' };
+      document.body.insertAdjacentHTML('beforeend', '<input id="pubAgeInput" value="12">');
+      _pubSetEstado('En proyecto');
+      const inp = document.getElementById('pubAgeInput');
+      const afterProj = { age: _pd.age, val: inp.value, disabled: inp.disabled };
+      _pubSetEstado('Construido');
+      return { afterProj, disabledAfter: inp.disabled, estado: _pd.estado };
+    });
+    expect(r.afterProj).toEqual({ age: 0, val: '0', disabled: true });
+    expect(r.disabledAfter).toBe(false);
+    expect(r.estado).toBe('Construido');
+  });
+
   // ── Photo assistant (MEJ-01) ─────────────────────────────────────
   test('_PUB_BULK_PHOTO_MAX is 12', async ({ page }) => {
     const max = await page.evaluate(() => _PUB_BULK_PHOTO_MAX);

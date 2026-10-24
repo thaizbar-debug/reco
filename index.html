@@ -6600,6 +6600,13 @@ function closePublish(){
   if(typeof recalcBody==='function') recalcBody();
   if(typeof _refreshMainMap==='function') _refreshMainMap();
 }
+// Un inmueble En proyecto todavía no existe: su antigüedad es 0.
+function _pubSetEstado(v){
+  _pd.estado=v;
+  const inp=document.getElementById('pubAgeInput');
+  if(v==='En proyecto'){ _pd.age=0; if(inp){ inp.value=0; inp.disabled=true; } }
+  else if(inp) inp.disabled=false;
+}
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
 function renderPublish(){
@@ -6706,9 +6713,9 @@ function _rps(){
         </div>
         <div id="pubFloorsSummary" style="font-size:12px;color:var(--blue);margin:-2px 0 6px">${_pubFloorsText()}</div>
         <div class="pub-field row">
-          <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
+          <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input id="pubAgeInput" type="number" min="0" value="${_pd.estado==='En proyecto'?0:_pd.age}" ${_pd.estado==='En proyecto'?'disabled':''} oninput="_pd.age=Number(this.value)" placeholder="0"></div>
           <div><label>Estado</label>
-            <select oninput="_pd.estado=this.value">
+            <select oninput="_pubSetEstado(this.value)">
               <option${_pd.estado==='En proyecto'?' selected':''}>En proyecto</option>
               <option${_pd.estado==='En construcción'?' selected':''}>En construcción</option>
               <option${_pd.estado==='Construido'?' selected':''}>Construido</option>
@@ -7118,7 +7125,8 @@ async function _ppub(){
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
-      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1), age: _pd.age,
+      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1),
+      age: _pd.estado==='En proyecto' ? 0 : _pd.age,
       estado: _pd.estado,
       ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
       features: _pubFeaturesWithLevelTag(),
@@ -7467,7 +7475,7 @@ const _PUB_TPL_HELP=[
   ['piso','Opcional','Número','Piso en que está el inmueble. 0 si está a nivel de calle.'],
   ['niveles','Opcional','Número','Niveles que ocupa el inmueble (1 = un nivel, 2 = dúplex, 3 = tríplex). Por defecto: 1. Requiere que PR C (unitFloors) esté desplegado en la Cloud Function; hasta entonces el valor se envía pero el servidor lo ignora.'],
   ['antiguedad','Opcional','Número','Años de antigüedad. 0 = a estrenar.'],
-  ['estado','Opcional','Construido / En planos / En construcción','Por defecto: Construido.'],
+  ['estado','Opcional','Construido / En proyecto / En construcción','Por defecto: Construido. "En planos" y "Preventa" se aceptan como En proyecto. Un inmueble En proyecto se publica con antigüedad 0.'],
   ['ascensor','Opcional','Sí / No','Por defecto: No.'],
   ['amoblado','Opcional','Sí / No','Por defecto: No.'],
   ['pet_friendly','Opcional','Sí / No','Por defecto: No.'],
@@ -7581,7 +7589,18 @@ const _PUB_BULK_COST_PER = _PUB_COST;
 const _PUB_BULK_TYPES = ['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
 const _PUB_BULK_OPS = ['Venta','Alquiler'];
 const _PUB_BULK_CURRENCIES = ['USD','PEN'];
-const _PUB_BULK_ESTADOS = ['Construido','En planos','En construcción'];
+// Mismos valores que el formulario individual y PUB_ESTADOS en functions/index.js.
+const _PUB_BULK_ESTADOS = ['Construido','En proyecto','En construcción'];
+// "En planos" (nombre antiguo de la plantilla) y "preventa" = En proyecto.
+// Devuelve '' si no se reconoce.
+function _pubBulkEstado(v){
+  const n=String(v==null?'':v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+  if(!n) return '';
+  if(/plano|proyecto|preventa/.test(n)) return 'En proyecto';
+  if(/construccion|obra/.test(n)) return 'En construcción';
+  if(/construid|estreno|terminad/.test(n)) return 'Construido';
+  return '';
+}
 let _pubBulkRows = [];
 
 function _pubParseBool(v){
@@ -7632,6 +7651,9 @@ function _pubBulkValidateRow(r){
   const lat=r.latitud?Number(r.latitud):null;
   const lng=r.longitud?Number(r.longitud):null;
   if(lat!==null && lng!==null) warns.push(..._pubValidateCoords(lat,lng));
+  const est=_pubBulkEstado(r.estado);
+  if(r.estado && String(r.estado).trim() && !est) warns.push('Estado no reconocido: '+r.estado+' — se usará Construido');
+  if(est==='En proyecto' && Number(r.antiguedad)>0) warns.push('En proyecto: la antigüedad se publicará como 0');
   const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN); warns.push(...tgG.warnings);
   const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB); warns.push(...tgA.warnings);
   const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA); warns.push(...tgV.warnings);
@@ -7643,6 +7665,7 @@ function _pubBulkValidateRow(r){
 // departamento y provincia se usan para geocoding, NO se persisten.
 function _pubBulkRowToPubData(r){
   const uF=Math.max(1,Number(r.niveles)||1);
+  const estado=_pubBulkEstado(r.estado)||'Construido';
   const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN).tags;
   const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB).tags;
   const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA).tags;
@@ -7673,8 +7696,8 @@ function _pubBulkRowToPubData(r){
     floor: Number(r.piso)||0,
     unitFloors: uF,
     floors: Number(r.nro_pisos)||0,
-    age: Number(r.antiguedad)||0,
-    estado: _PUB_BULK_ESTADOS.includes(r.estado)?r.estado:'Construido',
+    age: estado==='En proyecto' ? 0 : (Number(r.antiguedad)||0),
+    estado,
     ascensor: _pubParseBool(r.ascensor),
     amoblado: _pubParseBool(r.amoblado),
     petFriendly: _pubParseBool(r.pet_friendly),

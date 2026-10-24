@@ -312,7 +312,9 @@ exports.publishProperty = onCall(
     const area = Number(raw.area);
     if (!isFinite(area) || area <= 0) throw new HttpsError('invalid-argument', 'area inválida.');
 
-    const estado = PUB_ESTADOS.includes(raw.estado) ? raw.estado : 'Construido';
+    // "En planos" es el nombre que usaba la plantilla de carga masiva.
+    const estadoRaw = raw.estado === 'En planos' ? 'En proyecto' : raw.estado;
+    const estado = PUB_ESTADOS.includes(estadoRaw) ? estadoRaw : 'Construido';
     const source = PUB_SOURCES.includes(raw.source) ? raw.source : 'single';
     const features = Array.isArray(raw.features)
       ? raw.features.filter(f => typeof f === 'string' && f.length < 100).slice(0, 30)
@@ -359,7 +361,8 @@ exports.publishProperty = onCall(
         floor: numOrZero(raw.floor),
         unitFloors: Math.max(1, numOrZero(raw.unitFloors) || 1),
         floors: numOrZero(raw.floors),
-        age: numOrZero(raw.age),
+        // Un inmueble en proyecto todavía no existe: antigüedad 0.
+        age: estado === 'En proyecto' ? 0 : numOrZero(raw.age),
         estado,
         ascensor: Boolean(raw.ascensor),
         amoblado: Boolean(raw.amoblado),
