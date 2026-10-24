@@ -199,9 +199,104 @@
     return { row, notas: est.notas.filter((n) => n.indexOf('no reconocido') === -1) };
   }
 
+  // ── Verificación previa a publicar ──
+  // Qué exige cada tipo de inmueble. `area` (en la publicación y en toda la
+  // app: tarjetas, filtros, precio por m²) es el ÁREA PRINCIPAL: la techada,
+  // salvo en Terreno, donde es la de terreno (igual que en properties.json).
+  //   requiere:   'techada' | 'terreno' | 'alguna'
+  //   recomienda: área que conviene indicar (solo aviso)
+  //   noAplica:   campos que no tienen sentido para el tipo; se publican en 0
+  const NO_APLICA_TERRENO = ['beds', 'baths', 'parking', 'floor', 'floors', 'unitFloors', 'age', 'ascensor', 'amoblado', 'petFriendly'];
+  const REGLAS_TIPO = {
+    'Departamento': { requiere: 'techada' },
+    'Oficina': { requiere: 'techada' },
+    'Local comercial': { requiere: 'techada' },
+    'Casa': { requiere: 'techada', recomienda: 'terreno' },
+    'Terreno': { requiere: 'terreno', noAplica: NO_APLICA_TERRENO },
+    'Otros': { requiere: 'alguna' },
+  };
+  const ETIQUETAS = { beds: 'dormitorios', baths: 'baños', parking: 'estacionamientos', floor: 'piso',
+    floors: 'pisos del edificio', unitFloors: 'niveles', age: 'antigüedad', ascensor: 'ascensor',
+    amoblado: 'amoblado', petFriendly: 'pet friendly' };
+  const MAX_TITULO = 200;
+  const MAX_DESCRIPCION = 5000;
+
+  // Verifica una publicación (forma de publishProperty: type, op, currency,
+  // price, area = área techada, areaTerr, beds, …, address, district, title,
+  // desc) antes de publicarla. La usan publishProperty (autoridad final), la
+  // carga masiva y el formulario individual, así que las reglas son las
+  // mismas en todos lados.
+  //   opts.soloDatos: omite título y descripción (paso 1 del formulario).
+  // Devuelve:
+  //   errores: bloquean la publicación. Cada mensaje empieza por el nombre
+  //            del campo ("área techada…", "precio…") para poder marcarlo.
+  //   avisos:  no bloquean.
+  //   datos:   area (principal), areaTech, areaTerr y los campos que no
+  //            aplican ya en 0 / false; lo que se debe guardar.
+  function verificarPublicacion(d, opts) {
+    const p = d || {};
+    const errores = [];
+    const avisos = [];
+    const txt = (v) => String(v == null ? '' : v).trim();
+    const num = (v) => (v == null || v === '' ? 0 : Number(v));
+
+    if (!opts || !opts.soloDatos) {
+      if (!txt(p.title)) errores.push('título vacío');
+      else if (txt(p.title).length > MAX_TITULO) errores.push(`título muy largo (máx. ${MAX_TITULO} caracteres)`);
+      if (!txt(p.desc)) errores.push('descripción vacía');
+      else if (txt(p.desc).length > MAX_DESCRIPCION) errores.push(`descripción muy larga (máx. ${MAX_DESCRIPCION} caracteres)`);
+    }
+    if (!txt(p.address)) errores.push('dirección vacía');
+    if (!txt(p.district)) errores.push('distrito vacío');
+
+    const type = matchType(p.type);
+    if (!type) errores.push('tipo debe ser: ' + TYPES.join(' / '));
+    if (!matchOp(p.op)) errores.push('operacion debe ser Venta o Alquiler');
+    if (!matchCurrency(p.currency)) errores.push('moneda debe ser USD o PEN');
+
+    const price = num(p.price);
+    if (!isFinite(price) || price <= 0) errores.push('precio inválido: debe ser mayor que 0');
+
+    const techada = num(p.area);
+    const terreno = num(p.areaTerr);
+    if (!isFinite(techada) || techada < 0) errores.push('área techada inválida');
+    if (!isFinite(terreno) || terreno < 0) errores.push('área de terreno inválida');
+    const tech = isFinite(techada) && techada > 0 ? techada : 0;
+    const terr = isFinite(terreno) && terreno > 0 ? terreno : 0;
+
+    const regla = REGLAS_TIPO[type] || REGLAS_TIPO.Otros;
+    if (regla.requiere === 'techada' && !tech && isFinite(techada) && techada >= 0) errores.push(`área techada obligatoria para ${type || 'este tipo'}`);
+    if (regla.requiere === 'terreno' && !terr && isFinite(terreno) && terreno >= 0) errores.push('área de terreno obligatoria para Terreno');
+    if (regla.requiere === 'alguna' && !tech && !terr) errores.push('área techada o de terreno: indica al menos una');
+    if (regla.recomienda === 'terreno' && !terr) avisos.push(`${type} sin área de terreno: se recomienda indicarla.`);
+
+    const datos = { area: type === 'Terreno' ? terr : (tech || terr), areaTech: tech, areaTerr: terr };
+
+    // Una casa no puede techar más que su terreno por cada piso.
+    const pisos = Math.max(1, num(p.floors) || 0, num(p.unitFloors) || 0);
+    if (type === 'Casa' && tech && terr && tech > terr * pisos) {
+      avisos.push('El área techada supera el terreno multiplicado por los pisos: revisa las áreas.');
+    }
+    const floor = num(p.floor) || 0, uF = Math.max(1, num(p.unitFloors) || 1), floors = num(p.floors) || 0;
+    if (type !== 'Terreno' && floors > 0 && floor > 0 && floor + uF - 1 > floors) {
+      avisos.push('Piso + niveles supera la altura del edificio');
+    }
+
+    const ignorados = [];
+    (regla.noAplica || []).forEach((k) => {
+      const esBool = ['ascensor', 'amoblado', 'petFriendly'].includes(k);
+      const tiene = esBool ? p[k] === true : (k === 'unitFloors' ? num(p[k]) > 1 : num(p[k]) > 0);
+      if (tiene) ignorados.push(ETIQUETAS[k]);
+      datos[k] = esBool ? false : (k === 'unitFloors' ? 1 : 0);
+    });
+    if (ignorados.length) avisos.push(`${type}: ${ignorados.join(', ')} no aplica${ignorados.length > 1 ? 'n' : ''} y no se publicará${ignorados.length > 1 ? 'n' : ''}.`);
+
+    return { errores, avisos, datos };
+  }
+
   return {
-    TYPES, OPS, CURRENCIES, ESTADOS, ESTADOS_SIN_ANTIGUEDAD,
+    TYPES, OPS, CURRENCIES, ESTADOS, ESTADOS_SIN_ANTIGUEDAD, REGLAS_TIPO,
     norm, matchType, matchOp, matchEstado, matchCurrency, matchBool, parseAntiguedad,
-    resolveEstadoAntiguedad, standardizeRow,
+    resolveEstadoAntiguedad, standardizeRow, verificarPublicacion,
   };
 });
