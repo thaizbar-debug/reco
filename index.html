@@ -14,7 +14,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
-<!-- Núcleo de importación compartido con las Cloud Functions (window.RecoImport) -->
+<!-- Valores estándar y sinónimos, compartidos con las Cloud Functions (window.RecoCatalogo) -->
+<script src="functions/shared/catalogo.js"></script>
+<!-- Núcleo de importación compartido con las Cloud Functions (window.RecoImport; usa RecoCatalogo) -->
 <script src="functions/shared/import-core.js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
@@ -6602,6 +6604,14 @@ function closePublish(){
   if(typeof recalcBody==='function') recalcBody();
   if(typeof _refreshMainMap==='function') _refreshMainMap();
 }
+// En proyecto / En construcción: aún no terminado, su antigüedad es 0.
+function _pubSinAntiguedad(estado){ return estado==='En proyecto' || estado==='En construcción'; }
+function _pubSetEstado(v){
+  _pd.estado=v;
+  const inp=document.getElementById('pubAgeInput');
+  if(_pubSinAntiguedad(v)){ _pd.age=0; if(inp){ inp.value=0; inp.disabled=true; } }
+  else if(inp) inp.disabled=false;
+}
 function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
 function renderPublish(){
@@ -6709,9 +6719,9 @@ function _rps(){
         </div>
         <div id="pubFloorsSummary" style="font-size:12px;color:var(--blue);margin:-2px 0 6px">${_pubFloorsText()}</div>
         <div class="pub-field row">
-          <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input type="number" min="0" value="${_pd.age}" oninput="_pd.age=Number(this.value)" placeholder="0"></div>
+          <div><label>Antigüedad <span style="font-weight:400;color:var(--muted)">(años, 0 = a estrenar)</span></label><input id="pubAgeInput" type="number" min="0" value="${_pubSinAntiguedad(_pd.estado)?0:_pd.age}" ${_pubSinAntiguedad(_pd.estado)?'disabled':''} oninput="_pd.age=Number(this.value)" placeholder="0"></div>
           <div><label>Estado</label>
-            <select oninput="_pd.estado=this.value">
+            <select oninput="_pubSetEstado(this.value)">
               <option${_pd.estado==='En proyecto'?' selected':''}>En proyecto</option>
               <option${_pd.estado==='En construcción'?' selected':''}>En construcción</option>
               <option${_pd.estado==='Construido'?' selected':''}>Construido</option>
@@ -7121,7 +7131,8 @@ async function _ppub(){
       price: Number(_pd.price)||0,
       areaTerr: Number(_pd.areaTerr)||0, area: Number(_pd.area)||0,
       beds: _pd.beds, baths: _pd.baths, parking: _pd.parking,
-      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1), age: _pd.age,
+      floor: _pd.floor, floors: _pd.floors, unitFloors: Math.max(1, Number(_pd.unitFloors) || 1),
+      age: _pubSinAntiguedad(_pd.estado) ? 0 : _pd.age,
       estado: _pd.estado,
       ascensor: !!_pd.ascensor, amoblado: !!_pd.amoblado, petFriendly: !!_pd.petFriendly,
       features: _pubFeaturesWithLevelTag(),
@@ -7273,10 +7284,11 @@ const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propi
 function _pubBulkEdit(i,key,val){
   const a=_pubBulkRows[i]; if(!a) return;
   a.row[key]=String(val==null?'':val).trim();
+  a.row=_pubBulkStandardize(a.row).row;
   if(!a.edited) a.edited={};
   a.edited[key]=1;
   const v=_pubBulkValidateRow(a.row);
-  a.valid=v.valid; a.errors=v.errors; a.warnings=v.warnings||[];
+  a.valid=v.valid; a.errors=v.errors; a.warnings=(a.stdNotes||[]).concat(v.warnings||[]);
   _pubDraftSync(a);
   _pubBulkRefresh();
 }
@@ -7484,20 +7496,20 @@ const _PUB_TPL_HELP=[
   ['latitud','Opcional','Número','Latitud GPS. Si se deja vacío, se geocodifica a partir de la dirección.'],
   ['longitud','Opcional','Número','Longitud GPS. Si se deja vacío, se geocodifica a partir de la dirección.'],
   ['mostrar_direccion','Opcional','Sí / No','Sí = la dirección exacta se muestra al público. No = solo se muestra el distrito. Por defecto: Sí.'],
-  ['tipo_publicacion','Obligatorio','Venta / Alquiler','Escribe exactamente uno de esos valores.'],
-  ['tipo_propiedad','Obligatorio','Departamento / Casa / Oficina / Local comercial / Terreno / Otros','Escribe exactamente uno de esos valores.'],
+  ['tipo_publicacion','Obligatorio','Venta / Alquiler','También se aceptan sinónimos y abreviaturas: Se vende, Vta., V, Alq., A, Arriendo, Renta…'],
+  ['tipo_propiedad','Obligatorio','Departamento / Casa / Oficina / Local comercial / Terreno / Otros','También se aceptan sinónimos y abreviaturas: Dpto., Depa, Dúplex, Of., Loc., Lote, Terr.…'],
   ['nro_dormitorios','Opcional','Número','0 si no aplica.'],
   ['nro_banos','Opcional','Número','0 si no aplica.'],
   ['nro_estacionamientos','Opcional','Número','0 si no aplica.'],
   ['nro_pisos','Opcional','Número','Pisos totales del edificio o casa.'],
   ['piso','Opcional','Número','Piso en que está el inmueble. 0 si está a nivel de calle.'],
   ['niveles','Opcional','Número','Niveles que ocupa el inmueble (1 = un nivel, 2 = dúplex, 3 = tríplex). Por defecto: 1. Requiere que PR C (unitFloors) esté desplegado en la Cloud Function; hasta entonces el valor se envía pero el servidor lo ignora.'],
-  ['antiguedad','Opcional','Número','Años de antigüedad. 0 = a estrenar.'],
-  ['estado','Opcional','Construido / En planos / En construcción','Por defecto: Construido.'],
+  ['antiguedad','Opcional','Número','Años de antigüedad (o el año de construcción, ej. 2015). 0, "a estrenar" o "A/E" = nuevo. En proyecto o En construcción siempre se publica con 0.'],
+  ['estado','Opcional','Construido / En proyecto / En construcción','Por defecto: Construido. Sinónimos aceptados: En planos, Preventa, Proy. = En proyecto; En obra, E/C, En const. = En construcción; Terminado, Entrega inmediata, A estrenar = Construido. En proyecto y En construcción se publican con antigüedad 0.'],
   ['ascensor','Opcional','Sí / No','Por defecto: No.'],
   ['amoblado','Opcional','Sí / No','Por defecto: No.'],
   ['pet_friendly','Opcional','Sí / No','Por defecto: No.'],
-  ['tipo_moneda','Obligatorio','USD / PEN','USD = dólares, PEN = soles.'],
+  ['tipo_moneda','Obligatorio','USD / PEN','USD = dólares ($, US$, U$S, Dls.); PEN = soles (S/, S/., Soles).'],
   ['precio','Obligatorio','Número','Sin símbolo de moneda ni separadores de miles.'],
   ['area_terreno','Opcional','Número','Área del terreno en m². 0 si no aplica.'],
   ['area_techada','Obligatorio','Número','Área techada en metros cuadrados.'],
@@ -7604,22 +7616,24 @@ function _pubParseCSV(text){
 const _PUB_BULK_MAX = 200;
 const _PUB_COST = 0;
 const _PUB_BULK_COST_PER = _PUB_COST;
+// Valores canónicos y sinónimos: functions/shared/catalogo.js (RecoCatalogo),
+// el mismo catálogo que usa publishProperty en el servidor. Las listas se
+// repiten aquí para que, si ese archivo no cargara, el resto de la página
+// siga funcionando (el test "RecoCatalogo… alimenta las listas" las compara).
 const _PUB_BULK_TYPES = ['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'];
 const _PUB_BULK_OPS = ['Venta','Alquiler'];
 const _PUB_BULK_CURRENCIES = ['USD','PEN'];
-const _PUB_BULK_ESTADOS = ['Construido','En planos','En construcción'];
+const _PUB_BULK_ESTADOS = ['En proyecto','En construcción','Construido'];
 let _pubBulkRows = [];
 
-function _pubParseBool(v){
-  if(v===true||v===1) return true;
-  if(v===false||v===0) return false;
-  const s=String(v||'').trim().toLowerCase();
-  return /^(s[ií]|yes|true|verdadero|1)$/i.test(s);
-}
-function _pubParseBoolInvert(v){
-  const s=String(v||'').trim().toLowerCase();
-  if(!s) return false;
-  return !_pubParseBool(v);
+function _pubParseBool(v){ return RecoCatalogo.matchBool(v)===true; }
+// mostrar_direccion: solo un "No" explícito oculta la dirección.
+function _pubParseBoolInvert(v){ return RecoCatalogo.matchBool(v)===false; }
+// Estandariza tipo, operación, moneda, estado, antigüedad y sí/no de una fila
+// de la plantilla (ver RecoCatalogo.standardizeRow).
+function _pubBulkStandardize(r){
+  const out=RecoCatalogo.standardizeRow(r);
+  return { row:out.row, notes:out.notas };
 }
 function _pubParseTagCol(raw, validList){
   const warnings=[];
@@ -7648,9 +7662,9 @@ function _pubBulkValidateRow(r){
   need('titulo','título'); need('descripcion','descripción');
   const price=Number(r.precio); if(!isFinite(price)||price<=0) errs.push('precio inválido');
   const area=Number(r.area_techada); if(!isFinite(area)||area<=0) errs.push('área inválida');
-  if(r.tipo_propiedad && !_PUB_BULK_TYPES.includes(r.tipo_propiedad)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
-  if(r.tipo_publicacion && !_PUB_BULK_OPS.includes(r.tipo_publicacion)) errs.push('operacion debe ser Venta o Alquiler');
-  if(r.tipo_moneda && !_PUB_BULK_CURRENCIES.includes(r.tipo_moneda)) errs.push('moneda debe ser USD o PEN');
+  if(r.tipo_propiedad && !RecoCatalogo.matchType(r.tipo_propiedad)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
+  if(r.tipo_publicacion && !RecoCatalogo.matchOp(r.tipo_publicacion)) errs.push('operacion debe ser Venta o Alquiler');
+  if(r.tipo_moneda && !RecoCatalogo.matchCurrency(r.tipo_moneda)) errs.push('moneda debe ser USD o PEN');
   const floor=Number(r.piso)||0;
   const niveles=Math.max(1,Number(r.niveles)||1);
   const nroPisos=Number(r.nro_pisos)||0;
@@ -7658,6 +7672,7 @@ function _pubBulkValidateRow(r){
   const lat=r.latitud?Number(r.latitud):null;
   const lng=r.longitud?Number(r.longitud):null;
   if(lat!==null && lng!==null) warns.push(..._pubValidateCoords(lat,lng));
+  warns.push(...RecoCatalogo.resolveEstadoAntiguedad(r.estado,r.antiguedad).notas);
   const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN); warns.push(...tgG.warnings);
   const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB); warns.push(...tgA.warnings);
   const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA); warns.push(...tgV.warnings);
@@ -7669,6 +7684,7 @@ function _pubBulkValidateRow(r){
 // departamento y provincia se usan para geocoding, NO se persisten.
 function _pubBulkRowToPubData(r){
   const uF=Math.max(1,Number(r.niveles)||1);
+  const { estado, antiguedad } = RecoCatalogo.resolveEstadoAntiguedad(r.estado,r.antiguedad);
   const tgG=_pubParseTagCol(r.etiquetas_generales,_PUB_FEATS_GEN).tags;
   const tgA=_pubParseTagCol(r.etiquetas_ambientes,_PUB_FEATS_AMB).tags;
   const tgV=_pubParseTagCol(r.etiquetas_vista,_PUB_FEATS_VISTA).tags;
@@ -7687,9 +7703,9 @@ function _pubBulkRowToPubData(r){
     lat: (lat!==null && isFinite(lat)) ? lat : null,
     lng: (lng!==null && isFinite(lng)) ? lng : null,
     hideExact,
-    type: r.tipo_propiedad || 'Departamento',
-    op: r.tipo_publicacion || 'Venta',
-    currency: r.tipo_moneda || 'USD',
+    type: RecoCatalogo.matchType(r.tipo_propiedad) || 'Departamento',
+    op: RecoCatalogo.matchOp(r.tipo_publicacion) || 'Venta',
+    currency: RecoCatalogo.matchCurrency(r.tipo_moneda) || 'USD',
     price: Number(r.precio)||0,
     areaTerr: Number(r.area_terreno)||0,
     area: Number(r.area_techada)||0,
@@ -7699,8 +7715,8 @@ function _pubBulkRowToPubData(r){
     floor: Number(r.piso)||0,
     unitFloors: uF,
     floors: Number(r.nro_pisos)||0,
-    age: Number(r.antiguedad)||0,
-    estado: _PUB_BULK_ESTADOS.includes(r.estado)?r.estado:'Construido',
+    age: antiguedad,
+    estado,
     ascensor: _pubParseBool(r.ascensor),
     amoblado: _pubParseBool(r.amoblado),
     petFriendly: _pubParseBool(r.pet_friendly),
@@ -7850,21 +7866,30 @@ function _pubBulkApplyMap(){
 // Precio, áreas, ambientes, tipo, operación, moneda y distrito se
 // normalizan con RecoImport (functions/shared/import-core.js), el mismo
 // código que usa el servidor: "US$ 185,000", "S/ 450 mil", "3 dorm"…
+// Tipo, operación, moneda, estado, antigüedad y sí/no los estandariza
+// RecoCatalogo (dentro de normalizeRow); stdNotes son sus avisos.
 function _pubNormalizeImportRow(r){
-  if(typeof RecoImport==='undefined') return { row:r, notes:[] };
+  if(typeof RecoImport==='undefined'){
+    if(typeof RecoCatalogo==='undefined') return { row:r, notes:[], stdNotes:[] };
+    const std=_pubBulkStandardize(r);
+    return { row:std.row, notes:[], stdNotes:std.notes };
+  }
   const n=RecoImport.normalizeRow(r);
-  return { row:n.row, notes:_pubImportNotes(n.changes) };
+  return { row:n.row, notes:_pubImportNotes(n.changes), stdNotes:n.notas||[] };
 }
 function _pubImportNotes(changes){
   return (changes||[]).filter(c=>c.pii).map(c=>`Quitamos ${c.pii} dato${c.pii!==1?'s':''} de contacto de ${c.field}.`);
 }
 function _pubBulkEntry(row,extra){
-  return { row, photos:[], draftId:null, source:_pubBulkSource, aiFields:[], inferred:[], edited:{}, notes:[], dupe:'', ...extra, ...(_pubBulkValidateRow(row)) };
+  const v=_pubBulkValidateRow(row);
+  const stdNotes=(extra&&extra.stdNotes)||[];
+  return { row, photos:[], draftId:null, source:_pubBulkSource, aiFields:[], inferred:[], edited:{}, notes:[], dupe:'', ...extra, ...v,
+    stdNotes, warnings:stdNotes.concat(v.warnings||[]) };
 }
 function _pubBulkLoadRows(rows){
   _pubBulkSource = /\.csv$/i.test(_pubBulkFileName||'') ? 'csv' : 'excel';
   _pubBulkBatchId = '';
-  _pubBulkRows = rows.map(r => { const n=_pubNormalizeImportRow(r); return _pubBulkEntry(n.row,{notes:n.notes}); });
+  _pubBulkRows = rows.map(r => { const n=_pubNormalizeImportRow(r); return _pubBulkEntry(n.row,{notes:n.notes,stdNotes:n.stdNotes}); });
   _pubBulkPhotoIdx=0;
   _pubBulkGo(2);
   _pubDraftsSave();

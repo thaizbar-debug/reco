@@ -48,6 +48,20 @@ test.describe('Fase 0: carga inteligente — bandeja de revisión', () => {
     expect(r.notes[0]).toContain('contacto');
   });
 
+  test('bandeja: abreviaturas y En construcción → antigüedad 0, con aviso', async ({ page }) => {
+    const a = await page.evaluate(() => {
+      _pubBulkFileName = 'x.xlsx';
+      _pubBulkLoadRows([{ direccion: 'Jr. A 1', distrito: 'sjl', tipo_publicacion: 'Vta.', tipo_propiedad: 'Dpto.',
+        tipo_moneda: 'S/.', precio: '350 mil', area_techada: '70', estado: 'E/C', antiguedad: '3', titulo: 't', descripcion: 'd' }]);
+      return _pubBulkRows[0];
+    });
+    expect(a.valid).toBe(true);
+    expect([a.row.tipo_publicacion, a.row.tipo_propiedad, a.row.tipo_moneda, a.row.precio, a.row.distrito])
+      .toEqual(['Venta', 'Departamento', 'PEN', '350000', 'San Juan de Lurigancho']);
+    expect([a.row.estado, a.row.antiguedad]).toEqual(['En construcción', '0']);
+    expect(a.warnings.join(' ')).toContain('se publicará como 0');
+  });
+
   test('mapeo de Excel propio: "S/ 450 mil" ya no se pierde', async ({ page }) => {
     const row = await page.evaluate(() => {
       _pubBulkRaw = [{ dir: 'Jr. X 123', zona: 'Surco', valor: 'S/ 450 mil', metraje: '120,5', nombre: 'Casa', detalle: 'Casa amplia' }];

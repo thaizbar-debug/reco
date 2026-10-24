@@ -13,10 +13,10 @@ El proyecto usa [Playwright](https://playwright.dev/) como suite de pruebas E2E.
 | MEJ-05: Campos de pisos | `tests/mej05-floors.spec.js` | 7 |
 | MEJ-06: Legacy tag mapping | `tests/mej05-floors.spec.js` | 3 |
 | Carga masiva (30 columnas) | `tests/bulk-upload.spec.js` | 28 |
-| Carga inteligente Fase 0: bandeja, borradores, duplicados | `tests/import-phase0.spec.js` | 7 |
+| Carga inteligente Fase 0: bandeja, borradores, duplicados | `tests/import-phase0.spec.js` | 8 |
 | Carga inteligente Fase 0: `extractListings` + `publishProperty` (handlers reales) | `tests/import-engine.test.js` | 6 |
 
-Los normalizadores compartidos (`functions/shared/import-core.js`) tienen tests unitarios sin dependencias:
+El catálogo de valores estándar (`functions/shared/catalogo.js`) y los normalizadores (`functions/shared/import-core.js`) tienen tests unitarios sin dependencias:
 `cd functions && npm test`.
 
 ### Ejecutar localmente

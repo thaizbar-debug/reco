@@ -11,7 +11,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "node index.test.js && node shared/import-core.test.js"
+    "test": "node index.test.js && node shared/catalogo.test.js && node shared/import-core.test.js"
   },
   "dependencies": {
     "firebase-admin": "^12.4.0",

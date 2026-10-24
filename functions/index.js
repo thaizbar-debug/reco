@@ -21,6 +21,7 @@ const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
+const RecoCatalogo = require('./shared/catalogo');
 const RecoImport = require('./shared/import-core');
 
 initializeApp();
@@ -120,10 +121,8 @@ function requireVerifiedAuth(request) {
   }
 }
 
-const PUB_TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
-const PUB_OPS = ['Venta', 'Alquiler'];
-const PUB_CURRENCIES = ['USD', 'PEN'];
-const PUB_ESTADOS = ['En proyecto', 'En construcción', 'Construido'];
+// Tipo, operación, moneda y estado: valores canónicos y sinónimos en
+// shared/catalogo.js (el mismo archivo que usa index.html).
 // 'bulk' = Excel/CSV (nombre histórico); el resto son los canales del
 // roadmap de carga inteligente (docs/ROADMAP-CARGA-INTELIGENTE.md).
 const PUB_SOURCES = ['single', 'bulk', 'text', 'whatsapp', 'url', 'pdf', 'feed'];
@@ -317,16 +316,21 @@ exports.publishProperty = onCall(
     const title    = strOrThrow(raw.title, 'title', 200);
     const desc     = strOrThrow(raw.desc, 'desc', 5000);
 
-    if (!PUB_TYPES.includes(raw.type)) throw new HttpsError('invalid-argument', 'type inválido.');
-    if (!PUB_OPS.includes(raw.op)) throw new HttpsError('invalid-argument', 'op inválido.');
-    if (!PUB_CURRENCIES.includes(raw.currency)) throw new HttpsError('invalid-argument', 'currency inválido.');
+    const type = RecoCatalogo.matchType(raw.type);
+    const op = RecoCatalogo.matchOp(raw.op);
+    const currency = RecoCatalogo.matchCurrency(raw.currency);
+    if (!type) throw new HttpsError('invalid-argument', 'type inválido.');
+    if (!op) throw new HttpsError('invalid-argument', 'op inválido.');
+    if (!currency) throw new HttpsError('invalid-argument', 'currency inválido.');
 
     const price = Number(raw.price);
     if (!isFinite(price) || price <= 0) throw new HttpsError('invalid-argument', 'price inválido.');
     const area = Number(raw.area);
     if (!isFinite(area) || area <= 0) throw new HttpsError('invalid-argument', 'area inválida.');
 
-    const estado = PUB_ESTADOS.includes(raw.estado) ? raw.estado : 'Construido';
+    // "En planos", "Preventa", "E/C"… → canónico. En proyecto y En
+    // construcción siempre se guardan con antigüedad 0.
+    const { estado, antiguedad: age } = RecoCatalogo.resolveEstadoAntiguedad(raw.estado, raw.age);
     const source = PUB_SOURCES.includes(raw.source) ? raw.source : 'single';
     const features = Array.isArray(raw.features)
       ? raw.features.filter(f => typeof f === 'string' && f.length < 100).slice(0, 30)
@@ -367,9 +371,9 @@ exports.publishProperty = onCall(
         listedAt: new Date().toISOString(),
         address, district,
         lat, lng,
-        type: raw.type,
-        op: raw.op,
-        currency: raw.currency,
+        type,
+        op,
+        currency,
         price,
         areaTerr: numOrZero(raw.areaTerr),
         area,
@@ -379,7 +383,7 @@ exports.publishProperty = onCall(
         floor: numOrZero(raw.floor),
         unitFloors: Math.max(1, numOrZero(raw.unitFloors) || 1),
         floors: numOrZero(raw.floors),
-        age: numOrZero(raw.age),
+        age,
         estado,
         ascensor: Boolean(raw.ascensor),
         amoblado: Boolean(raw.amoblado),
@@ -1556,12 +1560,13 @@ exports.extractListings = onCall(
       const rawRow = {};
       RecoImport.AI_FIELDS.forEach((k) => { rawRow[k] = it[k] == null ? '' : String(it[k]); });
       const guarded = RecoImport.guardInvented(rawRow, text);
-      const { row, changes } = RecoImport.normalizeRow(guarded.row);
+      const { row, changes, notas } = RecoImport.normalizeRow(guarded.row);
       const aiFields = RecoImport.COLS.filter((k) => row[k] !== '');
       const inferredFields = (Array.isArray(it.campos_inferidos) ? it.campos_inferidos : [])
         .filter((k) => aiFields.includes(k));
       const notes = guarded.dropped.map((k) => `Quitamos ${k}: no aparece en el texto.`)
-        .concat(changes.filter((c) => c.pii).map((c) => `Quitamos ${c.pii} dato(s) de contacto de ${c.field}.`));
+        .concat(changes.filter((c) => c.pii).map((c) => `Quitamos ${c.pii} dato(s) de contacto de ${c.field}.`))
+        .concat(notas);
       const ref = db.collection('importDrafts').doc();
       batch.set(ref, {
         uid, batchId, source: channel, sourceName,

@@ -33,28 +33,6 @@ assert.strictEqual(R.parseCount('tres'), 3);
 assert.strictEqual(R.parseCount('2.5'), 2);
 assert.strictEqual(R.parseCount(''), null);
 
-console.log('  matchOp / matchType / matchEstado / matchBool');
-assert.strictEqual(R.matchOp('Se vende'), 'Venta');
-assert.strictEqual(R.matchOp('ALQUILER'), 'Alquiler');
-assert.strictEqual(R.matchOp('renta'), 'Alquiler');
-assert.strictEqual(R.matchOp('xyz'), '');
-assert.strictEqual(R.matchType('Dpto.'), 'Departamento');
-assert.strictEqual(R.matchType('depa'), 'Departamento');
-assert.strictEqual(R.matchType('Dúplex'), 'Departamento');
-assert.strictEqual(R.matchType('Casa de playa'), 'Casa');
-assert.strictEqual(R.matchType('Local comercial'), 'Local comercial');
-assert.strictEqual(R.matchType('Lote'), 'Terreno');
-assert.strictEqual(R.matchType('Oficina'), 'Oficina');
-assert.strictEqual(R.matchType('Otros'), 'Otros');
-assert.strictEqual(R.matchEstado('Estreno'), 'Construido');
-assert.strictEqual(R.matchEstado('En planos'), 'En proyecto');
-assert.strictEqual(R.matchEstado('Preventa'), 'En proyecto');
-assert.strictEqual(R.matchEstado('en construcción'), 'En construcción');
-assert.strictEqual(R.matchBool('si'), 'Sí');
-assert.strictEqual(R.matchBool('X'), 'Sí');
-assert.strictEqual(R.matchBool('NO'), 'No');
-assert.strictEqual(R.matchBool(''), '');
-
 console.log('  matchDistrict');
 assert.strictEqual(R.matchDistrict('miraflores'), 'Miraflores');
 assert.strictEqual(R.matchDistrict('SAN ISIDRO'), 'San Isidro');
@@ -101,7 +79,16 @@ assert.ok(n.changes.some(c => c.field === 'descripcion' && c.pii === 1));
 assert.strictEqual(Object.keys(n.row).length, 31);
 
 console.log('  normalizeRow: año de construcción → antigüedad');
-assert.strictEqual(R.normalizeRow({ antiguedad: '2015' }, { year: 2026 }).row.antiguedad, '11');
+assert.strictEqual(R.normalizeRow({ antiguedad: '2015' }).row.antiguedad, String(new Date().getFullYear() - 2015));
+
+console.log('  normalizeRow: usa el catálogo (abreviaturas, estado y antigüedad 0)');
+const cat = R.normalizeRow({ tipo_propiedad: 'Of.', tipo_publicacion: 'Alq.', tipo_moneda: 'U$S', estado: 'E/C', antiguedad: '4', amoblado: 'x' });
+assert.deepStrictEqual(
+  [cat.row.tipo_propiedad, cat.row.tipo_publicacion, cat.row.tipo_moneda, cat.row.estado, cat.row.antiguedad, cat.row.amoblado],
+  ['Oficina', 'Alquiler', 'USD', 'En construcción', '0', 'Sí']);
+assert.ok(cat.notas.join(' ').includes('se publicará como 0'));
+const fromAge = R.normalizeRow({ antiguedad: 'en planos' }).row;
+assert.deepStrictEqual([fromAge.estado, fromAge.antiguedad], ['En proyecto', '0']);
 
 console.log('  normalizeRow: idempotente y sin cambios sobre la fila de ejemplo de la plantilla');
 const tpl = {

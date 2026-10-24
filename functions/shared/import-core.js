@@ -20,10 +20,12 @@
 // Reglas: nunca inventar un valor; ante la duda, devolver '' y dejar que el
 // usuario lo complete en la bandeja de revisión.
 // ─────────────────────────────────────────────────────────────────────────────
+// Tipo, operación, moneda, estado, antigüedad y sí/no se delegan en
+// catalogo.js (RecoCatalogo), que también usa la carga masiva y el servidor.
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.RecoImport = factory();
-})(typeof self !== 'undefined' ? self : this, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./catalogo'));
+  else if (root.RecoCatalogo) root.RecoImport = factory(root.RecoCatalogo);
+})(typeof self !== 'undefined' ? self : this, function (Catalogo) {
   'use strict';
 
   // Mismo orden que _PUB_TPL_COLS en index.html.
@@ -34,10 +36,6 @@
     'etiquetas_generales', 'etiquetas_ambientes', 'etiquetas_vista', 'etiquetas_acceso',
     'etiquetas_zonas', 'titulo', 'descripcion'];
   const REQUIRED = ['direccion', 'distrito', 'precio', 'area_techada', 'titulo', 'descripcion'];
-  const TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
-  const OPS = ['Venta', 'Alquiler'];
-  const CURRENCIES = ['USD', 'PEN'];
-  const ESTADOS = ['Construido', 'En proyecto', 'En construcción'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
   const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'url', 'pdf', 'feed'];
@@ -133,51 +131,6 @@
     const w = s.split(' ').find(t => WORD_NUMBERS[t] != null);
     return w ? WORD_NUMBERS[w] : null;
   }
-  function matchOp(v) {
-    const s = norm(v);
-    const alq = s.search(/alquil|arriend|renta\b|rent\b|lease|\balq\b/);
-    const ven = s.search(/venta|vend|\bsale\b|\bsell/);
-    if (alq === -1 && ven === -1) return '';
-    if (alq === -1) return 'Venta';
-    if (ven === -1) return 'Alquiler';
-    return alq < ven ? 'Alquiler' : 'Venta';
-  }
-  const TYPE_PATTERNS = [
-    ['Local comercial', /\blocal\b|tienda|comercial|\bstand\b/],
-    ['Oficina', /oficina|office|consultorio/],
-    ['Terreno', /terreno|\blote\b|parcela|\baires\b|\bland\b/],
-    ['Departamento', /depa|dpto|\bdept|departamento|apartamento|\bflat\b|duplex|triplex|penthouse|\bloft\b|monoambiente|minidepa/],
-    ['Casa', /\bcasa\b|chalet|\bvilla\b|townhouse|casona/],
-    ['Otros', /^otros?$/],
-  ];
-  function matchType(v) {
-    const s = norm(v);
-    if (!s) return '';
-    const hit = TYPE_PATTERNS.find(p => p[1].test(s));
-    return hit ? hit[0] : '';
-  }
-  function matchCurrency(v) {
-    const s = String(v == null ? '' : v).trim();
-    if (!s) return '';
-    return detectCurrency(s) || (/^(us|dolares)$/i.test(norm(s)) ? 'USD' : s.toUpperCase());
-  }
-  function matchBool(v) {
-    if (v === true || v === 1) return 'Sí';
-    if (v === false || v === 0) return 'No';
-    const s = norm(v);
-    if (!s) return '';
-    if (/^(si|s|yes|y|true|verdadero|1|x|ok)$/.test(s)) return 'Sí';
-    if (/^(no|n|false|falso|0)$/.test(s)) return 'No';
-    return String(v).trim();
-  }
-  function matchEstado(v) {
-    const s = norm(v);
-    if (!s) return '';
-    if (/plano|preventa|proyecto/.test(s)) return 'En proyecto';
-    if (/construccion|obra/.test(s)) return 'En construcción';
-    if (/construid|estreno|entrega inmediata|terminad|usado/.test(s)) return 'Construido';
-    return String(v).trim();
-  }
   const _DISTRICTS_BY_LEN = DISTRICTS.slice().sort((a, b) => b.length - a.length);
   // Devuelve el nombre canónico del distrito, o el texto original si no se
   // reconoce (puede ser un distrito fuera de Lima).
@@ -229,11 +182,12 @@
   }
 
   // Normaliza una fila (claves del esquema canónico) a strings limpios.
+  // Los campos de opciones cerradas pasan por Catalogo.standardizeRow.
   // Idempotente: normalizeRow(normalizeRow(r).row).row === normalizeRow(r).row.
   // `changes` lista lo que se modificó, para mostrarlo en la revisión.
-  function normalizeRow(raw, opts) {
+  function normalizeRow(raw) {
     const src = raw || {};
-    const now = (opts && opts.year) || new Date().getFullYear();
+    const std = Catalogo.standardizeRow(src);
     const row = {};
     const changes = [];
     const set = (k, v) => {
@@ -245,23 +199,15 @@
 
     const money = parseMoney(src.precio);
     set('precio', numStr(money.amount));
-    set('tipo_moneda', matchCurrency(src.tipo_moneda) || money.currency);
+    set('tipo_moneda', std.row.tipo_moneda || money.currency);
     ['area_techada', 'area_terreno'].forEach(k => { set(k, numStr(parseNumber(src[k]))); });
     COUNT_COLS.forEach(k => {
       const n = parseCount(src[k]);
       set(k, n == null ? '' : String(n));
     });
-    const ageRaw = norm(src.antiguedad);
-    if (/estreno|nuevo|^0$/.test(ageRaw)) set('antiguedad', ageRaw ? '0' : '');
-    else {
-      const a = parseCount(src.antiguedad);
-      set('antiguedad', a == null ? '' : String(a > 1900 && a <= now ? now - a : a));
-    }
-    set('tipo_publicacion', matchOp(src.tipo_publicacion) || cleanText(src.tipo_publicacion));
-    set('tipo_propiedad', matchType(src.tipo_propiedad) || cleanText(src.tipo_propiedad));
-    set('estado', matchEstado(src.estado));
+    ['tipo_publicacion', 'tipo_propiedad', 'estado', 'antiguedad'].concat(BOOL_COLS)
+      .forEach(k => { set(k, cleanText(std.row[k])); });
     set('distrito', matchDistrict(src.distrito));
-    BOOL_COLS.forEach(k => { set(k, matchBool(src[k])); });
     set('latitud', parseCoord(src.latitud));
     set('longitud', parseCoord(src.longitud));
     ['titulo', 'descripcion'].forEach(k => {
@@ -269,7 +215,9 @@
       if (p.removed) changes.push({ field: k, pii: p.removed });
       set(k, p.text);
     });
-    return { row, changes: changes.filter(c => c.pii || c.from !== c.to) };
+    // notas: ajustes de estado/antigüedad (p. ej. "En construcción: la
+    // antigüedad se publicará como 0").
+    return { row, changes: changes.filter(c => c.pii || c.from !== c.to), notas: std.notas };
   }
 
   // Huella para duplicados: mismo distrito, operación, tipo, área, precio y
@@ -342,10 +290,9 @@
   };
 
   return {
-    COLS, REQUIRED, TYPES, OPS, CURRENCIES, ESTADOS, DISTRICTS, IMPORT_SOURCES, RESO_MAP,
+    COLS, REQUIRED, DISTRICTS, IMPORT_SOURCES, RESO_MAP,
     AI_FIELDS, EXTRACTION_SCHEMA,
-    norm, cleanText, parseNumber, parseMoney, detectCurrency, parseCount, matchOp, matchType,
-    matchCurrency, matchBool, matchEstado, matchDistrict, stripPII, normalizeRow, fingerprint,
-    numbersIn, guardInvented,
+    norm, cleanText, parseNumber, parseMoney, detectCurrency, parseCount, matchDistrict,
+    stripPII, normalizeRow, fingerprint, numbersIn, guardInvented,
   };
 });
