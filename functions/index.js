@@ -1463,7 +1463,8 @@ Reglas:
 // Entradas (kind):
 //   'text'      notas o mensajes de WhatsApp pegados.
 //   'document'  PDF, Word o PowerPoint leído en el navegador (index.html →
-//               _pubDocRead). El texto llega con encabezados "=== Página N ==="
+//               _pubDocRead), o un chat de WhatsApp exportado (fileType
+//               'whatsapp', _pubWaRead; canal 'whatsapp'). El texto llega con encabezados "=== Página N ==="
 //               y marcadores [FOTO id] donde estaban las fotos; las fotos
 //               quedan en el navegador y la IA solo devuelve sus ids. Las
 //               páginas escaneadas (sin capa de texto) llegan como imagen y
@@ -1473,7 +1474,7 @@ Reglas:
 // Client contract:
 //   const fn = _getFunctions().httpsCallable('extractListings');
 //   const { data } = await fn({ kind: 'text', text, channel?: 'text'|'whatsapp', sourceName? });
-//   const { data } = await fn({ kind: 'document', text, fileType: 'pdf'|'docx'|'pptx',
+//   const { data } = await fn({ kind: 'document', text, fileType: 'pdf'|'docx'|'pptx'|'whatsapp',
 //     photoIds: ['p1-1', …], images: [{ page: '3', dataUrl: 'data:image/jpeg;base64,…' }],
 //     sourceName?, batchId? });
 //   // data = { batchId, drafts: [{ id, row, aiFields, inferredFields, notes, fotos }] }
@@ -1491,7 +1492,7 @@ Reglas:
 // IA devuelve en `evidencia`) y normalizeRow determinista (catálogo de
 // sinónimos y abreviaturas, etiquetas, verificación por tipo en la bandeja).
 // ─────────────────────────────────────────────────────────────────────────────
-const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx'];
+const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp'];
 const IMPORT_DOC_MAX_IMAGES = 6;
 const IMPORT_DOC_MAX_IMAGE_CHARS = 1500000;
 const IMPORT_DOC_MAX_PHOTO_IDS = 300;
@@ -1501,7 +1502,7 @@ const IMPORT_PHOTO_ID_RE = /^[a-z0-9-]{1,24}$/;
 function _extractSystemPrompt() {
   const etiquetas = Object.entries(RecoCatalogo.ETIQUETAS)
     .map(([k, lista]) => `   ${k}: ${lista.join(' | ')}`).join('\n');
-  return `Eres un asistente que extrae fichas de inmuebles en Perú a partir de texto libre o documentos (notas, mensajes de WhatsApp, avisos de portales, PDF, Word o presentaciones de inmobiliarias).
+  return `Eres un asistente que extrae fichas de inmuebles en Perú a partir de texto libre o documentos (notas, chats de WhatsApp, avisos de portales, PDF, Word o presentaciones de inmobiliarias).
 
 Reglas:
 1. Un elemento en "inmuebles" por cada inmueble distinto. Si un mismo inmueble ocupa varias páginas o diapositivas, combina su información en un solo elemento. Si no hay ningún inmueble, devuelve "inmuebles": [].
@@ -1516,7 +1517,7 @@ ${etiquetas}
 9. departamento y provincia pueden ir en null. antiguedad: años o año de construcción tal como aparecen.
 10. titulo: un título breve (máx. 90 caracteres) usando solo datos de la entrada. descripcion: el texto original de ese inmueble, sin teléfonos, correos ni nombres de personas.
 11. campos_inferidos: lista los nombres de los campos que dedujiste y no estaban escritos literalmente (por ejemplo tipo_propiedad deducido de "depa" no es inferido; tipo_publicacion deducido del contexto sí lo es). El título siempre es inferido.
-12. fotos: en documentos, las fotos aparecen como marcadores [FOTO id] en el lugar donde estaban. Asigna a cada inmueble los ids de SUS fotos (normalmente las de su misma página o diapositiva). No incluyas logos, íconos ni fotos de otro inmueble. Sin marcadores, devuelve [].
+12. fotos: en documentos, las fotos aparecen como marcadores [FOTO id] en el lugar donde estaban. Asigna a cada inmueble los ids de SUS fotos (normalmente las de su misma página o diapositiva). No incluyas logos, íconos ni fotos de otro inmueble. En un chat de WhatsApp, las fotos de un inmueble suelen enviarse justo antes o justo después del mensaje que lo describe y por la misma persona. Sin marcadores, devuelve [].
 13. evidencia: copia literal (máx. 600 caracteres) del fragmento de donde salen el precio, las áreas y los ambientes. En páginas escaneadas (imágenes), transcribe lo que lees en ellas.`;
 }
 
@@ -1544,7 +1545,7 @@ async function _openaiStructured(systemPrompt, userContent, schemaName, schema) 
 // Valida la entrada de kind 'document' y arma el contenido multimodal.
 function _extractDocumentInput(d, text) {
   const fileType = IMPORT_DOC_TYPES.includes(d.fileType) ? d.fileType : null;
-  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx o PowerPoint .pptx).');
+  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx, PowerPoint .pptx o chat de WhatsApp).');
   const images = Array.isArray(d.images) ? d.images : [];
   if (images.length > IMPORT_DOC_MAX_IMAGES) {
     throw new HttpsError('invalid-argument', `Demasiadas páginas escaneadas en una parte (máx. ${IMPORT_DOC_MAX_IMAGES}).`);
@@ -1564,6 +1565,86 @@ function _extractDocumentInput(d, text) {
     content.push({ type: 'image_url', image_url: { url: im.dataUrl, detail: 'high' } });
   });
   return { fileType, photoIds, images: images.length, content };
+}
+
+// Límite por usuario y hora, compartido por todas las llamadas a la IA de
+// importación (extractListings, mapImportColumns, importListingPage).
+async function _importRateLimit(uid) {
+  const hour = new Date().toISOString().slice(0, 13);
+  const usageRef = db.collection('importUsage').doc(uid);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(usageRef);
+    const data = snap.data() || {};
+    if (data.hour === hour && (data.count || 0) >= IMPORT_AI_LIMIT_PER_HOUR) {
+      throw new HttpsError('resource-exhausted',
+        `Límite de ${IMPORT_AI_LIMIT_PER_HOUR} importaciones por hora alcanzado. Intenta más tarde.`);
+    }
+    tx.set(usageRef, {
+      hour,
+      count: data.hour === hour ? (data.count || 0) + 1 : 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+// IA → antialucinación → normalización → borradores en /importDrafts.
+//   text         fuente para guardInvented (y lo que ve la IA si no hay
+//                userContent multimodal)
+//   userContent  contenido para la IA (string o partes texto/imagen)
+//   photoIds     ids de fotos válidos ([] si la fuente no tiene fotos)
+//   useEvidence  la transcripción de la IA cuenta como fuente (escaneos)
+//   draftExtra / eventExtra  campos adicionales para el borrador / evento
+async function _extractAndSaveDrafts(o) {
+  const t0 = Date.now();
+  let parsed;
+  try {
+    parsed = await _openaiStructured(_extractSystemPrompt(), o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+  } catch (e) {
+    logger.error(`[${o.fn}] OpenAI error`, { err: e && e.message });
+    throw new HttpsError('internal', o.errorMessage || 'No pudimos leer el contenido. Intenta de nuevo.');
+  }
+  const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
+
+  // Las partes de una misma fuente comparten batchId (y su "Retomar").
+  const batchId = (typeof o.batchId === 'string' && DRAFT_ID_RE.test(o.batchId))
+    ? o.batchId : db.collection('importDrafts').doc().id;
+  const expiresAt = Timestamp.fromMillis(Date.now() + IMPORT_DRAFT_TTL_DAYS * 864e5);
+  const photoIds = o.photoIds || [];
+  const batch = db.batch();
+  const drafts = items.map((it) => {
+    const rawRow = {};
+    RecoImport.AI_FIELDS.forEach((k) => { rawRow[k] = it[k] == null ? '' : String(it[k]); });
+    const fuente = o.useEvidence ? `${o.text}\n${String(it.evidencia || '')}` : o.text;
+    const guarded = RecoImport.guardInvented(rawRow, fuente);
+    const { row, changes, notas } = RecoImport.normalizeRow(guarded.row);
+    const aiFields = RecoImport.COLS.filter((k) => row[k] !== '');
+    const inferredFields = (Array.isArray(it.campos_inferidos) ? it.campos_inferidos : [])
+      .filter((k) => aiFields.includes(k));
+    const fotos = [...new Set((Array.isArray(it.fotos) ? it.fotos : []).filter((id) => photoIds.includes(id)))];
+    const notes = guarded.dropped.map((k) => `Quitamos ${k}: no aparece en ${o.sourceLabel || 'el texto'}.`)
+      .concat(changes.filter((c) => c.pii).map((c) => `Quitamos ${c.pii} dato(s) de contacto de ${c.field}.`))
+      .concat(notas);
+    const ref = db.collection('importDrafts').doc();
+    batch.set(ref, {
+      uid: o.uid, batchId, source: o.channel, sourceName: o.sourceName || null,
+      ...(o.draftExtra || {}),
+      ...(photoIds.length && { docPhotos: fotos.length }),
+      row, aiFields, inferredFields, notes,
+      fingerprint: RecoImport.fingerprint(row),
+      status: 'draft',
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+      expiresAt,
+    });
+    return { id: ref.id, row, aiFields, inferredFields, notes, fotos };
+  });
+  batch.set(db.collection('importEvents').doc(), {
+    uid: o.uid, kind: o.kind, channel: o.channel, chars: o.text.length, listings: drafts.length,
+    ...(o.eventExtra || {}),
+    ms: Date.now() - t0, createdAt: FieldValue.serverTimestamp(),
+  });
+  await batch.commit();
+  return { batchId, drafts };
 }
 
 exports.extractListings = onCall(
@@ -1592,77 +1673,305 @@ exports.extractListings = onCall(
       throw new HttpsError('invalid-argument', `El texto es muy largo (máx. ${IMPORT_TEXT_MAX_CHARS} caracteres). Divídelo en partes.`);
     }
     const doc = isDoc ? _extractDocumentInput(d, text) : null;
-    const channel = isDoc ? 'documento' : (IMPORT_TEXT_CHANNELS.includes(d.channel) ? d.channel : 'text');
+    // Un chat de WhatsApp exportado llega como documento (texto + fotos)
+    // pero se registra con su propio canal.
+    const channel = isDoc ? (doc.fileType === 'whatsapp' ? 'whatsapp' : 'documento')
+      : (IMPORT_TEXT_CHANNELS.includes(d.channel) ? d.channel : 'text');
     const sourceName = String(d.sourceName || '').replace(/[\r\n]/g, ' ').trim().slice(0, 120) || null;
 
-    // ── Rate limit: hour-bucket in importUsage/{uid} ──
-    const hour = new Date().toISOString().slice(0, 13);
-    const usageRef = db.collection('importUsage').doc(uid);
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(usageRef);
-      const data = snap.data() || {};
-      if (data.hour === hour && (data.count || 0) >= IMPORT_AI_LIMIT_PER_HOUR) {
-        throw new HttpsError('resource-exhausted',
-          `Límite de ${IMPORT_AI_LIMIT_PER_HOUR} importaciones por hora alcanzado. Intenta más tarde.`);
-      }
-      tx.set(usageRef, {
-        hour,
-        count: data.hour === hour ? (data.count || 0) + 1 : 1,
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    });
+    await _importRateLimit(uid);
 
-    const t0 = Date.now();
+    return _extractAndSaveDrafts({
+      fn: 'extractListings', uid, kind: d.kind, channel, sourceName, batchId: d.batchId,
+      text, userContent: doc ? doc.content : text,
+      photoIds: doc ? doc.photoIds : [],
+      // Con páginas escaneadas el texto no tiene esos números: la
+      // transcripción de la IA (evidencia) también cuenta como fuente.
+      useEvidence: !!(doc && doc.images),
+      sourceLabel: isDoc ? (channel === 'whatsapp' ? 'el chat' : 'el documento') : 'el texto',
+      errorMessage: isDoc ? 'No pudimos leer el documento. Intenta de nuevo.' : 'No pudimos leer el texto. Intenta de nuevo.',
+      draftExtra: doc ? { fileType: doc.fileType } : null,
+      eventExtra: doc ? { fileType: doc.fileType, pageImages: doc.images, photos: doc.photoIds.length } : null,
+    });
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// mapImportColumns — Excel propio (roadmap 1.1): cuando los sinónimos no
+// alcanzan, la IA indica qué columna del archivo corresponde a cada campo de
+// ReCo. Solo recibe cabeceras y hasta 5 filas de ejemplo; no crea borradores
+// (el archivo se sigue procesando en el navegador).
+//
+// Client contract:
+//   const { data } = await _getFunctions().httpsCallable('mapImportColumns')({ headers, sample });
+//   // data = { mapeo: { direccion: 'Dirección del inmueble', precio: 'Valor', … } }
+// Errors: invalid-argument, resource-exhausted (mismo límite por hora que
+// extractListings), internal.
+// ─────────────────────────────────────────────────────────────────────────────
+const IMPORT_MAP_MAX_HEADERS = 80;
+const IMPORT_COLUMN_HINTS = {
+  direccion: 'dirección del inmueble', departamento: 'departamento/región (Lima…)', provincia: 'provincia',
+  distrito: 'distrito o zona', latitud: 'latitud GPS', longitud: 'longitud GPS',
+  mostrar_direccion: 'si se muestra la dirección exacta (sí/no)', tipo_publicacion: 'operación: venta o alquiler',
+  tipo_propiedad: 'tipo de inmueble (departamento, casa, oficina, local, terreno…)', nro_dormitorios: 'dormitorios / habitaciones',
+  nro_banos: 'baños', nro_estacionamientos: 'estacionamientos / cocheras', nro_pisos: 'pisos totales del edificio o casa',
+  piso: 'piso en que está el inmueble', niveles: 'niveles que ocupa (dúplex = 2)', antiguedad: 'antigüedad en años o año de construcción',
+  estado: 'estado: construido, en proyecto (en planos) o en construcción', ascensor: 'ascensor (sí/no)', amoblado: 'amoblado (sí/no)',
+  pet_friendly: 'acepta mascotas (sí/no)', tipo_moneda: 'moneda (USD, PEN, S/, $)', precio: 'precio',
+  area_terreno: 'área de terreno / lote (m²)', area_techada: 'área techada / construida / útil (m²)',
+  etiquetas_generales: 'características del inmueble (separadas)', etiquetas_ambientes: 'áreas comunes del edificio',
+  etiquetas_vista: 'vista', etiquetas_acceso: 'tipo de vía de acceso', etiquetas_zonas: 'zonificación o tipo de zona',
+  titulo: 'título del aviso', descripcion: 'descripción o comentarios',
+};
+
+exports.mapImportColumns = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+    secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'mapImportColumns');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const headers = [...new Set((Array.isArray(d.headers) ? d.headers : [])
+      .map((h) => String(h == null ? '' : h).trim().slice(0, 80)).filter(Boolean))].slice(0, IMPORT_MAP_MAX_HEADERS);
+    if (headers.length < 2) throw new HttpsError('invalid-argument', 'El archivo no tiene columnas suficientes.');
+    const sample = (Array.isArray(d.sample) ? d.sample : []).slice(0, 5)
+      .map((r) => (Array.isArray(r) ? r : []).slice(0, headers.length).map((v) => String(v == null ? '' : v).slice(0, 60)));
+
+    await _importRateLimit(uid);
+
+    const opcion = { anyOf: [{ type: 'string', enum: headers }, { type: 'null' }] };
+    const schema = {
+      type: 'object', additionalProperties: false, required: ['mapeo'],
+      properties: {
+        mapeo: {
+          type: 'object', additionalProperties: false, required: RecoImport.COLS,
+          properties: RecoImport.COLS.reduce((acc, k) => { acc[k] = opcion; return acc; }, {}),
+        },
+      },
+    };
+    const prompt = `Eres un asistente que ordena inventarios inmobiliarios de Perú. Te doy las columnas de un Excel de un corredor y algunas filas de ejemplo.
+Para cada campo de ReCo, indica el nombre EXACTO de la columna que lo contiene, o null si ninguna lo contiene. No uses la misma columna para dos campos salvo que de verdad contenga ambos datos. Interpreta abreviaturas (Dpto., Dorm., Hab., Bñs, Cochera, m2, Vta./Alq., S/, US$).
+Campos de ReCo:
+${RecoImport.COLS.map((k) => `- ${k}: ${IMPORT_COLUMN_HINTS[k]}`).join('\n')}`;
+    const user = `Columnas: ${JSON.stringify(headers)}\nFilas de ejemplo:\n${sample.map((r) => JSON.stringify(r)).join('\n')}`;
     let parsed;
     try {
-      parsed = await _openaiStructured(_extractSystemPrompt(), doc ? doc.content : text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+      parsed = await _openaiStructured(prompt, user, 'mapeo_columnas', schema);
     } catch (e) {
-      logger.error('[extractListings] OpenAI error', { err: e && e.message });
-      throw new HttpsError('internal', isDoc ? 'No pudimos leer el documento. Intenta de nuevo.' : 'No pudimos leer el texto. Intenta de nuevo.');
+      logger.error('[mapImportColumns] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', 'No pudimos reconocer las columnas. Indícalas a mano.');
     }
-    const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
+    const mapeo = {};
+    Object.entries((parsed && parsed.mapeo) || {}).forEach(([k, v]) => {
+      if (RecoImport.COLS.includes(k) && typeof v === 'string' && headers.includes(v)) mapeo[k] = v;
+    });
+    await db.collection('importEvents').doc().set({
+      uid, kind: 'columns', channel: 'excel', headers: headers.length, mapped: Object.keys(mapeo).length,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return { mapeo };
+  }
+);
 
-    // Las partes de un mismo documento comparten batchId (y su "Retomar").
-    const batchId = (typeof d.batchId === 'string' && DRAFT_ID_RE.test(d.batchId))
-      ? d.batchId : db.collection('importDrafts').doc().id;
-    const expiresAt = Timestamp.fromMillis(Date.now() + IMPORT_DRAFT_TTL_DAYS * 864e5);
-    const batch = db.batch();
-    const drafts = items.map((it) => {
-      const rawRow = {};
-      RecoImport.AI_FIELDS.forEach((k) => { rawRow[k] = it[k] == null ? '' : String(it[k]); });
-      // Con páginas escaneadas el texto del documento no tiene esos números:
-      // la transcripción de la IA (evidencia) también cuenta como fuente.
-      const fuente = doc && doc.images ? `${text}\n${String(it.evidencia || '')}` : text;
-      const guarded = RecoImport.guardInvented(rawRow, fuente);
-      const { row, changes, notas } = RecoImport.normalizeRow(guarded.row);
-      const aiFields = RecoImport.COLS.filter((k) => row[k] !== '');
-      const inferredFields = (Array.isArray(it.campos_inferidos) ? it.campos_inferidos : [])
-        .filter((k) => aiFields.includes(k));
-      const fotos = doc ? [...new Set((Array.isArray(it.fotos) ? it.fotos : []).filter((id) => doc.photoIds.includes(id)))] : [];
-      const notes = guarded.dropped.map((k) => `Quitamos ${k}: no aparece en ${isDoc ? 'el documento' : 'el texto'}.`)
-        .concat(changes.filter((c) => c.pii).map((c) => `Quitamos ${c.pii} dato(s) de contacto de ${c.field}.`))
-        .concat(notas);
-      const ref = db.collection('importDrafts').doc();
-      batch.set(ref, {
-        uid, batchId, source: channel, sourceName,
-        ...(doc && { fileType: doc.fileType, docPhotos: fotos.length }),
-        row, aiFields, inferredFields, notes,
-        fingerprint: RecoImport.fingerprint(row),
-        status: 'draft',
-        createdAt: FieldValue.serverTimestamp(),
-        updatedAt: FieldValue.serverTimestamp(),
-        expiresAt,
+// ─────────────────────────────────────────────────────────────────────────────
+// importListingPage — importar desde el enlace de un aviso (roadmap 1.4/1.5).
+//
+// Dos entradas:
+//   { url }            El servidor descarga la página, solo de portales
+//                      conocidos (IMPORT_URL_HOSTS). Si el portal bloquea la
+//                      descarga → failed-precondition, details.reason
+//                      'blocked'; si el dominio no está en la lista →
+//                      details.reason 'host-not-supported'. En ambos casos el
+//                      cliente ofrece el marcador "Enviar a ReCo".
+//   { url, pagina }    Lo manda el marcador del navegador, que corre en la
+//                      página del aviso que el usuario ya tiene abierta:
+//                      { title, meta, jsonld, text, images }. Sirve para
+//                      cualquier dominio.
+// Siempre: declaraAutorizacion === true (el usuario declara que es el
+// anunciante o tiene autorización). Las fotos (máx. IMPORT_URL_MAX_PHOTOS)
+// las descarga el servidor y vuelven como data URL con su id; la IA solo ve
+// los marcadores [FOTO u-N].
+//
+// Seguridad (SSRF): solo http(s) en puertos 80/443, el nombre debe resolver
+// a IPs públicas (se valida en cada redirección, máx. 3), 12 s de timeout y
+// tope de tamaño por respuesta.
+//
+// Client contract:
+//   const { data } = await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion: true, pagina?, batchId? });
+//   // data = { batchId, drafts: [{ id, row, aiFields, inferredFields, notes, fotos }], photos: [{ id, dataUrl }] }
+// ─────────────────────────────────────────────────────────────────────────────
+const IMPORT_URL_HOSTS = ['urbania.pe', 'adondevivir.com', 'properati.com.pe', 'babilonia.pe', 'nexoinmobiliario.pe',
+  'mercadolibre.com.pe', 'infocasas.com.pe', 'remax.pe'];
+const IMPORT_URL_MAX_PHOTOS = 12;
+const IMPORT_URL_HTML_BYTES = 3 * 1024 * 1024;
+const IMPORT_URL_PHOTO_BYTES = 4 * 1024 * 1024;
+const IMPORT_URL_PHOTOS_TOTAL_BYTES = 9 * 1024 * 1024;
+const IMPORT_URL_MIN_PHOTO_BYTES = 6 * 1024; // menos: ícono o miniatura
+const IMPORT_FETCH_TIMEOUT_MS = 12000;
+const IMPORT_FETCH_UA = 'Mozilla/5.0 (compatible; ReCoImport/1.0; +https://recosac.com)';
+
+function _isPublicIp(ip) {
+  const net = require('net');
+  if (net.isIPv4(ip)) {
+    const [a, b] = ip.split('.').map(Number);
+    return !(a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254)
+      || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 198 && (b === 18 || b === 19)) || a >= 224);
+  }
+  if (net.isIPv6(ip)) {
+    const x = ip.toLowerCase();
+    if (x.startsWith('::ffff:')) return _isPublicIp(x.slice(7));
+    return !(x === '::' || x === '::1' || /^f[cd]/.test(x) || /^fe[89ab]/.test(x) || /^ff/.test(x));
+  }
+  return false;
+}
+function _importHostAllowed(hostname) {
+  const h = String(hostname || '').toLowerCase().replace(/\.$/, '');
+  return IMPORT_URL_HOSTS.some((d) => h === d || h.endsWith('.' + d));
+}
+async function _assertPublicUrl(u) {
+  let url;
+  try { url = new URL(u); } catch (_) { throw new HttpsError('invalid-argument', 'Enlace inválido.'); }
+  if (!/^https?:$/.test(url.protocol) || (url.port && !['80', '443'].includes(url.port)) || url.username || url.password) {
+    throw new HttpsError('invalid-argument', 'Enlace inválido.');
+  }
+  const host = url.hostname.replace(/^\[|\]$/g, '');
+  const addrs = require('net').isIP(host) ? [{ address: host }]
+    : await require('dns').promises.lookup(host, { all: true }).catch(() => []);
+  if (!addrs.length || !addrs.every((a) => _isPublicIp(a.address))) {
+    throw new HttpsError('invalid-argument', 'No se puede acceder a ese enlace.');
+  }
+  return url;
+}
+// GET con validación SSRF en cada salto, timeout y tope de bytes.
+async function _safeFetch(u, { maxBytes, accept }) {
+  let url = await _assertPublicUrl(u);
+  for (let hop = 0; hop <= 3; hop++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url.href, {
+        redirect: 'manual', signal: ctrl.signal,
+        headers: { 'User-Agent': IMPORT_FETCH_UA, 'Accept': accept, 'Accept-Language': 'es-PE,es;q=0.9' },
       });
-      return { id: ref.id, row, aiFields, inferredFields, notes, fotos };
-    });
-    batch.set(db.collection('importEvents').doc(), {
-      uid, kind: d.kind, channel, chars: text.length, listings: drafts.length,
-      ...(doc && { fileType: doc.fileType, pageImages: doc.images, photos: doc.photoIds.length }),
-      ms: Date.now() - t0, createdAt: FieldValue.serverTimestamp(),
-    });
-    await batch.commit();
+      if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+        url = await _assertPublicUrl(new URL(res.headers.get('location'), url).href);
+        continue;
+      }
+      const chunks = [];
+      let size = 0;
+      if (res.body) {
+        for await (const chunk of res.body) {
+          size += chunk.length;
+          if (size > maxBytes) { ctrl.abort(); break; }
+          chunks.push(chunk);
+        }
+      }
+      return { status: res.status, url: url.href, type: res.headers.get('content-type') || '', body: Buffer.concat(chunks), truncated: size > maxBytes };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw new HttpsError('failed-precondition', 'El enlace redirige demasiadas veces.');
+}
+async function _downloadPhotos(urls) {
+  const photos = [];
+  let total = 0;
+  for (const u of urls) {
+    if (photos.length >= IMPORT_URL_MAX_PHOTOS || total >= IMPORT_URL_PHOTOS_TOTAL_BYTES) break;
+    try {
+      const r = await _safeFetch(u, { maxBytes: IMPORT_URL_PHOTO_BYTES, accept: 'image/jpeg,image/png,image/webp' });
+      const type = (r.type.match(/^image\/(jpeg|png|webp)/i) || [])[0];
+      if (r.status !== 200 || !type || r.truncated || r.body.length < IMPORT_URL_MIN_PHOTO_BYTES) continue;
+      total += r.body.length;
+      photos.push({ id: `u-${photos.length + 1}`, dataUrl: `data:${type.toLowerCase()};base64,${r.body.toString('base64')}` });
+    } catch (_) { /* foto inaccesible: se omite */ }
+  }
+  return photos;
+}
+// Página que manda el marcador: se aceptan solo strings y con tope.
+function _cleanPagina(p) {
+  const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+  const meta = {};
+  Object.entries(p && typeof p.meta === 'object' ? p.meta : {}).slice(0, 40)
+    .forEach(([k, v]) => { meta[str(k, 60)] = str(v, 1000); });
+  return {
+    title: str(p.title, 300), meta,
+    jsonld: (Array.isArray(p.jsonld) ? p.jsonld : []).slice(0, 5).map((x) => str(x, 8000)),
+    datos: [],
+    text: str(p.text, 30000),
+    images: (Array.isArray(p.images) ? p.images : []).slice(0, 60).map((x) => str(x, 2000)).filter((x) => /^https?:\/\//.test(x)),
+  };
+}
 
-    return { batchId, drafts };
+exports.importListingPage = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    timeoutSeconds: 300,
+    memory: '512MiB',
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+    secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'importListingPage');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    if (d.declaraAutorizacion !== true) {
+      throw new HttpsError('invalid-argument', 'Confirma que eres el anunciante o tienes autorización para usar este aviso.');
+    }
+    const urlStr = String(d.url || '').trim().slice(0, 2000);
+    let url;
+    try { url = new URL(urlStr); } catch (_) { throw new HttpsError('invalid-argument', 'Pega el enlace completo del aviso (https://…).'); }
+    if (!/^https?:$/.test(url.protocol)) throw new HttpsError('invalid-argument', 'Pega el enlace completo del aviso (https://…).');
+
+    let pagina;
+    const viaMarcador = !!(d.pagina && typeof d.pagina === 'object');
+    if (viaMarcador) {
+      pagina = _cleanPagina(d.pagina);
+    } else {
+      if (!_importHostAllowed(url.hostname)) {
+        throw new HttpsError('failed-precondition', 'Ese portal no se puede leer directamente. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'host-not-supported' });
+      }
+      const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
+        .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
+      const html = r ? r.body.toString('utf8') : '';
+      // 403/429/503 o páginas de verificación ("captcha", "Just a moment"):
+      // el portal no deja descargar desde un servidor.
+      if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
+        throw new HttpsError('failed-precondition', 'El portal no permitió leer el aviso desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'blocked' });
+      }
+      pagina = RecoImport.parseListingHtml(html, r.url);
+    }
+    if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length) {
+      throw new HttpsError('invalid-argument', 'La página no tiene contenido legible.');
+    }
+
+    await _importRateLimit(uid);
+
+    const photos = await _downloadPhotos(pagina.images);
+    const photoIds = photos.map((p) => p.id);
+    const text = RecoImport.pageToText(pagina, url.href, photoIds, IMPORT_TEXT_MAX_CHARS - 500);
+    const result = await _extractAndSaveDrafts({
+      fn: 'importListingPage', uid, kind: 'url', channel: 'url',
+      sourceName: (url.hostname + url.pathname).slice(0, 120), batchId: d.batchId,
+      text, photoIds, sourceLabel: 'la página',
+      errorMessage: 'No pudimos leer el aviso. Intenta de nuevo o pega su texto.',
+      draftExtra: { sourceUrl: url.href.slice(0, 500) },
+      eventExtra: { host: url.hostname, viaMarcador, photos: photos.length },
+    });
+    // Un aviso suele ser un solo inmueble: si la IA no le asignó fotos, son
+    // todas las de la página. Solo vuelven las fotos asignadas.
+    if (result.drafts.length === 1 && !result.drafts[0].fotos.length) result.drafts[0].fotos = photoIds.slice();
+    const usadas = new Set(result.drafts.flatMap((x) => x.fotos));
+    return { ...result, photos: photos.filter((p) => usadas.has(p.id)) };
   }
 );
 

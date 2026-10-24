@@ -40,6 +40,7 @@ const CDN_LOCAL = {
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js': `${NM}/pdfjs-dist/build/pdf.min.js`,
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js': `${NM}/pdfjs-dist/build/pdf.worker.min.js`,
   'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js': `${NM}/jszip/dist/jszip.min.js`,
+  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js': `${NM}/xlsx/dist/xlsx.full.min.js`,
 };
 
 async function routeStubs(page) {
