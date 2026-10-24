@@ -7,6 +7,7 @@
 const { test, expect } = require('@playwright/test');
 const Module = require('module');
 const path = require('path');
+const STORAGE_MOCK_KEY = '__mock_firebase_admin_storage__';
 
 function createMockFirestore() {
   const store = {};
@@ -66,7 +67,6 @@ function createMockFirestore() {
 
 function loadHandlers() {
   const mockDb = createMockFirestore();
-  const originalResolve = Module._resolveFilename;
   class HttpsError extends Error { constructor(code, message, details) { super(message); this.code = code; this.details = details; } }
   const mocks = {
     'firebase-functions/v2/https': {
@@ -89,12 +89,19 @@ function loadHandlers() {
       Timestamp: { fromMillis(ms) { return { ms, toMillis: () => ms }; } },
     },
   };
-  // firebase-admin/storage se pide dentro de las funciones (no al cargar):
-  // se reemplaza en la caché de módulos por un bucket en memoria.
-  const storagePath = require.resolve('firebase-admin/storage', { paths: [path.resolve(__dirname, '..', 'functions')] });
-  const sm = new Module(storagePath); sm.loaded = true;
-  sm.exports = { getStorage: () => ({ bucket: () => mockBucket }) };
-  require.cache[storagePath] = sm;
+  // firebase-admin/storage se pide dentro de las funciones (no al cargar), así que
+  // su resolución queda interceptada siempre (en CI no existe functions/node_modules).
+  if (!require.cache[STORAGE_MOCK_KEY]) {
+    const sm = new Module(STORAGE_MOCK_KEY); sm.loaded = true;
+    sm.exports = { getStorage: () => ({ bucket: () => mockBucket }) };
+    require.cache[STORAGE_MOCK_KEY] = sm;
+    const prevResolve = Module._resolveFilename;
+    Module._resolveFilename = function (request, ...rest) {
+      if (request === 'firebase-admin/storage') return STORAGE_MOCK_KEY;
+      return prevResolve.call(this, request, ...rest);
+    };
+  }
+  const originalResolve = Module._resolveFilename;
   Module._resolveFilename = function (request, parent, ...rest) {
     if (mocks[request]) return request;
     return originalResolve.call(this, request, parent, ...rest);
