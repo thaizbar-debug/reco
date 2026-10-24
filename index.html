@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>Reco SAC — Búsqueda de Inmuebles</title>
+<!-- App instalable: "Compartir con ReCo" desde el celular (sw.js) -->
+<link rel="manifest" href="manifest.webmanifest"/>
+<meta name="theme-color" content="#0e7490"/>
+<link rel="apple-touch-icon" href="icons/reco-192.png"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Firebase SDKs -->
@@ -7111,7 +7115,9 @@ function _pubSetType(v){
   if(c) c.innerHTML=_pubAreaReqMark(v,'techada');
 }
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
-async function _uploadPublicationPhotos(pubId, photos){
+// start: número de la primera foto (cuando el servidor ya copió otras antes,
+// p. ej. las del bot de WhatsApp).
+async function _uploadPublicationPhotos(pubId, photos, start){
   if(!photos || !photos.length) return [];
   const uid = auth.currentUser && auth.currentUser.uid;
   if(!uid) throw new Error('unauthenticated');
@@ -7119,7 +7125,7 @@ async function _uploadPublicationPhotos(pubId, photos){
   for(let i=0; i<photos.length; i++){
     const dataUrl = photos[i];
     const blob = await (await fetch(dataUrl)).blob();
-    const ref = storage.ref(`publications/${pubId}/${uid}/${i}.jpg`);
+    const ref = storage.ref(`publications/${pubId}/${uid}/${(start||0)+i}.jpg`);
     const snap = await ref.put(blob, { contentType: 'image/jpeg' });
     urls.push(await snap.ref.getDownloadURL());
   }
@@ -7249,7 +7255,7 @@ function _pubBulkGo(step){
 }
 function _pubBulkReset(){
   _pubDraftsDelete(_pubBulkRows.map(a=>a.draftId));
-  _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[];
+  _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[]; _pubPhotoGroups=[];
   if(typeof _pubBulkRaw!=='undefined'){ _pubBulkRaw=[]; _pubBulkHeaders=[]; _pubBulkMap={}; }
   _pubBulkGo(1);
 }
@@ -7292,16 +7298,17 @@ function _pubBulkUploadHTML(){
   const box='border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff';
   return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
     <div id="pubPendingPage">${_pubPendingPageHTML()}</div>
-    <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint o el chat de WhatsApp exportado. También puedes pegar texto o traer un aviso desde su enlace. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
+    <div id="pubSharedBox">${_pubSharedHTML()}</div>
+    <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint, el chat de WhatsApp exportado o fotos de flyers y capturas de pantalla. También puedes pegar texto o traer un aviso desde su enlace. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
-      ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFile(event.dataTransfer.files[0])">
+      ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFiles(event.dataTransfer.files)">
       <div class="dz-icon">📁</div>
       <div class="dz-lbl">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) · chat de WhatsApp (.zip o .txt)</div>
+      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) · chat de WhatsApp (.zip o .txt) · flyers o capturas (JPG/PNG, varias a la vez)</div>
     </label>
-    <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx,.zip,.txt" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFile(this.files[0])">
+    <input type="file" id="pubBulkInput" multiple accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx,.zip,.txt,image/*" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFiles(this.files)">
     <details style="margin-top:8px;font-size:12px;color:var(--muted)"><summary style="cursor:pointer">💬 ¿Cómo exporto un chat de WhatsApp?</summary>
       <div style="margin-top:6px;line-height:1.6">Abre el chat o grupo donde compartes tus inmuebles → <strong>⋮ Más → Exportar chat</strong> (en iPhone: nombre del chat → <strong>Exportar chat</strong>) → <strong>Incluir archivos</strong>, y súbelo aquí. Las fotos se asignan solas a cada inmueble. Los nombres de quienes escriben no se envían a la IA.</div></details>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px">
@@ -7316,13 +7323,60 @@ function _pubBulkUploadHTML(){
         <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">El enlace de tu aviso en Urbania, Adondevivir, Properati, Babilonia, Nexo, Mercado Libre, InfoCasas o RE/MAX.</div>
         <input id="pubUrlInput" type="url" placeholder="https://urbania.pe/inmueble/…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
         <label style="display:flex;gap:6px;align-items:flex-start;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante de este aviso o tengo autorización para publicarlo en ReCo.</label>
-        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:8px" onclick="_pubUrlImport()">Importar aviso</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar aviso</button>
+          <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubProfileList()" title="Pega el enlace de tu perfil de inmobiliaria o corredor en el portal">Importar todos los de mi perfil</button>
+        </div>
         <details id="pubMarcador" style="margin-top:10px;font-size:11px;color:var(--muted)"><summary style="cursor:pointer">📌 ¿Otro portal o no carga? Usa "Enviar a ReCo"</summary>
           <div style="margin-top:6px;line-height:1.6">Arrastra este botón a tu barra de favoritos (en computadora): <a href="${_pubBookmarkletCode()}" onclick="event.preventDefault();toast('Arrástralo a tu barra de favoritos y úsalo en la página de tu aviso.')" style="display:inline-block;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;text-decoration:none">📌 Enviar a ReCo</a><br>Luego abre tu aviso en cualquier portal y haz clic en el favorito: ReCo se abre con el aviso listo para importar. Desde el celular, copia el texto del aviso y usa "Pegar texto".</div></details>
       </div>
+      ${_PUB_WA_BOT_NUMBER?`<div style="${box}">
+        <div style="font-size:13px;font-weight:700">🤖 ReCo en tu WhatsApp</div>
+        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Envía tus inmuebles a nuestro WhatsApp como texto, fotos o notas de voz y escribe <strong>LISTO</strong>. Te respondemos con lo que encontramos y aquí los revisas y publicas.</div>
+        <div id="pubWaBotBox"><button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubWaBotConnect()">Conectar mi WhatsApp</button></div>
+      </div>`:''}
     </div>
     <div id="pubBulkPreview"></div>`;
 }
+// ── Bot de WhatsApp (roadmap 2.1) ──
+// Número del bot en formato internacional sin "+" (p. ej. '51987654321').
+// Vacío = la tarjeta no se muestra (hasta configurar la Cloud API de Meta).
+const _PUB_WA_BOT_NUMBER='';
+async function _pubWaBotConnect(){
+  if(!_pubImportReady('conectar tu WhatsApp')) return;
+  const box=document.getElementById('pubWaBotBox');
+  try{
+    const res=await _getFunctions().httpsCallable('whatsappLink')({ action:'code' });
+    const d=res.data||{};
+    const link=`https://wa.me/${_PUB_WA_BOT_NUMBER}?text=${encodeURIComponent('VINCULAR '+d.code)}`;
+    if(box) box.innerHTML=`<div style="font-size:12px;line-height:1.6">
+      ${(d.linked||[]).length?`Ya conectado: <strong>${esc(d.linked.join(', '))}</strong> · <a href="#" onclick="event.preventDefault();_pubWaBotUnlink()" style="color:var(--red)">Desconectar</a><br>Para conectar otro número:<br>`:''}
+      Envía <strong style="font-size:15px;letter-spacing:1px">VINCULAR ${esc(d.code)}</strong> a nuestro WhatsApp (vence en ${esc(d.minutes)} min).
+      <a class="pub-btn primary" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:6px;text-decoration:none" href="${link}" target="_blank" rel="noopener">Abrir WhatsApp</a></div>`;
+  }catch(e){ _pubImportFail(e,'No se pudo generar el código.'); }
+}
+async function _pubWaBotUnlink(){
+  if(!confirm('¿Desconectar tu WhatsApp de ReCo?')) return;
+  try{
+    await _getFunctions().httpsCallable('whatsappLink')({ action:'unlink' });
+    toast('✅ WhatsApp desconectado.');
+    const box=document.getElementById('pubWaBotBox');
+    if(box) box.innerHTML=`<button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubWaBotConnect()">Conectar mi WhatsApp</button>`;
+  }catch(e){ _pubImportFail(e,'No se pudo desconectar.'); }
+}
+// Ruta de Storage de una foto guardada por el bot (imports/…), o ''.
+function _pubImportPhotoPath(u){
+  if(typeof u!=='string' || u.indexOf('https://firebasestorage.googleapis.com/')!==0) return '';
+  const m=u.match(/\/o\/([^?]+)/);
+  const p=m?decodeURIComponent(m[1]):'';
+  return p.indexOf('imports/')===0?p:'';
+}
+// recosac.com/#borradores (enlace de la respuesta del bot): abre los
+// borradores pendientes.
+if(location.hash==='#borradores') _pubWhenAuthReady(u=>{
+  const go=()=>{ openPublish(); _pubTab='bulk'; _pubBulkStep=1; renderPublish(); };
+  if(u) go(); else openAuthModal('login',go);
+});
 // ── Paso 2: tabla editable ──
 const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propiedad','tipo_moneda','precio','area_techada','area_terreno','titulo','descripcion'];
 function _pubBulkEdit(i,key,val){
@@ -7457,6 +7511,132 @@ function _pubBulkPhotoRemove(i){
   a.photos.splice(i,1);
   _pubBulkRefresh();
 }
+// ── Fotos en bloque (roadmap 2.2) ──
+// El corredor sube todas las fotos de una vez; se agrupan por inmueble con
+// la fecha de captura y el GPS del EXIF (sin EXIF: fecha del archivo). Un
+// grupo nuevo empieza cuando pasan más de 15 min entre fotos o cuando la
+// foto se tomó a más de 200 m de la anterior. Los grupos se proponen en el
+// orden de los inmuebles y el corredor confirma o cambia cada uno.
+const _PUB_BATCH_MAX=200;
+const _PUB_BATCH_GAP_MS=15*60*1000;
+const _PUB_BATCH_GAP_M=200;
+let _pubPhotoGroups=[];
+// EXIF de un JPEG → { time, lat, lng } (lo que haya). Solo lee lo necesario.
+function _pubExifInfo(buf){
+  try{
+    const v=new DataView(buf);
+    if(v.byteLength<4 || v.getUint16(0)!==0xFFD8) return {};
+    let off=2;
+    while(off+10<v.byteLength){
+      const marker=v.getUint16(off), size=v.getUint16(off+2);
+      if(marker===0xFFE1 && v.getUint32(off+4)===0x45786966) return _pubExifTiff(v,off+10);
+      if((marker&0xFF00)!==0xFF00 || marker===0xFFDA) break;
+      off+=2+size;
+    }
+  }catch(_){}
+  return {};
+}
+function _pubExifTiff(v,t){
+  const le=v.getUint16(t)===0x4949;
+  const u16=o=>v.getUint16(o,le), u32=o=>v.getUint32(o,le);
+  const ifd=o=>{ const n=u16(o), out={}; for(let i=0;i<n;i++){ const e=o+2+i*12; out[u16(e)]={ count:u32(e+4), at:e+8 }; } return out; };
+  const ascii=e=>{ const p=e.count>4?t+u32(e.at):e.at; let s=''; for(let i=0;i<e.count-1;i++) s+=String.fromCharCode(v.getUint8(p+i)); return s; };
+  const rat=p=>u32(p)/(u32(p+4)||1);
+  const info={};
+  const ifd0=ifd(t+u32(t+4));
+  const exif=ifd0[0x8769]?ifd(t+u32(ifd0[0x8769].at)):{};
+  const dt=exif[0x9003]||exif[0x9004]||ifd0[0x0132];
+  const m=dt && ascii(dt).match(/(\d{4}):(\d{2}):(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  if(m) info.time=new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]).getTime();
+  if(ifd0[0x8825]){
+    const g=ifd(t+u32(ifd0[0x8825].at));
+    const coord=(tag,ref)=>{
+      if(!g[tag]) return null;
+      const p=t+u32(g[tag].at);
+      const d=rat(p)+rat(p+8)/60+rat(p+16)/3600;
+      const r=g[ref]?String.fromCharCode(v.getUint8(g[ref].at)):'';
+      return (r==='S'||r==='W')?-d:d;
+    };
+    const lat=coord(2,1), lng=coord(4,3);
+    if(lat!=null && lng!=null && (lat||lng)){ info.lat=lat; info.lng=lng; }
+  }
+  return info;
+}
+function _pubDistM(a,b){
+  const R=6371000, rad=x=>x*Math.PI/180;
+  const dLat=rad(b.lat-a.lat), dLng=rad(b.lng-a.lng);
+  const h=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+// items: [{ time, lat?, lng? , …}] → grupos (arrays) en orden cronológico.
+function _pubGroupPhotos(items){
+  const sorted=items.slice().sort((a,b)=>a.time-b.time);
+  const groups=[];
+  sorted.forEach((it,i)=>{
+    const prev=sorted[i-1];
+    const lejos=prev && prev.lat!=null && it.lat!=null && _pubDistM(prev,it)>_PUB_BATCH_GAP_M;
+    if(!prev || it.time-prev.time>_PUB_BATCH_GAP_MS || lejos) groups.push([]);
+    groups[groups.length-1].push(it);
+  });
+  return groups;
+}
+async function _pubPhotoBatchFiles(files){
+  const list=Array.from(files||[]).filter(_isImageFile).slice(0,_PUB_BATCH_MAX);
+  const inp=document.getElementById('pubBatchInput'); if(inp) inp.value='';
+  if(!list.length) return;
+  const items=[];
+  for(let i=0;i<list.length;i++){
+    if(i%5===0) toast(`📸 Leyendo fotos ${i+1} de ${list.length}…`);
+    const f=list[i];
+    let exif={};
+    if(/jpe?g$/i.test(f.type||f.name)) exif=_pubExifInfo(await f.slice(0,262144).arrayBuffer());
+    try{ items.push({ ...exif, time:exif.time||f.lastModified||0, dataUrl:await _pubToJpegDataUrl(f) }); }
+    catch(e){ console.warn('[reco] foto descartada:', f.name, e); }
+  }
+  const rows=_pubBulkValidRows();
+  // Propuesta: el grupo N va al inmueble N (en el orden de la tabla).
+  _pubPhotoGroups=_pubGroupPhotos(items).map((g,i)=>({ photos:g.map(x=>x.dataUrl), when:g[0].time, row:i<rows.length?i:-1 }));
+  _pubDocPhotoPool=_pubDocPhotoPool.concat(items.map(x=>x.dataUrl));
+  toast(`📸 ${items.length} foto${items.length!==1?'s':''} en ${_pubPhotoGroups.length} grupo${_pubPhotoGroups.length!==1?'s':''}. Revisa a qué inmueble va cada uno.`);
+  _pubBulkRefresh();
+}
+function _pubPhotoGroupSet(i,row){ if(_pubPhotoGroups[i]) _pubPhotoGroups[i].row=Number(row); }
+function _pubPhotoGroupsApply(){
+  const rows=_pubBulkValidRows();
+  let asignadas=0, sobran=0;
+  _pubPhotoGroups.forEach(g=>{
+    const a=rows[g.row];
+    if(!a) return;
+    if(!a.photos) a.photos=[];
+    g.photos.forEach(ph=>{
+      if(a.photos.includes(ph)) return;
+      if(a.photos.length>=_PUB_BULK_PHOTO_MAX){ sobran++; return; }
+      a.photos.push(ph); asignadas++;
+    });
+  });
+  _pubPhotoGroups=[];
+  toast(`✅ ${asignadas} foto${asignadas!==1?'s':''} asignada${asignadas!==1?'s':''}${sobran?` · ${sobran} no entraron (máx. ${_PUB_BULK_PHOTO_MAX} por inmueble)`:''}`);
+  _pubBulkRefresh();
+}
+function _pubPhotoBatchHTML(rows){
+  const input=`<input type="file" id="pubBatchInput" accept="image/*,.heic,.heif" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="_pubPhotoBatchFiles(this.files)">`;
+  if(!_pubPhotoGroups.length){
+    return `${input}<div style="margin-top:10px;font-size:12px;color:var(--muted)">📦 ¿Tienes todas las fotos juntas? <a href="#" onclick="event.preventDefault();document.getElementById('pubBatchInput').click()" style="color:var(--blue);font-weight:600">Súbelas de una vez</a> y las agrupamos por inmueble según cuándo y dónde se tomaron.</div>`;
+  }
+  const opts=sel=>`<option value="-1"${sel===-1?' selected':''}>— no asignar —</option>`+rows.map((r,i)=>`<option value="${i}"${sel===i?' selected':''}>${i+1}. ${esc(String(r.row.direccion||r.row.titulo||'').slice(0,40))}</option>`).join('');
+  return `${input}<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
+    <div style="font-size:13px;font-weight:700">📦 Fotos agrupadas (${_pubPhotoGroups.length} grupo${_pubPhotoGroups.length!==1?'s':''})</div>
+    <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Propusimos un grupo por inmueble en el orden de tu lista. Cambia lo que no corresponda y confirma.</div>
+    ${_pubPhotoGroups.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border)">
+      <div style="display:flex;gap:4px">${g.photos.slice(0,5).map(ph=>`<img src="${ph}" style="width:44px;height:44px;object-fit:cover;border-radius:5px">`).join('')}${g.photos.length>5?`<span style="font-size:11px;color:var(--muted);align-self:center">+${g.photos.length-5}</span>`:''}</div>
+      <div style="font-size:11px;color:var(--muted);min-width:110px">${g.photos.length} foto${g.photos.length!==1?'s':''}${g.when?` · ${new Date(g.when).toLocaleString('es-PE',{ day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}`:''}</div>
+      <select onchange="_pubPhotoGroupSet(${i},this.value)" style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:11px">${opts(g.row)}</select>
+    </div>`).join('')}
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="pub-btn primary" style="font-size:12px;padding:6px 12px" onclick="_pubPhotoGroupsApply()">Asignar fotos</button>
+      <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubPhotoGroups=[];_pubBulkRefresh()">Descartar grupos</button>
+    </div></div>`;
+}
 function _pubBulkPhotosHTML(){
   const list=_pubBulkValidRows();
   if(!list.length) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay inmuebles válidos.</div>';
@@ -7464,6 +7644,7 @@ function _pubBulkPhotosHTML(){
   const photos=a.photos||[];
   const done=list.filter(x=>x.photos&&x.photos.length).length;
   return `<div class="pub-tip"><span>📸</span><div><strong>Agrega las fotos, inmueble por inmueble.</strong> Los anuncios con fotos reciben muchos más contactos. Puedes saltar los que quieras y agregarlas después desde "Mis publicaciones".</div></div>
+    ${_pubPhotoBatchHTML(list)}
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px">
       <div style="font-size:13px;font-weight:700">Inmueble ${_pubBulkPhotoIdx+1} de ${list.length}</div>
       <div style="font-size:12px;color:var(--muted)">${done} de ${list.length} con fotos</div>
@@ -7610,6 +7791,17 @@ function _pubDownloadTemplateCSV(){
   const csv=rows.map(r=>r.map(v=>/[";\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v).join(';')).join('\r\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reco_plantilla.csv';a.click();
+}
+// Varias imágenes juntas = flyers o capturas; cualquier otro archivo, uno.
+function _pubBulkFiles(list){
+  const files=Array.from(list||[]);
+  if(files.length && files.every(_isImageFile)){
+    const _bi=document.getElementById('pubBulkInput');
+    if(_bi){ try{ _bi.value=''; }catch(_){} }
+    _pubImagesImport(files);
+    return;
+  }
+  _pubBulkFile(files[0]);
 }
 function _pubBulkFile(file){
   const _bi=document.getElementById('pubBulkInput');
@@ -8147,7 +8339,7 @@ async function _pubDraftsLoad(){
 function _pubDraftsBannerHTML(){
   if(!_pubDraftGroups.length) return '';
   return `<div class="pub-tip" style="margin-bottom:12px"><span>📝</span><div style="flex:1">
-    <strong>Tienes inmuebles sin publicar.</strong> Retómalos donde los dejaste (las fotos hay que volver a adjuntarlas).
+    <strong>Tienes inmuebles sin publicar.</strong> Retómalos donde los dejaste (las fotos de archivos subidos aquí hay que volver a adjuntarlas; las del bot de WhatsApp se conservan).
     ${_pubDraftGroups.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px">
       <div style="font-size:12px">${g.docs.length} inmueble${g.docs.length!==1?'s':''} · ${esc(g.sourceName||_PUB_IMPORT_SOURCE_LABELS[g.source]||'Importación')}${g.at?` · <span style="color:var(--muted)">${new Date(g.at).toLocaleDateString('es-PE')}</span>`:''}</div>
       <div style="display:flex;gap:6px">
@@ -8178,7 +8370,7 @@ function _pubBulkLoadDrafts(drafts,meta){
   _pubBulkFileName=meta.sourceName||_PUB_IMPORT_SOURCE_LABELS[_pubBulkSource]||'';
   _pubBulkRows=drafts.map(d=>_pubBulkEntry(Object.assign({},d.row),{
     draftId:d.id, source:d.source||_pubBulkSource, aiFields:d.aiFields||[], inferred:d.inferredFields||[],
-    edited:(d.edited||[]).reduce((o,k)=>{ o[k]=1; return o; },{}), notes:d.notes||[], photos:d.photos||[] }));
+    edited:(d.edited||[]).reduce((o,k)=>{ o[k]=1; return o; },{}), notes:d.notes||[], photos:d.photos||d.photoUrls||[] }));
   _pubDraftGroups=_pubDraftGroups.filter(x=>x.batchId!==_pubBulkBatchId);
   _pubBulkPhotoIdx=0;
   _pubBulkGo(2);
@@ -8492,6 +8684,34 @@ async function _pubDocImport(file){
         empty:'No encontramos inmuebles en el documento. Revisa que tenga precio, ubicación o áreas.' }, doc.photos);
   }catch(e){ _pubImportFail(e,'No se pudo leer el documento.'); }
 }
+// ── Flyers o capturas de pantalla (roadmap 2.4) ──
+// Cada imagen va a la IA como página escaneada (máx. 6 por parte). También
+// quedan en "Fotos del documento" por si alguna sirve como foto del aviso.
+const _PUB_IMG_IMPORT_MAX=12;
+async function _pubImagesImport(files){
+  if(!_pubImportReady('leer imágenes')) return;
+  const list=files.slice(0,_PUB_IMG_IMPORT_MAX);
+  _pubBulkFileName=list.length===1?list[0].name:`${list.length} imágenes`;
+  try{
+    const doc={ fileType:'imagenes', sections:[], scans:[], photos:[] };
+    const fallidas=[];
+    for(let i=0;i<list.length;i++){
+      _pubDocProgress(`Preparando imagen ${i+1} de ${list.length}…`);
+      try{
+        const dataUrl=await _pubToJpegDataUrl(list[i]);
+        const n=doc.scans.length+1;
+        doc.scans.push({ page:String(n), dataUrl });
+        doc.sections.push({ label:`Página ${n}`, text:_pubDocSectionText(`Imagen ${n}: ${list[i].name} (ver imagen)`,'',[]), photoIds:[], scan:true });
+        doc.photos.push({ id:`i-${n}`, dataUrl });
+      }catch(_){ fallidas.push(list[i].name); }
+    }
+    if(!doc.scans.length) throw new Error('No pudimos abrir las imágenes. Usa JPG o PNG.');
+    await _pubExtractParts(_pubDocParts(doc),{ kind:'document', fileType:'imagenes', sourceName:_pubBulkFileName.slice(0,120) },
+      { source:'documento', sourceName:_pubBulkFileName, icon:'🖼️',
+        note:(files.length>list.length?` · solo se leyeron ${_PUB_IMG_IMPORT_MAX} imágenes`:'')+(fallidas.length?` · ${fallidas.length} no se pudieron abrir`:''),
+        empty:'No encontramos inmuebles en las imágenes. Revisa que se lean el precio, la ubicación o las áreas.' }, doc.photos);
+  }catch(e){ _pubImportFail(e,'No se pudieron leer las imágenes.'); }
+}
 // Común a documentos, chats y texto: requiere sesión y deja el error a la
 // vista (en el panel y en un aviso).
 function _pubImportReady(what){
@@ -8523,6 +8743,9 @@ function _pubLoadExtracted(drafts,batchId,meta,photos){
   if(!drafts.length){ _pubDocProgress(meta.empty||'No encontramos inmuebles. Revisa que tenga precio, ubicación o áreas.'); return 0; }
   const byId=Object.fromEntries((photos||[]).map(p=>[p.id,p.dataUrl]));
   drafts.forEach(d=>{ d.photos=(d.fotos||[]).map(id=>byId[id]).filter(Boolean).slice(0,_PUB_BULK_PHOTO_MAX); });
+  // Fotos que llegaron junto al texto (p. ej. compartidas desde WhatsApp):
+  // si hay un solo inmueble, son suyas.
+  if(meta.assignAllIfSingle && drafts.length===1 && !drafts[0].photos.length) drafts[0].photos=(photos||[]).map(p=>p.dataUrl).slice(0,_PUB_BULK_PHOTO_MAX);
   _pubDocPhotoPool=(photos||[]).map(p=>p.dataUrl);
   _pubBulkLoadDrafts(drafts,{ batchId, source:meta.source, sourceName:meta.sourceName });
   const conFotos=drafts.filter(d=>d.photos.length).length;
@@ -8668,6 +8891,7 @@ async function _pubUrlImport(fromPending){
   const pend=fromPending?_pubPendingPage:null;
   const url=pend?pend.url:String((document.getElementById('pubUrlInput')||{}).value||'').trim();
   const authEl=document.getElementById(pend?'pubPendAuth':'pubUrlAuth');
+  _pubProfileAvisos=[];
   if(!/^https?:\/\/\S+\.\S+/i.test(url)){ toast('⚠️ Pega el enlace completo del aviso (https://…).'); return; }
   if(!authEl || !authEl.checked){ toast('⚠️ Confirma que eres el anunciante o tienes autorización para usar el aviso.'); return; }
   if(!_pubImportReady('importar avisos')) return;
@@ -8694,6 +8918,76 @@ async function _pubUrlImport(fromPending){
     } else _pubImportFail(e,'No se pudo importar el aviso.');
   }
 }
+// ── Perfil completo de un portal (roadmap 2.3) ──
+// 1) importListingPage { modo:'perfil' } lista los avisos del perfil (sin IA);
+// 2) el corredor elige cuáles; 3) se importan uno por uno al mismo lote. Cada
+// aviso usa una de las importaciones por hora: si se agotan, se carga lo que
+// ya entró y se avisa cuántos faltan.
+const _PUB_PROFILE_PRESELECT=20;
+let _pubProfileAvisos=[];
+function _pubUrlFormOk(){
+  const url=String((document.getElementById('pubUrlInput')||{}).value||'').trim();
+  if(!/^https?:\/\/\S+\.\S+/i.test(url)){ toast('⚠️ Pega el enlace completo (https://…).'); return null; }
+  if(!(document.getElementById('pubUrlAuth')||{}).checked){ toast('⚠️ Confirma que eres el anunciante o tienes autorización para usar los avisos.'); return null; }
+  return url;
+}
+async function _pubProfileList(){
+  const url=_pubUrlFormOk();
+  if(!url || !_pubImportReady('importar avisos')) return;
+  try{
+    _pubDocProgress('Buscando los avisos del perfil…');
+    const res=await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion:true, modo:'perfil' });
+    _pubProfileAvisos=(res.data.avisos||[]).map((a,i)=>({ ...a, sel:i<_PUB_PROFILE_PRESELECT }));
+    if(!_pubProfileAvisos.length){ _pubDocProgress('No encontramos avisos en esa página. Pega el enlace de tu perfil o de la lista de tus avisos en el portal.'); return; }
+    _pubProfileRender();
+  }catch(e){
+    const reason=e && e.details && e.details.reason;
+    if(reason==='blocked' || reason==='host-not-supported'){ const d=document.getElementById('pubMarcador'); if(d) d.open=true; }
+    _pubImportFail(e,'No se pudo leer el perfil.');
+  }
+}
+function _pubProfileRender(){
+  const el=document.getElementById('pubBulkPreview');
+  if(!el) return;
+  const n=_pubProfileAvisos.filter(a=>a.sel).length;
+  el.innerHTML=`<div style="margin-top:10px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
+    <div style="font-size:13px;font-weight:700">🔗 ${_pubProfileAvisos.length} aviso${_pubProfileAvisos.length!==1?'s':''} en el perfil</div>
+    <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Marca los que quieres traer. Cada aviso usa una importación (máximo 30 por hora).</div>
+    <div style="max-height:260px;overflow:auto">${_pubProfileAvisos.map((a,i)=>`<label style="display:flex;gap:6px;align-items:flex-start;font-size:12px;padding:3px 0"><input type="checkbox" ${a.sel?'checked':''} onchange="_pubProfileAvisos[${i}].sel=this.checked;_pubProfileRender()"> <span>${esc(a.title||a.url)}<br><span style="color:var(--muted);font-size:10px">${esc(a.url)}</span></span></label>`).join('')}</div>
+    <button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:8px" ${n?'':'disabled'} onclick="_pubProfileImport()">Importar ${n} aviso${n!==1?'s':''}</button>
+  </div>`;
+}
+async function _pubProfileImport(){
+  const elegidos=_pubProfileAvisos.filter(a=>a.sel);
+  if(!elegidos.length || !_pubImportReady('importar avisos')) return;
+  let host=''; try{ host=new URL(elegidos[0].url).hostname.replace(/^www\./,''); }catch(_){}
+  _pubBulkFileName=`${host} (perfil)`;
+  const call=_getFunctions().httpsCallable('importListingPage');
+  const drafts=[], photos=[];
+  let batchId='', fallidos=0, limite=false;
+  for(let k=0;k<elegidos.length;k++){
+    _pubDocProgress(`Importando aviso ${k+1} de ${elegidos.length}…`);
+    try{
+      const res=await call({ url:elegidos[k].url, declaraAutorizacion:true, batchId:batchId||undefined });
+      batchId=res.data.batchId||batchId;
+      // Ids de fotos únicos entre avisos: "u-1" del aviso 3 → "3:u-1".
+      for(const p of (res.data.photos||[])){
+        const jpg=await _pubDocBlobToJpeg(await (await fetch(p.dataUrl)).blob());
+        if(jpg) photos.push({ id:`${k}:${p.id}`, dataUrl:jpg });
+      }
+      (res.data.drafts||[]).forEach(d=>{ d.fotos=(d.fotos||[]).map(id=>`${k}:${id}`); drafts.push(d); });
+    }catch(e){
+      if(e && /resource-exhausted/.test(e.code||'')){ limite=true; break; }
+      fallidos++;
+      console.warn('[reco] aviso no importado:', elegidos[k].url, e);
+    }
+  }
+  const pendientes=elegidos.length-drafts.length-fallidos;
+  _pubProfileAvisos=[];
+  _pubLoadExtracted(drafts,batchId,{ source:'url', sourceName:_pubBulkFileName, icon:'🔗',
+    note:(fallidos?` · ${fallidos} no se pudieron leer`:'')+(limite?` · límite por hora: faltan ${pendientes}, vuelve en una hora`:''),
+    empty:limite?'Se alcanzó el límite de importaciones por hora. Intenta en una hora.':'No pudimos importar los avisos elegidos.' },photos);
+}
 // Código del marcador: corre en la página del aviso (con la sesión y lo que
 // el navegador del usuario ya cargó), junta título, metadatos, JSON-LD,
 // texto y fotos grandes, abre ReCo y le pasa el aviso con postMessage
@@ -8719,6 +9013,104 @@ function _pubOnImportMessage(e){
   show();
 }
 window.addEventListener('message',_pubOnImportMessage);
+
+// ── Compartir con ReCo desde el celular (roadmap 2.5) ──
+// Con ReCo instalada como app, "Compartir → ReCo" en la galería, WhatsApp o
+// el gestor de archivos llega a sw.js, que lo guarda y abre ./#compartido.
+// Aquí se lee y se manda al importador que corresponda:
+//   documento / Excel / chat (.zip/.txt)  → mismo flujo que subir el archivo
+//   texto (con o sin fotos)              → "Pegar texto"; con un solo
+//                                           inmueble, las fotos son suyas
+//   solo un enlace                       → "Desde un enlace"
+//   solo imágenes                        → el usuario elige: fotos de un
+//                                           inmueble o flyers con datos
+let _pubShared=null;
+function _pubWhenAuthReady(cb){
+  let off=null, done=false;
+  off=auth.onAuthStateChanged(u=>{ if(done) return; done=true; if(typeof off==='function') off(); cb(u); });
+}
+async function _pubReadShared(){
+  if(!('caches' in window)) return;
+  try{
+    const cache=await caches.open('reco-compartir');
+    const metaRes=await cache.match(new URL('compartir/meta',location.href).pathname);
+    if(!metaRes) return;
+    const meta=await metaRes.json();
+    const files=[];
+    for(const f of (meta.files||[])){
+      const r=await cache.match(f.key);
+      if(r) files.push(new File([await r.blob()],f.name,{ type:f.type }));
+    }
+    await caches.delete('reco-compartir');
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(_){}
+    _pubShared={ files, text:String(meta.text||'').trim(), url:String(meta.url||'').trim(), title:String(meta.title||'').trim() };
+    const go=()=>{
+      if(!document.getElementById('pubModal').classList.contains('open')) openPublish();
+      _pubTab='bulk'; _pubBulkStep=1; renderPublish();
+      _pubUseShared();
+    };
+    if(!auth.currentUser){ toast('📲 Recibimos lo que compartiste. Inicia sesión para continuar.'); openAuthModal('login',go); return; }
+    go();
+  }catch(e){ console.warn('[reco] no se pudo leer lo compartido:', e); }
+}
+async function _pubUseShared(){
+  const s=_pubShared;
+  if(!s) return;
+  const imgs=s.files.filter(_isImageFile), otros=s.files.filter(f=>!_isImageFile(f));
+  const url=s.url || (s.text.match(/https?:\/\/\S+/)||[])[0] || '';
+  const texto=[s.title,s.text].filter(Boolean).join('\n').replace(url,'').trim();
+  if(otros.length){ _pubShared=null; _pubBulkFiles([otros[0]]); return; }
+  if(texto.length>=15){
+    _pubShared=null;
+    const ta=document.getElementById('pubPasteText'); if(ta) ta.value=texto;
+    if(!imgs.length){ toast('📲 Revisa el texto y pulsa "Buscar inmuebles con IA".'); return; }
+    if(!_pubImportReady('leer texto')) return;
+    try{
+      const photos=[];
+      for(const f of imgs.slice(0,_PUB_BULK_PHOTO_MAX)){ try{ photos.push({ id:`s-${photos.length+1}`, dataUrl:await _pubToJpegDataUrl(f) }); }catch(_){} }
+      _pubBulkFileName='Compartido';
+      await _pubExtractParts(_pubSplitText(texto).map(t=>({ text:t })),{ kind:'text', channel:'text', sourceName:'Compartido' },
+        { source:'text', sourceName:'Compartido', icon:'📲', assignAllIfSingle:true,
+          empty:'No encontramos inmuebles en lo que compartiste.' }, photos);
+    }catch(e){ _pubImportFail(e,'No se pudo leer lo compartido.'); }
+    return;
+  }
+  if(url && !imgs.length){
+    _pubShared=null;
+    const inp=document.getElementById('pubUrlInput'); if(inp) inp.value=url;
+    toast('📲 Marca la autorización y pulsa "Importar aviso".');
+    return;
+  }
+  const box=document.getElementById('pubSharedBox');
+  if(box) box.innerHTML=_pubSharedHTML();
+}
+function _pubSharedHTML(){
+  const s=_pubShared;
+  if(!s || !s.files.length || s.files.some(f=>!_isImageFile(f))) return '';
+  const n=s.files.length;
+  return `<div class="pub-tip" style="margin-bottom:12px"><span>📲</span><div style="flex:1"><strong>Compartiste ${n} imagen${n!==1?'es':''}.</strong> ¿Qué son?
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubSharedAs('fotos')">Fotos de un inmueble</button>
+      <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubSharedAs('flyer')">Flyers o capturas con los datos</button>
+    </div></div></div>`;
+}
+async function _pubSharedAs(kind){
+  const s=_pubShared;
+  if(!s) return;
+  _pubShared=null;
+  const box=document.getElementById('pubSharedBox'); if(box) box.innerHTML='';
+  if(kind==='flyer'){ _pubImagesImport(s.files); return; }
+  // Fotos: al formulario "Publicar uno", ya cargadas.
+  const fotos=[];
+  for(const f of s.files.slice(0,_PUB_MAX_PHOTOS)){ try{ fotos.push(await _pubToJpegDataUrl(f)); }catch(_){} }
+  _pubSetTab('single');
+  _pd.photos=fotos;
+  toast(`📲 ${fotos.length} foto${fotos.length!==1?'s':''} lista${fotos.length!==1?'s':''}. Completa los datos del inmueble.`);
+}
+if('serviceWorker' in navigator && (location.protocol==='https:' || location.hostname==='localhost')){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[reco] service worker:', e)); });
+}
+if(location.hash==='#compartido') _pubWhenAuthReady(()=>_pubReadShared());
 function _pubPendingPageHTML(){
   if(!_pubPendingPage) return '';
   let host=''; try{ host=new URL(_pubPendingPage.url).hostname.replace(/^www\./,''); }catch(_){}
@@ -8760,23 +9152,27 @@ async function _pubBulkSubmit(){
   for(let i=0;i<valid.length;i++){
     if(aborted) break;
     const r = valid[i].row;
-    const rowPhotos = valid[i].photos || [];
+    // Fotos del bot de WhatsApp (ya en Storage): las copia el servidor.
+    const importPhotos = (valid[i].photos || []).map(_pubImportPhotoPath).filter(Boolean);
+    const rowPhotos = (valid[i].photos || []).filter(p => !_pubImportPhotoPath(p));
     const payload = _pubBulkSubmitPayload(valid[i]);
+    if(importPhotos.length) payload.importPhotos = importPhotos;
     if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
     try {
       const res = await call(payload);
       ok++;
       valid[i].draftId = null; // publishProperty ya borró el borrador
       const pubId = res && res.data && res.data.publicationId;
+      const serverUrls = (res && res.data && res.data.photoUrls) || [];
       if(pubId && rowPhotos.length){
         try{
-          const urls = await _uploadPublicationPhotos(pubId, rowPhotos);
-          if(urls.length) await db.collection('publications').doc(pubId).update({ photoUrls: urls, photosPending: false });
+          const urls = await _uploadPublicationPhotos(pubId, rowPhotos, serverUrls.length);
+          if(urls.length) await db.collection('publications').doc(pubId).update({ photoUrls: serverUrls.concat(urls), photosPending: false });
         }catch(upErr){
           console.error('[reco] bulk photo upload failed:', pubId, upErr);
           try{ await db.collection('publications').doc(pubId).update({ photosPending:true, photoError:String((upErr&&upErr.code)||(upErr&&upErr.message)||'upload-failed').slice(0,200) }); }catch(_){}
         }
-      } else if(pubId){
+      } else if(pubId && !serverUrls.length){
         try{ await db.collection('publications').doc(pubId).update({ photosPending:true }); }catch(_){}
       }
       if(res && res.data && typeof res.data.keysLeft === 'number'){
@@ -8808,7 +9204,7 @@ async function _pubBulkSubmit(){
   if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
   toast(failed.length ? `⚠️ ${ok} publicadas · ${failed.length} fallaron` : `🚀 ¡${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}!`);
   if(!failed.length){
-    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[];
+    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[]; _pubPhotoGroups=[];
     setTimeout(()=>closePublish(),2200);
   }
 }

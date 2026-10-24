@@ -43,6 +43,15 @@ service firebase.storage {
       allow read: if true;
     }
 
+    // /imports/{uid}/{lote}/{n}.jpg — fotos que llegan por el bot de
+    // WhatsApp. Las escribe solo el servidor (admin SDK) y se muestran con su
+    // URL de descarga (token), que no pasa por estas reglas. Al publicar,
+    // publishProperty las copia a /publications. Se pueden borrar a los 30
+    // días con una regla de ciclo de vida del bucket.
+    match /imports/{uid}/{allPaths=**} {
+      allow read, write: if false;
+    }
+
     // Default deny
     match /{allPaths=**} {
       allow read, write: if false;

@@ -138,6 +138,16 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | 2.4 | **PDF, Word y PowerPoint** ✅ *adelantado* | Ver "Importar documentos" más abajo. Pendiente: imágenes sueltas (JPG de un flyer) y formatos antiguos .doc/.ppt. |
 | 2.5 | **PWA "Publicar rápido"** | Botón de compartir del celular → ReCo (Web Share Target): compartir fotos o texto desde la galería o WhatsApp directamente al importador. |
 
+#### Estado de la Fase 2: implementada (el bot espera la configuración de Meta)
+
+| # | Dónde quedó |
+|---|---|
+| 2.1 | Bot: `whatsappLink` (código `VINCULAR`), `whatsappWebhook` (firma de Meta, guarda cada mensaje una sola vez) y `whatsappProcessMessage` (comandos, sesión, notas de voz transcritas con Whisper, fotos a Storage `imports/`, mismo pipeline de extracción, respuesta con resumen y enlace a `#borradores`). Lógica pura en `functions/whatsapp-core.js`. Al publicar, `publishProperty` copia las fotos del bot a `publications/`. **Configuración pendiente:** `docs/WHATSAPP-BOT.md`. |
+| 2.2 | Paso de fotos → "Súbelas de una vez": agrupación por fecha de captura y GPS del EXIF (`_pubExifInfo`, `_pubGroupPhotos`: grupo nuevo a los 15 min o 200 m), propuesta de un grupo por inmueble y asignación con un clic. Pendiente: clasificar ambientes, elegir portada y detectar marcas de agua (requieren IA de visión por foto). |
+| 2.3 | "Importar todos los de mi perfil": `importListingPage` `modo: 'perfil'` lista los avisos (sin IA; `extractListingLinks`), el corredor elige y se importan uno por uno al mismo lote. Si se acaba el límite por hora, se carga lo importado y se avisa cuántos faltan. |
+| 2.4 | Además de PDF/Word/PowerPoint: **flyers o capturas** (varias imágenes a la vez) como páginas escaneadas (`fileType: 'imagenes'`). Pendiente: .doc/.ppt antiguos. |
+| 2.5 | `manifest.webmanifest` (app instalable, `share_target`) + `sw.js` (solo recibe lo compartido; no cachea nada más) + `_pubReadShared`: documentos/Excel/chats, texto (con fotos), enlaces o imágenes ("¿fotos o flyers?") van al importador correcto. |
+
 ### Fase 3 — Sincronización para inmobiliarias grandes (3–6 meses)
 
 | # | Entregable | Detalle |

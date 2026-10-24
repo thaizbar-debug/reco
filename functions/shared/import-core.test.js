@@ -158,4 +158,24 @@ assert.ok(pt.startsWith('URL: https://portal.pe/aviso/1'));
 assert.ok(pt.includes('"price":"185000"') && pt.endsWith('[FOTO u-1]'));
 assert.ok(R.pageToText({ text: 'x'.repeat(50000) }, 'https://a.pe', [], 3000).length <= 3000);
 
+console.log('  extractListingLinks');
+const perfil = R.extractListingLinks(`
+<a href="/inmueble/departamento-en-venta-miraflores-145678901.html"><span>Dpto en</span> Miraflores</a>
+<a href="https://urbania.pe/inmueble/casa-la-molina-145678902.html?ref=perfil#fotos">Casa</a>
+<a href="https://www.urbania.pe/inmueble/oficina-145678904.html">Of.</a>
+<a href="/buscar/departamentos-12345678">buscar</a><a href="/login">Ingresar</a><a href="/inmueble/sin-id">sin id</a>
+<a href="https://otro.pe/inmueble/99999999">otro sitio</a><a href="/inmueble/departamento-en-venta-miraflores-145678901.html">repetido</a>
+<a href="https://falsourbania.pe/inmueble/123456789">parecido</a>
+<script type="application/ld+json">{"@type":"ItemList","itemListElement":[{"url":"https://urbania.pe/inmueble/local-surquillo-145678903.html","name":"Local"}]}</script>`,
+'https://urbania.pe/inmobiliarias/demo-1234567');
+assert.deepStrictEqual(perfil.map((x) => x.url), [
+  'https://urbania.pe/inmueble/departamento-en-venta-miraflores-145678901.html',
+  'https://urbania.pe/inmueble/casa-la-molina-145678902.html',
+  'https://www.urbania.pe/inmueble/oficina-145678904.html',
+  'https://urbania.pe/inmueble/local-surquillo-145678903.html',
+]);
+assert.strictEqual(perfil[0].title, 'Dpto en Miraflores');
+assert.strictEqual(R.extractListingLinks('<a href="/inmueble/x-1234567">x</a>'.repeat(3), 'no es url').length, 0);
+assert.strictEqual(R.extractListingLinks(Array.from({ length: 80 }, (_, i) => `<a href="/aviso/${100000 + i}">a</a>`).join(''), 'https://a.pe/p').length, 60);
+
 console.log('\n  ✓ import-core: todos los tests pasaron');

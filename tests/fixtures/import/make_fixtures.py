@@ -150,3 +150,30 @@ ws3 = wb.create_sheet('Instrucciones')
 ws3['A1'] = 'Esta hoja no tiene inmuebles'
 wb.save(f'{OUT}/inventario-corredor.xlsx')
 print('excel ok')
+
+# Fotos con EXIF (fecha de captura y GPS) para la agrupación en bloque:
+# 2 fotos en Miraflores a las 10:00, 2 en Surco a las 10:05 (lejos: otro
+# grupo aunque el tiempo sea cercano) y 1 en Surco a las 11:30 (otro grupo).
+from fractions import Fraction
+def dms(x):
+    x = abs(x); d = int(x); m = int((x - d) * 60); s = round(((x - d) * 60 - m) * 60 * 100)
+    return ((d, 1), (m, 1), (s, 100))
+def exif_photo(color, when, lat, lng):
+    im = Image.new('RGB', (400, 300), color)
+    ex = im.getexif()
+    ex.get_ifd(0x8769)[0x9003] = when
+    gps = ex.get_ifd(0x8825)
+    gps[1] = 'S' if lat < 0 else 'N'; gps[2] = tuple(Fraction(a, b) for a, b in dms(lat))
+    gps[3] = 'W' if lng < 0 else 'E'; gps[4] = tuple(Fraction(a, b) for a, b in dms(lng))
+    b = io.BytesIO(); im.save(b, 'JPEG', exif=ex); return b.getvalue()
+import os
+os.makedirs(f'{OUT}/fotos-bloque', exist_ok=True)
+for name, color, when, lat, lng in [
+    ('a1.jpg', (200, 60, 60), '2026:10:20 10:00:00', -12.1211, -77.0297),
+    ('a2.jpg', (200, 80, 80), '2026:10:20 10:02:00', -12.1212, -77.0298),
+    ('b1.jpg', (60, 60, 200), '2026:10:20 10:05:00', -12.1390, -76.9930),
+    ('b2.jpg', (80, 80, 200), '2026:10:20 10:07:00', -12.1391, -76.9931),
+    ('c1.jpg', (60, 200, 60), '2026:10:20 11:30:00', -12.1391, -76.9931),
+]:
+    open(f'{OUT}/fotos-bloque/{name}', 'wb').write(exif_photo(color, when, lat, lng))
+print('fotos ok')

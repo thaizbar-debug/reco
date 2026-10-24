@@ -19,16 +19,32 @@ function createMockFirestore() {
       return Promise.resolve({ id, exists: !!store[key], data: () => (store[key] ? { ...store[key] } : undefined) });
     },
     set(data) { store[`${name}/${id}`] = { ...data }; return Promise.resolve(); },
+    update(fields) { store[`${name}/${id}`] = { ...store[`${name}/${id}`], ...fields }; return Promise.resolve(); },
+    create(data) {
+      const key = `${name}/${id}`;
+      if (store[key]) return Promise.reject(Object.assign(new Error('6 ALREADY_EXISTS: Document already exists'), { code: 6 }));
+      store[key] = { ...data };
+      return Promise.resolve();
+    },
+  });
+  // where('campo', '==', valor) sobre los documentos de una colección.
+  const query = (name, field, value) => ({
+    get() {
+      const docs = Object.keys(store).filter((k) => k.startsWith(`${name}/`) && store[k][field] === value)
+        .map((k) => { const r = ref(name, k.slice(name.length + 1)); return { id: r.id, ref: r, data: () => ({ ...store[k] }) }; });
+      return Promise.resolve({ docs, empty: !docs.length, size: docs.length });
+    },
   });
   return {
     store,
     collection(name) {
-      return { doc(id) { return ref(name, id || `auto${++seq}`); } };
+      return { doc(id) { return ref(name, id || `auto${++seq}`); }, where(f, op, v) { return query(name, f, v); } };
     },
     batch() {
       const ops = [];
       return {
         set(r, data) { ops.push(() => { store[r._key] = { ...data }; }); },
+        update(r, fields) { ops.push(() => { store[r._key] = { ...store[r._key], ...fields }; }); },
         delete(r) { ops.push(() => { delete store[r._key]; }); },
         commit() { ops.forEach((op) => op()); return Promise.resolve(); },
       };
@@ -54,13 +70,15 @@ function loadHandlers() {
   class HttpsError extends Error { constructor(code, message, details) { super(message); this.code = code; this.details = details; } }
   const mocks = {
     'firebase-functions/v2/https': {
-      onCall(configOrHandler, maybeHandler) {
-        return { __handler: typeof configOrHandler === 'function' ? configOrHandler : maybeHandler };
-      },
+      onCall: handlerOf,
+      onRequest: handlerOf,
       HttpsError,
     },
-    'firebase-functions/params': { defineSecret(name) { return { value: () => 'fake-key', name }; } },
-    'firebase-functions/v2/firestore': { onDocumentWritten: () => ({}), onDocumentCreated: () => ({}) },
+    'firebase-functions/params': {
+      defineSecret(name) { return { value: () => (SECRETS[name] != null ? SECRETS[name] : 'fake-key'), name }; },
+      defineString(name) { return { value: () => (SECRETS[name] != null ? SECRETS[name] : ''), name }; },
+    },
+    'firebase-functions/v2/firestore': { onDocumentWritten: () => ({}), onDocumentCreated: handlerOf },
     'firebase-functions/v2/scheduler': { onSchedule: () => ({}) },
     'firebase-functions': { logger: { info() {}, warn() {}, error() {} } },
     'firebase-admin/app': { initializeApp() {} },
@@ -68,9 +86,15 @@ function loadHandlers() {
     'firebase-admin/firestore': {
       getFirestore() { return mockDb; },
       FieldValue: { serverTimestamp() { return 'SERVER_TS'; }, increment(n) { return n; } },
-      Timestamp: { fromMillis(ms) { return { ms }; } },
+      Timestamp: { fromMillis(ms) { return { ms, toMillis: () => ms }; } },
     },
   };
+  // firebase-admin/storage se pide dentro de las funciones (no al cargar):
+  // se reemplaza en la caché de módulos por un bucket en memoria.
+  const storagePath = require.resolve('firebase-admin/storage', { paths: [path.resolve(__dirname, '..', 'functions')] });
+  const sm = new Module(storagePath); sm.loaded = true;
+  sm.exports = { getStorage: () => ({ bucket: () => mockBucket }) };
+  require.cache[storagePath] = sm;
   Module._resolveFilename = function (request, parent, ...rest) {
     if (mocks[request]) return request;
     return originalResolve.call(this, request, parent, ...rest);
@@ -91,9 +115,33 @@ function loadHandlers() {
     publish: exp.publishProperty.__handler,
     mapColumns: exp.mapImportColumns.__handler,
     importPage: exp.importListingPage.__handler,
+    waLink: exp.whatsappLink.__handler,
+    waWebhook: exp.whatsappWebhook.__handler,
+    waProcess: exp.whatsappProcessMessage.__handler,
     db: mockDb,
+    bucket: mockBucket,
   };
 }
+const handlerOf = (configOrHandler, maybeHandler) => ({ __handler: typeof configOrHandler === 'function' ? configOrHandler : maybeHandler });
+// Secretos/parámetros por nombre (el resto: 'fake-key' / '').
+const SECRETS = { WHATSAPP_APP_SECRET: 'app-secret', WHATSAPP_VERIFY_TOKEN: 'verify-123', WHATSAPP_PHONE_NUMBER_ID: '111222' };
+// Bucket de Storage en memoria: save / copy.
+const mockBucket = {
+  name: 'reco-test.appspot.com',
+  files: {},
+  file(p) {
+    const b = this;
+    return {
+      bucket: b,
+      save(buf, opts) { b.files[p] = { buf, opts }; return Promise.resolve(); },
+      copy(dest, opts) {
+        if (!b.files[p]) return Promise.reject(new Error('No such object: ' + p));
+        b.files[dest._path] = { ...b.files[p], opts }; return Promise.resolve();
+      },
+      _path: p,
+    };
+  },
+};
 
 const req = (uid, data) => ({ auth: { uid, token: { email_verified: true, email: 'a@b.pe' } }, app: { appId: 't' }, data, rawRequest: { headers: {} } });
 
@@ -459,5 +507,209 @@ test.describe('mapImportColumns', () => {
     await expect(mapColumns(req('u1', { headers: ['solo'] }))).rejects.toMatchObject({ code: 'invalid-argument' });
     db.store['importUsage/u9'] = { hour: new Date().toISOString().slice(0, 13), count: 30 };
     await expect(mapColumns(req('u9', { headers: ['a', 'b'] }))).rejects.toMatchObject({ code: 'resource-exhausted' });
+  });
+});
+
+// ── Fase 2: bot de WhatsApp ──
+const crypto = require('crypto');
+const PHONE = '51987654321';
+const sign = (raw) => 'sha256=' + crypto.createHmac('sha256', SECRETS.WHATSAPP_APP_SECRET).update(raw).digest('hex');
+const mkRes = () => ({ statusCode: 0, body: '', status(c) { this.statusCode = c; return this; }, send(b) { this.body = b; return this; } });
+const webhookReq = (payload, signature) => {
+  const raw = Buffer.from(JSON.stringify(payload));
+  return { method: 'POST', query: {}, rawBody: raw, body: payload, get: (h) => (h === 'x-hub-signature-256' ? (signature === undefined ? sign(raw) : signature) : undefined) };
+};
+const waMsg = (id, extra) => ({ id, from: PHONE, ts: 1761332700 + Number(String(id).replace(/\D/g, '') || 0), type: 'text', ...extra });
+const event = (msg) => ({ data: { data: () => msg } });
+
+// Red simulada: Graph API (envíos y media), descarga de media, OpenAI.
+function mockWaNet(aiPayload) {
+  const sent = [];
+  const seen = { sent, ai: null, transcriptions: 0 };
+  global.fetch = async (url, init) => {
+    const u = String(url);
+    if (u === 'https://graph.facebook.com/v21.0/111222/messages') { sent.push(JSON.parse(init.body)); return new Response('{}', { status: 200 }); }
+    if (u === 'https://graph.facebook.com/v21.0/MEDIA_IMG') return new Response(JSON.stringify({ url: 'https://lookaside.fbsbx.com/img', mime_type: 'image/jpeg', file_size: 30000 }), { status: 200 });
+    if (u === 'https://graph.facebook.com/v21.0/MEDIA_AUD') return new Response(JSON.stringify({ url: 'https://lookaside.fbsbx.com/aud', mime_type: 'audio/ogg; codecs=opus' }), { status: 200 });
+    if (u === 'https://lookaside.fbsbx.com/img') return new Response(Buffer.alloc(30000, 1), { status: 200 });
+    if (u === 'https://lookaside.fbsbx.com/aud') return new Response(Buffer.alloc(5000, 2), { status: 200 });
+    if (u === 'https://api.openai.com/v1/audio/transcriptions') { seen.transcriptions++; return new Response(JSON.stringify({ text: 'tiene dos dormitorios y cochera' }), { status: 200 }); }
+    if (u === 'https://api.openai.com/v1/chat/completions') {
+      seen.ai = JSON.parse(init.body);
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(aiPayload || { inmuebles: [] }) } }] }), { status: 200 });
+    }
+    return new Response('not found', { status: 404 });
+  };
+  return seen;
+}
+
+test.describe('Bot de WhatsApp', () => {
+  let originalFetch;
+  test.beforeEach(() => { originalFetch = global.fetch; mockBucket.files = {}; });
+  test.afterEach(() => { global.fetch = originalFetch; });
+
+  test('webhook: verificación de Meta (GET)', async () => {
+    const { waWebhook } = loadHandlers();
+    const ok = mkRes();
+    await waWebhook({ method: 'GET', query: { 'hub.mode': 'subscribe', 'hub.verify_token': 'verify-123', 'hub.challenge': 'CH4LL' } }, ok);
+    expect([ok.statusCode, ok.body]).toEqual([200, 'CH4LL']);
+    const bad = mkRes();
+    await waWebhook({ method: 'GET', query: { 'hub.mode': 'subscribe', 'hub.verify_token': 'otro', 'hub.challenge': 'x' } }, bad);
+    expect(bad.statusCode).toBe(403);
+  });
+
+  test('webhook: firma obligatoria y mensajes guardados una sola vez', async () => {
+    const { waWebhook, db } = loadHandlers();
+    const payload = { entry: [{ changes: [{ value: { messages: [{ id: 'wamid.A', from: PHONE, timestamp: '1761332700', type: 'text', text: { body: 'hola' } }] } }] }] };
+    const r1 = mkRes(); await waWebhook(webhookReq(payload, 'sha256=' + '0'.repeat(64)), r1);
+    expect(r1.statusCode).toBe(401);
+    expect(Object.keys(db.store).filter((k) => k.startsWith('whatsappInbox/'))).toHaveLength(0);
+    const r2 = mkRes(); await waWebhook(webhookReq(payload), r2);
+    const r3 = mkRes(); await waWebhook(webhookReq(payload), r3); // Meta reintenta
+    expect([r2.statusCode, r3.statusCode]).toEqual([200, 200]);
+    expect(db.store['whatsappInbox/wamid.A']).toMatchObject({ from: PHONE, type: 'text', text: 'hola' });
+  });
+
+  test('número sin conectar → instrucciones; VINCULAR con código válido → conectado (una sola vez)', async () => {
+    const { waLink, waProcess, db } = loadHandlers();
+    const net = mockWaNet();
+    await waProcess(event(waMsg('m1', { text: 'Vendo depa' })));
+    expect(net.sent[0]).toMatchObject({ messaging_product: 'whatsapp', to: PHONE, type: 'text' });
+    expect(net.sent[0].text.body).toContain('primero conecta este número');
+
+    const { code, minutes } = await waLink(req('u1', { action: 'code' }));
+    expect(code).toMatch(/^\d{6}$/);
+    expect(minutes).toBe(15);
+    await waProcess(event(waMsg('m2', { text: `Vincular ${code}` })));
+    expect(db.store[`whatsappLinks/${PHONE}`]).toMatchObject({ uid: 'u1' });
+    expect(db.store[`whatsappLinkCodes/${code}`]).toBeUndefined();
+    expect(net.sent[1].text.body).toContain('quedó conectado');
+    await waProcess(event(waMsg('m3', { text: `VINCULAR ${code}` }))); // reusar el código
+    expect(net.sent[2].text.body).toContain('no es válido');
+
+    const st = await waLink(req('u1', {}));
+    expect(st.linked).toEqual(['+•••••••4321']);
+    await waLink(req('u1', { action: 'unlink' }));
+    expect(db.store[`whatsappLinks/${PHONE}`]).toBeUndefined();
+  });
+
+  test('código vencido no conecta', async () => {
+    const { waProcess, db } = loadHandlers();
+    const net = mockWaNet();
+    db.store['whatsappLinkCodes/111111'] = { uid: 'u1', expiresAt: { toMillis: () => Date.now() - 1000 } };
+    await waProcess(event(waMsg('m1', { text: 'VINCULAR 111111' })));
+    expect(db.store[`whatsappLinks/${PHONE}`]).toBeUndefined();
+    expect(net.sent[0].text.body).toContain('ya venció');
+  });
+
+  test('sesión: texto + foto + nota de voz, LISTO → transcribe, guarda la foto, crea el borrador y responde', async () => {
+    const { waProcess, db } = loadHandlers();
+    db.store[`whatsappLinks/${PHONE}`] = { uid: 'u1' };
+    const net = mockWaNet({ inmuebles: [aiItem({ distrito: 'Lince', tipo_propiedad: 'depa', tipo_publicacion: 'Vendo', precio: 'US$ 120 mil', area_techada: '70 m2',
+      nro_dormitorios: 'dos', titulo: 'Depa en Lince', descripcion: 'Vendo depa en Lince', fotos: [], evidencia: null })] });
+
+    await waProcess(event(waMsg('m1', { text: 'Vendo depa en Lince 70 m2 US$ 120 mil' })));
+    await waProcess(event(waMsg('m2', { type: 'image', mediaId: 'MEDIA_IMG', caption: 'Sala' })));
+    await waProcess(event(waMsg('m3', { type: 'audio', mediaId: 'MEDIA_AUD' })));
+    expect(net.sent.map((m) => m.text.body)).toEqual([expect.stringContaining('📥 Recibido')]); // solo al primero
+    expect(db.store[`whatsappSessions/${PHONE}`].items.map((i) => i.type)).toEqual(['text', 'image', 'audio']);
+
+    await waProcess(event(waMsg('m4', { text: 'LISTO' })));
+    expect(net.transcriptions).toBe(1);
+    const user = net.ai.messages[1].content;
+    expect(user).toContain('Corredor: Vendo depa en Lince 70 m2 US$ 120 mil');
+    expect(user).toContain('Corredor: Sala [FOTO w-1]');
+    expect(user).toContain('(nota de voz) tiene dos dormitorios y cochera');
+    const saved = Object.keys(mockBucket.files);
+    expect(saved).toHaveLength(1);
+    expect(saved[0]).toMatch(/^imports\/u1\/[A-Za-z0-9]+\/1\.jpg$/);
+    const draft = Object.values(db.store).find((v) => v.status === 'draft');
+    expect(draft).toMatchObject({ uid: 'u1', source: 'whatsapp', sourceName: 'WhatsApp (bot)' });
+    expect(draft.photoUrls).toHaveLength(1); // un solo inmueble: la foto es suya
+    expect(draft.photoUrls[0]).toContain(encodeURIComponent(saved[0]));
+    expect([draft.row.tipo_propiedad, draft.row.precio, draft.row.nro_dormitorios]).toEqual(['Departamento', '120000', '2']);
+    const last = net.sent[net.sent.length - 1].text.body;
+    expect(last).toContain('Encontré 1 inmueble');
+    expect(last).toContain('https://recosac.com/#borradores');
+    expect(db.store[`whatsappSessions/${PHONE}`].items).toEqual([]);
+    expect(Object.values(db.store).find((v) => v.kind === 'bot')).toMatchObject({ channel: 'whatsapp', photos: 1, voiceNotes: 1 });
+  });
+
+  test('LISTO sin mensajes, CANCELAR, AYUDA y tipos no soportados', async () => {
+    const { waProcess, db } = loadHandlers();
+    db.store[`whatsappLinks/${PHONE}`] = { uid: 'u1' };
+    const net = mockWaNet();
+    await waProcess(event(waMsg('m1', { text: 'listo' })));
+    await waProcess(event(waMsg('m2', { text: 'Casa en Surco' })));
+    await waProcess(event(waMsg('m3', { text: 'cancelar' })));
+    await waProcess(event(waMsg('m4', { text: 'ayuda' })));
+    await waProcess(event(waMsg('m5', { type: 'other', kind: 'document' })));
+    const bodies = net.sent.map((m) => m.text.body);
+    expect(bodies[0]).toContain('Todavía no me enviaste nada');
+    expect(bodies[2]).toContain('borré lo que me habías enviado');
+    expect(bodies[3]).toContain('escribe *LISTO*');
+    expect(bodies[4]).toContain('Para PDF, Word, Excel');
+    expect(db.store[`whatsappSessions/${PHONE}`].items).toEqual([]);
+    expect(net.ai).toBeNull();
+  });
+
+  test('límite por hora: no procesa, conserva los mensajes y avisa', async () => {
+    const { waProcess, db } = loadHandlers();
+    db.store[`whatsappLinks/${PHONE}`] = { uid: 'u1' };
+    db.store['importUsage/u1'] = { hour: new Date().toISOString().slice(0, 13), count: 30 };
+    const net = mockWaNet();
+    await waProcess(event(waMsg('m1', { text: 'Casa en Surco 200 m2' })));
+    await waProcess(event(waMsg('m2', { text: 'LISTO' })));
+    expect(net.sent[net.sent.length - 1].text.body).toContain('límite');
+    expect(db.store[`whatsappSessions/${PHONE}`].items).toHaveLength(1);
+    expect(net.ai).toBeNull();
+  });
+
+  test('publishProperty copia las fotos del bot (solo del propio usuario) a la publicación', async () => {
+    const { publish, db } = loadHandlers();
+    mockBucket.files['imports/u1/B1/1.jpg'] = { buf: Buffer.alloc(10) };
+    mockBucket.files['imports/u2/B1/1.jpg'] = { buf: Buffer.alloc(10) };
+    const res = await publish(req('u1', { source: 'whatsapp', address: 'Av. 1', district: 'Lince', type: 'Departamento', op: 'Venta', currency: 'USD',
+      price: 120000, area: 70, title: 't', desc: 'd', importPhotos: ['imports/u1/B1/1.jpg', 'imports/u2/B1/1.jpg', '../imports/u1/x.jpg'] }));
+    expect(res.photoUrls).toHaveLength(1);
+    expect(mockBucket.files[`publications/${res.publicationId}/u1/0.jpg`]).toBeDefined();
+    expect(db.store[`publications/${res.publicationId}`].photoUrls).toEqual(res.photoUrls);
+    expect(res.photoUrls[0]).toContain(encodeURIComponent(`publications/${res.publicationId}/u1/0.jpg`));
+  });
+});
+
+test.describe('Fase 2: perfil de portal e imágenes sueltas', () => {
+  let originalFetch, restoreDns;
+  test.beforeEach(() => { originalFetch = global.fetch; });
+  test.afterEach(() => { global.fetch = originalFetch; if (restoreDns) restoreDns(); restoreDns = null; });
+
+  test('modo perfil: lista los avisos del portal sin usar la IA ni el límite por hora', async () => {
+    const { importPage, db } = loadHandlers();
+    restoreDns = mockDns();
+    const seen = mockNet({
+      'https://urbania.pe/inmobiliarias/demo-1234567': html(`<a href="/inmueble/dpto-miraflores-145678901.html">Dpto</a>
+        <a href="/inmueble/casa-molina-145678902.html">Casa</a><a href="/buscar/dptos-1234567">Buscar</a>`),
+    }, { inmuebles: [] });
+    db.store['importUsage/u1'] = { hour: new Date().toISOString().slice(0, 13), count: 30 }; // límite agotado
+    const res = await importPage(req('u1', { url: 'https://urbania.pe/inmobiliarias/demo-1234567', declaraAutorizacion: true, modo: 'perfil' }));
+    expect(res.avisos).toEqual([
+      { url: 'https://urbania.pe/inmueble/dpto-miraflores-145678901.html', title: 'Dpto' },
+      { url: 'https://urbania.pe/inmueble/casa-molina-145678902.html', title: 'Casa' },
+    ]);
+    expect(seen.ai).toBeUndefined();
+    expect(Object.values(db.store).find((v) => v.kind === 'perfil')).toMatchObject({ host: 'urbania.pe', listings: 2 });
+    await expect(importPage(req('u1', { url: 'https://otro.pe/perfil', declaraAutorizacion: true, modo: 'perfil' })))
+      .rejects.toMatchObject({ details: { reason: 'host-not-supported' } });
+  });
+
+  test('imágenes sueltas (flyers): documento con páginas escaneadas', async () => {
+    const { extract, db } = loadHandlers();
+    const calls = mockOpenAI({ inmuebles: [aiItem({ tipo_propiedad: 'Lote', area_terreno: '500', precio: 'US$ 90,000', fotos: [],
+      evidencia: 'TERRENO EN VENTA Lote de 500 m2 Precio US$ 90,000' })] });
+    const res = await extract(req('u1', { kind: 'document', fileType: 'imagenes', text: '=== Imagen 1: flyer.jpg (ver imagen) ===',
+      images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(100) }], photoIds: [] }));
+    expect(calls[0].messages[1].content[2].type).toBe('image_url');
+    expect([res.drafts[0].row.area_terreno, res.drafts[0].row.precio]).toEqual(['500', '90000']); // vienen de la transcripción
+    expect(Object.values(db.store).find((v) => v.status === 'draft')).toMatchObject({ source: 'documento', fileType: 'imagenes' });
   });
 });

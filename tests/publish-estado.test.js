@@ -29,8 +29,8 @@ function loadPublish() {
   };
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
   const mocks = {
-    'firebase-functions/v2/https': { onCall: (c, h) => ({ __handler: typeof c === 'function' ? c : h }), HttpsError },
-    'firebase-functions/params': { defineSecret: (name) => ({ value: () => 'k', name }) },
+    'firebase-functions/v2/https': { onCall: (c, h) => ({ __handler: typeof c === 'function' ? c : h }), onRequest: (c, h) => ({ __handler: typeof c === 'function' ? c : h }), HttpsError },
+    'firebase-functions/params': { defineSecret: (name) => ({ value: () => 'k', name }), defineString: (name) => ({ value: () => '', name }) },
     'firebase-functions/v2/firestore': { onDocumentWritten: () => ({}), onDocumentCreated: () => ({}) },
     'firebase-functions/v2/scheduler': { onSchedule: () => ({}) },
     'firebase-functions': { logger: { info() {}, warn() {}, error() {} } },
