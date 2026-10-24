@@ -466,6 +466,98 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
     expect(r.obra).toEqual({ age: 0, val: '0', disabled: true });
   });
 
+  // ── Verificación previa a publicar: áreas según el tipo ─────────
+  test('Terreno sin área techada es válido; sin área de terreno no', async ({ page }) => {
+    const r = await page.evaluate((b) => [
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '300' }),
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Lote', area_techada: '', area_terreno: '' }),
+    ], { ...base, area_techada: undefined });
+    expect(r[0].errors).toEqual([]);
+    expect(r[1].errors).toEqual(['área de terreno obligatoria para Terreno']);
+  });
+
+  test('Departamento no exige área de terreno pero sí techada', async ({ page }) => {
+    const r = await page.evaluate((b) => [
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Departamento', area_techada: '80', area_terreno: '' }),
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Departamento', area_techada: '', area_terreno: '120' }),
+    ], base);
+    expect(r[0].errors).toEqual([]);
+    expect(r[0].warnings).toEqual([]);
+    expect(r[1].errors).toEqual(['área techada obligatoria para Departamento']);
+  });
+
+  test('Terreno: dormitorios y pisos no se publican; área principal = terreno', async ({ page }) => {
+    const r = await page.evaluate((b) => {
+      const row = { ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '300', nro_dormitorios: '3', piso: '2' };
+      return { v: _pubBulkValidateRow(row), verif: RecoCatalogo.verificarPublicacion(_pubBulkRowToPubData(row)) };
+    }, base);
+    expect(r.v.valid).toBe(true);
+    expect(r.v.warnings.join(' ')).toContain('dormitorios, piso no aplican');
+    expect([r.verif.datos.area, r.verif.datos.beds, r.verif.datos.floor]).toEqual([300, 0, 0]);
+  });
+
+  test('la tabla permite editar el área de terreno y marca la celda con error', async ({ page }) => {
+    const html = await page.evaluate((b) => {
+      _pubTab = 'bulk';
+      document.getElementById('pubOverlay').classList.add('open');
+      document.getElementById('pubModal').classList.add('open');
+      _pubBulkLoadRows([{ ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '' }]);
+      return document.getElementById('pubBulkStepBody').innerHTML;
+    }, base);
+    expect(html).toContain("_pubBulkEdit(0,'area_terreno'");
+    expect(html).toMatch(/onchange="_pubBulkEdit\(0,'area_terreno',this.value\)" style="[^"]*var\(--red\)/);
+  });
+
+  test('Excel propio: basta con mapear una de las dos áreas', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const only = ['direccion', 'distrito', 'precio', 'area_terreno', 'titulo', 'descripcion'];
+      const none = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
+      _pubBulkMap = { direccion: 'a', distrito: 'b', precio: 'c', titulo: 'd', descripcion: 'e' };
+      const missingNone = _pubBulkMapMissing();
+      _pubBulkMap.area_terreno = 'f';
+      return { needOnly: _pubBulkNeedsMapping(only), needNone: _pubBulkNeedsMapping(none), missingNone, missingOk: _pubBulkMapMissing() };
+    });
+    expect(r.needOnly).toBe(false);
+    expect(r.needNone).toBe(true);
+    expect(r.missingNone).toEqual(['Área techada o Área terreno']);
+    expect(r.missingOk).toEqual([]);
+  });
+
+  test('formulario individual: asteriscos de área según el tipo', async ({ page }) => {
+    const r = await page.evaluate(() => ({
+      depTech: _pubAreaReqMark('Departamento', 'techada'), depTerr: _pubAreaReqMark('Departamento', 'terreno'),
+      terTech: _pubAreaReqMark('Terreno', 'techada'), terTerr: _pubAreaReqMark('Terreno', 'terreno'),
+      casaTerr: _pubAreaReqMark('Casa', 'terreno'), otros: _pubAreaReqMark('Otros', 'techada'),
+    }));
+    expect(r.depTech).toContain('*');
+    expect(r.depTerr).toContain('opcional');
+    expect(r.terTech).toContain('opcional');
+    expect(r.terTerr).toContain('*');
+    expect(r.casaTerr).toContain('recomendado');
+    expect(r.otros).toContain('esta o la otra');
+  });
+
+  test('formulario individual: el paso 1 verifica áreas según el tipo', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const toasts = [];
+      const orig = window.toast; window.toast = (m) => toasts.push(m);
+      _ps = 1;
+      _pd = { op: 'Venta', type: 'Terreno', address: 'Av. 1', district: 'Lince', currency: 'USD', price: '90000',
+        area: '', areaTerr: '', beds: 0, baths: 0, parking: 0, floor: 0, unitFloors: 1, floors: 0, age: 0, title: '', desc: '' };
+      window.renderPublish = () => {};
+      _pn();
+      const blocked = _ps;
+      _pd.areaTerr = '300';
+      _pn();
+      window.toast = orig;
+      return { toasts, blocked, after: _ps, principal: _pubAreaPrincipal() };
+    });
+    expect(r.blocked).toBe(1);
+    expect(r.toasts[0]).toContain('área de terreno obligatoria para Terreno');
+    expect(r.after).toBe(2);
+    expect(r.principal).toBe(300);
+  });
+
   // ── Photo assistant (MEJ-01) ─────────────────────────────────────
   test('_PUB_BULK_PHOTO_MAX is 12', async ({ page }) => {
     const max = await page.evaluate(() => _PUB_BULK_PHOTO_MAX);

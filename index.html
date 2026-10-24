@@ -6665,7 +6665,7 @@ function _rps(){
         </div>
         <div class="pub-field">
           <label>Tipo de propiedad <span style="color:var(--red)">*</span></label>
-          <select oninput="_pd.type=this.value">${['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'].map(t=>`<option${_pd.type===t?' selected':''}>${t}</option>`).join('')}</select>
+          <select oninput="_pubSetType(this.value)">${['Departamento','Casa','Oficina','Local comercial','Terreno','Otros'].map(t=>`<option${_pd.type===t?' selected':''}>${t}</option>`).join('')}</select>
         </div>
       </div>
       <div class="pub-card">
@@ -6682,11 +6682,11 @@ function _rps(){
           </div>
         </div>
         <div class="pub-field row">
-          <div><label>Área terreno (m²)</label>
+          <div><label>Área terreno (m²) <span id="pubReqTerr">${_pubAreaReqMark(_pd.type,'terreno')}</span></label>
             <input type="number" min="0" value="${_pd.areaTerr}" oninput="_pd.areaTerr=this.value" placeholder="Ej: 120">
           </div>
-          <div><label>Área techada (m²) <span style="color:var(--red)">*</span></label>
-            <input type="number" min="1" value="${_pd.area}" oninput="_pd.area=this.value" placeholder="Ej: 85">
+          <div><label>Área techada (m²) <span id="pubReqTech">${_pubAreaReqMark(_pd.type,'techada')}</span></label>
+            <input type="number" min="0" value="${_pd.area}" oninput="_pd.area=this.value" placeholder="Ej: 85">
           </div>
         </div>
         <h3 style="margin-top:18px">📐 Detalles</h3>
@@ -6764,7 +6764,7 @@ function _rps(){
     </div>`;
     setTimeout(_pubMapInit,80);
   } else {
-    const pr=Number(_pd.price)||0,ar=Number(_pd.area)||1;
+    const pr=Number(_pd.price)||0,ar=_pubAreaPrincipal()||1;
     body.innerHTML=`
     <div class="pub-grid">
       <div class="pub-card">
@@ -6814,7 +6814,7 @@ function _rps(){
         <div style="background:var(--light);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:13px">
           <div style="font-weight:600">${_pd.op} · ${_pd.type}</div>
           <div style="color:var(--muted);margin-top:2px">📍 ${_pd.address||'—'}${_pd.district?', '+_pd.district:''}</div>
-          <div style="color:var(--muted);margin-top:2px">📐 ${_pd.area} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
+          <div style="color:var(--muted);margin-top:2px">📐 ${_pubAreaPrincipal()} m²${_pd.beds>0?' · 🛏 '+_pd.beds:''}${_pd.baths>0?' · 🚿 '+_pd.baths:''}${_pd.parking>0?' · 🚗 '+_pd.parking:''}</div>
           ${_pubFloorsText()?`<div style="color:var(--muted);margin-top:2px">🏢 ${_pubFloorsText()}</div>`:''}
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
@@ -7010,7 +7010,7 @@ function _pubRemovePhoto(i){_pd.photos.splice(i,1);_pubRenderPhotos();}
 let _aiCopyLastResult = null;
 function _pubAiPrompt(){
   return {
-    district: _pd.district, area: _pd.area, type: _pd.type,
+    district: _pd.district, area: _pubAreaPrincipal(), type: _pd.type,
     op: _pd.op, beds: _pd.beds, baths: _pd.baths,
     parking: _pd.parking, features: _pd.features
   };
@@ -7075,14 +7075,37 @@ async function _pubHandleFiles(files){
   }
   if(inp){ try{ inp.value=''; }catch(_){} }
 }
+// Verificación previa a publicar (RecoCatalogo.verificarPublicacion), la
+// misma que aplica publishProperty. Paso 1: sin título ni descripción.
+function _pubVerificar(soloDatos){
+  if(typeof RecoCatalogo==='undefined') return { errores:[], avisos:[] };
+  return RecoCatalogo.verificarPublicacion(_pd,{ soloDatos:!!soloDatos });
+}
 function _pn(){
-  const missing=[];
-  if(!_pd.address.trim())missing.push('dirección');
-  if(!_pd.district.trim())missing.push('distrito');
-  if(!_pd.price||Number(_pd.price)<=0)missing.push('precio');
-  if(!_pd.area||Number(_pd.area)<=0)missing.push('área (m²)');
-  if(missing.length>0){toast('⚠️ Campos requeridos: '+missing.join(', '));return;}
+  const v=_pubVerificar(true);
+  if(v.errores.length){toast('⚠️ Revisa: '+v.errores.join('; '));return;}
+  if(v.avisos.length) toast('ℹ️ '+v.avisos.join(' '));
   _ps=2;renderPublish();
+}
+// Asterisco de obligatorio según el tipo (ver RecoCatalogo.REGLAS_TIPO).
+function _pubAreaReqMark(type,cual){
+  const r=(typeof RecoCatalogo!=='undefined' && RecoCatalogo.REGLAS_TIPO[type]) || { requiere:'techada' };
+  if(r.requiere===cual) return '<span style="color:var(--red)">*</span>';
+  if(r.requiere==='alguna') return '<span style="color:var(--muted);font-weight:400">(esta o la otra)</span>';
+  if(r.recomienda===cual) return '<span style="color:var(--muted);font-weight:400">(recomendado)</span>';
+  return '<span style="color:var(--muted);font-weight:400">(opcional)</span>';
+}
+// Área que se muestra y con la que se calcula el precio por m²: la de
+// terreno en un Terreno, la techada en el resto (igual que publishProperty).
+function _pubAreaPrincipal(){
+  if(typeof RecoCatalogo==='undefined') return Number(_pd.area)||0;
+  return RecoCatalogo.verificarPublicacion(_pd,{ soloDatos:true }).datos.area;
+}
+function _pubSetType(v){
+  _pd.type=v;
+  const t=document.getElementById('pubReqTerr'), c=document.getElementById('pubReqTech');
+  if(t) t.innerHTML=_pubAreaReqMark(v,'terreno');
+  if(c) c.innerHTML=_pubAreaReqMark(v,'techada');
 }
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 async function _uploadPublicationPhotos(pubId, photos){
@@ -7103,8 +7126,8 @@ async function _uploadPublicationPhotos(pubId, photos){
 async function _ppub(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',{notice:'✅ Sesión iniciada. Pulsá "Publicar ahora" para enviar tu anuncio.'});return;}
   if(!_ensureEmailVerified()) return;
-  if(!_pd.title.trim()){toast('⚠️ El título del anuncio es obligatorio');return;}
-  if(!_pd.desc.trim()){toast('⚠️ La descripción es obligatoria');return;}
+  const _verif=_pubVerificar(false);
+  if(_verif.errores.length){toast('⚠️ Revisa antes de publicar: '+_verif.errores.join('; '));return;}
   if(_PUB_COST>0 && S.keysLeft<_PUB_COST){
     // Pre-flight check for a nicer UX; the server-side rule is what
     // actually enforces this. Open the buy-keys modal without closing
@@ -7275,7 +7298,7 @@ function _pubBulkUploadHTML(){
     <div id="pubBulkPreview"></div>`;
 }
 // ── Paso 2: tabla editable ──
-const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propiedad','tipo_moneda','precio','area_techada','titulo','descripcion'];
+const _PUB_BULK_EDIT_COLS=['direccion','distrito','tipo_publicacion','tipo_propiedad','tipo_moneda','precio','area_techada','area_terreno','titulo','descripcion'];
 function _pubBulkEdit(i,key,val){
   const a=_pubBulkRows[i]; if(!a) return;
   a.row[key]=String(val==null?'':val).trim();
@@ -7341,7 +7364,7 @@ function _pubBulkValidateHTML(){
 }
 function _pubBulkErrKey(k){
   return ({direccion:'dirección',distrito:'distrito',titulo:'título',descripcion:'descripción',
-           precio:'precio',area_techada:'área',tipo_propiedad:'tipo',tipo_publicacion:'operacion',tipo_moneda:'moneda'})[k]||k;
+           precio:'precio',area_techada:'área techada',area_terreno:'área de terreno',tipo_propiedad:'tipo',tipo_publicacion:'operacion',tipo_moneda:'moneda'})[k]||k;
 }
 // ── MEJ-01: Asistente de fotos por inmueble ──
 let _pubBulkPhotoIdx = 0;
@@ -7485,8 +7508,8 @@ const _PUB_TPL_HELP=[
   ['pet_friendly','Opcional','Sí / No','Por defecto: No.'],
   ['tipo_moneda','Obligatorio','USD / PEN','USD = dólares ($, US$, U$S, Dls.); PEN = soles (S/, S/., Soles).'],
   ['precio','Obligatorio','Número','Sin símbolo de moneda ni separadores de miles.'],
-  ['area_terreno','Opcional','Número','Área del terreno en m². 0 si no aplica.'],
-  ['area_techada','Obligatorio','Número','Área techada en metros cuadrados.'],
+  ['area_terreno','Obligatorio para Terreno','Número','Área del terreno en m². Obligatoria en Terreno; recomendada en Casa; opcional en el resto (0 o vacío si no aplica).'],
+  ['area_techada','Obligatorio (salvo Terreno)','Número','Área techada en m². Obligatoria en Departamento, Casa, Oficina y Local comercial; opcional en Terreno. En Otros basta con una de las dos áreas.'],
   ['etiquetas_generales','Opcional','Texto','Etiquetas separadas por punto y coma (;). Valores válidos: '+_PUB_FEATS_GEN.join(', ')+'. También se aceptan nombres anteriores.'],
   ['etiquetas_ambientes','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_AMB.join(', ')+'.'],
   ['etiquetas_vista','Opcional','Texto','Etiquetas separadas por punto y coma. Valores válidos: '+_PUB_FEATS_VISTA.join(', ')+'.'],
@@ -7631,18 +7654,21 @@ function _pubValidateCoords(lat,lng){
 
 function _pubBulkValidateRow(r){
   const errs=[], warns=[];
-  const need=(k,label)=>{ if(!r[k]||!String(r[k]).trim()) errs.push(label+' vacío'); };
-  need('direccion','dirección'); need('distrito','distrito');
-  need('titulo','título'); need('descripcion','descripción');
-  const price=Number(r.precio); if(!isFinite(price)||price<=0) errs.push('precio inválido');
-  const area=Number(r.area_techada); if(!isFinite(area)||area<=0) errs.push('área inválida');
-  if(r.tipo_propiedad && !RecoCatalogo.matchType(r.tipo_propiedad)) errs.push('tipo debe ser: '+_PUB_BULK_TYPES.join(' / '));
-  if(r.tipo_publicacion && !RecoCatalogo.matchOp(r.tipo_publicacion)) errs.push('operacion debe ser Venta o Alquiler');
-  if(r.tipo_moneda && !RecoCatalogo.matchCurrency(r.tipo_moneda)) errs.push('moneda debe ser USD o PEN');
-  const floor=Number(r.piso)||0;
-  const niveles=Math.max(1,Number(r.niveles)||1);
-  const nroPisos=Number(r.nro_pisos)||0;
-  if(nroPisos>0 && floor>0 && (floor+niveles-1)>nroPisos) warns.push('Piso + niveles supera la altura del edificio');
+  // Verificación previa a publicar, la misma que aplica publishProperty
+  // (RecoCatalogo.verificarPublicacion): obligatorios, áreas según el tipo
+  // (Terreno no exige área techada; Departamento no exige área de terreno),
+  // campos que no aplican y coherencia de pisos.
+  const d=_pubBulkRowToPubData(r);
+  // Texto, precio y áreas se verifican tal como vienen en la fila (sin los
+  // valores por defecto de _pubBulkRowToPubData) para no ocultar errores.
+  const verif=RecoCatalogo.verificarPublicacion({ ...d,
+    address:r.direccion, district:r.distrito, title:r.titulo, desc:r.descripcion,
+    price:r.precio, area:r.area_techada, areaTerr:r.area_terreno,
+    type: String(r.tipo_propiedad||'').trim()||'Departamento',
+    op: String(r.tipo_publicacion||'').trim()||'Venta',
+    currency: String(r.tipo_moneda||'').trim()||'USD' });
+  errs.push(...verif.errores);
+  warns.push(...verif.avisos);
   const lat=r.latitud?Number(r.latitud):null;
   const lng=r.longitud?Number(r.longitud):null;
   if(lat!==null && lng!==null) warns.push(..._pubValidateCoords(lat,lng));
@@ -7672,8 +7698,8 @@ function _pubBulkRowToPubData(r){
   const hideExact=_pubParseBoolInvert(r.mostrar_direccion);
   return {
     source: 'bulk',
-    address: String(r.direccion).trim(),
-    district: String(r.distrito).trim(),
+    address: String(r.direccion==null?'':r.direccion).trim(),
+    district: String(r.distrito==null?'':r.distrito).trim(),
     lat: (lat!==null && isFinite(lat)) ? lat : null,
     lng: (lng!==null && isFinite(lng)) ? lng : null,
     hideExact,
@@ -7695,8 +7721,8 @@ function _pubBulkRowToPubData(r){
     amoblado: _pubParseBool(r.amoblado),
     petFriendly: _pubParseBool(r.pet_friendly),
     features: feats,
-    title: String(r.titulo).trim(),
-    desc: String(r.descripcion).trim(),
+    title: String(r.titulo==null?'':r.titulo).trim(),
+    desc: String(r.descripcion==null?'':r.descripcion).trim(),
   };
 }
 
@@ -7724,7 +7750,14 @@ function _pubShowBulkPreview(rows){
 let _pubBulkRaw = [];
 let _pubBulkHeaders = [];
 let _pubBulkMap = {};
-const _PUB_MAP_REQUIRED=['direccion','distrito','precio','area_techada','titulo','descripcion'];
+const _PUB_MAP_REQUIRED=['direccion','distrito','precio','titulo','descripcion'];
+// Además, al menos una de las dos áreas (Terreno no tiene área techada).
+const _PUB_MAP_AREAS=['area_techada','area_terreno'];
+function _pubBulkMapMissing(){
+  const missing=_PUB_MAP_REQUIRED.filter(k=>!_pubBulkMap[k]).map(k=>_PUB_MAP_LABELS[k]);
+  if(!_PUB_MAP_AREAS.some(k=>_pubBulkMap[k])) missing.push('Área techada o Área terreno');
+  return missing;
+}
 const _PUB_MAP_LABELS={
   direccion:'Dirección', departamento:'Departamento', provincia:'Provincia',
   distrito:'Distrito', latitud:'Latitud', longitud:'Longitud',
@@ -7779,7 +7812,8 @@ function _pubNormHeader(h){
 }
 function _pubBulkNeedsMapping(headers){
   const norm=headers.map(_pubNormHeader);
-  return _PUB_MAP_REQUIRED.some(k=>norm.indexOf(_pubNormHeader(k))===-1);
+  return _PUB_MAP_REQUIRED.some(k=>norm.indexOf(_pubNormHeader(k))===-1)
+    || !_PUB_MAP_AREAS.some(k=>norm.indexOf(_pubNormHeader(k))!==-1);
 }
 function _pubBulkGuessMap(headers){
   const used={}, map={};
@@ -7797,7 +7831,8 @@ function _pubBulkSetMap(key,header){
 }
 function _pubBulkMapHTML(){
   const sample=_pubBulkRaw[0]||{};
-  const missing=_PUB_MAP_REQUIRED.filter(k=>!_pubBulkMap[k]);
+  const missing=_pubBulkMapMissing();
+  const areaMapped=_PUB_MAP_AREAS.some(k=>_pubBulkMap[k]);
   const guessed=Object.keys(_pubBulkMap).length;
   return `<div class="pub-tip"><span>🔀</span><div><strong>Tu archivo usa otros nombres de columna.</strong> Indícanos a qué corresponde cada uno y lo importamos tal cual está: no necesitas rehacer tu Excel.</div></div>
     <div style="font-size:12px;color:var(--muted);margin-top:10px">${esc(_pubBulkFileName||'Archivo')} · ${_pubBulkRaw.length} fila${_pubBulkRaw.length!==1?'s':''} · reconocimos ${guessed} de ${Object.keys(_PUB_MAP_LABELS).length} columnas automáticamente.</div>
@@ -7806,7 +7841,7 @@ function _pubBulkMapHTML(){
         <thead><tr><th>Campo de ReCo</th><th>Columna de tu archivo</th><th>Ejemplo (primera fila)</th></tr></thead>
         <tbody>${Object.keys(_PUB_MAP_LABELS).map(key=>{
           const sel=_pubBulkMap[key]||'';
-          const req=_PUB_MAP_REQUIRED.indexOf(key)!==-1;
+          const req=_PUB_MAP_REQUIRED.indexOf(key)!==-1 || (!areaMapped && _PUB_MAP_AREAS.indexOf(key)!==-1);
           const val=sel?String(sample[sel]==null?'':sample[sel]).slice(0,40):'—';
           return `<tr>
             <td style="font-size:12px">${_PUB_MAP_LABELS[key]}${req?' <span style="color:var(--red)">*</span>':''}</td>
@@ -7822,7 +7857,7 @@ function _pubBulkMapHTML(){
     <div class="pub-actions" style="margin-top:18px">
       <button class="pub-btn ghost" onclick="_pubBulkGo(1)">← Cambiar archivo</button>
       <button class="pub-btn primary" ${missing.length?'disabled':''} onclick="_pubBulkApplyMap()">
-        ${missing.length?`Falta indicar: ${missing.map(k=>_PUB_MAP_LABELS[k]).join(', ')}`:'Continuar a revisar →'}
+        ${missing.length?`Falta indicar: ${missing.join(', ')}`:'Continuar a revisar →'}
       </button>
     </div>`;
 }

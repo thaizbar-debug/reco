@@ -96,3 +96,40 @@ test.describe('publishProperty: estado y antigüedad', () => {
     await expect(publish(req({ currency: 'EUR' }))).rejects.toMatchObject({ code: 'invalid-argument' });
   });
 });
+
+test.describe('publishProperty: verificación de áreas según el tipo', () => {
+  test('Terreno sin área techada: se publica con área principal = terreno y sin dormitorios', async () => {
+    const { publish, store } = loadPublish();
+    const { publicationId } = await publish(req({ type: 'Terreno', area: 0, areaTerr: 300, beds: 3, baths: 2, ascensor: true, age: 5 }));
+    const p = store[`publications/${publicationId}`];
+    expect([p.area, p.areaTech, p.areaTerr]).toEqual([300, 0, 300]);
+    expect([p.beds, p.baths, p.ascensor, p.age]).toEqual([0, 0, false, 0]);
+  });
+
+  test('Terreno sin área de terreno se rechaza', async () => {
+    const { publish } = loadPublish();
+    await expect(publish(req({ type: 'Terreno', area: 120, areaTerr: 0 })))
+      .rejects.toMatchObject({ code: 'invalid-argument', message: expect.stringContaining('área de terreno obligatoria') });
+  });
+
+  test('Departamento sin área de terreno se publica; sin área techada se rechaza', async () => {
+    const { publish, store } = loadPublish();
+    const { publicationId } = await publish(req({ type: 'Departamento', area: 80, areaTerr: 0 }));
+    const p = store[`publications/${publicationId}`];
+    expect([p.area, p.areaTech, p.areaTerr]).toEqual([80, 80, 0]);
+    await expect(publish(req({ type: 'Departamento', area: 0, areaTerr: 120 })))
+      .rejects.toMatchObject({ code: 'invalid-argument', message: expect.stringContaining('área techada obligatoria') });
+  });
+
+  test('Otros: basta con una de las dos áreas', async () => {
+    const { publish, store } = loadPublish();
+    const { publicationId } = await publish(req({ type: 'Otros', area: 0, areaTerr: 500 }));
+    expect(store[`publications/${publicationId}`].area).toBe(500);
+  });
+
+  test('precio 0 y áreas negativas se rechazan', async () => {
+    const { publish } = loadPublish();
+    await expect(publish(req({ price: 0 }))).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(publish(req({ area: -10 }))).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+});

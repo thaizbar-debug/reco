@@ -254,10 +254,13 @@ function _unlockTx(userRef, premiumRef, propertyId) {
 //     source, // 'single' | 'bulk'
 //   });
 //   // data = { publicationId, keysLeft }
+//   area = área techada. Lo guardado como `area` es el área principal (la
+//   de terreno en un Terreno); además se guardan areaTech y areaTerr.
 //
 // Errors (HttpsError):
 //   unauthenticated       — no auth context
-//   invalid-argument      — missing / malformed field
+//   invalid-argument      — missing / malformed field, o no pasa
+//                           RecoCatalogo.verificarPublicacion (details.errores)
 //   failed-precondition   — caller has fewer than 3 keys
 //
 // Photos are NOT part of this callable. The client uploads them to
@@ -309,10 +312,15 @@ exports.publishProperty = onCall(
     if (!op) throw new HttpsError('invalid-argument', 'op inválido.');
     if (!currency) throw new HttpsError('invalid-argument', 'currency inválido.');
 
+    // Verificación previa a publicar (shared/catalogo.js): la misma que
+    // corren la carga masiva y el formulario antes de llamar aquí. Exige el
+    // área según el tipo (techada; de terreno para Terreno) y deja en 0 lo
+    // que no aplica. raw.area = área techada; pubData.area = área principal.
+    const verif = RecoCatalogo.verificarPublicacion(raw);
+    if (verif.errores.length) {
+      throw new HttpsError('invalid-argument', verif.errores.join('; ') + '.', { errores: verif.errores });
+    }
     const price = Number(raw.price);
-    if (!isFinite(price) || price <= 0) throw new HttpsError('invalid-argument', 'price inválido.');
-    const area = Number(raw.area);
-    if (!isFinite(area) || area <= 0) throw new HttpsError('invalid-argument', 'area inválida.');
 
     // "En planos", "Preventa", "E/C"… → canónico. En proyecto y En
     // construcción siempre se guardan con antigüedad 0.
@@ -355,8 +363,6 @@ exports.publishProperty = onCall(
         op,
         currency,
         price,
-        areaTerr: numOrZero(raw.areaTerr),
-        area,
         beds: numOrZero(raw.beds),
         baths: numOrZero(raw.baths),
         parking: numOrZero(raw.parking),
@@ -371,6 +377,9 @@ exports.publishProperty = onCall(
         features,
         title, desc,
         photoUrls: [],
+        // area (principal), areaTech, areaTerr y los campos que no aplican
+        // al tipo ya en 0 (p. ej. dormitorios en un Terreno).
+        ...verif.datos,
       };
 
       tx.set(pubRef, pubData);
