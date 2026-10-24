@@ -168,9 +168,40 @@
     return { estado, antiguedad: antiguedad == null ? 0 : antiguedad, notas };
   }
 
+  // Estandariza los campos de opciones cerradas de una fila con las columnas
+  // de la plantilla (tipo_propiedad, tipo_publicacion, tipo_moneda, estado,
+  // antiguedad y los sí/no) y deja el resto igual. Lo que no se reconoce se
+  // deja tal cual para que la validación lo marque. Idempotente.
+  // `notas`: ajustes de estado/antigüedad para mostrar al usuario.
+  const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
+  function standardizeRow(r) {
+    const src = r || {};
+    const txt = (v) => String(v == null ? '' : v).trim();
+    const row = Object.assign({}, src);
+    row.tipo_propiedad = matchType(src.tipo_propiedad) || txt(src.tipo_propiedad);
+    row.tipo_publicacion = matchOp(src.tipo_publicacion) || txt(src.tipo_publicacion);
+    row.tipo_moneda = matchCurrency(src.tipo_moneda) || txt(src.tipo_moneda);
+    BOOL_COLS.forEach((k) => {
+      const b = matchBool(src[k]);
+      if (b !== null) row[k] = b ? 'Sí' : 'No';
+    });
+    const est = resolveEstadoAntiguedad(src.estado, src.antiguedad);
+    const estadoTxt = txt(src.estado);
+    if (estadoTxt && !matchEstado(estadoTxt)) row.estado = estadoTxt;
+    // Vacío y sin pista en la antigüedad: se deja vacío (por defecto Construido).
+    else row.estado = (estadoTxt || est.estado !== 'Construido') ? est.estado : '';
+    const antTxt = txt(src.antiguedad);
+    if (ESTADOS_SIN_ANTIGUEDAD.includes(est.estado)) row.antiguedad = '0';
+    else if (antTxt) {
+      const n = parseAntiguedad(antTxt);
+      row.antiguedad = n == null ? antTxt : String(n);
+    }
+    return { row, notas: est.notas.filter((n) => n.indexOf('no reconocido') === -1) };
+  }
+
   return {
     TYPES, OPS, CURRENCIES, ESTADOS, ESTADOS_SIN_ANTIGUEDAD,
     norm, matchType, matchOp, matchEstado, matchCurrency, matchBool, parseAntiguedad,
-    resolveEstadoAntiguedad,
+    resolveEstadoAntiguedad, standardizeRow,
   };
 });

@@ -7603,29 +7603,11 @@ let _pubBulkRows = [];
 function _pubParseBool(v){ return RecoCatalogo.matchBool(v)===true; }
 // mostrar_direccion: solo un "No" explícito oculta la dirección.
 function _pubParseBoolInvert(v){ return RecoCatalogo.matchBool(v)===false; }
-const _PUB_BULK_BOOL_COLS = ['mostrar_direccion','ascensor','amoblado','pet_friendly'];
-// Lleva tipo, operación, moneda, estado, antigüedad y sí/no a su valor
-// estándar (lo que ve el usuario en la tabla). Lo que no se reconoce se deja
-// tal cual para que la validación lo marque. `notes` explica los ajustes de
-// estado/antigüedad. Idempotente.
+// Estandariza tipo, operación, moneda, estado, antigüedad y sí/no de una fila
+// de la plantilla (ver RecoCatalogo.standardizeRow).
 function _pubBulkStandardize(r){
-  const row={...r};
-  const C=RecoCatalogo;
-  row.tipo_propiedad=C.matchType(r.tipo_propiedad)||String(r.tipo_propiedad==null?'':r.tipo_propiedad).trim();
-  row.tipo_publicacion=C.matchOp(r.tipo_publicacion)||String(r.tipo_publicacion==null?'':r.tipo_publicacion).trim();
-  row.tipo_moneda=C.matchCurrency(r.tipo_moneda)||String(r.tipo_moneda==null?'':r.tipo_moneda).trim();
-  _PUB_BULK_BOOL_COLS.forEach(k=>{
-    const b=C.matchBool(r[k]);
-    if(b!==null) row[k]=b?'Sí':'No';
-  });
-  const est=C.resolveEstadoAntiguedad(r.estado,r.antiguedad);
-  const estadoTxt=String(r.estado==null?'':r.estado).trim();
-  // Estado no reconocido: se deja el texto original (la validación avisa).
-  row.estado=(estadoTxt && !C.matchEstado(estadoTxt)) ? estadoTxt : (estadoTxt||est.estado!=='Construido' ? est.estado : '');
-  const antTxt=String(r.antiguedad==null?'':r.antiguedad).trim();
-  if(C.ESTADOS_SIN_ANTIGUEDAD.includes(est.estado)) row.antiguedad='0';
-  else if(antTxt){ const n=C.parseAntiguedad(antTxt); row.antiguedad=n==null?antTxt:String(n); }
-  return { row, notes: est.notas.filter(n=>n.indexOf('no reconocido')===-1) };
+  const out=RecoCatalogo.standardizeRow(r);
+  return { row:out.row, notes:out.notas };
 }
 function _pubParseTagCol(raw, validList){
   const warnings=[];

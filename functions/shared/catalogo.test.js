@@ -117,6 +117,19 @@ const bad = R('Bueno', '4');
 assert.deepStrictEqual([bad.estado, bad.antiguedad], ['Construido', 4]);
 assert.ok(bad.notas[0].includes('no reconocido'));
 
+console.log('  standardizeRow');
+const sr = C.standardizeRow({ tipo_propiedad: 'Dpto.', tipo_publicacion: 'Alq.', tipo_moneda: 'S/.', estado: 'Preventa',
+  antiguedad: '5', ascensor: 'x', mostrar_direccion: 'Depende', direccion: 'Av. X 1' });
+assert.deepStrictEqual(
+  [sr.row.tipo_propiedad, sr.row.tipo_publicacion, sr.row.tipo_moneda, sr.row.estado, sr.row.antiguedad, sr.row.ascensor, sr.row.mostrar_direccion, sr.row.direccion],
+  ['Departamento', 'Alquiler', 'PEN', 'En proyecto', '0', 'Sí', 'Depende', 'Av. X 1']);
+assert.ok(sr.notas.join(' ').includes('se publicará como 0'));
+assert.deepStrictEqual(C.standardizeRow(sr.row).row, sr.row, 'idempotente');
+const unk = C.standardizeRow({ estado: 'Bueno', tipo_propiedad: 'Planeta', antiguedad: 'viejo' }).row;
+assert.deepStrictEqual([unk.estado, unk.tipo_propiedad, unk.antiguedad], ['Bueno', 'Planeta', 'viejo']);
+const empty = C.standardizeRow({}).row;
+assert.deepStrictEqual([empty.estado, empty.tipo_moneda, empty.antiguedad], ['', '', undefined]);
+
 console.log('  listas canónicas coherentes');
 C.TYPES.forEach(t => assert.strictEqual(C.matchType(t), t));
 C.OPS.forEach(o => assert.strictEqual(C.matchOp(o), o));
