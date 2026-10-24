@@ -1,7 +1,8 @@
 /**
- * publishProperty: "En planos" = "En proyecto" y un inmueble en proyecto se
- * guarda con antigüedad 0. Ejecuta el handler REAL de functions/index.js con
- * Firestore en memoria (mismo enfoque que rate-limit-stress.test.js).
+ * publishProperty: valores estándar (shared/catalogo.js). "En planos" = "En
+ * proyecto", y En proyecto / En construcción se guardan con antigüedad 0.
+ * Ejecuta el handler REAL de functions/index.js con Firestore en memoria
+ * (mismo enfoque que rate-limit-stress.test.js).
  */
 const { test, expect } = require('@playwright/test');
 const Module = require('module');
@@ -61,11 +62,13 @@ const req = (data) => ({
     price: 100000, area: 60, title: 't', desc: 'd', age: 7, ...data },
 });
 
-test.describe('publishProperty: estado En proyecto', () => {
+test.describe('publishProperty: estado y antigüedad', () => {
   const cases = [
     ['En planos', 'En proyecto', 0],
     ['En proyecto', 'En proyecto', 0],
-    ['En construcción', 'En construcción', 7],
+    ['Preventa', 'En proyecto', 0],
+    ['En construcción', 'En construcción', 0],
+    ['E/C', 'En construcción', 0],
     ['Construido', 'Construido', 7],
     ['Bueno', 'Construido', 7],
   ];
@@ -78,4 +81,18 @@ test.describe('publishProperty: estado En proyecto', () => {
       expect(p.age).toBe(age);
     });
   }
+
+  test('acepta sinónimos y abreviaturas de tipo, operación y moneda', async () => {
+    const { publish, store } = loadPublish();
+    const { publicationId } = await publish(req({ type: 'Dpto.', op: 'Vta.', currency: 'S/' }));
+    const p = store[`publications/${publicationId}`];
+    expect([p.type, p.op, p.currency]).toEqual(['Departamento', 'Venta', 'PEN']);
+  });
+
+  test('rechaza valores que no reconoce', async () => {
+    const { publish } = loadPublish();
+    await expect(publish(req({ type: 'Planeta' }))).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(publish(req({ op: 'Anticresis' }))).rejects.toMatchObject({ code: 'invalid-argument' });
+    await expect(publish(req({ currency: 'EUR' }))).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
 });
