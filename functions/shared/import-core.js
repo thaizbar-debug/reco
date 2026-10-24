@@ -37,7 +37,7 @@
   const TYPES = ['Departamento', 'Casa', 'Oficina', 'Local comercial', 'Terreno', 'Otros'];
   const OPS = ['Venta', 'Alquiler'];
   const CURRENCIES = ['USD', 'PEN'];
-  const ESTADOS = ['Construido', 'En planos', 'En construcción'];
+  const ESTADOS = ['Construido', 'En proyecto', 'En construcción'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
   const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'url', 'pdf', 'feed'];
@@ -173,7 +173,7 @@
   function matchEstado(v) {
     const s = norm(v);
     if (!s) return '';
-    if (/plano|preventa|proyecto/.test(s)) return 'En planos';
+    if (/plano|preventa|proyecto/.test(s)) return 'En proyecto';
     if (/construccion|obra/.test(s)) return 'En construcción';
     if (/construid|estreno|entrega inmediata|terminad|usado/.test(s)) return 'Construido';
     return String(v).trim();
