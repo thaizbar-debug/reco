@@ -40,7 +40,7 @@
   const REQUIRED = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
-  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'url', 'pdf', 'feed'];
+  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed'];
 
   // Lima Metropolitana + Callao (mismos nombres que ZONIF_DATA en index.html).
   const DISTRICTS = ['Ancón', 'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima',
@@ -212,6 +212,14 @@
     set('distrito', matchDistrict(src.distrito));
     set('latitud', parseCoord(src.latitud));
     set('longitud', parseCoord(src.longitud));
+    // Etiquetas: cada una a su nombre canónico; las no reconocidas se dejan
+    // (la validación de la bandeja avisa). Separador estándar: ";".
+    Object.keys(Catalogo.ETIQUETAS).forEach(k => {
+      const tags = cleanText(src[k]).split(/\s*[;,]\s*/).filter(Boolean);
+      const out = [];
+      tags.forEach(t => { const c = Catalogo.matchEtiqueta(k, t) || t; if (!out.includes(c)) out.push(c); });
+      set(k, out.join(';'));
+    });
     ['titulo', 'descripcion'].forEach(k => {
       const p = stripPII(cleanText(src[k]));
       if (p.removed) changes.push({ field: k, pii: p.removed });
@@ -274,7 +282,12 @@
   }
 
   // Salida estructurada (modo strict): todas las claves requeridas, null si
-  // el dato no está en el texto.
+  // el dato no está en el texto. Además de las columnas:
+  //   campos_inferidos  columnas deducidas, no escritas literalmente
+  //   fotos             ids de las fotos del documento que son de ese
+  //                     inmueble (marcadores [FOTO …] del texto)
+  //   evidencia         fragmento literal de donde salen los datos; en
+  //                     páginas escaneadas, lo que se lee en la imagen
   const AI_FIELDS = COLS.filter(k => k !== 'latitud' && k !== 'longitud');
   const EXTRACTION_SCHEMA = {
     type: 'object',
@@ -286,10 +299,14 @@
         items: {
           type: 'object',
           additionalProperties: false,
-          required: AI_FIELDS.concat(['campos_inferidos']),
+          required: AI_FIELDS.concat(['campos_inferidos', 'fotos', 'evidencia']),
           properties: Object.assign(
             AI_FIELDS.reduce((acc, k) => { acc[k] = { type: ['string', 'null'] }; return acc; }, {}),
-            { campos_inferidos: { type: 'array', items: { type: 'string' } } }
+            {
+              campos_inferidos: { type: 'array', items: { type: 'string' } },
+              fotos: { type: 'array', items: { type: 'string' } },
+              evidencia: { type: ['string', 'null'] },
+            }
           ),
         },
       },

@@ -107,6 +107,11 @@ assert.deepStrictEqual(t1.changes, [], JSON.stringify(t1.changes));
 assert.deepStrictEqual(R.normalizeRow(t1.row).row, t1.row);
 assert.deepStrictEqual(R.normalizeRow(n.row).row, n.row);
 
+console.log('  normalizeRow: etiquetas a su nombre canónico');
+const et = R.normalizeRow({ etiquetas_vista: 'vista al mar, Vista al mar', etiquetas_ambientes: 'GIMNASIO; Piscina (edificio); Helipuerto' }).row;
+assert.strictEqual(et.etiquetas_vista, 'Vista al mar');
+assert.strictEqual(et.etiquetas_ambientes, 'Gimnasio;Piscina del edificio;Helipuerto');
+
 console.log('  fingerprint: fila y publicación coinciden');
 const fpRow = R.fingerprint(n.row);
 const fpPub = R.fingerprint({ district: 'Miraflores', op: 'Venta', type: 'Departamento', area: 85, price: 185000, beds: 3 });

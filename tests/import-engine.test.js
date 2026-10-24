@@ -218,3 +218,89 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
     expect(db.store[`publications/${r3.publicationId}`].source).toBe('single');
   });
 });
+
+// ── Documentos (PDF, Word, PowerPoint) ──
+const IMG = 'data:image/jpeg;base64,' + 'A'.repeat(200);
+const DOC_TEXT = `=== Página 1 ===
+Dpto. en Miraflores - Vta. 3 dorm. Área techada 85 m2. Precio US$ 185,000. Vista al mar, gimnasio.
+[FOTO p1-1] [FOTO p1-2]
+=== Página 2 (escaneada, ver imagen) ===`;
+
+test.describe('extractListings: documentos', () => {
+  let originalFetch;
+  test.beforeEach(() => { originalFetch = global.fetch; });
+  test.afterEach(() => { global.fetch = originalFetch; });
+
+  const docReq = (over) => req('u1', { kind: 'document', fileType: 'pdf', text: DOC_TEXT, photoIds: ['p1-1', 'p1-2'],
+    images: [{ page: '2', dataUrl: IMG }], sourceName: 'inventario.pdf', ...over });
+
+  test('envía texto + páginas escaneadas a la IA y devuelve las fotos de cada inmueble', async () => {
+    const { extract, db } = loadHandlers();
+    const calls = mockOpenAI({ inmuebles: [
+      aiItem({ distrito: 'Miraflores', tipo_publicacion: 'Vta.', tipo_propiedad: 'Dpto.', nro_dormitorios: '3', area_techada: '85 m2',
+        precio: 'US$ 185,000', titulo: 'Dpto. en Miraflores', descripcion: 'Dpto. en Miraflores',
+        etiquetas_vista: 'vista al mar', etiquetas_ambientes: 'Gimnasio; Helipuerto',
+        fotos: ['p1-1', 'p1-2', 'p9-9', 'p1-1'], evidencia: 'Precio US$ 185,000' }),
+      // Solo está en la página escaneada: sus números vienen de la evidencia (transcripción).
+      aiItem({ distrito: 'Lurín', tipo_publicacion: 'Venta', tipo_propiedad: 'Lote', area_terreno: '500 m2', precio: 'US$ 90,000',
+        titulo: 'Terreno en Lurín', descripcion: 'Terreno', fotos: [], evidencia: 'TERRENO EN VENTA - LURIN Lote de 500 m2 Precio: US$ 90,000' }),
+    ] });
+
+    const res = await extract(docReq());
+
+    const msg = calls[0].messages;
+    expect(msg[0].content).toContain('etiquetas_vista: Vista a parque | Vista al mar');
+    expect(msg[0].content).toContain('[FOTO id]');
+    expect(Array.isArray(msg[1].content)).toBe(true);
+    expect(msg[1].content[0]).toMatchObject({ type: 'text' });
+    expect(msg[1].content[0].text).toContain('[FOTO p1-1]');
+    expect(msg[1].content[1].text).toBe('Página escaneada 2:');
+    expect(msg[1].content[2]).toEqual({ type: 'image_url', image_url: { url: IMG, detail: 'high' } });
+
+    const [a, b] = res.drafts;
+    expect(a.fotos).toEqual(['p1-1', 'p1-2']); // ids que no vinieron del documento se descartan
+    expect([a.row.tipo_propiedad, a.row.tipo_publicacion, a.row.precio, a.row.area_techada]).toEqual(['Departamento', 'Venta', '185000', '85']);
+    expect(a.row.etiquetas_vista).toBe('Vista al mar');
+    expect(a.row.etiquetas_ambientes).toBe('Gimnasio;Helipuerto');
+    expect([b.row.tipo_propiedad, b.row.area_terreno, b.row.precio]).toEqual(['Terreno', '500', '90000']);
+
+    const drafts = Object.values(db.store).filter((v) => v.status === 'draft');
+    expect(drafts.every((x) => x.source === 'documento' && x.fileType === 'pdf')).toBe(true);
+    expect(drafts.map((x) => x.docPhotos)).toEqual([2, 0]);
+    const ev = Object.values(db.store).find((v) => v.listings != null);
+    expect(ev).toMatchObject({ kind: 'document', channel: 'documento', fileType: 'pdf', pageImages: 1, photos: 2 });
+  });
+
+  test('sin páginas escaneadas, la evidencia de la IA no alcanza para validar números', async () => {
+    const { extract } = loadHandlers();
+    mockOpenAI({ inmuebles: [aiItem({ tipo_propiedad: 'Casa', precio: '999000', area_techada: '85', evidencia: 'Precio 999000', fotos: [] })] });
+    const res = await extract(docReq({ images: [] }));
+    expect(res.drafts[0].row.precio).toBe('');
+    expect(res.drafts[0].row.area_techada).toBe('85');
+    expect(res.drafts[0].notes.join(' ')).toContain('no aparece en el documento');
+  });
+
+  test('las partes de un documento comparten batchId', async () => {
+    const { extract } = loadHandlers();
+    mockOpenAI({ inmuebles: [] });
+    const r1 = await extract(docReq());
+    const r2 = await extract(docReq({ batchId: r1.batchId }));
+    const r3 = await extract(docReq({ batchId: '../x' }));
+    expect(r2.batchId).toBe(r1.batchId);
+    expect(r3.batchId).not.toBe('../x');
+  });
+
+  test('valida el documento: formato, imágenes y contenido', async () => {
+    const { extract } = loadHandlers();
+    mockOpenAI({ inmuebles: [] });
+    const bad = (over) => expect(extract(docReq(over))).rejects.toMatchObject({ code: 'invalid-argument' });
+    await bad({ fileType: 'doc' });
+    await bad({ images: Array.from({ length: 7 }, (_, i) => ({ page: String(i), dataUrl: IMG })) });
+    await bad({ images: [{ page: '1', dataUrl: 'data:image/svg+xml;base64,PHN2Zz4=' }] });
+    await bad({ images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(1500001) }] });
+    await bad({ text: '', images: [] });
+    await bad({ text: 'x'.repeat(20001) });
+    // Solo páginas escaneadas (sin texto) es válido.
+    await expect(extract(docReq({ text: '' }))).resolves.toMatchObject({ drafts: [] });
+  });
+});

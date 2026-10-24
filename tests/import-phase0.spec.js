@@ -23,6 +23,13 @@ test.describe('Fase 0: carga inteligente — bandeja de revisión', () => {
     expect(info.sameCols).toBe(true);
   });
 
+  test('las etiquetas del catálogo (IA y servidor) son las mismas que las del formulario', async ({ page }) => {
+    const same = await page.evaluate(() => JSON.stringify(RecoCatalogo.ETIQUETAS) === JSON.stringify({
+      etiquetas_generales: _PUB_FEATS_GEN, etiquetas_ambientes: _PUB_FEATS_AMB, etiquetas_vista: _PUB_FEATS_VISTA,
+      etiquetas_acceso: _PUB_FEATS_ACCESO, etiquetas_zonas: _PUB_FEATS_ZONA }));
+    expect(same).toBe(true);
+  });
+
   test('_pubBulkLoadRows normaliza filas "sucias" antes de validar', async ({ page }) => {
     const rows = await page.evaluate(() => {
       _pubBulkFileName = 'mi-inventario.xlsx';

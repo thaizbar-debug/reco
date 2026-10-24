@@ -96,6 +96,16 @@ Prioridad = impacto en número de corredores × facilidad técnica.
 | 0.5 | `importEvents` (por extracción: canal, caracteres, inmuebles, ms) y, en cada publicación importada, `importChannel`, `importAiFields`, `importEdits` y `fingerprint`. |
 
 Despliegue: `firebase deploy --only functions:extractListings,functions:publishProperty,firestore:rules,firestore:indexes`.
+
+#### Importar documentos (PDF, Word .docx, PowerPoint .pptx): implementado
+
+| Paso | Dónde | Qué hace |
+|---|---|---|
+| Lectura | `index.html` → `_pubDocRead` (pdf.js 3.11.174 y JSZip 3.10.1 desde cdnjs, carga diferida) | Texto por página / sección / diapositiva (con tablas y notas del orador); fotos incluidas, sin logos ni íconos (< 150 px) ni repetidas; páginas escaneadas (sin texto) como imagen para la IA. Hasta 80 páginas, 150 fotos y 40 MB. |
+| Envío | `_pubDocParts` → `extractListings` (`kind: 'document'`) | Partes de ≤ 18 000 caracteres y ≤ 6 páginas escaneadas, con el mismo `batchId`. Las fotos no salen del navegador: van marcadores `[FOTO p1-2]`. |
+| IA | `functions/index.js` → `_extractSystemPrompt` | Columnas de ReCo, sinónimos y abreviaturas, vocabulario de etiquetas, áreas por tipo, asignación de fotos y `evidencia` (transcripción de páginas escaneadas). Modelo con visión. |
+| Validación | `guardInvented` + `normalizeRow` + verificación por tipo en la bandeja | Números que no están en el documento (o en la transcripción de una página escaneada) se vacían; sinónimos, etiquetas y áreas se estandarizan con el catálogo. |
+| Revisión | Bandeja de carga masiva | Inmuebles con sus fotos ya asignadas; en el paso de fotos, las fotos del documento se pueden reasignar con un toque. |
 Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que publicarse junto con el sitio.
 
 ### Fase 1 — Quick wins: "pega lo que tengas" (3–5 semanas) ⭐ máxima prioridad
@@ -115,7 +125,7 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | 2.1 | **Bot de WhatsApp de ReCo** (WhatsApp Business Cloud API) | El corredor vincula su número (OTP) y envía al número de ReCo fotos + texto o **nota de voz** (se transcribe). El bot responde con un resumen ("Depa 3D/2B, 85 m², Miraflores, US$185,000 — ¿falta algo?") y un enlace para revisar y publicar en un toque. Requiere verificación de empresa en Meta y presupuesto por mensajes: validar la tarifa vigente de Meta para Perú antes de lanzar. |
 | 2.2 | **Fotos en bloque con auto-agrupación** | Subir 200 fotos de golpe; se agrupan por fecha/hora EXIF y similitud, se clasifican (cocina, baño, fachada) y se elige portada. Alerta de fotos con marca de agua de otros portales. |
 | 2.3 | **Importar perfil completo de un portal** | Pegar la URL del perfil de la inmobiliaria en un portal → listar todos sus avisos → importar en lote (mismo motor que 1.4). |
-| 2.4 | **PDF, fichas técnicas y flyers (imagen)** | Lectura con modelo de visión: brochures de proyectos, fichas de captación, capturas de pantalla. |
+| 2.4 | **PDF, Word y PowerPoint** ✅ *adelantado* | Ver "Importar documentos" más abajo. Pendiente: imágenes sueltas (JPG de un flyer) y formatos antiguos .doc/.ppt. |
 | 2.5 | **PWA "Publicar rápido"** | Botón de compartir del celular → ReCo (Web Share Target): compartir fotos o texto desde la galería o WhatsApp directamente al importador. |
 
 ### Fase 3 — Sincronización para inmobiliarias grandes (3–6 meses)
