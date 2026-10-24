@@ -1486,6 +1486,7 @@ Reglas:
 5. distrito: el distrito tal como aparece (ej. "Miraflores", "Surco"). direccion: calle y número si aparecen; si solo hay referencia ("cerca al parque Kennedy"), úsala.
 6. titulo: un título breve (máx. 90 caracteres) usando solo datos del texto. descripcion: el texto original de ese inmueble, sin teléfonos, correos ni nombres de personas.
 7. Los campos de etiquetas, departamento y provincia pueden ir en null.
+   En un terreno o lote, el área va en area_terreno; area_techada solo si el texto menciona algo construido.
 8. campos_inferidos: lista los nombres de los campos que dedujiste y no estaban escritos literalmente (por ejemplo tipo_propiedad deducido de "depa" no es inferido; tipo_publicacion deducido del contexto sí lo es). El título siempre es inferido.`;
 
 async function _openaiStructured(systemPrompt, userContent, schemaName, schema) {

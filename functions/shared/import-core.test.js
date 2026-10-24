@@ -113,6 +113,10 @@ const fpPub = R.fingerprint({ district: 'Miraflores', op: 'Venta', type: 'Depart
 assert.ok(fpRow);
 assert.strictEqual(fpRow, fpPub);
 assert.strictEqual(R.fingerprint({ distrito: 'Miraflores' }), '');
+// Terreno: la huella usa el área de terreno (área principal), igual que la publicación
+const fpTerr = R.fingerprint(R.normalizeRow({ distrito: 'Lurín', tipo_publicacion: 'Venta', tipo_propiedad: 'Lote', precio: '90000', area_terreno: '500' }).row);
+assert.ok(fpTerr);
+assert.strictEqual(fpTerr, R.fingerprint({ district: 'Lurín', op: 'Venta', type: 'Terreno', area: 500, price: 90000, beds: 0 }));
 
 console.log('  guardInvented: vacía números que no están en el texto');
 const src = 'Vendo depa en Surco, 3 dormitorios, 90 m2, precio 185 mil dólares';

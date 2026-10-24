@@ -35,7 +35,9 @@
     'amoblado', 'pet_friendly', 'tipo_moneda', 'precio', 'area_terreno', 'area_techada',
     'etiquetas_generales', 'etiquetas_ambientes', 'etiquetas_vista', 'etiquetas_acceso',
     'etiquetas_zonas', 'titulo', 'descripcion'];
-  const REQUIRED = ['direccion', 'distrito', 'precio', 'area_techada', 'titulo', 'descripcion'];
+  // Obligatorios para cualquier tipo. El área exigida depende del tipo
+  // (techada; de terreno en un Terreno): ver Catalogo.verificarPublicacion.
+  const REQUIRED = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
   const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'url', 'pdf', 'feed'];
@@ -220,12 +222,17 @@
     return { row, changes: changes.filter(c => c.pii || c.from !== c.to), notas: std.notas };
   }
 
-  // Huella para duplicados: mismo distrito, operación, tipo, área, precio y
-  // dormitorios ⇒ casi seguro el mismo inmueble.
+  // Huella para duplicados: mismo distrito, operación, tipo, área principal,
+  // precio y dormitorios ⇒ casi seguro el mismo inmueble. Acepta una fila
+  // (area_techada / area_terreno) o una publicación (area = área principal).
   function fingerprint(r) {
     const p = r || {};
     const pick = (a, b) => (p[a] != null && p[a] !== '' ? p[a] : p[b]);
-    const area = parseNumber(pick('area_techada', 'area'));
+    const esFila = 'area_techada' in p || 'area_terreno' in p;
+    const area = esFila
+      ? Catalogo.verificarPublicacion({ type: pick('tipo_propiedad', 'type'),
+        area: parseNumber(p.area_techada) || 0, areaTerr: parseNumber(p.area_terreno) || 0 }, { soloDatos: true }).datos.area
+      : parseNumber(p.area);
     const price = parseNumber(pick('precio', 'price'));
     const beds = parseNumber(pick('nro_dormitorios', 'beds')) || 0;
     if (!area || !price) return '';
