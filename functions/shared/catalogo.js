@@ -68,12 +68,13 @@
   }
 
   const TYPE_SYNONYMS = [
-    ['Local comercial', /\blocal(es)?\b|\bloc com\b|\btienda\b|\bcomercial\b|\bstand\b|\bgaleria\b|\bpuesto\b/],
-    ['Oficina', /\boficinas?\b|\bofic\b|\boffice\b|\bconsultorios?\b|\bcoworking\b/],
-    ['Terreno', /\bterrenos?\b|\bterr\b|\blotes?\b|\bparcelas?\b|\baires\b|\bland\b|\bhectareas?\b/],
-    ['Departamento', /\bdep(a|as|to|tos|artamentos?)\b|\bdpto?s?\b|\bdto\b|\bdeptos?\b|\baptos?\b|\bapartamentos?\b|\bflat\b|\bduplex\b|\btriplex\b|\bpent ?house\b|\bph\b|\bloft\b|\bmonoambiente\b|\bminidepa\b|\bmini depa\b|\bstudio\b/],
-    ['Casa', /\bcasas?\b|\bchalet\b|\bvilla\b|\btownhouse\b|\bcasona\b|\bquinta\b|\bcasa de (playa|campo)\b/],
-    ['Otros', /\botros?\b|\bhabitacion\b|\bcuarto\b|\balmacen\b|\bdeposito\b|\bgalpon\b|\bnave\b|\bcochera\b|\bestacionamiento\b|\bhotel\b|\bedificio\b/],
+    // Incluye los nombres en inglés y de CRMs (feeds Kyero, EasyBroker, Wasi).
+    ['Local comercial', /\blocal(es)?\b|\bloc com\b|\btienda\b|\bcomercial\b|\bstand\b|\bgaleria\b|\bpuesto\b|\bcommercial\b|\bretail\b|\bshops?\b|\bstores?\b/],
+    ['Oficina', /\boficinas?\b|\bofic\b|\boffices?\b|\bconsultorios?\b|\bcoworking\b/],
+    ['Terreno', /\bterrenos?\b|\bterr\b|\blotes?\b|\bparcelas?\b|\baires\b|\bland\b|\bhectareas?\b|\bplots?\b|\blots?\b/],
+    ['Departamento', /\bdep(a|as|to|tos|artamentos?)\b|\bdpto?s?\b|\bdto\b|\bdeptos?\b|\baptos?\b|\bapartamentos?\b|\bflat\b|\bduplex\b|\btriplex\b|\bpent ?house\b|\bph\b|\bloft\b|\bmonoambiente\b|\bminidepa\b|\bmini depa\b|\bstudio\b|\bapartments?\b|\bcondos?\b|\bcondominium\b|\bapartaestudios?\b/],
+    ['Casa', /\bcasas?\b|\bchalet\b|\bvilla\b|\btownhouse\b|\bcasona\b|\bquinta\b|\bcasa de (playa|campo)\b|\bhouses?\b|\bhomes?\b|\bbungalows?\b|\bcaba(n|ñ)as?\b/],
+    ['Otros', /\botros?\b|\bhabitacion\b|\bcuarto\b|\balmacen\b|\bdeposito\b|\bgalpon\b|\bnave\b|\bcochera\b|\bestacionamiento\b|\bhotel\b|\bedificio\b|\bwarehouses?\b|\bbuildings?\b|\bfincas?\b|\bfarms?\b|\bgarages?\b|\bhostal\b/],
   ];
   const OP_SYNONYMS = [
     ['Alquiler', /\balquil|\barrend|\barriendo\b|\brenta\b|\brent\b|\brental\b|\blease\b|\balq\b|\barr\b/],

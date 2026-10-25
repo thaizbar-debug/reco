@@ -384,6 +384,40 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Fase 3 — conexiones automáticas, API pública y correo de ingesta
+    // (functions/index.js → importSources, syncImportSources, api, apiAccess,
+    // emailIngest, emailInbound). Todo se escribe con el admin SDK.
+    // /importSources/{id}: el dueño puede leer sus conexiones (la web usa el
+    // callable igual). Las claves de los CRMs viven aparte, en
+    // /importSourceSecrets, que nadie lee desde la web.
+    match /importSources/{sourceId} {
+      allow read: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+    match /importSourceSecrets/{sourceId} {
+      allow read, write: if false;
+    }
+    // Claves de API (solo su hash), webhook + secreto y límite por minuto.
+    match /apiKeys/{keyHash} {
+      allow read, write: if false;
+    }
+    match /apiAccounts/{uid} {
+      allow read, write: if false;
+    }
+    match /apiUsage/{keyHash} {
+      allow read, write: if false;
+    }
+    // Dirección personal de ingesta (código) y correos recibidos.
+    match /emailIngestTokens/{token} {
+      allow read, write: if false;
+    }
+    match /emailIngestUsers/{uid} {
+      allow read, write: if false;
+    }
+    match /emailInbox/{msgId} {
+      allow read, write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

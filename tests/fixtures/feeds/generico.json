@@ -1,0 +1,11 @@
+{ "status": "ok", "meta": {"count": 2},
+  "data": { "listings": [
+    { "codigo": "INM-7", "titulo": "Casa en La Molina con jardín", "operacion": "Venta", "tipo": "Casa",
+      "ubicacion": { "direccion": "Calle Los Pinos 145", "distrito": "La Molina", "lat": -12.08, "lng": -76.94 },
+      "precio": "US$ 420,000", "area_construida": "280 m2", "area_terreno": "350", "dormitorios": 4, "banos": 3, "cocheras": 2,
+      "descripcion": "Casa amplia, jardín y piscina propia.", "fotos": [ {"url": "https://cdn.example.com/g/7a.jpg"}, {"url": "https://cdn.example.com/g/7b.jpg"} ] },
+    { "codigo": "INM-8", "titulo": "Oficina en San Isidro", "operacion": "Alquiler", "tipo": "Oficina",
+      "ubicacion": { "direccion": "Av. Rivera Navarrete 501", "distrito": "San Isidro" },
+      "precio": "S/ 6,500", "area_construida": 120, "banos": 2, "cocheras": 1,
+      "descripcion": "Oficina implementada.", "fotos": [] }
+  ] } }
