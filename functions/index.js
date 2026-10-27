@@ -25,6 +25,7 @@ const RecoCatalogo = require('./shared/catalogo');
 const RecoImport = require('./shared/import-core');
 const WaCore = require('./whatsapp-core');
 const RecoFeed = require('./feed-core');
+const RecoSocial = require('./social-core');
 
 initializeApp();
 const db = getFirestore();
@@ -136,7 +137,7 @@ function requireVerifiedAuth(request) {
 // shared/catalogo.js (el mismo archivo que usa index.html).
 // 'bulk' = Excel/CSV (nombre histórico); el resto son los canales del
 // roadmap de carga inteligente (docs/ROADMAP-CARGA-INTELIGENTE.md).
-const PUB_SOURCES = ['single', 'bulk', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed', 'api', 'email'];
+const PUB_SOURCES = ['single', 'bulk', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed', 'api', 'email', 'redes', 'video'];
 
 // ── Importación (Fase 0) ──
 // Borradores en /importDrafts: se borran solos (política TTL sobre
@@ -1561,7 +1562,10 @@ Reglas:
 // ─────────────────────────────────────────────────────────────────────────────
 // 'imagenes': flyers o capturas de pantalla sueltas (cada imagen va como
 // página escaneada).
-const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp', 'imagenes'];
+const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp', 'imagenes', 'video'];
+// Audio de un video subido (WAV 16 kHz mono, máx. ~150 s) para Whisper.
+const IMPORT_AUDIO_RE = /^data:audio\/(wav|x-wav|mpeg|mp4|webm|ogg);base64,[A-Za-z0-9+/=]+$/;
+const IMPORT_AUDIO_MAX_CHARS = 7 * 1024 * 1024;
 const IMPORT_DOC_MAX_IMAGES = 6;
 const IMPORT_DOC_MAX_IMAGE_CHARS = 1500000;
 const IMPORT_DOC_MAX_PHOTO_IDS = 300;
@@ -1571,22 +1575,27 @@ const IMPORT_PHOTO_ID_RE = /^[a-z0-9-]{1,24}$/;
 function _extractSystemPrompt() {
   const etiquetas = Object.entries(RecoCatalogo.ETIQUETAS)
     .map(([k, lista]) => `   ${k}: ${lista.join(' | ')}`).join('\n');
-  return `Eres un asistente que extrae fichas de inmuebles en Perú a partir de texto libre o documentos (notas, chats de WhatsApp, avisos de portales, PDF, Word o presentaciones de inmobiliarias).
+  return `Eres un asistente que extrae fichas de inmuebles en Perú a partir de texto libre o documentos (notas, chats de WhatsApp, avisos de portales, posts de Facebook, Instagram o TikTok, transcripciones de videos, PDF, Word, brochures o presentaciones de inmobiliarias).
 
 Reglas:
 1. Un elemento en "inmuebles" por cada inmueble distinto. Si un mismo inmueble ocupa varias páginas o diapositivas, combina su información en un solo elemento. Si no hay ningún inmueble, devuelve "inmuebles": [].
+   - Brochure o aviso de un proyecto con varias tipologías (p. ej. "Depa AX01", "Tipo B", "Flat 2 dorm."): un elemento por tipología, con el nombre del proyecto y de la tipología en el título. La dirección, el distrito y el estado del proyecto valen para todas.
+   - Ignora las secciones de OTROS proyectos o inmuebles que el desarrollador promociona aparte ("Otros proyectos", "También te puede interesar", "Nuestros proyectos", portafolio, entregados): no son el inmueble ofrecido.
+   - En capturas de pantalla o posts de redes, ignora los textos de la aplicación (botones, "Send WhatsApp message", "Me gusta", "Comentar", "Ver traducción", número de reacciones).
 2. Usa SOLO datos presentes en la entrada. Si un dato no aparece, devuelve null. Nunca inventes precio, área, dormitorios, baños ni dirección.
 3. Copia los números tal como aparecen (ej. "185 mil", "US$ 185,000", "85 m2"); no conviertas monedas.
-4. Interpreta sinónimos y abreviaturas habituales en Perú: Dpto./Depa/Depto. (departamento), Of. (oficina), Loc. (local), Lote/Terr. (terreno), Vta. (venta), Alq./Arriendo (alquiler), S/ o S/. (soles), US$ o U$S (dólares), dorm./hab. (dormitorios), bñs/SS.HH. (baños), cochera (estacionamiento), m2/mts (metros cuadrados), En planos/Preventa/Proy. (en proyecto), E/C/En obra/En const. (en construcción), A/E/a estrenar (construido, antigüedad 0).
-5. tipo_publicacion: "Venta" o "Alquiler". tipo_propiedad: Departamento, Casa, Oficina, Local comercial, Terreno u Otros. estado: Construido, En proyecto o En construcción. tipo_moneda: USD o PEN.
+4. Interpreta sinónimos y abreviaturas habituales en Perú: Dpto./Depa/Depto. (departamento), Of. (oficina), Loc. (local), Lote/Terr. (terreno), Vta. (venta), Alq./Arriendo (alquiler), S/ o S/. (soles), US$ o U$S (dólares), dorm./hab. (dormitorios), bñs/SS.HH. (baños), cochera (estacionamiento), m2/mts (metros cuadrados), En planos/Preventa/Proy. (en proyecto), E/C/En obra/En const. (en construcción), A/E/a estrenar (construido, antigüedad 0). "En lanzamiento", "Preventa" o "Próximamente" es En proyecto.
+5. tipo_publicacion: "Venta" o "Alquiler" (un proyecto en lanzamiento, preventa o construcción que no dice alquiler es Venta, como campo inferido). tipo_propiedad: Departamento, Casa, Oficina, Local comercial, Terreno u Otros. estado: Construido, En proyecto o En construcción. tipo_moneda: USD o PEN.
 6. distrito: el distrito tal como aparece (ej. "Miraflores", "Surco"). direccion: calle y número si aparecen; si solo hay referencia ("cerca al parque Kennedy"), úsala.
-7. Áreas: area_techada es el área construida/techada/útil; area_terreno, la del terreno o lote. En un terreno o lote, el área va en area_terreno; area_techada solo si se menciona algo construido.
+7. Áreas: area_techada es el área construida/techada/útil; area_terreno, la del terreno o lote. En un terreno o lote, el área va en area_terreno; area_techada solo si se menciona algo construido. En un departamento, oficina o local, el "área libre", terraza, balcón, patio o jardín NO es area_terreno: deja area_terreno en null y menciona esa área en la descripción. Si solo hay "área total" y "área techada", usa la techada.
+   Pisos: nro_pisos son los pisos del edificio o de la casa ("edificio de 10 pisos", "5 PISOS"); piso es el piso donde está la unidad ("piso 7"). Si es un rango ("Piso 2 al 8"), piso va en null y el rango en la descripción. niveles = 2 para un dúplex (o "Nivel 1 / Nivel 2"), 3 para tríplex.
+   Baños: nro_banos son los baños completos; el baño de visita o medio baño no se suma (menciónalo en la descripción).
 8. Etiquetas: usa SOLO valores exactos de estas listas, separados por ";" (null si ninguno aplica). "Piscina" de un edificio o condominio es "Piscina del edificio"; si es del inmueble, "Piscina propia".
 ${etiquetas}
 9. departamento y provincia pueden ir en null. antiguedad: años o año de construcción tal como aparecen.
 10. titulo: un título breve (máx. 90 caracteres) usando solo datos de la entrada. descripcion: el texto original de ese inmueble, sin teléfonos, correos ni nombres de personas.
 11. campos_inferidos: lista los nombres de los campos que dedujiste y no estaban escritos literalmente (por ejemplo tipo_propiedad deducido de "depa" no es inferido; tipo_publicacion deducido del contexto sí lo es). El título siempre es inferido.
-12. fotos: en documentos, las fotos aparecen como marcadores [FOTO id] en el lugar donde estaban. Asigna a cada inmueble los ids de SUS fotos (normalmente las de su misma página o diapositiva). No incluyas logos, íconos ni fotos de otro inmueble. En un chat de WhatsApp, las fotos de un inmueble suelen enviarse justo antes o justo después del mensaje que lo describe y por la misma persona. Sin marcadores, devuelve [].
+12. fotos: en documentos, las fotos aparecen como marcadores [FOTO id] en el lugar donde estaban. Asigna a cada inmueble los ids de SUS fotos (normalmente las de su misma página o diapositiva). No incluyas logos, íconos ni fotos de otro inmueble. Un marcador seguido de "(plano)" es el plano de esa página: va con la tipología o el inmueble de esa misma página. Las fotos del edificio, la fachada o las áreas comunes de un proyecto valen para todas sus tipologías. En un chat de WhatsApp, las fotos de un inmueble suelen enviarse justo antes o justo después del mensaje que lo describe y por la misma persona. Sin marcadores, devuelve [].
 13. evidencia: copia literal (máx. 600 caracteres) del fragmento de donde salen el precio, las áreas y los ambientes. En páginas escaneadas (imágenes), transcribe lo que lees en ellas.`;
 }
 
@@ -1614,7 +1623,7 @@ async function _openaiStructured(systemPrompt, userContent, schemaName, schema) 
 // Valida la entrada de kind 'document' y arma el contenido multimodal.
 function _extractDocumentInput(d, text) {
   const fileType = IMPORT_DOC_TYPES.includes(d.fileType) ? d.fileType : null;
-  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx, PowerPoint .pptx, chat de WhatsApp o imágenes).');
+  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx, PowerPoint .pptx, chat de WhatsApp, imágenes o video).');
   const images = Array.isArray(d.images) ? d.images : [];
   if (images.length > IMPORT_DOC_MAX_IMAGES) {
     throw new HttpsError('invalid-argument', `Demasiadas páginas escaneadas en una parte (máx. ${IMPORT_DOC_MAX_IMAGES}).`);
@@ -1736,7 +1745,7 @@ exports.extractListings = onCall(
       throw new HttpsError('invalid-argument', 'Tipo de importación no soportado.');
     }
     const isDoc = d.kind === 'document';
-    const text = String(d.text || '').trim();
+    let text = String(d.text || '').trim();
     if (!text && !isDoc) throw new HttpsError('invalid-argument', 'Pega el texto con los inmuebles.');
     if (text.length > IMPORT_TEXT_MAX_CHARS) {
       throw new HttpsError('invalid-argument', `El texto es muy largo (máx. ${IMPORT_TEXT_MAX_CHARS} caracteres). Divídelo en partes.`);
@@ -1744,11 +1753,32 @@ exports.extractListings = onCall(
     const doc = isDoc ? _extractDocumentInput(d, text) : null;
     // Un chat de WhatsApp exportado llega como documento (texto + fotos)
     // pero se registra con su propio canal.
-    const channel = isDoc ? (doc.fileType === 'whatsapp' ? 'whatsapp' : 'documento')
+    const channel = isDoc ? (doc.fileType === 'whatsapp' ? 'whatsapp' : doc.fileType === 'video' ? 'video' : 'documento')
       : (IMPORT_TEXT_CHANNELS.includes(d.channel) ? d.channel : 'text');
     const sourceName = String(d.sourceName || '').replace(/[\r\n]/g, ' ').trim().slice(0, 120) || null;
+    const audio = isDoc && doc.fileType === 'video' && d.audio && typeof d.audio.dataUrl === 'string' ? d.audio.dataUrl : '';
+    if (audio && (!IMPORT_AUDIO_RE.test(audio) || audio.length > IMPORT_AUDIO_MAX_CHARS)) {
+      throw new HttpsError('invalid-argument', 'Audio del video inválido o demasiado largo.');
+    }
 
     await _importRateLimit(uid);
+
+    // Video: lo que se dice (precio, áreas, distrito…) es parte de la fuente.
+    let transcrito = false;
+    if (audio) {
+      try {
+        const [head, b64] = audio.split(',');
+        const mime = head.slice(5, head.indexOf(';'));
+        const t = await _transcribe(Buffer.from(b64, 'base64'), mime, `audio.${mime.split('/')[1].replace('x-', '').replace('mpeg', 'mp3')}`);
+        if (t) {
+          text = `${text}\n\nLo que se dice en el video:\n${t}`.trim();
+          doc.content[0] = { type: 'text', text };
+          transcrito = true;
+        }
+      } catch (e) {
+        logger.warn('[extractListings] audio no transcrito', { err: e && e.message });
+      }
+    }
 
     return _extractAndSaveDrafts({
       fn: 'extractListings', uid, kind: d.kind, channel, sourceName, batchId: d.batchId,
@@ -1760,7 +1790,7 @@ exports.extractListings = onCall(
       sourceLabel: isDoc ? (channel === 'whatsapp' ? 'el chat' : 'el documento') : 'el texto',
       errorMessage: isDoc ? 'No pudimos leer el documento. Intenta de nuevo.' : 'No pudimos leer el texto. Intenta de nuevo.',
       draftExtra: doc ? { fileType: doc.fileType } : null,
-      eventExtra: doc ? { fileType: doc.fileType, pageImages: doc.images, photos: doc.photoIds.length } : null,
+      eventExtra: doc ? { fileType: doc.fileType, pageImages: doc.images, photos: doc.photoIds.length, ...(audio && { audio: transcrito }) } : null,
     });
   }
 );
@@ -1857,18 +1887,22 @@ exports.mapImportColumns = onCall(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// importListingPage — importar desde el enlace de un aviso (roadmap 1.4/1.5).
+// importListingPage — importar desde un enlace (roadmap 1.4/1.5 y mejoras).
 //
-// Dos entradas:
-//   { url }            El servidor descarga la página, solo de portales
-//                      conocidos (IMPORT_URL_HOSTS). Si el portal bloquea la
-//                      descarga → failed-precondition, details.reason
-//                      'blocked'; si el dominio no está en la lista →
-//                      details.reason 'host-not-supported'. En ambos casos el
-//                      cliente ofrece el marcador "Enviar a ReCo".
-//   { url, modo: 'perfil' }  Página de perfil o resultados de un portal
-//                      conocido: devuelve { avisos: [{ url, title }] } (máx.
-//                      IMPORT_PROFILE_MAX_LISTINGS) sin usar la IA.
+// Entradas:
+//   { url }            Cualquier página pública: aviso de un portal, web
+//                      propia de la inmobiliaria o post de Facebook,
+//                      Instagram, TikTok o YouTube (social-core.js lee sus
+//                      páginas públicas de inserción; si el post trae un video
+//                      descargable, se transcribe su audio). Si el sitio
+//                      bloquea la descarga → failed-precondition,
+//                      details.reason 'blocked' (el cliente ofrece el marcador
+//                      "Enviar a ReCo"); un post privado → 'social-private';
+//                      el enlace de un perfil de red → 'social-profile'.
+//   { url, modo: 'perfil' }  Perfil de un portal, página de resultados o
+//                      listado de proyectos de una web: devuelve { avisos:
+//                      [{ url, title }] } (máx. IMPORT_PROFILE_MAX_LISTINGS)
+//                      sin usar la IA.
 //   { url, pagina }    Lo manda el marcador del navegador, que corre en la
 //                      página del aviso que el usuario ya tiene abierta:
 //                      { title, meta, jsonld, text, images }. Sirve para
@@ -1886,8 +1920,26 @@ exports.mapImportColumns = onCall(
 //   const { data } = await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion: true, pagina?, batchId? });
 //   // data = { batchId, drafts: [{ id, row, aiFields, inferredFields, notes, fotos }], photos: [{ id, dataUrl }] }
 // ─────────────────────────────────────────────────────────────────────────────
+// Portales conocidos: en su perfil, los avisos tienen un código numérico.
+// Cualquier otro sitio usa la detección genérica de enlaces de inmuebles.
 const IMPORT_URL_HOSTS = ['urbania.pe', 'adondevivir.com', 'properati.com.pe', 'babilonia.pe', 'nexoinmobiliario.pe',
   'mercadolibre.com.pe', 'infocasas.com.pe', 'remax.pe'];
+const IMPORT_VIDEO_MAX_BYTES = 24 * 1024 * 1024; // límite de Whisper: 25 MB
+// Lecturas de páginas por usuario y hora (aparte del límite de la IA): un
+// enlace que falla no gasta una importación, pero el servidor no se puede usar
+// para descargar páginas sin tope.
+const IMPORT_FETCH_LIMIT_PER_HOUR = 120;
+async function _fetchRateLimit(uid) {
+  const hour = new Date().toISOString().slice(0, 13);
+  const ref = db.collection('importUsage').doc(`${uid}_lecturas`);
+  await db.runTransaction(async (tx) => {
+    const d = (await tx.get(ref)).data() || {};
+    if (d.hour === hour && (d.count || 0) >= IMPORT_FETCH_LIMIT_PER_HOUR) {
+      throw new HttpsError('resource-exhausted', `Límite de ${IMPORT_FETCH_LIMIT_PER_HOUR} enlaces por hora alcanzado. Intenta más tarde.`);
+    }
+    tx.set(ref, { hour, count: d.hour === hour ? (d.count || 0) + 1 : 1 });
+  });
+}
 const IMPORT_URL_MAX_PHOTOS = 12;
 const IMPORT_PROFILE_MAX_LISTINGS = 60;
 const IMPORT_URL_HTML_BYTES = 3 * 1024 * 1024;
@@ -1982,20 +2034,90 @@ async function _downloadPhotos(urls) {
   }
   return photos;
 }
-// HTML de una página de un portal conocido. 403/429/503 o páginas de
-// verificación ("captcha", "Just a moment") = el portal no deja descargar
-// desde un servidor → reason 'blocked' (el cliente ofrece el marcador).
-async function _fetchPortalHtml(url) {
-  if (!_importHostAllowed(url.hostname)) {
-    throw new HttpsError('failed-precondition', 'Ese portal no se puede leer directamente. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'host-not-supported' });
-  }
+// HTML de una página pública. 403/429/503 o páginas de verificación
+// ("captcha", "Just a moment") = el sitio no deja descargar desde un
+// servidor → reason 'blocked' (el cliente ofrece el marcador).
+async function _fetchPageHtml(url) {
   const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
     .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
   const html = r ? r.body.toString('utf8') : '';
   if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
-    throw new HttpsError('failed-precondition', 'El portal no permitió leer la página desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'blocked' });
+    throw new HttpsError('failed-precondition', 'Esa página no permitió leerla desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador o pega el texto del aviso.', { reason: 'blocked' });
   }
   return { html, url: r.url };
+}
+// Sigue las redirecciones de un enlace corto (facebook.com/share/…, vm.tiktok…)
+// sin leer el cuerpo. Si la red manda al login, el destino real va en next=.
+async function _resolveUrl(u) {
+  let url = await _assertPublicUrl(u);
+  for (let hop = 0; hop < 5; hop++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url.href, { redirect: 'manual', signal: ctrl.signal,
+        headers: { 'User-Agent': IMPORT_FETCH_UA, 'Accept': 'text/html', 'Accept-Language': 'es-PE,es;q=0.9' } });
+      try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (_) { /* sin cuerpo */ }
+      const loc = res.status >= 300 && res.status < 400 && res.headers.get('location');
+      if (!loc) return url.href;
+      const next = new URL(loc, url).href;
+      const real = RecoSocial.unwrapLogin(next);
+      if (real !== next) return RecoSocial.cleanUrl(real);
+      url = await _assertPublicUrl(next);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return url.href;
+}
+const _socialError = (reason) => new HttpsError('failed-precondition',
+  reason === 'social-profile' ? RecoSocial.AYUDA.perfil : RecoSocial.AYUDA.privado, { reason });
+// Post de una red social → página para la IA ({ title, meta, text, images, video }).
+async function _readSocial(urlStr, det) {
+  let target = urlStr;
+  let d = det;
+  if (d.tipo === 'corto' || d.tipo === 'login') {
+    target = RecoSocial.cleanUrl(RecoSocial.unwrapLogin(await _resolveUrl(urlStr).catch((e) => {
+      if (e instanceof HttpsError) throw e; throw _socialError('social-private');
+    })));
+    d = RecoSocial.detect(target) || d;
+  }
+  if (d.tipo === 'perfil') throw _socialError('social-profile');
+  if (d.tipo === 'corto' || d.tipo === 'login') throw _socialError('social-private');
+  const json = d.red === 'tiktok' || d.red === 'youtube';
+  const r = await _safeFetch(RecoSocial.embedUrl(target, d), { maxBytes: IMPORT_URL_HTML_BYTES, accept: json ? 'application/json' : 'text/html' })
+    .catch((e) => { if (e instanceof HttpsError && e.code !== 'failed-precondition') throw e; return null; });
+  if (!r || r.status !== 200) throw _socialError('social-private');
+  const body = r.body.toString('utf8');
+  let pagina;
+  if (json) {
+    let data = null;
+    try { data = JSON.parse(body); } catch (_) { data = null; }
+    if (!data) throw _socialError('social-private');
+    pagina = RecoSocial.parseOembed(data, d.red);
+    // YouTube: la descripción del video está en la página (meta description).
+    if (d.red === 'youtube') {
+      const w = await _safeFetch(target, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html' }).catch(() => null);
+      const meta = w && w.status === 200 ? RecoImport.parseListingHtml(w.body.toString('utf8'), w.url).meta : {};
+      const desc = meta['og:description'] || meta.description || '';
+      if (desc) pagina.text = [pagina.text, desc].filter(Boolean).join('\n');
+    }
+  } else {
+    pagina = d.red === 'facebook' ? RecoSocial.parseFacebookEmbed(body, r.url) : RecoSocial.parseInstagramEmbed(body, r.url);
+  }
+  if (pagina.login || (!pagina.text && !pagina.images.length)) throw _socialError('social-private');
+  return { pagina, target, det: d };
+}
+// Audio del video de un post (si la red da una URL descargable) → texto.
+async function _videoTranscript(videoUrl) {
+  if (!videoUrl) return '';
+  try {
+    const r = await _safeFetch(videoUrl, { maxBytes: IMPORT_VIDEO_MAX_BYTES, accept: 'video/mp4,video/*' });
+    if (r.status !== 200 || r.truncated || !/video|octet-stream/i.test(r.type) || r.body.length < 10000) return '';
+    return await _transcribe(r.body, 'video/mp4', 'video.mp4');
+  } catch (e) {
+    logger.warn('[importListingPage] video no transcrito', { err: e && e.message });
+    return '';
+  }
 }
 // Página que manda el marcador: se aceptan solo strings y con tope.
 function _cleanPagina(p) {
@@ -2038,9 +2160,14 @@ exports.importListingPage = onCall(
     // Perfil de inmobiliaria o corredor (roadmap 2.3): solo se listan sus
     // avisos, sin IA (no consume el límite por hora). El cliente elige
     // cuáles importar y llama de nuevo, uno por uno, con el mismo lote.
+    const social = RecoSocial.detect(url.href);
+    if (!(d.pagina && typeof d.pagina === 'object')) await _fetchRateLimit(uid);
     if (d.modo === 'perfil') {
-      const r = await _fetchPortalHtml(url);
-      const avisos = RecoImport.extractListingLinks(r.html, r.url, IMPORT_PROFILE_MAX_LISTINGS);
+      // Perfiles de redes: solo con la cuenta conectada (Integraciones).
+      if (social) throw _socialError('social-profile');
+      const r = await _fetchPageHtml(url);
+      const avisos = RecoImport.extractListingLinks(r.html, r.url, IMPORT_PROFILE_MAX_LISTINGS,
+        { generic: !_importHostAllowed(new URL(r.url).hostname) });
       await db.collection('importEvents').doc().set({
         uid, kind: 'perfil', channel: 'url', host: url.hostname, listings: avisos.length, createdAt: FieldValue.serverTimestamp(),
       });
@@ -2048,18 +2175,32 @@ exports.importListingPage = onCall(
     }
 
     let pagina;
+    let red = null;
     const viaMarcador = !!(d.pagina && typeof d.pagina === 'object');
     if (viaMarcador) {
       pagina = _cleanPagina(d.pagina);
+    } else if (social) {
+      const s = await _readSocial(url.href, social);
+      pagina = s.pagina;
+      red = s.det.red;
     } else {
-      const r = await _fetchPortalHtml(url);
+      const r = await _fetchPageHtml(url);
       pagina = RecoImport.parseListingHtml(r.html, r.url);
     }
-    if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length) {
+    if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length && !(pagina.images || []).length) {
       throw new HttpsError('invalid-argument', 'La página no tiene contenido legible.');
     }
 
     await _importRateLimit(uid);
+
+    // Video del post (reel, video de Facebook o Instagram): lo que se dice
+    // también es fuente (precio, áreas…). Si no hay video descargable, el
+    // corredor puede subir el archivo.
+    let transcrito = false;
+    if (pagina.video) {
+      const t = await _videoTranscript(pagina.video);
+      if (t) { pagina.text = `${pagina.text}\n\nLo que se dice en el video:\n${t}`.trim(); transcrito = true; }
+    }
 
     const photos = await _downloadPhotos(pagina.images);
     const photoIds = photos.map((p) => p.id);
@@ -2070,13 +2211,232 @@ exports.importListingPage = onCall(
       text, photoIds, sourceLabel: 'la página',
       errorMessage: 'No pudimos leer el aviso. Intenta de nuevo o pega su texto.',
       draftExtra: { sourceUrl: url.href.slice(0, 500) },
-      eventExtra: { host: url.hostname, viaMarcador, photos: photos.length },
+      eventExtra: { host: url.hostname, viaMarcador, photos: photos.length, ...(red && { red, video: transcrito }) },
     });
     // Un aviso suele ser un solo inmueble: si la IA no le asignó fotos, son
     // todas las de la página. Solo vuelven las fotos asignadas.
     if (result.drafts.length === 1 && !result.drafts[0].fotos.length) result.drafts[0].fotos = photoIds.slice();
     const usadas = new Set(result.drafts.flatMap((x) => x.fotos));
-    return { ...result, photos: photos.filter((p) => usadas.has(p.id)) };
+    return { ...result, photos: photos.filter((p) => usadas.has(p.id)), ...(red && { red, video: transcrito }) };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Conectar Facebook / Instagram (captar inventario desde redes) — el corredor
+// autoriza a ReCo a leer SU página de Facebook y la cuenta de Instagram
+// profesional vinculada; ve sus últimos posts y elige cuáles importar. Cada
+// post (texto + fotos + video) pasa por el mismo pipeline de extracción.
+//
+//   metaConnect  callable: status · authUrl · posts · import · disconnect
+//   metaOAuth    HTTP: vuelta del diálogo de Facebook Login (code → tokens)
+//
+// Colecciones (solo servidor): metaOAuthStates/{state} (15 min),
+// metaAccounts/{uid} (páginas y posts ya importados), metaTokens/{uid}
+// (tokens de página; nadie los lee desde la web).
+// Configuración: parámetro META_APP_ID y secreto META_APP_SECRET (app de Meta
+// con Facebook Login y los permisos pages_show_list, pages_read_engagement,
+// instagram_basic, business_management). Ver docs/REDES-SOCIALES.md.
+// Los perfiles personales de Facebook no se pueden leer con la API de Meta:
+// para esos, el enlace de cada post (importListingPage).
+// ─────────────────────────────────────────────────────────────────────────────
+const metaAppId = defineString('META_APP_ID', { default: '' });
+const metaAppSecret = defineSecret('META_APP_SECRET');
+const META_GRAPH = 'https://graph.facebook.com/v21.0';
+const META_SCOPES = ['pages_show_list', 'pages_read_engagement', 'instagram_basic', 'business_management'];
+const META_REDIRECT_PATH = 'metaOAuth';
+const META_MAX_IMPORT = 10;          // posts por llamada
+const META_PAGE_SIZE = 25;
+const META_POST_ID_RE = /^[0-9_]{5,60}$/;
+
+function _metaRedirectUri() {
+  // URL de la función HTTP metaOAuth (la misma región y proyecto).
+  const project = process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'reco-5a5dd';
+  return `https://${REGION}-${project}.cloudfunctions.net/${META_REDIRECT_PATH}`;
+}
+async function _graph(path, token, params) {
+  const qs = new URLSearchParams({ ...(params || {}), access_token: token });
+  if (metaAppSecret.value()) {
+    qs.set('appsecret_proof', require('crypto').createHmac('sha256', metaAppSecret.value()).update(token).digest('hex'));
+  }
+  const r = await _fetchTimeout(`${META_GRAPH}/${path}?${qs}`, { headers: { Accept: 'application/json' } }, 20000);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok || body.error) {
+    const e = new Error((body.error && body.error.message) || `Graph HTTP ${r.status}`);
+    e.graph = body.error || { status: r.status };
+    throw e;
+  }
+  return body;
+}
+// Post de Facebook o Instagram → { id, text, images, video, permalink, fecha }.
+function _metaPostOf(red, p) {
+  if (red === 'instagram') {
+    const kids = ((p.children && p.children.data) || []);
+    const images = (kids.length ? kids : [p]).map((k) => (k.media_type === 'VIDEO' ? k.thumbnail_url : k.media_url)).filter(Boolean);
+    const vid = p.media_type === 'VIDEO' || p.media_type === 'REELS' ? p.media_url : (kids.find((k) => k.media_type === 'VIDEO') || {}).media_url;
+    return { id: String(p.id), text: String(p.caption || ''), images, video: vid || null, permalink: p.permalink || null, fecha: p.timestamp || null };
+  }
+  const att = ((p.attachments && p.attachments.data) || []);
+  const images = [];
+  let video = null;
+  if (p.full_picture) images.push(p.full_picture);
+  att.forEach((a) => {
+    const subs = (a.subattachments && a.subattachments.data) || [a];
+    subs.forEach((s) => {
+      const src = s.media && s.media.image && s.media.image.src;
+      if (src && !images.includes(src)) images.push(src);
+      if (!video && /video/.test(String(s.media_type || s.type || '')) && s.media && s.media.source) video = s.media.source;
+    });
+  });
+  return { id: String(p.id), text: String(p.message || ''), images, video, permalink: p.permalink_url || null, fecha: p.created_time || null };
+}
+async function _metaFetchPosts(red, pageId, token, after) {
+  if (red === 'instagram') {
+    return _graph(`${pageId}/media`, token, { fields: 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{media_type,media_url,thumbnail_url}',
+      limit: String(META_PAGE_SIZE), ...(after && { after }) });
+  }
+  return _graph(`${pageId}/posts`, token, { fields: 'id,message,created_time,permalink_url,full_picture,attachments{media_type,type,media,subattachments{media,media_type,type}}',
+    limit: String(META_PAGE_SIZE), ...(after && { after }) });
+}
+
+exports.metaConnect = onCall(
+  { region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB', consumeAppCheckToken: true, enforceAppCheck: true,
+    secrets: [openaiKey, metaAppSecret] },
+  async (request) => {
+    _logAppCheck(request, 'metaConnect');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    if (!metaAppId.value()) return { disponible: false };
+    const accRef = db.collection('metaAccounts').doc(uid);
+    const tokRef = db.collection('metaTokens').doc(uid);
+
+    if (d.action === 'authUrl') {
+      const state = require('crypto').randomBytes(16).toString('hex');
+      await db.collection('metaOAuthStates').doc(state).set({ uid, expiresAt: Timestamp.fromMillis(Date.now() + 15 * 60000) });
+      const qs = new URLSearchParams({ client_id: metaAppId.value(), redirect_uri: _metaRedirectUri(), state,
+        scope: META_SCOPES.join(','), response_type: 'code' });
+      return { disponible: true, url: `https://www.facebook.com/v21.0/dialog/oauth?${qs}` };
+    }
+    if (d.action === 'disconnect') {
+      await Promise.all([accRef.delete(), tokRef.delete()]);
+      return { disponible: true, cuentas: [] };
+    }
+    const acc = (await accRef.get()).data() || {};
+    const cuentas = (acc.pages || []).flatMap((p) => [{ red: 'facebook', id: p.id, nombre: p.name },
+      ...(p.ig ? [{ red: 'instagram', id: p.ig.id, nombre: `@${p.ig.username}`, pageId: p.id }] : [])]);
+    if (d.action !== 'posts' && d.action !== 'import') return { disponible: true, cuentas };
+
+    const red = d.red === 'instagram' ? 'instagram' : 'facebook';
+    const cuenta = cuentas.find((c) => c.red === red && c.id === String(d.id || ''));
+    if (!cuenta) throw new HttpsError('not-found', 'Cuenta no conectada. Vuelve a conectar Facebook.');
+    const toks = (await tokRef.get()).data() || {};
+    const token = (toks.pages || {})[cuenta.pageId || cuenta.id];
+    if (!token) throw new HttpsError('failed-precondition', 'La conexión venció. Vuelve a conectar Facebook.');
+    const importados = new Set(acc.importados || []);
+
+    if (d.action === 'posts') {
+      let body;
+      try {
+        body = await _metaFetchPosts(red, cuenta.id, token, typeof d.after === 'string' ? d.after.slice(0, 200) : null);
+      } catch (e) {
+        logger.warn('[metaConnect] posts', { err: e.message });
+        throw new HttpsError('failed-precondition', 'Facebook no devolvió los posts. Vuelve a conectar tu cuenta.');
+      }
+      const posts = (body.data || []).map((p) => _metaPostOf(red, p))
+        .map((p) => ({ id: p.id, texto: p.text.slice(0, 300), foto: p.images[0] || null, fotos: p.images.length, video: !!p.video,
+          enlace: p.permalink, fecha: p.fecha, importado: importados.has(p.id) }));
+      return { posts, after: (body.paging && body.paging.next && body.paging.cursors && body.paging.cursors.after) || null };
+    }
+
+    // import: los posts elegidos (máx. META_MAX_IMPORT) → borradores con fotos.
+    const ids = [...new Set((Array.isArray(d.postIds) ? d.postIds : []).map(String).filter((x) => META_POST_ID_RE.test(x)))].slice(0, META_MAX_IMPORT);
+    if (!ids.length) throw new HttpsError('invalid-argument', 'Elige al menos un post.');
+    const batchId = (typeof d.batchId === 'string' && DRAFT_ID_RE.test(d.batchId)) ? d.batchId : db.collection('importDrafts').doc().id;
+    const fieldsFb = 'id,message,created_time,permalink_url,full_picture,attachments{media_type,type,media,subattachments{media,media_type,type}}';
+    const fieldsIg = 'id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,children{media_type,media_url,thumbnail_url}';
+    let creados = 0, sinInmueble = 0, limite = false;
+    const hechos = [];
+    for (const id of ids) {
+      let post;
+      try {
+        post = _metaPostOf(red, await _graph(id, token, { fields: red === 'instagram' ? fieldsIg : fieldsFb }));
+      } catch (e) {
+        logger.warn('[metaConnect] post no disponible', { id, err: e.message });
+        continue;
+      }
+      try { await _importRateLimit(uid); } catch (e) { limite = true; break; }
+      let text = post.text;
+      if (post.video) {
+        const t = await _videoTranscript(post.video);
+        if (t) text = `${text}\n\nLo que se dice en el video:\n${t}`;
+      }
+      const photos = await _downloadPhotos(post.images);
+      const photoIds = photos.map((p) => p.id);
+      const full = `${text}\n${photoIds.map((x) => `[FOTO ${x}]`).join(' ')}`.trim().slice(0, IMPORT_TEXT_MAX_CHARS);
+      const result = await _extractAndSaveDrafts({
+        fn: 'metaConnect', uid, kind: 'redes', channel: 'redes', sourceName: `${red === 'instagram' ? 'Instagram' : 'Facebook'} · ${cuenta.nombre}`.slice(0, 120),
+        batchId, text: full, photoIds, sourceLabel: 'el post',
+        draftExtra: { ...(post.permalink && { sourceUrl: String(post.permalink).slice(0, 500) }), metaPostId: post.id },
+        eventExtra: { red, photos: photos.length, video: !!post.video },
+      });
+      // Un post suele ser un solo inmueble: sin fotos asignadas, son todas.
+      if (result.drafts.length === 1 && !result.drafts[0].fotos.length) result.drafts[0].fotos = photoIds.slice();
+      for (const dr of result.drafts) {
+        const urls = [];
+        for (const fid of dr.fotos.slice(0, 12)) {
+          const ph = photos.find((p) => p.id === fid);
+          if (!ph) continue;
+          const [meta, b64] = ph.dataUrl.split(',');
+          const mime = (meta.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+          urls.push(await _savePhoto(uid, dr.id, urls.length + 1, Buffer.from(b64, 'base64'), mime));
+        }
+        if (urls.length) await db.collection('importDrafts').doc(dr.id).update({ photoUrls: urls });
+      }
+      creados += result.drafts.length;
+      if (!result.drafts.length) sinInmueble++;
+      hechos.push(post.id);
+    }
+    if (hechos.length) {
+      await accRef.set({ importados: [...importados, ...hechos].slice(-1000), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    }
+    return { batchId, creados, sinInmueble, importados: hechos, limite };
+  }
+);
+
+// Vuelta de Facebook Login: code → token de usuario de larga duración →
+// páginas (y su Instagram) con sus tokens. Redirige a Integraciones.
+exports.metaOAuth = onRequest(
+  { region: REGION, maxInstances: 5, secrets: [metaAppSecret] },
+  async (req, res) => {
+    const back = (estado) => res.redirect(302, `${CONTINUE_URL}#integraciones-meta-${estado}`);
+    const state = String(req.query.state || '');
+    const code = String(req.query.code || '');
+    if (!/^[0-9a-f]{32}$/.test(state)) { back('error'); return; }
+    const stRef = db.collection('metaOAuthStates').doc(state);
+    const snap = await stRef.get();
+    const st = snap.exists ? snap.data() : null;
+    await stRef.delete().catch(() => {});
+    if (!st || st.expiresAt.toMillis() < Date.now()) { back('vencido'); return; }
+    if (!code || req.query.error) { back('cancelado'); return; }
+    const uid = st.uid;
+    try {
+      const base = { client_id: metaAppId.value(), client_secret: metaAppSecret.value() };
+      const short = await (await _fetchTimeout(`${META_GRAPH}/oauth/access_token?${new URLSearchParams({ ...base, redirect_uri: _metaRedirectUri(), code })}`, {}, 20000)).json();
+      if (!short.access_token) throw new Error('sin token');
+      const long = await (await _fetchTimeout(`${META_GRAPH}/oauth/access_token?${new URLSearchParams({ ...base, grant_type: 'fb_exchange_token', fb_exchange_token: short.access_token })}`, {}, 20000)).json();
+      const userToken = long.access_token || short.access_token;
+      const accts = await _graph('me/accounts', userToken, { fields: 'id,name,access_token,instagram_business_account{id,username}', limit: '50' });
+      const pages = (accts.data || []).map((p) => ({ id: String(p.id), name: String(p.name || '').slice(0, 120),
+        ig: p.instagram_business_account ? { id: String(p.instagram_business_account.id), username: String(p.instagram_business_account.username || '') } : null }));
+      const tokens = {};
+      (accts.data || []).forEach((p) => { if (p.access_token) tokens[String(p.id)] = p.access_token; });
+      await db.collection('metaTokens').doc(uid).set({ pages: tokens, updatedAt: FieldValue.serverTimestamp() });
+      await db.collection('metaAccounts').doc(uid).set({ pages, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      back(pages.length ? 'ok' : 'sin-paginas');
+    } catch (e) {
+      logger.error('[metaOAuth] error', { err: e && e.message });
+      back('error');
+    }
   }
 );
 
@@ -2189,9 +2549,9 @@ async function _waMedia(mediaId) {
   if (buf.length > WA_MEDIA_MAX_BYTES) throw new Error('media muy grande');
   return { buf, mime: String(meta.mime_type || '').split(';')[0] };
 }
-async function _transcribe(buf, mime) {
+async function _transcribe(buf, mime, filename) {
   const fd = new FormData();
-  fd.append('file', new Blob([buf], { type: mime || 'audio/ogg' }), 'nota.ogg');
+  fd.append('file', new Blob([buf], { type: mime || 'audio/ogg' }), filename || 'nota.ogg');
   fd.append('model', 'whisper-1');
   fd.append('language', 'es');
   const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {

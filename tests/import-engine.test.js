@@ -436,18 +436,16 @@ test.describe('importListingPage', () => {
     expect(ev).toMatchObject({ channel: 'url', host: 'urbania.pe', viaMarcador: false, photos: 2 });
   });
 
-  test('sin autorización, enlace inválido o portal no soportado', async () => {
+  test('sin autorización o enlace inválido (cualquier web pública se acepta)', async () => {
     const { importPage } = loadHandlers();
     restoreDns = mockDns();
     mockNet({}, { inmuebles: [] });
     await expect(importPage(req('u1', { url: 'https://urbania.pe/x' }))).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(importPage(req('u1', { ...ok, url: 'urbania.pe/x' }))).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(importPage(req('u1', { ...ok, url: 'ftp://urbania.pe/x' }))).rejects.toMatchObject({ code: 'invalid-argument' });
+    // Otros sitios ya no se rechazan por dominio: se leen (aquí responden 404 → blocked).
     await expect(importPage(req('u1', { ...ok, url: 'https://otro-portal.pe/aviso' })))
-      .rejects.toMatchObject({ code: 'failed-precondition', details: { reason: 'host-not-supported' } });
-    // Un dominio que solo "termina" igual no cuenta como el portal.
-    await expect(importPage(req('u1', { ...ok, url: 'https://falsourbania.pe/aviso' })))
-      .rejects.toMatchObject({ details: { reason: 'host-not-supported' } });
+      .rejects.toMatchObject({ code: 'failed-precondition', details: { reason: 'blocked' } });
   });
 
   test('portal que bloquea (403 o página de verificación) → reason blocked', async () => {
@@ -708,7 +706,9 @@ test.describe('Fase 2: perfil de portal e imágenes sueltas', () => {
     expect(seen.ai).toBeUndefined();
     expect(Object.values(db.store).find((v) => v.kind === 'perfil')).toMatchObject({ host: 'urbania.pe', listings: 2 });
     await expect(importPage(req('u1', { url: 'https://otro.pe/perfil', declaraAutorizacion: true, modo: 'perfil' })))
-      .rejects.toMatchObject({ details: { reason: 'host-not-supported' } });
+      .rejects.toMatchObject({ details: { reason: 'blocked' } });
+    await expect(importPage(req('u1', { url: 'https://www.facebook.com/inmobiliaria.sol', declaraAutorizacion: true, modo: 'perfil' })))
+      .rejects.toMatchObject({ details: { reason: 'social-profile' } });
   });
 
   test('imágenes sueltas (flyers): documento con páginas escaneadas', async () => {

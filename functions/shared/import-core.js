@@ -40,7 +40,7 @@
   const REQUIRED = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
-  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed', 'email'];
+  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed', 'email', 'redes', 'video'];
 
   // Lima Metropolitana + Callao (mismos nombres que ZONIF_DATA en index.html).
   const DISTRICTS = ['Ancón', 'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima',
@@ -417,7 +417,20 @@
   // __NEXT_DATA__. Un aviso es una URL del mismo dominio con un id numérico
   // largo (o tipo "MPE-123…") y que no es una página de navegación.
   const LISTING_NAV_RE = /\/(buscar|busqueda|search|login|ingresar|registro|signup|ayuda|help|blog|noticias|contacto|nosotros|terminos|privacidad|publicar|favoritos|mi-cuenta)(\/|$)/i;
-  function extractListingLinks(html, baseUrl, max) {
+  // Web propia de una inmobiliaria (no portal): sus avisos no siempre tienen
+  // un código numérico; se aceptan rutas que suenan a inmueble o proyecto y
+  // páginas de un solo tramo ("/balthazar/") que no son páginas generales.
+  const GENERIC_NAV_RE = /\/(inicio|home|servicios?|preguntas|faq|politicas?|cookies|carrito|cart|checkout|wp-[a-z-]+|feed|tag|tags|category|categoria|author|autor|page|equipo|trabaja|libro-de-reclamaciones|reclamaciones|tienda|shop|eventos?|prensa|galeria)(\/|$)/i;
+  const GENERIC_ITEM_RE = /(proyecto|inmueble|propiedad|departamento|depa|casa|terreno|lote|oficina|local|venta|alquiler|property|properties|listing|unidad|tipologia|flat|duplex|penthouse|edificio|residencial|condominio)/i;
+  function genericListingPath(pathname) {
+    const p = pathname.replace(/\/+$/, '');
+    if (!p || GENERIC_NAV_RE.test(p) || LISTING_NAV_RE.test(p) || /\.(pdf|jpe?g|png|webp|gif|zip|docx?|xlsx?)$/i.test(p)) return false;
+    if (/\d{5,}/.test(p) || GENERIC_ITEM_RE.test(p)) return true;
+    const segs = p.split('/').filter(Boolean);
+    return segs.length === 1 && /[a-z]{4,}/i.test(segs[0]);
+  }
+  function extractListingLinks(html, baseUrl, max, opts) {
+    const generic = !!(opts && opts.generic);
     const h = String(html || '');
     let base;
     try { base = new URL(baseUrl); } catch (_) { return []; }
@@ -430,7 +443,8 @@
       const x = new URL(a);
       const host = x.hostname.replace(/^www\./, '');
       if (host !== site && !host.endsWith('.' + site)) return;
-      if (LISTING_NAV_RE.test(x.pathname) || !/\d{5,}|[A-Z]{3}-?\d{5,}/i.test(x.pathname)) return;
+      if (generic ? !genericListingPath(x.pathname)
+        : (LISTING_NAV_RE.test(x.pathname) || !/\d{5,}|[A-Z]{3}-?\d{5,}/i.test(x.pathname))) return;
       const key = x.origin + x.pathname;
       if (seen.has(key)) return;
       seen.add(key);
@@ -479,6 +493,6 @@
     COLS, REQUIRED, DISTRICTS, IMPORT_SOURCES, RESO_MAP,
     AI_FIELDS, EXTRACTION_SCHEMA,
     norm, cleanText, parseNumber, parseMoney, detectCurrency, parseCount, matchDistrict,
-    stripPII, normalizeRow, fingerprint, numbersIn, guardInvented,
+    stripPII, normalizeRow, fingerprint, numbersIn, guardInvented, decodeEntities,
   };
 });
