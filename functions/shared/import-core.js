@@ -40,7 +40,7 @@
   const REQUIRED = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
   const COUNT_COLS = ['nro_dormitorios', 'nro_banos', 'nro_estacionamientos', 'nro_pisos', 'piso', 'niveles'];
   const BOOL_COLS = ['mostrar_direccion', 'ascensor', 'amoblado', 'pet_friendly'];
-  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed'];
+  const IMPORT_SOURCES = ['excel', 'csv', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed', 'email'];
 
   // Lima Metropolitana + Callao (mismos nombres que ZONIF_DATA en index.html).
   const DISTRICTS = ['Ancón', 'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima',

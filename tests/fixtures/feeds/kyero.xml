@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+  <kyero><feed_version>3</feed_version></kyero>
+  <property>
+    <id>KY-1001</id>
+    <date>2026-10-01 10:00:00</date>
+    <ref>MIR-45</ref>
+    <price>185000</price>
+    <currency>USD</currency>
+    <price_freq>sale</price_freq>
+    <type>apartment</type>
+    <town>Miraflores</town>
+    <province>Lima</province>
+    <location_detail>Av. Larco 1234</location_detail>
+    <beds>3</beds>
+    <baths>2</baths>
+    <surface_area><built>90</built><plot>0</plot></surface_area>
+    <desc><en>Bright flat</en><es><![CDATA[<p>Departamento con <b>vista al mar</b>.</p><p>Cerca al parque Kennedy.</p>]]></es></desc>
+    <features><feature>Ascensor</feature><feature>Terraza</feature></features>
+    <images>
+      <image id="1"><url>https://cdn.example.com/ky/1001-1.jpg</url></image>
+      <image id="2"><url>https://cdn.example.com/ky/1001-2.jpg</url></image>
+    </images>
+  </property>
+  <property>
+    <id>KY-1002</id>
+    <price>1500</price>
+    <currency>PEN</currency>
+    <price_freq>month</price_freq>
+    <type>land</type>
+    <town>Lurín</town>
+    <location_detail>Km 40 Panamericana Sur</location_detail>
+    <surface_area><built>0</built><plot>1200</plot></surface_area>
+    <desc><es>Terreno plano &amp; con acceso por pista.</es></desc>
+    <images><image id="1"><url>https://cdn.example.com/ky/1002-1.jpg</url></image></images>
+  </property>
+</root>

@@ -1523,6 +1523,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .us-back:hover{color:var(--txt)}
 .us-title{font-size:1.4rem;font-weight:800;color:var(--txt);margin-bottom:24px}
 .us-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.int-tbl th,.int-tbl td{padding:3px 10px 3px 0;white-space:nowrap;vertical-align:top}
 .us-card-title{font-size:.95rem;font-weight:700;margin-bottom:16px;color:var(--txt)}
 .us-field{margin-bottom:16px}
 .us-field:last-child{margin-bottom:0}
@@ -2364,6 +2365,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
         <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
         <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
         <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto<span class="menu-notif-badge menu-solicitudes-badge" style="display:none"></span></a>
+        <a href="#integraciones" onclick="navigateUserSection('integraciones')">🔌 Integraciones</a>
         <a href="#bandeja" class="corredor-only" style="display:none" onclick="navigateUserSection('bandeja')">📨 Bandeja<span class="menu-notif-badge menu-bandeja-badge" style="display:none"></span></a>
         <a href="#admin" class="admin-only" style="display:none" onclick="navigateUserSection('admin')">🛡️ Moderación</a>
         <hr/>
@@ -7330,6 +7332,11 @@ function _pubBulkUploadHTML(){
         <details id="pubMarcador" style="margin-top:10px;font-size:11px;color:var(--muted)"><summary style="cursor:pointer">📌 ¿Otro portal o no carga? Usa "Enviar a ReCo"</summary>
           <div style="margin-top:6px;line-height:1.6">Arrastra este botón a tu barra de favoritos (en computadora): <a href="${_pubBookmarkletCode()}" onclick="event.preventDefault();toast('Arrástralo a tu barra de favoritos y úsalo en la página de tu aviso.')" style="display:inline-block;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;text-decoration:none">📌 Enviar a ReCo</a><br>Luego abre tu aviso en cualquier portal y haz clic en el favorito: ReCo se abre con el aviso listo para importar. Desde el celular, copia el texto del aviso y usa "Pegar texto".</div></details>
       </div>
+      <div style="${box}">
+        <div style="font-size:13px;font-weight:700">🔄 Que se actualice solo</div>
+        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">¿Tu inventario está en un CRM (EasyBroker, Wasi…), en tu web o en Google Sheets? Conéctalo una vez: ReCo trae lo nuevo, actualiza precios y retira lo vendido. También puedes reenviar fichas por correo o usar nuestra API.</div>
+        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="closePublish();navigateUserSection('integraciones')">Ir a Integraciones</button>
+      </div>
       ${_PUB_WA_BOT_NUMBER?`<div style="${box}">
         <div style="font-size:13px;font-weight:700">🤖 ReCo en tu WhatsApp</div>
         <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Envía tus inmuebles a nuestro WhatsApp como texto, fotos o notas de voz y escribe <strong>LISTO</strong>. Te respondemos con lo que encontramos y aquí los revisas y publicas.</div>
@@ -10255,7 +10262,7 @@ async function _pullUserDataFromFirestore(){
     // Re-render the user section if one is open
     if(document.body.classList.contains('show-user')){
       const h = window.location.hash.replace('#','');
-      if(['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
+      if(['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin','integraciones'].indexOf(h) >= 0 && typeof renderUserSection === 'function'){
         renderUserSection(h);
       }
     }
@@ -10343,6 +10350,7 @@ function renderUserSection(section) {
   else if (section === 'solicitudes') renderSolicitudes(el);
   else if (section === 'bandeja') renderBandeja(el);
   else if (section === 'admin') renderAdminPanel(el);
+  else if (section === 'integraciones') renderIntegraciones(el);
   else { closeUserSection(); return; }
 }
 
@@ -10635,6 +10643,7 @@ async function renderAdminPanel(el){
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
             <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${esc(pub.op||'Venta')}</span>
             <span style="background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${esc(pub.type||'—')}</span>
+            ${_PUB_SOURCE_CHIP[pub.source]?`<span style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">${_PUB_SOURCE_CHIP[pub.source]}${pub.syncSourceName?' · '+esc(pub.syncSourceName):''}</span>`:''}
           </div>
           <div style="font-weight:700;font-size:.95rem;margin-bottom:2px">${esc(pub.address||'—')}</div>
           <div style="font-size:.82rem;color:var(--muted);margin-bottom:8px">📍 ${esc(pub.district||'—')} · 📐 ${esc(pub.area||'—')} m²${pub.beds>0?' · 🛏 '+esc(pub.beds):''}${pub.baths>0?' · 🚿 '+esc(pub.baths):''}</div>
@@ -11164,13 +11173,270 @@ async function renderBandeja(el) {
   }
 }
 
+// ── INTEGRACIONES (roadmap Fase 3) ──
+// Conexiones automáticas (feed, Google Sheets, EasyBroker, Wasi), correo para
+// publicar y API para desarrolladores. Todo pasa por callables: importSources,
+// emailIngest y apiAccess (functions/index.js).
+const _API_BASE='https://southamerica-east1-reco-5a5dd.cloudfunctions.net/api';
+const _INT_KINDS={
+  feed:{ icon:'🔗', label:'Feed de mi CRM o web', hint:'URL de un feed XML (Kyero u otro), JSON o CSV. Tu CRM o quien hizo tu web te la da.' },
+  sheet:{ icon:'📗', label:'Google Sheets', hint:'Enlace de tu hoja. Compártela como "Cualquier persona con el enlace → Lector" o publícala en la web.' },
+  easybroker:{ icon:'🏢', label:'EasyBroker', hint:'Tu clave de API: EasyBroker → Configuración → Integraciones → API.' },
+  wasi:{ icon:'🏠', label:'Wasi', hint:'Id de empresa y token: Wasi → Configuración → API (requiere plan Pro).' },
+};
+const _INT_MAP_FIELDS=[['id','Código / id'],['direccion','Dirección'],['distrito','Distrito'],['tipo_propiedad','Tipo'],['tipo_publicacion','Operación'],
+  ['precio','Precio'],['tipo_moneda','Moneda'],['area_techada','Área techada'],['area_terreno','Área terreno'],['nro_dormitorios','Dormitorios'],
+  ['nro_banos','Baños'],['titulo','Título'],['descripcion','Descripción']];
+let _intState={ kind:'feed', preview:null, mapping:null };
+
+async function renderIntegraciones(el){
+  if(!auth.currentUser){ closeUserSection(); openAuthModal('login', function(){ navigateUserSection('integraciones'); }); return; }
+  el.innerHTML='<button class="us-back" onclick="closeUserSection()">← Volver</button>'
+    +'<div class="us-title">🔌 Integraciones</div>'
+    +'<div class="us-card"><div style="font-weight:700;margin-bottom:4px">🔄 Conexiones automáticas</div>'
+    +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:12px;line-height:1.5">Conecta el inventario que ya tienes en tu CRM, tu web o una hoja de Google. ReCo lo lee cada pocas horas: trae lo nuevo, actualiza precios y cambios, y retira lo que ya no está. Todo pasa por la misma revisión que una publicación normal.</div>'
+    +'<div id="intSources"><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
+    +'<div id="intNew"></div></div>'
+    +'<div class="us-card" id="intEmail"><div style="font-weight:700;margin-bottom:4px">✉️ Correo para publicar</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
+    +'<div class="us-card" id="intApi"><div style="font-weight:700;margin-bottom:4px">🧩 API para desarrolladores</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>';
+  _intNewRender();
+  _intLoadSources();
+  _intLoadEmail();
+  _intLoadApi();
+}
+function _intCall(name,data){ return _getFunctions().httpsCallable(name)(data).then(r=>r.data||{}); }
+function _intErr(e,fallback){ console.error('[reco] integraciones:',e); toast('⚠️ '+((e&&e.message)||fallback)); }
+function _intWhen(ms){ return ms?_timeAgo(new Date(ms).toISOString()):''; }
+
+// ── Conexiones ──
+function _intResultText(r){
+  if(!r) return 'Aún no se sincroniza.';
+  const p=[];
+  if(r.nuevos) p.push(`${r.nuevos} publicada(s)`);
+  if(r.borradores) p.push(`${r.borradores} borrador(es) nuevo(s)`);
+  if(r.actualizados) p.push(`${r.actualizados} actualizada(s)`);
+  if(r.revision) p.push(`${r.revision} a revisión`);
+  if(r.retirados) p.push(`${r.retirados} retirada(s)`);
+  if(r.restaurados) p.push(`${r.restaurados} restaurada(s)`);
+  if(r.conErrores) p.push(`${r.conErrores} con errores`);
+  if(r.pendientes) p.push(`${r.pendientes} pendientes para la próxima`);
+  return `${r.total} inmueble(s) · ${p.length?p.join(' · '):'sin cambios'}`;
+}
+async function _intLoadSources(){
+  const box=document.getElementById('intSources');
+  if(!box) return;
+  try{
+    const { sources=[] }=await _intCall('importSources',{ action:'list' });
+    box.innerHTML=sources.length?sources.map(s=>{
+      const k=_INT_KINDS[s.kind]||_INT_KINDS.feed;
+      const pausada=s.estado==='pausada';
+      return `<div style="border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:10px" data-src="${esc(s.id)}">
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center">
+          <div style="font-weight:700;font-size:.9rem">${k.icon} ${esc(s.nombre)} ${pausada?'<span style="background:#fef3c7;color:#92400e;border-radius:99px;padding:1px 8px;font-size:.68rem">Pausada</span>':'<span style="background:#d1fae5;color:#065f46;border-radius:99px;padding:1px 8px;font-size:.68rem">Activa</span>'}</div>
+          <div style="font-size:.72rem;color:var(--muted)">${esc(k.label)}${s.cuenta?' · '+esc(s.cuenta):''} · cada ${esc(s.cadaHoras)} h · ${s.modo==='publicar'?'publica directo (con revisión)':'crea borradores'}</div>
+        </div>
+        ${s.url?`<div style="font-size:.72rem;color:var(--muted);word-break:break-all;margin-top:2px">${esc(s.url)}</div>`:''}
+        <div style="font-size:.78rem;margin-top:6px">${esc(_intResultText(s.lastResult))}${s.lastRunAt?` <span style="color:var(--muted)">· ${esc(_intWhen(s.lastRunAt))}</span>`:''}</div>
+        ${s.lastResult&&s.lastResult.aviso?`<div style="font-size:.75rem;color:#92400e;margin-top:4px">⚠️ ${esc(s.lastResult.aviso)}</div>`:''}
+        ${s.ultimoError?`<div style="font-size:.75rem;color:var(--red);margin-top:4px">⚠️ ${esc(s.ultimoError)}</div>`:''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+          <button class="pub-btn primary" style="font-size:11px;padding:6px 12px" onclick="_intSync('${esc(s.id)}',this)">🔄 Sincronizar ahora</button>
+          <button class="pub-btn ghost" style="font-size:11px;padding:6px 12px" onclick="_intUpdate('${esc(s.id)}',{estado:'${pausada?'activa':'pausada'}'})">${pausada?'▶ Reactivar':'⏸ Pausar'}</button>
+          <select style="font-size:11px;border:1px solid var(--border);border-radius:8px;padding:5px" onchange="_intUpdate('${esc(s.id)}',{cadaHoras:Number(this.value)})" title="Frecuencia">${[6,12,24].map(h=>`<option value="${h}" ${s.cadaHoras===h?'selected':''}>Cada ${h} h</option>`).join('')}</select>
+          <select style="font-size:11px;border:1px solid var(--border);border-radius:8px;padding:5px" onchange="_intUpdate('${esc(s.id)}',{modo:this.value})" title="Qué hacer con lo nuevo"><option value="borradores" ${s.modo!=='publicar'?'selected':''}>Lo nuevo: a borradores</option><option value="publicar" ${s.modo==='publicar'?'selected':''}>Lo nuevo: publicar (con revisión)</option></select>
+          <button class="pub-btn ghost" style="font-size:11px;padding:6px 12px;color:var(--red)" onclick="_intDelete('${esc(s.id)}')">Eliminar</button>
+        </div>
+      </div>`;
+    }).join(''):'<p style="font-size:.82rem;color:var(--muted);margin-bottom:8px">Aún no tienes conexiones.</p>';
+  }catch(e){ box.innerHTML=`<p style="color:var(--red);font-size:.82rem">No se pudieron cargar tus conexiones: ${esc((e&&e.message)||'')}</p>`; }
+}
+function _intNewRender(){
+  const box=document.getElementById('intNew');
+  if(!box) return;
+  const k=_intState.kind;
+  const inp='width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;margin-top:4px';
+  const campos=(k==='feed'||k==='sheet')
+    ? `<input id="intUrl" type="url" style="${inp}" placeholder="${k==='sheet'?'https://docs.google.com/spreadsheets/d/…':'https://micrm.com/feed/inmuebles.xml'}">`
+    : k==='easybroker'
+    ? `<input id="intApiKey" type="password" autocomplete="off" style="${inp}" placeholder="Clave de API de EasyBroker">`
+    : `<input id="intIdCompany" inputmode="numeric" style="${inp}" placeholder="Id de empresa"><input id="intWasiToken" type="password" autocomplete="off" style="${inp}" placeholder="Token de Wasi">`;
+  box.innerHTML=`<details ${_intState.open?'open':''} ontoggle="_intState.open=this.open" style="border:1px dashed var(--border);border-radius:10px;padding:10px 14px">
+    <summary style="cursor:pointer;font-weight:600;font-size:.85rem">+ Conectar inventario</summary>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 0">${Object.entries(_INT_KINDS).map(([id,x])=>`<button class="pub-btn ${id===k?'primary':'ghost'}" style="font-size:11px;padding:6px 12px" onclick="_intState.kind='${id}';_intState.preview=null;_intState.mapping=null;_intNewRender()">${x.icon} ${esc(x.label)}</button>`).join('')}</div>
+    <div style="font-size:.75rem;color:var(--muted)">${esc(_INT_KINDS[k].hint)}</div>
+    ${campos}
+    <input id="intNombre" style="${inp}" placeholder="Nombre (opcional), p. ej. Inventario 2026" maxlength="80">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px;align-items:center">
+      <label>Frecuencia <select id="intHoras" style="border:1px solid var(--border);border-radius:8px;padding:5px"><option value="6">Cada 6 h</option><option value="12">Cada 12 h</option><option value="24" selected>Cada 24 h</option></select></label>
+      <label>Lo nuevo <select id="intModo" style="border:1px solid var(--border);border-radius:8px;padding:5px"><option value="borradores" selected>a borradores (lo revisas tú)</option><option value="publicar">se publica (pasa por nuestra revisión)</option></select></label>
+    </div>
+    <label style="display:flex;gap:6px;align-items:flex-start;font-size:11px;margin-top:8px"><input type="checkbox" id="intAuth"> Soy el dueño de este inventario o tengo autorización para publicarlo en ReCo.</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_intPreview(this)">👀 Probar</button>
+      <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_intCreate(this)">Conectar y sincronizar</button>
+    </div>
+    <div id="intPreview">${_intPreviewHTML()}</div>
+  </details>`;
+}
+function _intInput(){
+  const k=_intState.kind;
+  const v=(id)=>{ const e=document.getElementById(id); return e?e.value.trim():''; };
+  const d={ kind:k, nombre:v('intNombre'), cadaHoras:Number(v('intHoras'))||24, modo:v('intModo')||'borradores' };
+  if(k==='feed'||k==='sheet') d.url=v('intUrl');
+  else if(k==='easybroker') d.credenciales={ apiKey:v('intApiKey') };
+  else d.credenciales={ idCompany:v('intIdCompany'), wasiToken:v('intWasiToken') };
+  return d;
+}
+function _intPreviewHTML(){
+  const p=_intState.preview;
+  if(!p) return '';
+  const filas=(p.muestra||[]).map(m=>`<tr>
+    <td>${esc(m.row.direccion||'—')}</td><td>${esc(m.row.distrito||'—')}</td><td>${esc(m.row.tipo_propiedad||'—')}</td><td>${esc(m.row.tipo_publicacion||'—')}</td>
+    <td>${esc((m.row.tipo_moneda||'')+' '+(m.row.precio||'—'))}</td><td>${esc(m.row.area_techada||m.row.area_terreno||'—')}</td><td>${m.fotos}</td>
+    <td style="color:${m.errores.length?'var(--red)':'#065f46'}">${m.errores.length?'⚠️ '+esc(m.errores.join('; ')):'✓ Lista'}</td></tr>`).join('');
+  const map=_intState.mapping;
+  const rutas=p.rutas||[];
+  const mapeo=map&&rutas.length?`<details style="margin-top:8px"><summary style="cursor:pointer;font-size:.78rem;font-weight:600">🔀 Revisar columnas (${Object.keys(map).filter(k=>k!=='fotos').length} reconocidas)</summary>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px;margin-top:6px">${_INT_MAP_FIELDS.map(([k,l])=>`<label style="font-size:11px">${esc(l)}<select style="width:100%;border:1px solid var(--border);border-radius:6px;padding:4px;font-size:11px" onchange="_intSetMap('${k}',this.value)"><option value="">— ninguna —</option>${rutas.map(r=>`<option value="${esc(r)}" ${map[k]===r?'selected':''}>${esc(r)}</option>`).join('')}</select></label>`).join('')}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">Fotos: ${esc((map.fotos||[]).join(', ')||'no encontramos fotos')}</div></details>`:'';
+  return `<div style="margin-top:12px;font-size:.8rem"><strong>Encontramos ${esc(p.total)} inmueble(s)</strong> (${esc(p.formato)}). Así quedarían los primeros:</div>
+    <div style="overflow-x:auto"><table class="int-tbl" style="width:100%;border-collapse:collapse;font-size:11px;margin-top:6px"><thead><tr style="text-align:left;color:var(--muted)"><th>Dirección</th><th>Distrito</th><th>Tipo</th><th>Operación</th><th>Precio</th><th>Área</th><th>Fotos</th><th>Estado</th></tr></thead><tbody>${filas}</tbody></table></div>
+    ${mapeo}`;
+}
+function _intSetMap(k,v){
+  if(!_intState.mapping) return;
+  if(v) _intState.mapping[k]=v; else delete _intState.mapping[k];
+}
+async function _intPreview(btn){
+  if(!_pubImportReady('conectar tu inventario')) return;
+  const d=_intInput();
+  btn.disabled=true; const t=btn.textContent; btn.textContent='Leyendo…';
+  try{
+    _intState.preview=await _intCall('importSources',{ action:'preview', ...d });
+    _intState.mapping=_intState.preview.mapping?{ ..._intState.preview.mapping }:null;
+    const box=document.getElementById('intPreview'); if(box) box.innerHTML=_intPreviewHTML();
+  }catch(e){ _intErr(e,'No pudimos leer el inventario.'); }
+  finally{ btn.disabled=false; btn.textContent=t; }
+}
+async function _intCreate(btn){
+  if(!_pubImportReady('conectar tu inventario')) return;
+  const auth_=document.getElementById('intAuth');
+  if(!auth_||!auth_.checked){ toast('⚠️ Confirma que eres el dueño del inventario o tienes autorización.'); return; }
+  const d=_intInput();
+  if(_intState.mapping && (d.kind==='feed'||d.kind==='sheet')) d.mapping=_intState.mapping;
+  btn.disabled=true; const t=btn.textContent; btn.textContent='Conectando…';
+  try{
+    const { id }=await _intCall('importSources',{ action:'create', ...d });
+    btn.textContent='Sincronizando…';
+    const { result }=await _intCall('importSources',{ action:'sync', id });
+    toast('✅ Conectado: '+_intResultText(result));
+    _intState={ kind:d.kind, preview:null, mapping:null, open:false };
+    _intNewRender();
+    _intLoadSources();
+  }catch(e){ _intErr(e,'No se pudo conectar.'); _intLoadSources(); }
+  finally{ btn.disabled=false; btn.textContent=t; }
+}
+async function _intSync(id,btn){
+  btn.disabled=true; const t=btn.textContent; btn.textContent='Sincronizando…';
+  try{
+    const { result }=await _intCall('importSources',{ action:'sync', id });
+    toast('✅ '+_intResultText(result));
+  }catch(e){ _intErr(e,'No se pudo sincronizar.'); }
+  finally{ btn.disabled=false; btn.textContent=t; _intLoadSources(); }
+}
+async function _intUpdate(id,data){
+  try{ await _intCall('importSources',{ action:'update', id, ...data }); toast('✅ Guardado'); }
+  catch(e){ _intErr(e,'No se pudo guardar.'); }
+  _intLoadSources();
+}
+async function _intDelete(id){
+  if(!confirm('¿Eliminar esta conexión? ReCo dejará de sincronizarla.')) return;
+  const retirar=confirm('¿También retiramos de ReCo las publicaciones que vinieron de esta conexión?\n\nAceptar: retirarlas · Cancelar: dejarlas publicadas');
+  try{
+    const r=await _intCall('importSources',{ action:'delete', id, retirar });
+    toast('✅ Conexión eliminada'+(r.retiradas?` · ${r.retiradas} publicación(es) retirada(s)`:''));
+  }catch(e){ _intErr(e,'No se pudo eliminar.'); }
+  _intLoadSources();
+}
+
+// ── Correo para publicar ──
+function _intCopy(text){
+  try{ navigator.clipboard.writeText(text).then(()=>toast('📋 Copiado'),()=>toast(text)); }catch(_){ toast(text); }
+}
+async function _intLoadEmail(action){
+  const box=document.getElementById('intEmail');
+  if(!box) return;
+  const head='<div style="font-weight:700;margin-bottom:4px">✉️ Correo para publicar</div>';
+  try{
+    const d=await _intCall('emailIngest',action?{ action }:{});
+    if(!d.disponible){ box.innerHTML=head+'<p style="font-size:.82rem;color:var(--muted)">Muy pronto podrás reenviar fichas por correo para publicarlas.</p>'; return; }
+    box.innerHTML=head+`<div style="font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:8px">Reenvía a esta dirección cualquier correo con la ficha de un inmueble (texto, fotos adjuntas o PDF). Te respondemos con lo encontrado y lo revisas en tus borradores.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><code id="intEmailAddr" style="background:var(--light);padding:6px 10px;border-radius:8px;font-size:.82rem;word-break:break-all">${esc(d.address)}</code>
+      <button class="pub-btn primary" style="font-size:11px;padding:6px 12px" onclick="_intCopy(document.getElementById('intEmailAddr').textContent)">Copiar</button>
+      <button class="pub-btn ghost" style="font-size:11px;padding:6px 12px" onclick="if(confirm('¿Cambiar la dirección? La anterior dejará de funcionar.'))_intLoadEmail('rotate')">Cambiar dirección</button></div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:6px">Es personal: quien la tenga puede enviarte borradores. Si la compartiste por error, cámbiala.</div>`;
+  }catch(e){
+    if(action){ _intErr(e,'No se pudo cambiar.'); return; }
+    box.innerHTML=head+`<p style="color:var(--red);font-size:.82rem">${esc((e&&e.message)||'No disponible.')}</p>`;
+  }
+}
+
+// ── API ──
+let _intNewKey='';
+async function _intLoadApi(action,extra){
+  const box=document.getElementById('intApi');
+  if(!box) return;
+  const head='<div style="font-weight:700;margin-bottom:4px">🧩 API para desarrolladores</div>';
+  try{
+    const d=await _intCall('apiAccess',{ action:action||'get', ...(extra||{}) });
+    if(d.key) _intNewKey=d.key;
+    const keys=(d.keys||[]).map(k=>`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin-top:6px;font-size:.78rem">
+      <span><code>${esc(k.prefix)}…</code> ${esc(k.nombre||'')} <span style="color:var(--muted)">${k.lastUsedAt?'· usada '+esc(_intWhen(k.lastUsedAt)):'· sin usar'}</span></span>
+      <button class="pub-btn ghost" style="font-size:11px;padding:4px 10px;color:var(--red)" onclick="if(confirm('¿Revocar esta clave? Las integraciones que la usen dejarán de funcionar.'))_intLoadApi('revokeKey',{prefix:'${esc(k.prefix)}'})">Revocar</button></div>`).join('');
+    const nueva=_intNewKey?`<div style="background:#ecfdf5;border:1px solid #6ee7b7;border-radius:8px;padding:8px 10px;margin-top:8px;font-size:.78rem">🔑 Tu nueva clave (cópiala ahora, no la volveremos a mostrar):<br><code id="intKeyVal" style="word-break:break-all">${esc(_intNewKey)}</code> <button class="pub-btn primary" style="font-size:11px;padding:4px 10px" onclick="_intCopy(document.getElementById('intKeyVal').textContent)">Copiar</button></div>`:'';
+    const wh=d.webhook;
+    const lw=wh&&wh.lastWebhook;
+    box.innerHTML=head+`<div style="font-size:.8rem;color:var(--muted);line-height:1.5">Para que tu CRM o tu web publiquen en ReCo: <code>POST/PATCH/DELETE /v1/properties</code> en <code style="word-break:break-all">${esc(_API_BASE)}</code>. <a href="docs/API.md" target="_blank" rel="noopener">Ver documentación</a>.</div>
+      ${keys||'<p style="font-size:.78rem;color:var(--muted);margin-top:6px">Aún no tienes claves.</p>'}${nueva}
+      <button class="pub-btn primary" style="font-size:11px;padding:6px 12px;margin-top:8px" onclick="const n=prompt('Nombre de la clave (p. ej. Mi CRM)','');if(n!==null)_intLoadApi('createKey',{nombre:n})">+ Crear clave</button>
+      <div style="font-weight:600;font-size:.8rem;margin-top:14px">Webhook</div>
+      <div style="font-size:.75rem;color:var(--muted)">Te avisamos cuando una publicación se aprueba, se rechaza o se retira, y cuando llega un contacto. Eventos: ${esc((d.eventos||[]).join(', '))}.</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><input id="intWh" type="url" value="${esc(wh?wh.url:'')}" placeholder="https://micrm.com/webhooks/reco" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:7px;font-size:12px">
+      <button class="pub-btn primary" style="font-size:11px;padding:6px 12px" onclick="_intLoadApi('setWebhook',{url:document.getElementById('intWh').value})">Guardar</button>
+      ${wh?`<button class="pub-btn ghost" style="font-size:11px;padding:6px 12px" onclick="_intLoadApi('testWebhook')">Probar</button>`:''}</div>
+      ${wh?`<div style="font-size:.75rem;margin-top:6px">Secreto para verificar la firma (<code>X-Reco-Signature</code>): <code id="intWhSecret" style="word-break:break-all">${esc(wh.secret)}</code> <a href="#" onclick="event.preventDefault();_intCopy(document.getElementById('intWhSecret').textContent)">Copiar</a> · <a href="#" onclick="event.preventDefault();if(confirm('¿Generar un secreto nuevo?'))_intLoadApi('rotateSecret')">Cambiar</a></div>`:''}
+      ${lw?`<div style="font-size:.72rem;margin-top:4px;color:${lw.ok?'#065f46':'var(--red)'}">Último envío: ${esc(lw.type)} → ${lw.ok?'✓ '+esc(lw.status):'⚠️ '+esc(lw.error||('HTTP '+lw.status))}</div>`:''}`;
+    if(d.entrega) toast(d.entrega.ok?'✅ Webhook recibido':'⚠️ El webhook no respondió 2xx');
+  }catch(e){
+    if(action){ _intErr(e,'No se pudo guardar.'); return; }
+    box.innerHTML=head+`<p style="color:var(--red);font-size:.82rem">${esc((e&&e.message)||'No disponible.')}</p>`;
+  }
+}
+
 // ── PUBLICACIONES ──
+// Origen que la moderación ve en cada publicación automática.
+const _PUB_SOURCE_CHIP={ feed:'🔄 Conexión automática', api:'🧩 API', email:'✉️ Correo' };
 function _pubStatusBadge(status){
   if(status==='approved') return '<span style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✓ Publicado</span>';
   if(status==='rejected') return '<span style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">✕ Rechazado</span>';
+  if(status==='withdrawn') return '<span style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏸ Retirada</span>';
   return '<span style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:2px 8px;border-radius:99px;font-size:.7rem;font-weight:700">⏳ En revisión</span>';
 }
 function _pubStatusDetail(pub){
+  // Conexión automática o API: de dónde viene y si la última lectura falló.
+  const origen=pub.syncSourceId
+    ? '<div class="us-pub-hint">🔄 Se actualiza sola desde '+esc(pub.syncSourceName||'tu conexión')+' (Mi cuenta → Integraciones).'
+      +(pub.syncError?' <span style="color:var(--red)">Último cambio no aplicado: '+esc(pub.syncError)+'</span>':'')+'</div>'
+    : pub.source==='api' ? '<div class="us-pub-hint">🧩 Publicada con la API.</div>' : '';
+  return _pubStatusDetailBase(pub).replace(/<\/div>$/, origen+'</div>');
+}
+function _pubStatusDetailBase(pub){
+  if(pub.status==='withdrawn'){
+    return '<div class="us-pub-status-detail pending">'
+      + '⏸ No se muestra en la búsqueda. '+esc(pub.withdrawnReason||'')
+      + (pub.withdrawnBy==='sync'?'<div class="us-pub-hint">Si vuelve a aparecer en tu inventario, la restauramos sola.</div>':'')
+      + '</div>';
+  }
   if(pub.status==='approved'){
     var when = pub.moderatedAt ? _timeAgo(pub.moderatedAt) : '';
     return '<div class="us-pub-status-detail approved">'
@@ -11296,7 +11562,7 @@ async function removeMyPub(id) {
 // handle hash on load / popstate for user sections
 function _checkUserHash() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin','integraciones'].indexOf(h) >= 0) {
     if (!auth.currentUser) return;
     document.body.classList.remove('show-home');
     document.body.classList.add('show-user');
@@ -11305,7 +11571,7 @@ function _checkUserHash() {
 }
 window.addEventListener('popstate', function() {
   var h = window.location.hash.replace('#','');
-  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin'].indexOf(h) >= 0) {
+  if (['perfil','favoritos','llaves','publicaciones','solicitudes','bandeja','admin','integraciones'].indexOf(h) >= 0) {
     _checkUserHash();
   } else if (document.body.classList.contains('show-user')) {
     document.body.classList.remove('show-user');
@@ -12019,6 +12285,7 @@ auth.onAuthStateChanged(function(user) {
               <a href="#llaves" onclick="navigateUserSection('llaves')">🔑 Mis llaves</a>
               <a href="#publicaciones" onclick="navigateUserSection('publicaciones')">📋 Mis publicaciones</a>
               <a href="#solicitudes" onclick="navigateUserSection('solicitudes')">📨 Solicitudes de contacto<span class="menu-notif-badge menu-solicitudes-badge" style="display:none"></span></a>
+              <a href="#integraciones" onclick="navigateUserSection('integraciones')">🔌 Integraciones</a>
               ${S.isCorredor?'<a href="#bandeja" onclick="navigateUserSection(\'bandeja\')">📨 Bandeja<span class="menu-notif-badge menu-bandeja-badge" style="display:none"></span></a>':''}
               ${_isAdmin()?'<a href="#admin" onclick="navigateUserSection(\'admin\')">🛡️ Moderación</a>':''}
               <hr/>

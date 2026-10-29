@@ -158,6 +158,18 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | 3.4 | **Conectores directos a CRMs locales** | Priorizar los que tengan API abierta (EasyBroker, Wasi). Tokko Broker pertenece a Navent (dueño de Urbania/Adondevivir): no depender de él; cubrirlo con 1.4/2.3 y 3.1. |
 | 3.5 | **Email de ingesta** | `publica+<id>@…`: reenviar un correo con ficha/fotos crea un borrador. |
 
+#### Estado de la Fase 3: implementada (correo y CRMs esperan configuración / prueba con cuentas reales)
+
+Todo en **Mi cuenta → 🔌 Integraciones**. Puesta en marcha: `docs/INTEGRACIONES.md`; API: `docs/API.md`.
+
+| # | Dónde quedó |
+|---|---|
+| 3.1 | `importSources` (callable: probar, conectar, sincronizar ahora, pausar, frecuencia 6/12/24 h, eliminar con o sin retirar) + `syncImportSources` (cada hora). `functions/feed-core.js` lee XML (Kyero y genéricos, sin dependencias), JSON y CSV; encuentra la lista de inmuebles y reconoce las columnas por sinónimos (español, inglés, RESO, Kyero) y, si faltan obligatorias, con IA una sola vez al conectar (el usuario puede corregir el mapeo). Nuevo → borrador (o publicación pendiente de moderación en modo "publicar", solo si pasa la verificación previa). Cambios → solo los campos que cambiaron en el feed (se respetan las correcciones del dueño); título, descripción, dirección, tipo, operación, moneda, fotos o precio ±50 % vuelven a moderación. Lo que desaparece → `status: 'withdrawn'` (retirada) y se restaura si vuelve. Protección: feed vacío o con menos de la mitad → no retira nada. 5 errores seguidos → se pausa y se avisa por correo. |
+| 3.2 | Google Sheets como conexión: el enlace se convierte en descarga CSV (compartida por enlace o publicada en la web); fila de títulos detectada como en el Excel libre. Si la hoja no es pública, lo dice. |
+| 3.3 | Función HTTP `api` (`/v1/properties` GET/POST/PATCH/DELETE, upsert por `external_id`, campos en inglés, RESO o de la plantilla, misma verificación, 120 pedidos/min por clave) + `apiAccess` (claves con hash, webhook y secreto) + `apiWebhookPublication` / `apiWebhookLead` (eventos firmados HMAC-SHA256). |
+| 3.4 | Conectores EasyBroker (lista + detalle solo si cambió `updated_at`) y Wasi (búsqueda paginada) como tipos de conexión. **Probados con respuestas de ejemplo; falta probarlos con cuentas reales.** Tokko sigue cubierto por 1.4/2.3 y 3.1. |
+| 3.5 | `emailIngest` (dirección personal `buzón+código@…`, se puede cambiar), `emailInbound` (Postmark Inbound, autenticación básica; adjuntos a Storage) y `emailProcess` (mismo pipeline de extracción, PDF adjuntos a la IA, fotos al borrador, respuesta por correo). **Configuración pendiente:** Postmark (`docs/INTEGRACIONES.md`). |
+
 ---
 
 ## 5. Matriz de priorización

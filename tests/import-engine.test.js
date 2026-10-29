@@ -91,9 +91,11 @@ function loadHandlers() {
   };
   // firebase-admin/storage se pide dentro de las funciones (no al cargar), así que
   // su resolución queda interceptada siempre (en CI no existe functions/node_modules).
+  global.__recoMockBucket = mockBucket;
   if (!require.cache[STORAGE_MOCK_KEY]) {
     const sm = new Module(STORAGE_MOCK_KEY); sm.loaded = true;
-    sm.exports = { getStorage: () => ({ bucket: () => mockBucket }) };
+    // Mismo módulo que tests/helpers/mock-functions.js: el bucket de la última carga.
+    sm.exports = { getStorage: () => ({ bucket: () => global.__recoMockBucket }) };
     require.cache[STORAGE_MOCK_KEY] = sm;
     const prevResolve = Module._resolveFilename;
     Module._resolveFilename = function (request, ...rest) {
