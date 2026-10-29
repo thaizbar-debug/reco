@@ -7301,36 +7301,36 @@ function _pubBulkUploadHTML(){
   return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
     <div id="pubPendingPage">${_pubPendingPageHTML()}</div>
     <div id="pubSharedBox">${_pubSharedHTML()}</div>
-    <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint, el chat de WhatsApp exportado o fotos de flyers y capturas de pantalla. También puedes pegar texto o traer un aviso desde su enlace. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
+    <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Pega el enlace de tu post de Facebook, Instagram o TikTok, de tu web o de tu aviso en un portal; o sube Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint, el chat de WhatsApp exportado, el video de un reel o capturas de pantalla. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFiles(event.dataTransfer.files)">
       <div class="dz-icon">📁</div>
       <div class="dz-lbl">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) · chat de WhatsApp (.zip o .txt) · flyers o capturas (JPG/PNG, varias a la vez)</div>
+      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) · chat de WhatsApp (.zip o .txt) · flyers o capturas (JPG/PNG, varias a la vez) · video de un reel o TikTok (MP4/MOV)</div>
     </label>
-    <input type="file" id="pubBulkInput" multiple accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx,.zip,.txt,image/*" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFiles(this.files)">
+    <input type="file" id="pubBulkInput" multiple accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx,.zip,.txt,image/*,video/*,.mp4,.mov" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFiles(this.files)">
     <details style="margin-top:8px;font-size:12px;color:var(--muted)"><summary style="cursor:pointer">💬 ¿Cómo exporto un chat de WhatsApp?</summary>
       <div style="margin-top:6px;line-height:1.6">Abre el chat o grupo donde compartes tus inmuebles → <strong>⋮ Más → Exportar chat</strong> (en iPhone: nombre del chat → <strong>Exportar chat</strong>) → <strong>Incluir archivos</strong>, y súbelo aquí. Las fotos se asignan solas a cada inmueble. Los nombres de quienes escriben no se envían a la IA.</div></details>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px">
+      <div style="${box};border:2px solid var(--blue)">
+        <div style="font-size:13px;font-weight:700">🔗 Desde un enlace <span style="font-size:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 7px;margin-left:4px">Lo más rápido</span></div>
+        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">El enlace de tu post en <strong>Facebook, Instagram o TikTok</strong>, de la página del proyecto en tu web o de tu aviso en Urbania, Adondevivir, Properati, Babilonia y otros portales. Leemos el texto, las fotos y lo que se dice en el video.</div>
+        <input id="pubUrlInput" type="url" placeholder="https://www.facebook.com/… · instagram.com/p/… · tuweb.com/proyecto" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
+        <label style="display:flex;gap:6px;align-items:flex-start;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante de este aviso o tengo autorización para publicarlo en ReCo.</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar aviso</button>
+          <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubProfileList()" title="Pega el enlace de tu perfil en un portal o de la página de proyectos de tu web">Importar todos los de mi perfil o web</button>
+        </div>
+        <details id="pubMarcador" style="margin-top:10px;font-size:11px;color:var(--muted)"><summary style="cursor:pointer">📌 ¿Otro portal o no carga? Usa "Enviar a ReCo"</summary>
+          <div style="margin-top:6px;line-height:1.6">Arrastra este botón a tu barra de favoritos (en computadora): <a href="${_pubBookmarkletCode()}" onclick="event.preventDefault();toast('Arrástralo a tu barra de favoritos y úsalo en la página de tu aviso.')" style="display:inline-block;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;text-decoration:none">📌 Enviar a ReCo</a><br>Luego abre tu aviso en cualquier portal y haz clic en el favorito: ReCo se abre con el aviso listo para importar. Desde el celular, copia el texto del aviso y usa "Pegar texto".</div></details>
+      </div>
       <div style="${box}">
         <div style="font-size:13px;font-weight:700">✍️ Pegar texto</div>
         <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Notas del celular, mensajes de WhatsApp o el texto de un aviso. Uno o muchos inmuebles.</div>
         <textarea id="pubPasteText" rows="6" placeholder="Ej: Vendo dpto. en Surco, 3 dorm, 2 baños, 90 m2, US$ 185 mil. Alquilo casa en La Molina 250 m2, S/ 6,500…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12px;resize:vertical"></textarea>
         <button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:8px" onclick="_pubTextImport()">Buscar inmuebles con IA</button>
-      </div>
-      <div style="${box}">
-        <div style="font-size:13px;font-weight:700">🔗 Desde un enlace</div>
-        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">El enlace de tu aviso en Urbania, Adondevivir, Properati, Babilonia, Nexo, Mercado Libre, InfoCasas o RE/MAX.</div>
-        <input id="pubUrlInput" type="url" placeholder="https://urbania.pe/inmueble/…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
-        <label style="display:flex;gap:6px;align-items:flex-start;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante de este aviso o tengo autorización para publicarlo en ReCo.</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar aviso</button>
-          <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubProfileList()" title="Pega el enlace de tu perfil de inmobiliaria o corredor en el portal">Importar todos los de mi perfil</button>
-        </div>
-        <details id="pubMarcador" style="margin-top:10px;font-size:11px;color:var(--muted)"><summary style="cursor:pointer">📌 ¿Otro portal o no carga? Usa "Enviar a ReCo"</summary>
-          <div style="margin-top:6px;line-height:1.6">Arrastra este botón a tu barra de favoritos (en computadora): <a href="${_pubBookmarkletCode()}" onclick="event.preventDefault();toast('Arrástralo a tu barra de favoritos y úsalo en la página de tu aviso.')" style="display:inline-block;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;text-decoration:none">📌 Enviar a ReCo</a><br>Luego abre tu aviso en cualquier portal y haz clic en el favorito: ReCo se abre con el aviso listo para importar. Desde el celular, copia el texto del aviso y usa "Pegar texto".</div></details>
       </div>
       <div style="${box}">
         <div style="font-size:13px;font-weight:700">🔄 Que se actualice solo</div>
@@ -7800,8 +7800,15 @@ function _pubDownloadTemplateCSV(){
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='reco_plantilla.csv';a.click();
 }
 // Varias imágenes juntas = flyers o capturas; cualquier otro archivo, uno.
+function _pubIsVideoFile(f){ return !!f && (/^video\//.test(f.type||'') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(f.name||'')); }
 function _pubBulkFiles(list){
   const files=Array.from(list||[]);
+  if(files.length && _pubIsVideoFile(files[0])){
+    const _bi=document.getElementById('pubBulkInput');
+    if(_bi){ try{ _bi.value=''; }catch(_){} }
+    _pubVideoImport(files[0]);
+    return;
+  }
   if(files.length && files.every(_isImageFile)){
     const _bi=document.getElementById('pubBulkInput');
     if(_bi){ try{ _bi.value=''; }catch(_){} }
@@ -8283,7 +8290,7 @@ let _pubDraftGroups = [];
 let _pubOwnFingerprints = null;
 const _PUB_DRAFT_TTL_DAYS = 30;
 const _pubDraftTimers = {};
-const _PUB_IMPORT_SOURCE_LABELS = { excel:'Excel', csv:'CSV', text:'Texto pegado', whatsapp:'WhatsApp', documento:'Documento', url:'Enlace', pdf:'PDF', feed:'Feed' };
+const _PUB_IMPORT_SOURCE_LABELS = { excel:'Excel', csv:'CSV', text:'Texto pegado', whatsapp:'WhatsApp', documento:'Documento', url:'Enlace', pdf:'PDF', feed:'Feed', email:'Correo', redes:'Redes sociales', video:'Video' };
 
 async function _pubDraftsSave(){
   if(!auth.currentUser || typeof RecoImport==='undefined') return;
@@ -8483,11 +8490,42 @@ function _pubDocSectionText(label,text,ids){
 }
 
 // ── PDF (pdf.js) ──
+// Imagen casi de un solo color (fondo de página, recuadro): no es una foto.
+function _pubFlatImage(src,w,h){
+  try{
+    const cv=document.createElement('canvas'); cv.width=24; cv.height=24;
+    const cx=cv.getContext('2d'); cx.drawImage(src,0,0,w,h,0,0,24,24);
+    const d=cx.getImageData(0,0,24,24).data;
+    let sum=0, sq=0; const n=d.length/4;
+    for(let i=0;i<d.length;i+=4){ const v=(d[i]+d[i+1]+d[i+2])/3; sum+=v; sq+=v*v; }
+    const mean=sum/n;
+    return Math.sqrt(Math.max(0,sq/n-mean*mean))<6;
+  }catch(_){ return false; }
+}
+// Imagen con pinta de hoja escaneada (fondo casi blanco, poco color): no es
+// una foto del inmueble.
+function _pubDocLikeImage(src,w,h){
+  try{
+    const cv=document.createElement('canvas'); cv.width=48; cv.height=48;
+    const cx=cv.getContext('2d'); cx.drawImage(src,0,0,w,h,0,0,48,48);
+    const d=cx.getImageData(0,0,48,48).data;
+    let claro=0, sat=0; const n=d.length/4;
+    for(let i=0;i<d.length;i+=4){
+      const mx=Math.max(d[i],d[i+1],d[i+2]), mn=Math.min(d[i],d[i+1],d[i+2]);
+      if(mn>200) claro++;
+      sat+=mx?(mx-mn)/mx:0;
+    }
+    return claro/n>0.6 && sat/n<0.12;
+  }catch(_){ return false; }
+}
+// Imagen incrustada en una página → { dataUrl, w, h, hoja } (null si es chica o lisa).
 async function _pubPdfImage(page,name){
   const store=String(name).indexOf('g_')===0?page.commonObjs:page.objs;
   const obj=await new Promise(res=>{ try{ store.get(name,res); }catch(_){ res(null); } });
   if(!obj || obj.width<_PUB_DOC_MIN_PHOTO_PX || obj.height<_PUB_DOC_MIN_PHOTO_PX) return null;
-  if(obj.bitmap) return _pubCanvasJpeg(obj.bitmap,obj.width,obj.height);
+  const out=(src)=>_pubFlatImage(src,obj.width,obj.height)?null:{ dataUrl:_pubCanvasJpeg(src,obj.width,obj.height), w:obj.width, h:obj.height,
+    hoja:_pubDocLikeImage(src,obj.width,obj.height) };
+  if(obj.bitmap) return out(obj.bitmap);
   if(!obj.data) return null;
   // ImageKind de pdf.js: 1 = 1 bit gris, 2 = RGB, 3 = RGBA.
   const cv=document.createElement('canvas'); cv.width=obj.width; cv.height=obj.height;
@@ -8497,7 +8535,19 @@ async function _pubPdfImage(page,name){
   else if(obj.kind===2){ for(let i=0,j=0;i<n;i++,j+=3){ dst[i*4]=src[j]; dst[i*4+1]=src[j+1]; dst[i*4+2]=src[j+2]; dst[i*4+3]=255; } }
   else { const rowBytes=(obj.width+7)>>3; for(let y=0;y<obj.height;y++) for(let x=0;x<obj.width;x++){ const v=(src[y*rowBytes+(x>>3)]>>(7-(x&7)))&1?255:0; const k=(y*obj.width+x)*4; dst[k]=dst[k+1]=dst[k+2]=v; dst[k+3]=255; } }
   cx.putImageData(id,0,0);
-  return _pubCanvasJpeg(cv,obj.width,obj.height);
+  return out(cv);
+}
+// Página de planos (dibujo vectorial, sin fotos): se guarda la página entera
+// como foto para que el plano llegue al aviso.
+const _PUB_PLANO_RE=/(á|a)rea\s+(techada|construida|libre|total|ocupada)|\bplanos?\b|dormitorio\s+principal|walk.?in|tipolog(í|i)a/i;
+async function _pubPdfPageJpeg(page,maxPx,quality){
+  const vp=page.getViewport({ scale:1 });
+  const scale=Math.min(2,maxPx/Math.max(vp.width,vp.height));
+  const v2=page.getViewport({ scale });
+  const cv=document.createElement('canvas'); cv.width=Math.round(v2.width); cv.height=Math.round(v2.height);
+  const cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height);
+  await page.render({ canvasContext:cx, viewport:v2 }).promise;
+  return cv.toDataURL('image/jpeg',quality);
 }
 async function _pubDocReadPdf(buf,progress){
   const pdfjs=await _pubLoadScript(_PUB_PDFJS_URL,'pdfjsLib');
@@ -8512,28 +8562,37 @@ async function _pubDocReadPdf(buf,progress){
     const page=await pdf.getPage(p);
     const tc=await page.getTextContent();
     const text=tc.items.map(it=>(it.str||'')+(it.hasEOL?'\n':' ')).join('');
-    if(text.replace(/\s/g,'').length<_PUB_DOC_SCAN_MIN_CHARS){
-      // Página escaneada: la imagen de la página entera va a la IA.
-      const vp=page.getViewport({ scale:1 });
-      const scale=Math.min(2,1600/Math.max(vp.width,vp.height));
-      const v2=page.getViewport({ scale });
-      const cv=document.createElement('canvas'); cv.width=Math.round(v2.width); cv.height=Math.round(v2.height);
-      await page.render({ canvasContext:cv.getContext('2d'), viewport:v2 }).promise;
-      doc.scans.push({ page:String(p), dataUrl:cv.toDataURL('image/jpeg',0.8) });
-      doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p} (escaneada, ver imagen)`,text,[]), photoIds:[], scan:true });
-      continue;
-    }
+    // Fotos incrustadas (también en páginas sin texto: renders de fachada,
+    // galerías). Se descartan logos, íconos y fondos lisos.
     const ops=await page.getOperatorList();
-    const ids=[], names=new Set();
+    const imgs=[], names=new Set();
     for(let i=0;i<ops.fnArray.length;i++){
       if(!IMG_OPS.includes(ops.fnArray[i])) continue;
       const name=ops.argsArray[i][0];
       if(names.has(name)) continue;
       names.add(name);
-      const id=doc.addPhoto('p'+p,await _pubPdfImage(page,name));
-      if(id) ids.push(id);
+      const im=await _pubPdfImage(page,name);
+      if(im) imgs.push(im);
     }
-    doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p}`,text,ids), photoIds:ids });
+    const vp=page.getViewport({ scale:1 });
+    if(text.replace(/\s/g,'').length<_PUB_DOC_SCAN_MIN_CHARS){
+      // Sin texto: la página entera va a la IA (la lee con visión). Sus fotos
+      // también quedan como fotos, salvo la hoja escaneada misma (una imagen
+      // con la forma de la página, o con pinta de documento).
+      const escaneo=imgs.length===1 && Math.abs(imgs[0].w/imgs[0].h-vp.width/vp.height)<0.06;
+      const ids=escaneo?[]:imgs.filter(im=>!im.hoja).map(im=>doc.addPhoto('p'+p,im.dataUrl)).filter(Boolean);
+      doc.scans.push({ page:String(p), dataUrl:await _pubPdfPageJpeg(page,1600,0.8) });
+      doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p} (escaneada, ver imagen)`,text,ids), photoIds:ids, scan:true });
+      continue;
+    }
+    const ids=imgs.map(im=>doc.addPhoto('p'+p,im.dataUrl)).filter(Boolean);
+    let plano='';
+    if(!imgs.length && _PUB_PLANO_RE.test(text)){
+      plano=doc.addPhoto('p'+p,await _pubPdfPageJpeg(page,1400,0.85))||'';
+      if(plano) ids.push(plano);
+    }
+    doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p}`,text,ids)
+      .replace(`[FOTO ${plano}]`,`[FOTO ${plano}] (plano)`), photoIds:ids });
   }
   return doc;
 }
@@ -8690,6 +8749,95 @@ async function _pubDocImport(file){
         note:doc.truncated?` · solo se leyeron las primeras ${_PUB_DOC_MAX_PAGES} páginas`:'',
         empty:'No encontramos inmuebles en el documento. Revisa que tenga precio, ubicación o áreas.' }, doc.photos);
   }catch(e){ _pubImportFail(e,'No se pudo leer el documento.'); }
+}
+// ── Video de un reel o TikTok (descargado del celular) ──
+// Se toman hasta 6 cuadros (van a la IA como imágenes y quedan como fotos) y
+// el audio (mono, 16 kHz, máx. 150 s) se transcribe en el servidor: lo que
+// dice el corredor (precio, áreas…) cuenta como fuente.
+const _PUB_VIDEO_MAX_FRAMES=6;
+const _PUB_VIDEO_AUDIO_MAX_S=150;
+const _PUB_VIDEO_MAX_MB=400;
+function _pubVideoEl(url){
+  return new Promise((ok,fail)=>{
+    const v=document.createElement('video');
+    v.muted=true; v.playsInline=true; v.preload='auto'; v.src=url;
+    const t=setTimeout(()=>fail(new Error('timeout')),20000);
+    v.onloadedmetadata=()=>{ clearTimeout(t); ok(v); };
+    v.onerror=()=>{ clearTimeout(t); fail(new Error('video')); };
+  });
+}
+function _pubVideoSeek(v,time){
+  return new Promise(ok=>{
+    const t=setTimeout(ok,5000);
+    v.onseeked=()=>{ clearTimeout(t); ok(); };
+    v.currentTime=time;
+  });
+}
+async function _pubVideoFrames(v){
+  const dur=isFinite(v.duration)&&v.duration>0?v.duration:10;
+  const n=Math.max(2,Math.min(_PUB_VIDEO_MAX_FRAMES,Math.round(dur/8)));
+  const out=[];
+  for(let i=0;i<n;i++){
+    await _pubVideoSeek(v,Math.min(dur-0.1,(dur*(i+0.5))/n));
+    const w=v.videoWidth, h=v.videoHeight;
+    if(!w||!h) continue;
+    const k=Math.min(1,1280/Math.max(w,h));
+    const cv=document.createElement('canvas'); cv.width=Math.round(w*k); cv.height=Math.round(h*k);
+    cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+    if(!_pubFlatImage(cv,cv.width,cv.height)) out.push(cv.toDataURL('image/jpeg',0.8));
+  }
+  return out;
+}
+// Audio → WAV PCM 16 bits, mono, 16 kHz (lo que mejor recibe Whisper).
+async function _pubVideoAudioWav(file){
+  const Ctx=window.AudioContext||window.webkitAudioContext;
+  if(!Ctx || typeof OfflineAudioContext==='undefined') return null;
+  const ac=new Ctx();
+  try{
+    const buf=await ac.decodeAudioData(await file.arrayBuffer());
+    const secs=Math.min(buf.duration,_PUB_VIDEO_AUDIO_MAX_S);
+    if(secs<1) return null;
+    const rate=16000;
+    const off=new OfflineAudioContext(1,Math.ceil(secs*rate),rate);
+    const src=off.createBufferSource(); src.buffer=buf; src.connect(off.destination); src.start(0);
+    const pcm=(await off.startRendering()).getChannelData(0);
+    let peak=0; for(let i=0;i<pcm.length;i+=97) peak=Math.max(peak,Math.abs(pcm[i]));
+    if(peak<0.01) return null; // video sin sonido
+    const out=new DataView(new ArrayBuffer(44+pcm.length*2));
+    const str=(o,t)=>{ for(let i=0;i<t.length;i++) out.setUint8(o+i,t.charCodeAt(i)); };
+    str(0,'RIFF'); out.setUint32(4,36+pcm.length*2,true); str(8,'WAVE'); str(12,'fmt ');
+    out.setUint32(16,16,true); out.setUint16(20,1,true); out.setUint16(22,1,true); out.setUint32(24,rate,true);
+    out.setUint32(28,rate*2,true); out.setUint16(32,2,true); out.setUint16(34,16,true); str(36,'data'); out.setUint32(40,pcm.length*2,true);
+    for(let i=0;i<pcm.length;i++){ const x=Math.max(-1,Math.min(1,pcm[i])); out.setInt16(44+i*2,x<0?x*0x8000:x*0x7fff,true); }
+    let bin=''; const u8=new Uint8Array(out.buffer);
+    for(let i=0;i<u8.length;i+=0x8000) bin+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));
+    return 'data:audio/wav;base64,'+btoa(bin);
+  }catch(_){ return null; }
+  finally{ try{ ac.close(); }catch(_){} }
+}
+async function _pubVideoImport(file){
+  if(!_pubImportReady('leer videos')) return;
+  if(file.size>_PUB_VIDEO_MAX_MB*1024*1024){ toast(`⚠️ El video pesa más de ${_PUB_VIDEO_MAX_MB} MB.`); return; }
+  _pubBulkFileName=file.name;
+  const url=URL.createObjectURL(file);
+  try{
+    _pubDocProgress('Tomando imágenes del video…');
+    const v=await _pubVideoEl(url).catch(()=>{ throw new Error('No pudimos abrir el video. Usa MP4 o MOV.'); });
+    const frames=await _pubVideoFrames(v);
+    _pubDocProgress('Escuchando el video…');
+    const audio=await _pubVideoAudioWav(file);
+    if(!frames.length && !audio) throw new Error('No pudimos leer imágenes ni sonido del video.');
+    const photos=frames.map((d,i)=>({ id:`v-${i+1}`, dataUrl:d }));
+    // Una sola parte: las imágenes del video como páginas y el audio.
+    const parts=[{ text:`=== Video: ${file.name} (${frames.length} imágenes del video${audio?'; el audio se transcribe':''}) ===`,
+      photoIds:[], images:frames.map((d,i)=>({ page:String(i+1), dataUrl:d })), ...(audio && { audio:{ dataUrl:audio } }) }];
+    _pubDocProgress('Buscando inmuebles en el video…');
+    await _pubExtractParts(parts,{ kind:'document', fileType:'video', sourceName:file.name.slice(0,120) },
+      { source:'video', sourceName:file.name, icon:'🎬', assignAllIfSingle:true,
+        note:audio?'':' · el video no tiene sonido legible: solo se leyeron sus imágenes',
+        empty:'No encontramos inmuebles en el video. Si el texto está en el post, pega su enlace o el texto.' }, photos);
+  }catch(e){ _pubImportFail(e,'No se pudo leer el video.'); }
+  finally{ URL.revokeObjectURL(url); }
 }
 // ── Flyers o capturas de pantalla (roadmap 2.4) ──
 // Cada imagen va a la IA como página escaneada (máx. 6 por parte). También
@@ -8922,8 +9070,21 @@ async function _pubUrlImport(fromPending){
       _pubDocProgress('⚠️ '+e.message);
       const d=document.getElementById('pubMarcador'); if(d) d.open=true;
       toast('⚠️ '+e.message);
+    } else if(reason==='social-private' || reason==='social-profile'){
+      const el=document.getElementById('pubBulkPreview');
+      if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:#fef3c7;border-radius:8px">${_pubSocialHelpHTML(reason,e.message)}</div>`;
+      toast('⚠️ '+e.message);
     } else _pubImportFail(e,'No se pudo importar el aviso.');
   }
+}
+// Post que una red no deja leer, o enlace de un perfil: qué hacer en su lugar.
+function _pubSocialHelpHTML(reason,msg){
+  return `<div style="font-size:12px;line-height:1.6">${esc(msg)}
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+      ${reason==='social-profile'?`<button class="pub-btn primary" style="font-size:11px;padding:6px 12px" onclick="closePublish();navigateUserSection('integraciones')">Conectar Facebook / Instagram</button>`:''}
+      <label for="pubBulkInput" class="pub-btn ghost" style="font-size:11px;padding:6px 12px;cursor:pointer">📷 Subir captura del post</label>
+      <button class="pub-btn ghost" style="font-size:11px;padding:6px 12px" onclick="const t=document.getElementById('pubPasteText');if(t){t.focus();t.scrollIntoView({block:'center'});}">✍️ Pegar el texto</button>
+    </div></div>`;
 }
 // ── Perfil completo de un portal (roadmap 2.3) ──
 // 1) importListingPage { modo:'perfil' } lista los avisos del perfil (sin IA);
@@ -8945,10 +9106,16 @@ async function _pubProfileList(){
     _pubDocProgress('Buscando los avisos del perfil…');
     const res=await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion:true, modo:'perfil' });
     _pubProfileAvisos=(res.data.avisos||[]).map((a,i)=>({ ...a, sel:i<_PUB_PROFILE_PRESELECT }));
-    if(!_pubProfileAvisos.length){ _pubDocProgress('No encontramos avisos en esa página. Pega el enlace de tu perfil o de la lista de tus avisos en el portal.'); return; }
+    if(!_pubProfileAvisos.length){ _pubDocProgress('No encontramos avisos en esa página. Pega el enlace de tu perfil en el portal o de la página de proyectos de tu web.'); return; }
     _pubProfileRender();
   }catch(e){
     const reason=e && e.details && e.details.reason;
+    if(reason==='social-profile' || reason==='social-private'){
+      const el=document.getElementById('pubBulkPreview');
+      if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:#fef3c7;border-radius:8px">${_pubSocialHelpHTML('social-profile',e.message)}</div>`;
+      toast('⚠️ '+e.message);
+      return;
+    }
     if(reason==='blocked' || reason==='host-not-supported'){ const d=document.getElementById('pubMarcador'); if(d) d.open=true; }
     _pubImportFail(e,'No se pudo leer el perfil.');
   }
@@ -11193,6 +11360,7 @@ async function renderIntegraciones(el){
   if(!auth.currentUser){ closeUserSection(); openAuthModal('login', function(){ navigateUserSection('integraciones'); }); return; }
   el.innerHTML='<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     +'<div class="us-title">🔌 Integraciones</div>'
+    +'<div class="us-card" id="intMeta"><div style="font-weight:700;margin-bottom:4px">📣 Tus posts de Facebook e Instagram</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
     +'<div class="us-card"><div style="font-weight:700;margin-bottom:4px">🔄 Conexiones automáticas</div>'
     +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:12px;line-height:1.5">Conecta el inventario que ya tienes en tu CRM, tu web o una hoja de Google. ReCo lo lee cada pocas horas: trae lo nuevo, actualiza precios y cambios, y retira lo que ya no está. Todo pasa por la misma revisión que una publicación normal.</div>'
     +'<div id="intSources"><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
@@ -11200,10 +11368,122 @@ async function renderIntegraciones(el){
     +'<div class="us-card" id="intEmail"><div style="font-weight:700;margin-bottom:4px">✉️ Correo para publicar</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
     +'<div class="us-card" id="intApi"><div style="font-weight:700;margin-bottom:4px">🧩 API para desarrolladores</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>';
   _intNewRender();
+  _intLoadMeta();
   _intLoadSources();
   _intLoadEmail();
   _intLoadApi();
 }
+
+// ── Facebook e Instagram: traer los posts del corredor ──
+let _intMeta={ cuentas:[], cuenta:null, posts:[], after:null };
+async function _intLoadMeta(action){
+  const box=document.getElementById('intMeta');
+  if(!box) return;
+  const head='<div style="font-weight:700;margin-bottom:4px">📣 Tus posts de Facebook e Instagram</div>';
+  try{
+    const d=await _intCall('metaConnect',action?{ action }:{});
+    if(!d.disponible){
+      box.innerHTML=head+'<p style="font-size:.82rem;color:var(--muted);line-height:1.5">Muy pronto podrás conectar tu página de Facebook o tu Instagram para traer todos tus posts de una vez. Mientras tanto, pega el enlace de cada post en <a href="#" onclick="event.preventDefault();closeUserSection();openPublish();_pubTab=\'bulk\';renderPublish()">Publicar → Subir varios → Desde un enlace</a>.</p>';
+      return;
+    }
+    _intMeta.cuentas=d.cuentas||[];
+    if(!_intMeta.cuentas.length){
+      box.innerHTML=head+`<div style="font-size:.8rem;color:var(--muted);line-height:1.5;margin-bottom:8px">Conecta la página de Facebook de tu inmobiliaria (y el Instagram profesional vinculado): verás tus últimos posts, eliges los de inmuebles y la IA arma las fichas con sus fotos y lo que se dice en los videos. Solo leemos tus posts; nunca publicamos nada en tus redes.</div>
+        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_intMetaConnect(this)">Conectar con Facebook</button>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:6px">¿Perfil personal de Facebook? Meta no permite leerlo: pega el enlace de cada post en "Desde un enlace".</div>`;
+      return;
+    }
+    if(!_intMeta.cuenta || !_intMeta.cuentas.some(c=>c.id===_intMeta.cuenta.id && c.red===_intMeta.cuenta.red)) _intMeta.cuenta=_intMeta.cuentas[0];
+    _intMetaRender();
+  }catch(e){
+    if(action){ _intErr(e,'No se pudo completar.'); return; }
+    box.innerHTML=head+`<p style="color:var(--red);font-size:.82rem">${esc((e&&e.message)||'No disponible.')}</p>`;
+  }
+}
+async function _intMetaConnect(btn){
+  btn.disabled=true;
+  try{ const d=await _intCall('metaConnect',{ action:'authUrl' }); if(d.url) location.href=d.url; }
+  catch(e){ _intErr(e,'No se pudo conectar.'); btn.disabled=false; }
+}
+function _intMetaRender(){
+  const box=document.getElementById('intMeta');
+  if(!box) return;
+  const c=_intMeta.cuenta;
+  const posts=_intMeta.posts;
+  const sel=posts.filter(p=>p.sel).length;
+  box.innerHTML=`<div style="font-weight:700;margin-bottom:4px">📣 Tus posts de Facebook e Instagram</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+      ${_intMeta.cuentas.map((x,i)=>`<button class="pub-btn ${x===c||(x.id===c.id&&x.red===c.red)?'primary':'ghost'}" style="font-size:11px;padding:6px 12px" onclick="_intMeta.cuenta=_intMeta.cuentas[${i}];_intMeta.posts=[];_intMeta.after=null;_intMetaRender()">${x.red==='instagram'?'📸':'📘'} ${esc(x.nombre)}</button>`).join('')}
+      <a href="#" style="font-size:.72rem;color:var(--red);margin-left:auto" onclick="event.preventDefault();if(confirm('¿Desconectar Facebook e Instagram de ReCo?')){_intMeta={cuentas:[],cuenta:null,posts:[],after:null};_intLoadMeta('disconnect');}">Desconectar</a>
+    </div>
+    ${posts.length?`<div style="font-size:.78rem;margin:10px 0 6px">Elige los posts de inmuebles (${sel} elegido${sel!==1?'s':''}):</div>
+      <div id="intMetaPosts" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;max-height:420px;overflow:auto">
+      ${posts.map((p,i)=>`<label style="border:1.5px solid ${p.sel?'var(--blue)':'var(--border)'};border-radius:8px;padding:6px;font-size:11px;cursor:pointer;display:block;position:relative">
+        <input type="checkbox" ${p.sel?'checked':''} onchange="_intMeta.posts[${i}].sel=this.checked;_intMetaRender()" style="position:absolute;top:8px;left:8px">
+        ${p.foto?`<div style="height:90px;border-radius:6px;background:#eee url('${esc(p.foto)}') center/cover"></div>`:'<div style="height:34px;border-radius:6px;background:var(--light);display:flex;align-items:center;justify-content:center">📝</div>'}
+        <div style="margin-top:4px;line-height:1.35;max-height:4.1em;overflow:hidden">${esc(p.texto||'(sin texto)')}</div>
+        <div style="color:var(--muted);margin-top:2px">${p.fotos} foto${p.fotos!==1?'s':''}${p.video?' · 🎬 video':''}${p.importado?' · <strong style="color:#065f46">ya importado</strong>':''}</div>
+      </label>`).join('')}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" ${sel?'':'disabled'} onclick="_intMetaImport(this)">Importar ${sel} post${sel!==1?'s':''}</button>
+        ${_intMeta.after?`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_intMetaPosts(true,this)">Ver más posts</button>`:''}
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Cada post usa una de tus ${_PUB_IMPORT_PER_HOUR} importaciones con IA por hora.</div>`
+    :`<button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:10px" onclick="_intMetaPosts(false,this)">Ver mis posts</button>`}`;
+}
+const _PUB_IMPORT_PER_HOUR=30;
+async function _intMetaPosts(more,btn){
+  const c=_intMeta.cuenta; if(!c) return;
+  if(btn){ btn.disabled=true; btn.textContent='Cargando…'; }
+  try{
+    const d=await _intCall('metaConnect',{ action:'posts', red:c.red, id:c.id, ...(more&&_intMeta.after&&{ after:_intMeta.after }) });
+    // Preselecciona los que tienen texto y aún no se importaron.
+    const nuevos=(d.posts||[]).map(p=>({ ...p, sel:!p.importado && (p.texto||'').length>20 }));
+    _intMeta.posts=more?_intMeta.posts.concat(nuevos):nuevos;
+    _intMeta.after=d.after||null;
+    if(!_intMeta.posts.length) toast('No encontramos posts en esa cuenta.');
+  }catch(e){ _intErr(e,'No se pudieron leer los posts.'); }
+  _intMetaRender();
+}
+async function _intMetaImport(btn){
+  const c=_intMeta.cuenta;
+  const ids=_intMeta.posts.filter(p=>p.sel).map(p=>p.id);
+  if(!c || !ids.length) return;
+  btn.disabled=true;
+  let batchId='', creados=0, hechos=0, limite=false;
+  try{
+    for(let i=0;i<ids.length && !limite;i+=10){
+      btn.textContent=`Leyendo posts ${Math.min(i+10,ids.length)} de ${ids.length}…`;
+      const d=await _intCall('metaConnect',{ action:'import', red:c.red, id:c.id, postIds:ids.slice(i,i+10), ...(batchId&&{ batchId }) });
+      batchId=d.batchId||batchId; creados+=d.creados||0; hechos+=(d.importados||[]).length; limite=!!d.limite;
+      (d.importados||[]).forEach(id=>{ const p=_intMeta.posts.find(x=>x.id===id); if(p){ p.importado=true; p.sel=false; } });
+    }
+  }catch(e){ _intErr(e,'No se pudieron importar los posts.'); }
+  _intMetaRender();
+  if(limite) toast(`⚠️ Llegaste al límite de importaciones por hora. Importamos ${hechos} de ${ids.length}; el resto, en un rato.`);
+  if(creados && batchId){
+    toast(`✅ ${creados} inmueble${creados!==1?'s':''} listo${creados!==1?'s':''} para revisar.`);
+    _pubOpenDraftBatch(batchId);
+  } else if(hechos && !limite) toast('No encontramos inmuebles en esos posts.');
+}
+// Abre la carga masiva con un lote de borradores (p. ej. los posts importados).
+async function _pubOpenDraftBatch(batchId){
+  closeUserSection(); openPublish(); _pubTab='bulk'; _pubBulkStep=1; renderPublish();
+  await _pubDraftsLoad();
+  _pubDraftsResume(batchId);
+}
+// Vuelta de Facebook Login: #integraciones-meta-ok | -error | -cancelado…
+function _intMetaReturn(hash){
+  const m=String(hash||'').match(/^#integraciones-meta-([a-z-]+)$/);
+  if(!m) return;
+  const msg={ ok:'✅ Facebook conectado. Elige tus posts de inmuebles.', 'sin-paginas':'⚠️ Conectado, pero tu cuenta no administra ninguna página de Facebook. Meta solo deja leer posts de páginas (no de perfiles personales).',
+    cancelado:'Conexión cancelada.', vencido:'⚠️ El enlace venció. Vuelve a intentarlo.', error:'⚠️ No se pudo conectar con Facebook. Vuelve a intentarlo.' }[m[1]];
+  _pubWhenAuthReady(u=>{
+    history.replaceState(null,'','#integraciones');
+    if(u){ navigateUserSection('integraciones'); if(msg) setTimeout(()=>toast(msg),300); }
+  });
+}
+_intMetaReturn(location.hash);
 function _intCall(name,data){ return _getFunctions().httpsCallable(name)(data).then(r=>r.data||{}); }
 function _intErr(e,fallback){ console.error('[reco] integraciones:',e); toast('⚠️ '+((e&&e.message)||fallback)); }
 function _intWhen(ms){ return ms?_timeAgo(new Date(ms).toISOString()):''; }

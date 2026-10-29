@@ -22,7 +22,10 @@ function createMockFirestore() {
   const snapOf = (name, id) => {
     const key = `${name}/${id}`;
     const r = ref(name, id);
-    return { id, ref: r, exists: !!store[key], data: () => (store[key] ? { ...store[key] } : undefined) };
+    // Como en Firestore, la instantánea no cambia si el documento cambia después.
+    const copia = store[key] ? JSON.parse(JSON.stringify(store[key], (k, v) => (v && typeof v.toMillis === 'function' ? { __ms: v.toMillis() } : v)),
+      (k, v) => (v && typeof v === 'object' && '__ms' in v ? { ms: v.__ms, toMillis: () => v.__ms } : v)) : undefined;
+    return { id, ref: r, exists: !!copia, data: () => (copia ? { ...copia } : undefined) };
   };
   function ref(name, id) {
     const key = `${name}/${id}`;
@@ -193,6 +196,7 @@ function httpRes() {
     set(k, v) { this.headers[k] = v; return this; },
     json(b) { this.body = b; return this; },
     send(b) { this.body = b; return this; },
+    redirect(code, url) { this.statusCode = code; this.location = url; return this; },
   };
 }
 

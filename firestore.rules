@@ -418,6 +418,19 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Conectar Facebook / Instagram (functions/index.js → metaConnect,
+    // metaOAuth): estado del inicio de sesión, cuentas conectadas y tokens de
+    // página. Solo el servidor; la web usa el callable metaConnect.
+    match /metaOAuthStates/{state} {
+      allow read, write: if false;
+    }
+    match /metaAccounts/{uid} {
+      allow read, write: if false;
+    }
+    match /metaTokens/{uid} {
+      allow read, write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

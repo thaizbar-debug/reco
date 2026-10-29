@@ -172,6 +172,18 @@ Todo en **Mi cuenta → 🔌 Integraciones**. Puesta en marcha: `docs/INTEGRACIO
 
 ---
 
+### Mejoras de captación (pruebas con material real de corredores)
+
+Tras probar con un post de Facebook, un brochure en PDF y enlaces de Facebook, TikTok, una web propia y Urbania:
+
+| # | Mejora | Dónde quedó |
+|---|---|---|
+| M1 | Reglas de la IA | "Área libre"/terraza de un depa no es área de terreno; se ignoran "Otros proyectos" del desarrollador; brochure de proyecto = un borrador por tipología; baño de visita no se suma; "En lanzamiento" = En proyecto; pisos del edificio vs. piso de la unidad; textos de la app en capturas. |
+| M2 | PDF | Fotos de páginas sin texto (renders de fachada) y **planos dibujados como foto** (página renderizada, marcada "(plano)"); se descartan fondos lisos y hojas escaneadas. Brochure de prueba: de 10 a 16 fotos. |
+| M3 | **Enlace de cualquier post o web** | `importListingPage` acepta cualquier web pública y lee posts de Facebook, Instagram, TikTok y YouTube por sus vías públicas de inserción (`functions/social-core.js`), con transcripción del video si es descargable. Ver `docs/REDES-SOCIALES.md`. |
+| M3b | Conectar página de Facebook / Instagram | `metaConnect` + `metaOAuth` (Graph API): ver los últimos posts y traerlos de a 10. Requiere la app de Meta y su revisión. |
+| M4 | Video subido | Reel/TikTok descargado: hasta 6 imágenes + audio transcrito (Whisper). |
+
 ## 5. Matriz de priorización
 
 | Iniciativa | Usuarios beneficiados | Esfuerzo | Dependencias | Orden |
