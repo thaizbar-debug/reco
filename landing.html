@@ -3,7 +3,47 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Reco — Inmuebles en Lima</title>
+<title>Reco — Inmuebles en Lima: compra, alquila y conoce el precio real</title>
+<!-- SEO -->
+<meta name="description" content="Compra o alquila departamentos y casas en Lima conociendo el precio real: precios por m² por distrito e históricos de compraventa de Registros Públicos."/>
+<meta name="robots" content="index,follow,max-image-preview:large"/>
+<link rel="canonical" href="https://recosac.com/landing.html"/>
+<meta name="theme-color" content="#0891b2"/>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+<!-- Open Graph / redes sociales -->
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Reco"/>
+<meta property="og:locale" content="es_PE"/>
+<meta property="og:url" content="https://recosac.com/landing.html"/>
+<meta property="og:title" content="Reco — Compra. Alquila. Conoce el precio real."/>
+<meta property="og:description" content="Inmuebles en venta y alquiler en Lima con precios por m² por distrito e históricos de Registros Públicos."/>
+<meta property="og:image" content="https://recosac.com/assets/og-image.jpg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Reco — Compra. Alquila. Conoce el precio real."/>
+<meta name="twitter:description" content="Inmuebles en venta y alquiler en Lima con precios por m² por distrito e históricos de Registros Públicos."/>
+<meta name="twitter:image" content="https://recosac.com/assets/og-image.jpg"/>
+<!-- Google Analytics 4: usar el mismo ID que en index.html. Esta página no tiene banner de cookies,
+     así que respeta la decisión que el usuario ya tomó en index.html (mismo localStorage). -->
+<script>
+window.GA_MEASUREMENT_ID='';
+window.dataLayer=window.dataLayer||[];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});
+(function(){
+  var c=null;try{c=localStorage.getItem('reco_cookie_consent');}catch(e){}
+  if(c==='accepted'||c==='implicit')gtag('consent','update',{analytics_storage:'granted'});
+})();
+if(window.GA_MEASUREMENT_ID){
+  var _ga=document.createElement('script');_ga.async=true;
+  _ga.src='https://www.googletagmanager.com/gtag/js?id='+window.GA_MEASUREMENT_ID;
+  document.head.appendChild(_ga);
+  gtag('js',new Date());
+  gtag('config',window.GA_MEASUREMENT_ID);
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{

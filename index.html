@@ -4,7 +4,69 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
-<title>Reco SAC — Búsqueda de Inmuebles</title>
+<title>Reco — Departamentos y casas en venta y alquiler en Lima | Precios reales</title>
+<!-- SEO -->
+<meta name="description" content="Busca departamentos, casas, oficinas y terrenos en venta y alquiler en Lima. Compara precios por m² por distrito e históricos de compraventa de Registros Públicos en Reco."/>
+<meta name="robots" content="index,follow,max-image-preview:large"/>
+<link rel="canonical" href="https://recosac.com/"/>
+<meta name="theme-color" content="#0891b2"/>
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png"/>
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png"/>
+<!-- Open Graph / redes sociales -->
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Reco"/>
+<meta property="og:locale" content="es_PE"/>
+<meta property="og:url" content="https://recosac.com/"/>
+<meta property="og:title" content="Reco — Inmuebles en venta y alquiler en Lima con precios reales"/>
+<meta property="og:description" content="Departamentos, casas y terrenos en Lima. Compara precios por m² por distrito e históricos de Registros Públicos."/>
+<meta property="og:image" content="https://recosac.com/assets/og-image.jpg"/>
+<meta property="og:image:width" content="1200"/>
+<meta property="og:image:height" content="630"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Reco — Inmuebles en venta y alquiler en Lima con precios reales"/>
+<meta name="twitter:description" content="Departamentos, casas y terrenos en Lima. Compara precios por m² por distrito e históricos de Registros Públicos."/>
+<meta name="twitter:image" content="https://recosac.com/assets/og-image.jpg"/>
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {
+      "@type":"Organization",
+      "@id":"https://recosac.com/#organization",
+      "name":"Reco",
+      "legalName":"VANET DATA S.A.C.",
+      "taxID":"20553966800",
+      "url":"https://recosac.com/",
+      "logo":"https://recosac.com/assets/icon-512.png",
+      "address":{"@type":"PostalAddress","addressLocality":"Lima","addressCountry":"PE"},
+      "contactPoint":{"@type":"ContactPoint","telephone":"+51-949-350-314","contactType":"customer service","areaServed":"PE","availableLanguage":"es"}
+    },
+    {
+      "@type":"WebSite",
+      "@id":"https://recosac.com/#website",
+      "url":"https://recosac.com/",
+      "name":"Reco",
+      "inLanguage":"es-PE",
+      "publisher":{"@id":"https://recosac.com/#organization"}
+    }
+  ]
+}
+</script>
+<!-- Google Analytics 4 (Consent Mode v2). Completar GA_MEASUREMENT_ID con el ID "G-XXXXXXXXXX"
+     de la propiedad GA4; mientras esté vacío no se carga ningún script de Google. -->
+<script>
+window.GA_MEASUREMENT_ID='';
+window.dataLayer=window.dataLayer||[];
+function gtag(){dataLayer.push(arguments);}
+gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});
+if(window.GA_MEASUREMENT_ID){
+  var _ga=document.createElement('script');_ga.async=true;
+  _ga.src='https://www.googletagmanager.com/gtag/js?id='+window.GA_MEASUREMENT_ID;
+  document.head.appendChild(_ga);
+  gtag('js',new Date());
+  gtag('config',window.GA_MEASUREMENT_ID);
+}
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <!-- Firebase SDKs -->

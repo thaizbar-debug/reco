@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+# Archivos internos, maquetas y prototipos que no deben aparecer en buscadores
+Disallow: /diseños antiguos/
+Disallow: /diseños%20antiguos/
+Disallow: /demo-pins.html
+Disallow: /demo-pin-
+Disallow: /docs/
+Disallow: /tests/
+Disallow: /functions/
+Disallow: /scripts/
+Disallow: /tools/
+Disallow: /*.md$
+Disallow: /*.xlsx$
+Disallow: /*.docx$
+Disallow: /*.zip$
+
+Sitemap: https://recosac.com/sitemap.xml

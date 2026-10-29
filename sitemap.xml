@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Fase 1: páginas estáticas. En la Fase 2/3 este archivo se generará automáticamente
+     con las fichas de inmuebles y las páginas de "Búsqueda especial" (ver docs/SEO-PLAN.md). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://recosac.com/</loc>
+    <lastmod>2026-10-29</lastmod>
+  </url>
+  <url>
+    <loc>https://recosac.com/landing.html</loc>
+    <lastmod>2026-10-29</lastmod>
+  </url>
+</urlset>
