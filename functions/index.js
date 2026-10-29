@@ -13,8 +13,8 @@
 // 3. Region is southamerica-east1 to match Firestore, so writes are local.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const { onCall, HttpsError } = require('firebase-functions/v2/https');
-const { defineSecret } = require('firebase-functions/params');
+const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
+const { defineSecret, defineString } = require('firebase-functions/params');
 const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
@@ -23,12 +23,18 @@ const { getAuth } = require('firebase-admin/auth');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const RecoCatalogo = require('./shared/catalogo');
 const RecoImport = require('./shared/import-core');
+const WaCore = require('./whatsapp-core');
 
 initializeApp();
 const db = getFirestore();
 
 const openaiKey = defineSecret('OPENAI_API_KEY');
 const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
+// Bot de WhatsApp (Cloud API de Meta). Ver whatsappWebhook más abajo.
+const waToken = defineSecret('WHATSAPP_TOKEN');
+const waAppSecret = defineSecret('WHATSAPP_APP_SECRET');
+const waVerifyToken = defineSecret('WHATSAPP_VERIFY_TOKEN');
+const waPhoneNumberId = defineString('WHATSAPP_PHONE_NUMBER_ID', { default: '' });
 
 // Seed admin allowlist. Mirrors firestore.rules → isAdmin() fallback.
 // Used by setAdminClaim to accept the current caller as admin even if
@@ -137,6 +143,8 @@ const IMPORT_AI_LIMIT_PER_HOUR = 30;
 const IMPORT_AI_KINDS = ['text', 'document'];
 const IMPORT_TEXT_CHANNELS = ['text', 'whatsapp'];
 const DRAFT_ID_RE = /^[A-Za-z0-9]{1,40}$/;
+// Fotos del bot de WhatsApp guardadas en Storage: imports/{uid}/{lote}/{n}.ext
+const IMPORT_PHOTO_PATH_RE = /^imports\/[A-Za-z0-9]{1,128}\/[A-Za-z0-9]{1,40}\/\d{1,3}\.(jpg|png|webp)$/;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // unlockProperty — spend 1 key, receive premium fields for one property.
@@ -356,7 +364,7 @@ exports.publishProperty = onCall(
     const draftRef = (typeof raw.importDraftId === 'string' && DRAFT_ID_RE.test(raw.importDraftId))
       ? db.collection('importDrafts').doc(raw.importDraftId) : null;
 
-    return db.runTransaction(async (tx) => {
+    const out = await db.runTransaction(async (tx) => {
       const userSnap = await tx.get(userRef);
       const userData = userSnap.exists ? userSnap.data() : {};
       const draftSnap = draftRef ? await tx.get(draftRef) : null;
@@ -435,6 +443,30 @@ exports.publishProperty = onCall(
         keysLeft: currentKeys - PUBLISH_COST,
       };
     });
+
+    // Fotos de borradores del bot de WhatsApp (imports/{uid}/…): se copian
+    // a publications/{pubId}/{uid}/ y van primero en photoUrls. El cliente
+    // sube las demás fotos después, a continuación de estas.
+    const importPhotos = (Array.isArray(raw.importPhotos) ? raw.importPhotos : [])
+      .filter((p) => typeof p === 'string' && IMPORT_PHOTO_PATH_RE.test(p) && p.startsWith(`imports/${uid}/`)).slice(0, 12);
+    if (importPhotos.length) {
+      const { getStorage } = require('firebase-admin/storage');
+      const bucket = getStorage().bucket();
+      const photoUrls = [];
+      for (let i = 0; i < importPhotos.length; i++) {
+        try {
+          const dest = `publications/${pubRef.id}/${uid}/${i}.jpg`;
+          const token = require('crypto').randomUUID();
+          await bucket.file(importPhotos[i]).copy(bucket.file(dest), { metadata: { metadata: { firebaseStorageDownloadTokens: token } } });
+          photoUrls.push(`https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(dest)}?alt=media&token=${token}`);
+        } catch (e) {
+          logger.warn('[publishProperty] foto importada no copiada', { path: importPhotos[i], err: e && e.message });
+        }
+      }
+      if (photoUrls.length) await pubRef.update({ photoUrls });
+      out.photoUrls = photoUrls;
+    }
+    return out;
   }
 );
 
@@ -1492,7 +1524,9 @@ Reglas:
 // IA devuelve en `evidencia`) y normalizeRow determinista (catálogo de
 // sinónimos y abreviaturas, etiquetas, verificación por tipo en la bandeja).
 // ─────────────────────────────────────────────────────────────────────────────
-const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp'];
+// 'imagenes': flyers o capturas de pantalla sueltas (cada imagen va como
+// página escaneada).
+const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp', 'imagenes'];
 const IMPORT_DOC_MAX_IMAGES = 6;
 const IMPORT_DOC_MAX_IMAGE_CHARS = 1500000;
 const IMPORT_DOC_MAX_PHOTO_IDS = 300;
@@ -1545,7 +1579,7 @@ async function _openaiStructured(systemPrompt, userContent, schemaName, schema) 
 // Valida la entrada de kind 'document' y arma el contenido multimodal.
 function _extractDocumentInput(d, text) {
   const fileType = IMPORT_DOC_TYPES.includes(d.fileType) ? d.fileType : null;
-  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx, PowerPoint .pptx o chat de WhatsApp).');
+  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx, PowerPoint .pptx, chat de WhatsApp o imágenes).');
   const images = Array.isArray(d.images) ? d.images : [];
   if (images.length > IMPORT_DOC_MAX_IMAGES) {
     throw new HttpsError('invalid-argument', `Demasiadas páginas escaneadas en una parte (máx. ${IMPORT_DOC_MAX_IMAGES}).`);
@@ -1789,6 +1823,9 @@ ${RecoImport.COLS.map((k) => `- ${k}: ${IMPORT_COLUMN_HINTS[k]}`).join('\n')}`;
 //                      'blocked'; si el dominio no está en la lista →
 //                      details.reason 'host-not-supported'. En ambos casos el
 //                      cliente ofrece el marcador "Enviar a ReCo".
+//   { url, modo: 'perfil' }  Página de perfil o resultados de un portal
+//                      conocido: devuelve { avisos: [{ url, title }] } (máx.
+//                      IMPORT_PROFILE_MAX_LISTINGS) sin usar la IA.
 //   { url, pagina }    Lo manda el marcador del navegador, que corre en la
 //                      página del aviso que el usuario ya tiene abierta:
 //                      { title, meta, jsonld, text, images }. Sirve para
@@ -1809,6 +1846,7 @@ ${RecoImport.COLS.map((k) => `- ${k}: ${IMPORT_COLUMN_HINTS[k]}`).join('\n')}`;
 const IMPORT_URL_HOSTS = ['urbania.pe', 'adondevivir.com', 'properati.com.pe', 'babilonia.pe', 'nexoinmobiliario.pe',
   'mercadolibre.com.pe', 'infocasas.com.pe', 'remax.pe'];
 const IMPORT_URL_MAX_PHOTOS = 12;
+const IMPORT_PROFILE_MAX_LISTINGS = 60;
 const IMPORT_URL_HTML_BYTES = 3 * 1024 * 1024;
 const IMPORT_URL_PHOTO_BYTES = 4 * 1024 * 1024;
 const IMPORT_URL_PHOTOS_TOTAL_BYTES = 9 * 1024 * 1024;
@@ -1894,6 +1932,21 @@ async function _downloadPhotos(urls) {
   }
   return photos;
 }
+// HTML de una página de un portal conocido. 403/429/503 o páginas de
+// verificación ("captcha", "Just a moment") = el portal no deja descargar
+// desde un servidor → reason 'blocked' (el cliente ofrece el marcador).
+async function _fetchPortalHtml(url) {
+  if (!_importHostAllowed(url.hostname)) {
+    throw new HttpsError('failed-precondition', 'Ese portal no se puede leer directamente. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'host-not-supported' });
+  }
+  const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
+    .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
+  const html = r ? r.body.toString('utf8') : '';
+  if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
+    throw new HttpsError('failed-precondition', 'El portal no permitió leer la página desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'blocked' });
+  }
+  return { html, url: r.url };
+}
 // Página que manda el marcador: se aceptan solo strings y con tope.
 function _cleanPagina(p) {
   const str = (v, n) => String(v == null ? '' : v).slice(0, n);
@@ -1932,23 +1985,25 @@ exports.importListingPage = onCall(
     try { url = new URL(urlStr); } catch (_) { throw new HttpsError('invalid-argument', 'Pega el enlace completo del aviso (https://…).'); }
     if (!/^https?:$/.test(url.protocol)) throw new HttpsError('invalid-argument', 'Pega el enlace completo del aviso (https://…).');
 
+    // Perfil de inmobiliaria o corredor (roadmap 2.3): solo se listan sus
+    // avisos, sin IA (no consume el límite por hora). El cliente elige
+    // cuáles importar y llama de nuevo, uno por uno, con el mismo lote.
+    if (d.modo === 'perfil') {
+      const r = await _fetchPortalHtml(url);
+      const avisos = RecoImport.extractListingLinks(r.html, r.url, IMPORT_PROFILE_MAX_LISTINGS);
+      await db.collection('importEvents').doc().set({
+        uid, kind: 'perfil', channel: 'url', host: url.hostname, listings: avisos.length, createdAt: FieldValue.serverTimestamp(),
+      });
+      return { avisos };
+    }
+
     let pagina;
     const viaMarcador = !!(d.pagina && typeof d.pagina === 'object');
     if (viaMarcador) {
       pagina = _cleanPagina(d.pagina);
     } else {
-      if (!_importHostAllowed(url.hostname)) {
-        throw new HttpsError('failed-precondition', 'Ese portal no se puede leer directamente. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'host-not-supported' });
-      }
-      const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
-        .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
-      const html = r ? r.body.toString('utf8') : '';
-      // 403/429/503 o páginas de verificación ("captcha", "Just a moment"):
-      // el portal no deja descargar desde un servidor.
-      if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
-        throw new HttpsError('failed-precondition', 'El portal no permitió leer el aviso desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador.', { reason: 'blocked' });
-      }
-      pagina = RecoImport.parseListingHtml(html, r.url);
+      const r = await _fetchPortalHtml(url);
+      pagina = RecoImport.parseListingHtml(r.html, r.url);
     }
     if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length) {
       throw new HttpsError('invalid-argument', 'La página no tiene contenido legible.');
@@ -1972,6 +2027,253 @@ exports.importListingPage = onCall(
     if (result.drafts.length === 1 && !result.drafts[0].fotos.length) result.drafts[0].fotos = photoIds.slice();
     const usadas = new Set(result.drafts.flatMap((x) => x.fotos));
     return { ...result, photos: photos.filter((p) => usadas.has(p.id)) };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Bot de WhatsApp (roadmap 2.1) — el corredor envía texto, fotos o notas de
+// voz al número de ReCo, escribe LISTO y recibe los inmuebles encontrados;
+// los revisa y publica en recosac.com/#borradores.
+//
+//   whatsappLink           callable: código de 6 dígitos para conectar el
+//                          número a la cuenta ("VINCULAR 123456"), estado y
+//                          desconexión.
+//   whatsappWebhook        HTTP para Meta: verificación (GET) y mensajes
+//                          (POST con firma X-Hub-Signature-256). Solo guarda
+//                          cada mensaje en /whatsappInbox/{wamid} (idempotente)
+//                          y responde 200 al instante.
+//   whatsappProcessMessage trigger de /whatsappInbox: comandos, sesión de
+//                          mensajes y, con LISTO, transcripción de notas de
+//                          voz, fotos a Storage (imports/{uid}/{lote}/) y el
+//                          mismo pipeline de extracción (_extractAndSaveDrafts).
+//
+// Colecciones (solo servidor): whatsappLinks/{teléfono}, whatsappLinkCodes/
+// {código}, whatsappSessions/{teléfono}, whatsappInbox/{wamid}.
+// Configuración: secretos WHATSAPP_TOKEN, WHATSAPP_APP_SECRET,
+// WHATSAPP_VERIFY_TOKEN y parámetro WHATSAPP_PHONE_NUMBER_ID.
+// ─────────────────────────────────────────────────────────────────────────────
+const WA_GRAPH = 'https://graph.facebook.com/v21.0';
+const WA_LINK_CODE_MINUTES = 15;
+const WA_SESSION_MAX_ITEMS = 80;
+const WA_SESSION_MAX_PHOTOS = 30;
+const WA_MAX_VOICE_NOTES = 5;
+const WA_MEDIA_MAX_BYTES = 16 * 1024 * 1024;
+const WA_SITE = 'https://recosac.com';
+// create() sobre un documento que ya existe: el admin SDK devuelve el código
+// gRPC 6 (ALREADY_EXISTS) numérico.
+const _isAlreadyExists = (e) => !!e && (e.code === 6 || e.code === 'already-exists' || /already exists/i.test(String(e.message || '')));
+
+exports.whatsappLink = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'whatsappLink');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const action = (request.data || {}).action;
+    const links = await db.collection('whatsappLinks').where('uid', '==', uid).get();
+    if (action === 'unlink') {
+      const batch = db.batch();
+      links.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      return { linked: [] };
+    }
+    const linked = links.docs.map((doc) => `+${doc.id.slice(0, -4).replace(/\d/g, '•')}${doc.id.slice(-4)}`);
+    if (action !== 'code') return { linked };
+    // Código de un solo uso, 15 min. Reintenta si el código ya existe.
+    for (let i = 0; i < 5; i++) {
+      const code = String(require('crypto').randomInt(0, 1e6)).padStart(6, '0');
+      try {
+        await db.collection('whatsappLinkCodes').doc(code).create({
+          uid, expiresAt: Timestamp.fromMillis(Date.now() + WA_LINK_CODE_MINUTES * 60000), createdAt: FieldValue.serverTimestamp(),
+        });
+        return { code, minutes: WA_LINK_CODE_MINUTES, linked };
+      } catch (e) {
+        if (!_isAlreadyExists(e)) throw e;
+      }
+    }
+    throw new HttpsError('internal', 'No se pudo generar el código. Intenta de nuevo.');
+  }
+);
+
+exports.whatsappWebhook = onRequest(
+  { region: REGION, maxInstances: 10, secrets: [waAppSecret, waVerifyToken] },
+  async (req, res) => {
+    if (req.method === 'GET') {
+      const ok = req.query['hub.mode'] === 'subscribe' && req.query['hub.verify_token'] === waVerifyToken.value();
+      res.status(ok ? 200 : 403).send(ok ? String(req.query['hub.challenge'] || '') : 'forbidden');
+      return;
+    }
+    if (req.method !== 'POST') { res.status(405).send('method not allowed'); return; }
+    if (!WaCore.verifySignature(req.rawBody, req.get('x-hub-signature-256'), waAppSecret.value())) {
+      logger.warn('[whatsappWebhook] firma inválida');
+      res.status(401).send('bad signature');
+      return;
+    }
+    const messages = WaCore.parseWebhook(req.body);
+    await Promise.all(messages.map((m) => db.collection('whatsappInbox').doc(m.id.replace(/\//g, '_'))
+      .create({ ...m, receivedAt: FieldValue.serverTimestamp() })
+      .catch((e) => { if (!_isAlreadyExists(e)) throw e; })));
+    res.status(200).send('ok');
+  }
+);
+
+async function _waSend(to, body) {
+  const phoneId = waPhoneNumberId.value();
+  if (!phoneId) { logger.warn('[whatsapp] falta WHATSAPP_PHONE_NUMBER_ID'); return; }
+  const r = await fetch(`${WA_GRAPH}/${phoneId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${waToken.value()}` },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: String(body).slice(0, 4000) } }),
+  });
+  if (!r.ok) logger.error('[whatsapp] envío fallido', { status: r.status, body: (await r.text()).slice(0, 300) });
+}
+// Media de la Cloud API: id → URL temporal → bytes (con el token).
+async function _waMedia(mediaId) {
+  const auth = { Authorization: `Bearer ${waToken.value()}` };
+  const meta = await (await fetch(`${WA_GRAPH}/${encodeURIComponent(mediaId)}`, { headers: auth })).json();
+  if (!meta || !meta.url) throw new Error('media sin url');
+  if (Number(meta.file_size) > WA_MEDIA_MAX_BYTES) throw new Error('media muy grande');
+  const r = await fetch(meta.url, { headers: auth });
+  if (!r.ok) throw new Error(`media HTTP ${r.status}`);
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.length > WA_MEDIA_MAX_BYTES) throw new Error('media muy grande');
+  return { buf, mime: String(meta.mime_type || '').split(';')[0] };
+}
+async function _transcribe(buf, mime) {
+  const fd = new FormData();
+  fd.append('file', new Blob([buf], { type: mime || 'audio/ogg' }), 'nota.ogg');
+  fd.append('model', 'whisper-1');
+  fd.append('language', 'es');
+  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST', headers: { Authorization: `Bearer ${openaiKey.value()}` }, body: fd,
+  });
+  const body = await r.json();
+  if (!r.ok) throw new Error(body.error?.message || `HTTP ${r.status}`);
+  return String(body.text || '').trim().slice(0, 4000);
+}
+// Foto a Storage con token de descarga (la web la muestra y, al publicar,
+// publishProperty la copia a publications/).
+async function _savePhoto(uid, batchId, n, buf, mime) {
+  const { getStorage } = require('firebase-admin/storage');
+  const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg';
+  const path = `imports/${uid}/${batchId}/${n}.${ext}`;
+  const file = getStorage().bucket().file(path);
+  const token = require('crypto').randomUUID();
+  await file.save(buf, { contentType: mime || 'image/jpeg', metadata: { metadata: { firebaseStorageDownloadTokens: token } } });
+  return `https://firebasestorage.googleapis.com/v0/b/${file.bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}`;
+}
+
+async function _waProcessSession(phone, uid) {
+  const sessionRef = db.collection('whatsappSessions').doc(phone);
+  // Se toma la sesión y se vacía en la misma transacción: un segundo LISTO
+  // no procesa dos veces lo mismo.
+  const items = await db.runTransaction(async (tx) => {
+    const snap = await tx.get(sessionRef);
+    const it = (snap.exists && snap.data().items) || [];
+    if (it.length) tx.set(sessionRef, { items: [], updatedAt: FieldValue.serverTimestamp() });
+    return it;
+  });
+  if (!items.length) { await _waSend(phone, WaCore.MENSAJES.vacio); return; }
+  try {
+    await _importRateLimit(uid);
+  } catch (e) {
+    await sessionRef.set({ items, updatedAt: FieldValue.serverTimestamp() });
+    await _waSend(phone, WaCore.MENSAJES.limite);
+    return;
+  }
+  await _waSend(phone, WaCore.MENSAJES.procesando);
+  const batchId = db.collection('importDrafts').doc().id;
+  const transcripts = {};
+  const urlById = {};
+  let voces = 0, n = 0;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    try {
+      if (it.type === 'audio' && voces < WA_MAX_VOICE_NOTES) {
+        voces++;
+        const m = await _waMedia(it.mediaId);
+        transcripts[i] = await _transcribe(m.buf, m.mime);
+      } else if (it.type === 'image' && n < WA_SESSION_MAX_PHOTOS) {
+        const m = await _waMedia(it.mediaId);
+        if (!/^image\/(jpeg|png|webp)$/.test(m.mime)) continue;
+        n++;
+        it.photoId = `w-${n}`;
+        urlById[it.photoId] = await _savePhoto(uid, batchId, n, m.buf, m.mime);
+      }
+    } catch (e) {
+      logger.warn('[whatsapp] media no disponible', { err: e && e.message });
+    }
+  }
+  const { text, photoIds } = WaCore.sessionToText(items, transcripts);
+  try {
+    const result = await _extractAndSaveDrafts({
+      fn: 'whatsappProcessMessage', uid, kind: 'bot', channel: 'whatsapp', sourceName: 'WhatsApp (bot)', batchId,
+      text: text.slice(0, IMPORT_TEXT_MAX_CHARS), photoIds, sourceLabel: 'tus mensajes',
+      eventExtra: { photos: photoIds.length, voiceNotes: voces },
+    });
+    // Un solo inmueble sin fotos asignadas: son todas las enviadas.
+    if (result.drafts.length === 1 && !result.drafts[0].fotos.length) result.drafts[0].fotos = photoIds.slice();
+    // Las fotos quedan en el borrador (a diferencia de los archivos subidos
+    // en la web, que viven solo en el navegador).
+    const fotosBatch = db.batch();
+    result.drafts.forEach((dr) => {
+      const urls = dr.fotos.map((id) => urlById[id]).filter(Boolean).slice(0, 12);
+      if (urls.length) fotosBatch.update(db.collection('importDrafts').doc(dr.id), { photoUrls: urls });
+    });
+    await fotosBatch.commit();
+    await _waSend(phone, WaCore.summarizeDrafts(result.drafts, `${WA_SITE}/#borradores`));
+  } catch (e) {
+    logger.error('[whatsapp] extracción fallida', { err: e && e.message });
+    await sessionRef.set({ items, updatedAt: FieldValue.serverTimestamp() });
+    await _waSend(phone, WaCore.MENSAJES.error);
+  }
+}
+
+exports.whatsappProcessMessage = onDocumentCreated(
+  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [openaiKey, waToken] },
+  async (event) => {
+    const m = event.data && event.data.data();
+    if (!m || !m.from) return;
+    const phone = m.from;
+    const cmd = m.type === 'text' ? WaCore.parseCommand(m.text) : null;
+
+    if (cmd && cmd.cmd === 'vincular') {
+      const codeRef = db.collection('whatsappLinkCodes').doc(cmd.code);
+      const uid = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(codeRef);
+        if (!snap.exists || snap.data().expiresAt.toMillis() < Date.now()) return null;
+        tx.delete(codeRef);
+        tx.set(db.collection('whatsappLinks').doc(phone), { uid: snap.data().uid, linkedAt: FieldValue.serverTimestamp() });
+        return snap.data().uid;
+      });
+      await _waSend(phone, uid ? WaCore.MENSAJES.vinculado : WaCore.MENSAJES.codigoInvalido);
+      return;
+    }
+    const link = await db.collection('whatsappLinks').doc(phone).get();
+    if (!link.exists) { await _waSend(phone, WaCore.MENSAJES.noVinculado(WA_SITE)); return; }
+    const uid = link.data().uid;
+
+    if (cmd && cmd.cmd === 'ayuda') { await _waSend(phone, WaCore.MENSAJES.ayuda(`${WA_SITE}/#borradores`)); return; }
+    if (cmd && cmd.cmd === 'cancelar') {
+      await db.collection('whatsappSessions').doc(phone).set({ items: [], updatedAt: FieldValue.serverTimestamp() });
+      await _waSend(phone, WaCore.MENSAJES.cancelado);
+      return;
+    }
+    if (cmd && cmd.cmd === 'listo') { await _waProcessSession(phone, uid); return; }
+    if (m.type === 'other') { await _waSend(phone, WaCore.MENSAJES.otroTipo); return; }
+
+    const item = m.type === 'text' ? { type: 'text', ts: m.ts, text: m.text }
+      : { type: m.type, ts: m.ts, mediaId: m.mediaId, ...(m.caption && { caption: m.caption }) };
+    const sessionRef = db.collection('whatsappSessions').doc(phone);
+    const estado = await db.runTransaction(async (tx) => {
+      const snap = await tx.get(sessionRef);
+      const items = (snap.exists && snap.data().items) || [];
+      if (items.length >= WA_SESSION_MAX_ITEMS) return 'lleno';
+      tx.set(sessionRef, { items: items.concat([item]).sort((a, b) => a.ts - b.ts), updatedAt: FieldValue.serverTimestamp() });
+      return items.length === 0 ? 'primero' : '';
+    });
+    if (estado === 'primero') await _waSend(phone, WaCore.MENSAJES.recibido);
+    else if (estado === 'lleno') await _waSend(phone, WaCore.MENSAJES.lleno);
   }
 );
 

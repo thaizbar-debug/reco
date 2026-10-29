@@ -368,6 +368,22 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Bot de WhatsApp (functions/index.js → whatsappLink, whatsappWebhook,
+    // whatsappProcessMessage). Guardan teléfonos y mensajes: solo el admin
+    // SDK los lee y escribe. La web consulta el estado con whatsappLink.
+    match /whatsappLinks/{phone} {
+      allow read, write: if false;
+    }
+    match /whatsappLinkCodes/{code} {
+      allow read, write: if false;
+    }
+    match /whatsappSessions/{phone} {
+      allow read, write: if false;
+    }
+    match /whatsappInbox/{msgId} {
+      allow read, write: if false;
+    }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

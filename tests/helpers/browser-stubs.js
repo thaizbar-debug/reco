@@ -55,4 +55,34 @@ async function routeStubs(page) {
   }
 }
 
-module.exports = { FIREBASE_STUB, routeStubs };
+// Página con sesión simulada y la carga masiva abierta en el paso 1.
+// window.__fn[nombre] = (data) => resultado simula cada Cloud Function;
+// __calls guarda las llamadas y __toasts los avisos mostrados.
+async function setupImportPage(page) {
+  await routeStubs(page);
+  await page.goto('http://localhost:3123/', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof _pubBulkFiles === 'function' && typeof RecoImport !== 'undefined');
+  await page.evaluate(() => {
+    window.__user = { uid: 'u1', email: 'a@b.c', emailVerified: true, reload: async () => {}, getIdToken: async () => 't' };
+    Object.defineProperty(auth, 'currentUser', { configurable: true, get: () => window.__user });
+    window.__calls = [];
+    window.__toasts = [];
+    window.toast = (m) => window.__toasts.push(m);
+    window.__fn = {};
+    window._getFunctions = () => ({
+      httpsCallable: (name) => async (data) => {
+        window.__calls.push({ name, data });
+        if (!window.__fn[name]) return { data: {} };
+        return { data: await window.__fn[name](data) };
+      },
+    });
+    window.__draft = (id, row, fotos) => ({ id, row: RecoImport.normalizeRow(row).row, fotos: fotos || [], notes: [],
+      aiFields: Object.keys(row), inferredFields: ['titulo'] });
+    _pubTab = 'bulk'; _pubBulkStep = 1;
+    document.getElementById('pubOverlay').classList.add('open');
+    document.getElementById('pubModal').classList.add('open');
+    renderPublish();
+  });
+}
+
+module.exports = { FIREBASE_STUB, routeStubs, setupImportPage };

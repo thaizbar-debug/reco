@@ -412,6 +412,52 @@
       meta, jsonld: jsonld.slice(0, 5), datos, text: text.slice(0, 30000), images: images.slice(0, 60),
     };
   }
+  // Enlaces a avisos dentro de una página de perfil o de resultados del
+  // mismo portal (roadmap 2.3): <a href>, JSON-LD ItemList y URLs de
+  // __NEXT_DATA__. Un aviso es una URL del mismo dominio con un id numérico
+  // largo (o tipo "MPE-123…") y que no es una página de navegación.
+  const LISTING_NAV_RE = /\/(buscar|busqueda|search|login|ingresar|registro|signup|ayuda|help|blog|noticias|contacto|nosotros|terminos|privacidad|publicar|favoritos|mi-cuenta)(\/|$)/i;
+  function extractListingLinks(html, baseUrl, max) {
+    const h = String(html || '');
+    let base;
+    try { base = new URL(baseUrl); } catch (_) { return []; }
+    const site = base.hostname.replace(/^www\./, '');
+    const out = [];
+    const seen = new Set([base.origin + base.pathname]);
+    const add = (u, title) => {
+      const a = absUrl(u, base.href);
+      if (!a) return;
+      const x = new URL(a);
+      const host = x.hostname.replace(/^www\./, '');
+      if (host !== site && !host.endsWith('.' + site)) return;
+      if (LISTING_NAV_RE.test(x.pathname) || !/\d{5,}|[A-Z]{3}-?\d{5,}/i.test(x.pathname)) return;
+      const key = x.origin + x.pathname;
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push({ url: key, title: String(title || '').replace(/\s+/g, ' ').trim().slice(0, 120) });
+    };
+    const aRe = /<a\b[^>]*\bhref\s*=\s*("([^"]*)"|'([^']*)')[^>]*>([\s\S]*?)<\/a>/gi;
+    let m;
+    while ((m = aRe.exec(h))) add(m[2] != null ? m[2] : m[3], decodeEntities(m[4].replace(/<[^>]+>/g, ' ')));
+    const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+    while ((m = scriptRe.exec(h))) {
+      if (!/application\/ld\+json|__NEXT_DATA__/i.test(m[1])) continue;
+      try {
+        const walk = (v, depth) => {
+          if (v == null || depth > 14) return;
+          if (typeof v === 'string') { if (/^https?:\/\//.test(v)) add(v, ''); return; }
+          if (Array.isArray(v)) { v.forEach((x) => walk(x, depth + 1)); return; }
+          if (typeof v === 'object') {
+            if (typeof v.url === 'string') add(v.url, v.name || v.title || '');
+            Object.keys(v).forEach((k) => walk(v[k], depth + 1));
+          }
+        };
+        walk(JSON.parse(m[2]), 0);
+      } catch (_) { /* no es JSON */ }
+    }
+    return out.slice(0, max || 60);
+  }
+
   // Texto que ve la IA para una página (también la que manda el marcador del
   // navegador), dentro de `max` caracteres; las fotos van como [FOTO id].
   function pageToText(p, url, photoIds, max) {
@@ -429,7 +475,7 @@
   }
 
   return {
-    parseListingHtml, pageToText,
+    parseListingHtml, pageToText, extractListingLinks,
     COLS, REQUIRED, DISTRICTS, IMPORT_SOURCES, RESO_MAP,
     AI_FIELDS, EXTRACTION_SCHEMA,
     norm, cleanText, parseNumber, parseMoney, detectCurrency, parseCount, matchDistrict,
