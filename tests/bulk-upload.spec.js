@@ -348,6 +348,216 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
     expect(num).toBe(1);
   });
 
+  // ── Valores estándar: sinónimos, abreviaturas, estado y antigüedad ──
+  test('RecoCatalogo (functions/shared/catalogo.js) se carga y coincide con las listas de la página', async ({ page }) => {
+    const r = await page.evaluate(() => ({
+      t: typeof RecoCatalogo,
+      same: [
+        [_PUB_BULK_TYPES, RecoCatalogo.TYPES], [_PUB_BULK_OPS, RecoCatalogo.OPS],
+        [_PUB_BULK_CURRENCIES, RecoCatalogo.CURRENCIES], [_PUB_BULK_ESTADOS, RecoCatalogo.ESTADOS],
+      ].every(([a, b]) => JSON.stringify(a) === JSON.stringify(b)),
+      sinAnt: RecoCatalogo.ESTADOS.filter(_pubSinAntiguedad),
+    }));
+    expect(r.t).toBe('object');
+    expect(r.same).toBe(true);
+    expect(r.sinAnt).toEqual(['En proyecto', 'En construcción']);
+  });
+
+  const base = { direccion: 'A 1', distrito: 'Lince', precio: '1', area_techada: '1', titulo: 't', descripcion: 'd' };
+
+  test('_pubBulkStandardize: sinónimos y abreviaturas a valores estándar', async ({ page }) => {
+    const row = await page.evaluate((b) => _pubBulkStandardize({ ...b,
+      tipo_propiedad: 'Dpto.', tipo_publicacion: 'Vta.', tipo_moneda: 'U$S', estado: 'E/C', antiguedad: '4',
+      ascensor: 'x', amoblado: 'si', pet_friendly: 'NO', mostrar_direccion: 'Depende',
+    }).row, base);
+    expect(row.tipo_propiedad).toBe('Departamento');
+    expect(row.tipo_publicacion).toBe('Venta');
+    expect(row.tipo_moneda).toBe('USD');
+    expect(row.estado).toBe('En construcción');
+    expect(row.antiguedad).toBe('0');
+    expect(row.ascensor).toBe('Sí');
+    expect(row.amoblado).toBe('Sí');
+    expect(row.pet_friendly).toBe('No');
+    expect(row.mostrar_direccion).toBe('Depende'); // no reconocido: se deja tal cual
+  });
+
+  test('_pubBulkStandardize: estado escrito en la columna antigüedad', async ({ page }) => {
+    const rows = await page.evaluate((b) => [
+      _pubBulkStandardize({ ...b, estado: '', antiguedad: 'En planos' }).row,
+      _pubBulkStandardize({ ...b, estado: '', antiguedad: 'A estrenar' }).row,
+      _pubBulkStandardize({ ...b, estado: '', antiguedad: '2015' }).row,
+      _pubBulkStandardize({ ...b, estado: '', antiguedad: '' }).row,
+    ], base);
+    expect([rows[0].estado, rows[0].antiguedad]).toEqual(['En proyecto', '0']);
+    expect([rows[1].estado, rows[1].antiguedad]).toEqual(['', '0']);
+    expect(rows[2].estado).toBe('');
+    expect(Number(rows[2].antiguedad)).toBe(new Date().getFullYear() - 2015);
+    expect([rows[3].estado, rows[3].antiguedad]).toEqual(['', '']);
+  });
+
+  test('plantilla estándar: "venta", "dpto", "S/" ya no dan error', async ({ page }) => {
+    const r = await page.evaluate((b) => {
+      _pubBulkLoadRows([{ ...b, tipo_publicacion: 'venta', tipo_propiedad: 'dpto', tipo_moneda: 'S/', estado: 'Preventa', antiguedad: '7' }]);
+      const a = _pubBulkRows[0];
+      return { valid: a.valid, errors: a.errors, warnings: a.warnings, row: a.row, pub: _pubBulkRowToPubData(a.row) };
+    }, base);
+    expect(r.errors).toEqual([]);
+    expect(r.valid).toBe(true);
+    expect(r.row.tipo_publicacion).toBe('Venta');
+    expect(r.row.tipo_propiedad).toBe('Departamento');
+    expect(r.row.tipo_moneda).toBe('PEN');
+    expect(r.pub.estado).toBe('En proyecto');
+    expect(r.pub.age).toBe(0);
+    expect(r.pub.currency).toBe('PEN');
+    expect(r.warnings.join(' ')).toContain('se publicará como 0');
+  });
+
+  test('_pubBulkRowToPubData: En planos / En construcción → antigüedad 0', async ({ page }) => {
+    const d = await page.evaluate((b) => [
+      _pubBulkRowToPubData({ ...b, estado: 'En planos', antiguedad: '7' }),
+      _pubBulkRowToPubData({ ...b, estado: 'En construcción', antiguedad: '3' }),
+      _pubBulkRowToPubData({ ...b, estado: 'Construido', antiguedad: '3' }),
+    ], base);
+    expect([d[0].estado, d[0].age]).toEqual(['En proyecto', 0]);
+    expect([d[1].estado, d[1].age]).toEqual(['En construcción', 0]);
+    expect([d[2].estado, d[2].age]).toEqual(['Construido', 3]);
+  });
+
+  test('_pubBulkValidateRow avisa estado no reconocido y antigüedad forzada a 0', async ({ page }) => {
+    const w = await page.evaluate((b) => [
+      _pubBulkValidateRow({ ...b, estado: 'Bueno' }),
+      _pubBulkValidateRow({ ...b, estado: 'En planos', antiguedad: '3' }),
+      _pubBulkValidateRow({ ...b, estado: 'Construido', antiguedad: '3' }),
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Planeta' }),
+    ], base);
+    expect(w[0].valid).toBe(true);
+    expect(w[0].warnings.join(' ')).toContain('Estado no reconocido');
+    expect(w[1].warnings.join(' ')).toContain('se publicará como 0');
+    expect(w[2].warnings).toEqual([]);
+    expect(w[3].valid).toBe(false);
+  });
+
+  test('plantilla documenta sinónimos y la regla de antigüedad', async ({ page }) => {
+    const h = await page.evaluate(() => Object.fromEntries(_PUB_TPL_HELP.map(x => [x[0], x])));
+    expect(h.estado[2]).toBe('Construido / En proyecto / En construcción');
+    expect(h.estado[3]).toContain('En planos');
+    expect(h.estado[3]).toContain('E/C');
+    expect(h.antiguedad[3]).toContain('En construcción');
+    expect(h.tipo_propiedad[3]).toContain('Dpto.');
+  });
+
+  test('formulario individual: En proyecto y En construcción fijan antigüedad 0', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      _pd = { age: 12, estado: 'Construido' };
+      document.body.insertAdjacentHTML('beforeend', '<input id="pubAgeInput" value="12">');
+      const inp = document.getElementById('pubAgeInput');
+      const out = {};
+      _pubSetEstado('En proyecto');
+      out.proy = { age: _pd.age, val: inp.value, disabled: inp.disabled };
+      _pubSetEstado('Construido');
+      out.cons = inp.disabled;
+      _pd.age = 9;
+      _pubSetEstado('En construcción');
+      out.obra = { age: _pd.age, val: inp.value, disabled: inp.disabled };
+      return out;
+    });
+    expect(r.proy).toEqual({ age: 0, val: '0', disabled: true });
+    expect(r.cons).toBe(false);
+    expect(r.obra).toEqual({ age: 0, val: '0', disabled: true });
+  });
+
+  // ── Verificación previa a publicar: áreas según el tipo ─────────
+  test('Terreno sin área techada es válido; sin área de terreno no', async ({ page }) => {
+    const r = await page.evaluate((b) => [
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '300' }),
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Lote', area_techada: '', area_terreno: '' }),
+    ], { ...base, area_techada: undefined });
+    expect(r[0].errors).toEqual([]);
+    expect(r[1].errors).toEqual(['área de terreno obligatoria para Terreno']);
+  });
+
+  test('Departamento no exige área de terreno pero sí techada', async ({ page }) => {
+    const r = await page.evaluate((b) => [
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Departamento', area_techada: '80', area_terreno: '' }),
+      _pubBulkValidateRow({ ...b, tipo_propiedad: 'Departamento', area_techada: '', area_terreno: '120' }),
+    ], base);
+    expect(r[0].errors).toEqual([]);
+    expect(r[0].warnings).toEqual([]);
+    expect(r[1].errors).toEqual(['área techada obligatoria para Departamento']);
+  });
+
+  test('Terreno: dormitorios y pisos no se publican; área principal = terreno', async ({ page }) => {
+    const r = await page.evaluate((b) => {
+      const row = { ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '300', nro_dormitorios: '3', piso: '2' };
+      return { v: _pubBulkValidateRow(row), verif: RecoCatalogo.verificarPublicacion(_pubBulkRowToPubData(row)) };
+    }, base);
+    expect(r.v.valid).toBe(true);
+    expect(r.v.warnings.join(' ')).toContain('dormitorios, piso no aplican');
+    expect([r.verif.datos.area, r.verif.datos.beds, r.verif.datos.floor]).toEqual([300, 0, 0]);
+  });
+
+  test('la tabla permite editar el área de terreno y marca la celda con error', async ({ page }) => {
+    const html = await page.evaluate((b) => {
+      _pubTab = 'bulk';
+      document.getElementById('pubOverlay').classList.add('open');
+      document.getElementById('pubModal').classList.add('open');
+      _pubBulkLoadRows([{ ...b, tipo_propiedad: 'Terreno', area_techada: '', area_terreno: '' }]);
+      return document.getElementById('pubBulkStepBody').innerHTML;
+    }, base);
+    expect(html).toContain("_pubBulkEdit(0,'area_terreno'");
+    expect(html).toMatch(/onchange="_pubBulkEdit\(0,'area_terreno',this.value\)" style="[^"]*var\(--red\)/);
+  });
+
+  test('Excel propio: basta con mapear una de las dos áreas', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const only = ['direccion', 'distrito', 'precio', 'area_terreno', 'titulo', 'descripcion'];
+      const none = ['direccion', 'distrito', 'precio', 'titulo', 'descripcion'];
+      _pubBulkMap = { direccion: 'a', distrito: 'b', precio: 'c', titulo: 'd', descripcion: 'e' };
+      const missingNone = _pubBulkMapMissing();
+      _pubBulkMap.area_terreno = 'f';
+      return { needOnly: _pubBulkNeedsMapping(only), needNone: _pubBulkNeedsMapping(none), missingNone, missingOk: _pubBulkMapMissing() };
+    });
+    expect(r.needOnly).toBe(false);
+    expect(r.needNone).toBe(true);
+    expect(r.missingNone).toEqual(['Área techada o Área terreno']);
+    expect(r.missingOk).toEqual([]);
+  });
+
+  test('formulario individual: asteriscos de área según el tipo', async ({ page }) => {
+    const r = await page.evaluate(() => ({
+      depTech: _pubAreaReqMark('Departamento', 'techada'), depTerr: _pubAreaReqMark('Departamento', 'terreno'),
+      terTech: _pubAreaReqMark('Terreno', 'techada'), terTerr: _pubAreaReqMark('Terreno', 'terreno'),
+      casaTerr: _pubAreaReqMark('Casa', 'terreno'), otros: _pubAreaReqMark('Otros', 'techada'),
+    }));
+    expect(r.depTech).toContain('*');
+    expect(r.depTerr).toContain('opcional');
+    expect(r.terTech).toContain('opcional');
+    expect(r.terTerr).toContain('*');
+    expect(r.casaTerr).toContain('recomendado');
+    expect(r.otros).toContain('esta o la otra');
+  });
+
+  test('formulario individual: el paso 1 verifica áreas según el tipo', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      const toasts = [];
+      const orig = window.toast; window.toast = (m) => toasts.push(m);
+      _ps = 1;
+      _pd = { op: 'Venta', type: 'Terreno', address: 'Av. 1', district: 'Lince', currency: 'USD', price: '90000',
+        area: '', areaTerr: '', beds: 0, baths: 0, parking: 0, floor: 0, unitFloors: 1, floors: 0, age: 0, title: '', desc: '' };
+      window.renderPublish = () => {};
+      _pn();
+      const blocked = _ps;
+      _pd.areaTerr = '300';
+      _pn();
+      window.toast = orig;
+      return { toasts, blocked, after: _ps, principal: _pubAreaPrincipal() };
+    });
+    expect(r.blocked).toBe(1);
+    expect(r.toasts[0]).toContain('área de terreno obligatoria para Terreno');
+    expect(r.after).toBe(2);
+    expect(r.principal).toBe(300);
+  });
+
   // ── Photo assistant (MEJ-01) ─────────────────────────────────────
   test('_PUB_BULK_PHOTO_MAX is 12', async ({ page }) => {
     const max = await page.evaluate(() => _PUB_BULK_PHOTO_MAX);
