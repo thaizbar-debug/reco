@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#ffffff"/>
 <meta name="referrer" content="strict-origin-when-cross-origin"/>
 <title>Reco SAC — Búsqueda de Inmuebles</title>
 <!-- App instalable: "Compartir con ReCo" desde el celular (sw.js) -->
@@ -235,7 +236,8 @@ header .spacer{flex:1}
   position:absolute;top:calc(100% + 6px);left:0;right:0;
   background:#fff;border-radius:var(--r);
   box-shadow:0 8px 28px rgba(0,0,0,.18);
-  z-index:300;overflow:hidden;display:none;
+  z-index:300;overflow-x:hidden;overflow-y:auto;display:none;
+  max-height:min(360px,60vh);overscroll-behavior:contain;
 }
 .sg-item{
   display:flex;align-items:center;gap:12px;
@@ -423,7 +425,8 @@ header .spacer{flex:1}
 .hist-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-44%);opacity:0;pointer-events:none;
   width:min(580px,94vw);background:#fff;border-radius:18px;
   box-shadow:0 24px 80px rgba(0,0,0,.22);z-index:501;
-  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow:hidden}
+  max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  transition:transform .3s cubic-bezier(.4,0,.2,1),opacity .3s;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain}
 .hist-modal.open{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
 .hist-modal-close{position:absolute;top:14px;right:16px;background:var(--light);border:1px solid var(--border);border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer}
 .hist-modal-trio{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
@@ -1021,7 +1024,7 @@ header .spacer{flex:1}
 /* ══════════════ GATE PANEL ══════════════ */
 .detail-gate{
   flex:1;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
+  align-items:center;justify-content:center;justify-content:safe center;
   padding:36px 28px;text-align:center;gap:10px;
   overflow-y:auto;
 }
@@ -1071,7 +1074,8 @@ header .spacer{flex:1}
   background:#fff;border-radius:14px;
   width:90%;max-width:500px;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
-  overflow:hidden;
+  max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
   transform:scale(.96) translateY(8px);
   transition:transform .2s;
 }
@@ -1229,7 +1233,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 #homeView .search-box .btn-search:hover{opacity:.9}
 
 /* AUTOCOMPLETE */
-#homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow:hidden;display:none}
+#homeView .sg-drop{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:300;overflow-x:hidden;overflow-y:auto;max-height:min(360px,60vh);overscroll-behavior:contain;display:none}
 #homeView .sg-item{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;transition:background .1s}
 #homeView .sg-item:hover{background:var(--light)}
 #homeView .sg-item+.sg-item{border-top:1px solid var(--border)}
@@ -1354,7 +1358,7 @@ body.show-legal{overflow:auto;height:auto;min-height:100vh;background:#fff}
 /* MODAL ANUNCIARSE */
 .anun-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .22s;display:flex;align-items:center;justify-content:center;padding:20px}
 .anun-overlay.open{opacity:1;pointer-events:auto}
-#homeView .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+#homeView .anun-modal{background:#fff;border-radius:20px;width:100%;max-width:700px;max-height:90vh;max-height:90dvh;overflow-y:auto;transform:translateY(18px);opacity:0;transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .28s;box-shadow:0 24px 80px rgba(0,0,0,.2)}
 .anun-overlay.open .anun-modal{transform:translateY(0);opacity:1}
 #homeView .anun-head{padding:28px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 #homeView .anun-close{background:none;border:1.5px solid var(--border);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;flex-shrink:0;color:var(--muted);transition:background .12s}
@@ -1400,6 +1404,22 @@ body.show-home .floating-advisor-btn{display:none}
 body.show-legal .floating-advisor-btn{display:none}
 @media(max-width:600px){.floating-advisor-btn{bottom:80px;right:14px;font-size:.78rem;padding:9px 14px}}
 @media(max-width:600px){.global-legal-bar{flex-direction:column;text-align:center;padding:10px 12px}}
+/* Móvil: la barra legal es fija; --legal-h (medida por JS) evita que tape la lista, el mapa y los botones flotantes */
+@media(max-width:900px){
+  .app-body{bottom:var(--legal-h,0px)}
+  .mobile-map-toggle{bottom:calc(var(--legal-h,0px) + 14px)}
+  .floating-advisor-btn{bottom:calc(var(--legal-h,0px) + 62px)}
+  .adv-layout{flex-direction:column}
+  .adv-right{width:100%}
+  .hist-modal-trio{grid-template-columns:1fr}
+  .hmt-col{padding:22px 20px;border-right:none;border-bottom:1px solid var(--border)}
+  .hmt-col:last-child{border-bottom:none}
+  .hist-compare{grid-template-columns:1fr}
+  .hist-col{border-right:none;border-bottom:1px solid var(--border)}
+  .res-list,.detail-body,.adv-panel,.area-modal-body{-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .res-list{padding-bottom:120px}
+  .adv-panel{padding-bottom:64px}
+}
 
 /* COOKIE CONSENT BANNER — slim full-width bar */
 .cookie-banner{position:fixed;bottom:34px;left:0;right:0;z-index:9500;background:#f5f5f5;border-top:1px solid #ddd;padding:10px 5%;display:none;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;animation:cookieSlideUp .25s ease}
@@ -1597,7 +1617,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 /* ══ AUTH MODAL ══ */
 .auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10001;display:none;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 .auth-overlay.open{display:flex}
-.auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
+.auth-box{background:#fff;border-radius:18px;width:min(440px,95vw);max-height:90vh;max-height:90dvh;overflow-y:auto;overscroll-behavior:contain;box-shadow:0 24px 80px rgba(0,0,0,.22);position:relative}
 .auth-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:var(--light);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;z-index:1;line-height:1}
 .auth-head{padding:28px 28px 0}
 .auth-logo{margin-bottom:14px;text-align:center}.auth-logo img{height:70px;width:auto}
@@ -1662,7 +1682,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <img src="data:image/png;base64,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" alt="reco"/>
   </div>
   <div class="spacer"></div>
-  <button class="btn-pub" onclick="goToApp('#publish')">Publicar inmueble</button>
+  <button class="btn-pub" onclick="goToApp('#publish')">Publicar<span class="hide-xs"> inmueble</span></button>
   <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="homeKeyCount">0</span></button>
   <button class="notif-bell" id="homeNotifBell" onclick="goToApp('#publicaciones')" title="Notificaciones">🔔</button>
   <button class="btn-ingresar" id="homeIngresarBtn" onclick="openAuthModal('login')">Ingresar</button>
@@ -2345,9 +2365,9 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
 
   <div class="spacer"></div>
 
-  <button class="btn-publish" onclick="openPublish()">Publicar inmueble</button>
+  <button class="btn-publish" onclick="openPublish()">Publicar<span class="hide-xs"> inmueble</span></button>
 
-  <button class="btn-buy-keys" onclick="openModal()">🔑 Llaves <span class="count" id="keyCount">0</span></button>
+  <button class="btn-buy-keys" onclick="openModal()" aria-label="Llaves">🔑 <span class="bk-lbl">Llaves </span><span class="count" id="keyCount">0</span></button>
 
   <button class="notif-bell" id="appNotifBell" onclick="navigateUserSection('publicaciones')" title="Notificaciones">🔔</button>
 
@@ -2387,6 +2407,7 @@ if(!location.hash && document.body){ document.body.classList.add('show-home'); }
       <div class="sg-drop" id="sgDrop"></div>
     </div>
     <button class="btn-search" onclick="applyFilters()">Buscar</button>
+    <button class="btn-hero-filters" id="heroFiltersBtn" onclick="setHeroCompact(false)" aria-label="Mostrar filtros" title="Mostrar filtros"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg></button>
   </div>
 
   <div class="filters-row">
@@ -5047,13 +5068,50 @@ function toggleAdv(){
   const b=document.getElementById('advBtn');
   const open=p.classList.toggle('open');
   b.classList.toggle('open',open);
+  fitAdvPanel();
   setTimeout(recalcBody,250);
 }
+
+// Limita el alto del panel de filtros al espacio visible (en móvil 70vh se salía de la pantalla)
+function fitAdvPanel(){
+  const p=document.getElementById('advPanel');
+  if(!p) return;
+  if(!p.classList.contains('open')){p.style.maxHeight='';return;}
+  const bar=document.getElementById('globalLegalBar');
+  const barH=bar&&getComputedStyle(bar).display!=='none'?bar.offsetHeight:0;
+  const avail=window.innerHeight-p.getBoundingClientRect().top-barH-12;
+  p.style.maxHeight=Math.max(160,Math.min(window.innerHeight*.7,avail))+'px';
+}
+window.addEventListener('resize',fitAdvPanel);
 
 function recalcBody(){
   const hero=document.getElementById('hero').offsetHeight;
   document.getElementById('appBody').style.top=(60+hero)+'px';
 }
+
+// Móvil: al deslizar la lista (o al ver el mapa) los filtros se pliegan y dejan solo el buscador
+function setHeroCompact(on){
+  const h=document.getElementById('hero');
+  if(!h) return;
+  if(window.innerWidth>900) on=false;
+  if(h.classList.contains('compact')===on) return;
+  h.classList.toggle('compact',on);
+  recalcBody();
+  fitAdvPanel();
+  if(typeof leafletMap!=='undefined'&&leafletMap) setTimeout(()=>{try{leafletMap.invalidateSize();}catch(e){}},60);
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const list=document.getElementById('resList');
+  if(!list) return;
+  let last=0;
+  list.addEventListener('scroll',()=>{
+    const t=list.scrollTop;
+    if(t>60&&t>last) setHeroCompact(true);
+    else if(t<=4) setHeroCompact(false);
+    last=t;
+  },{passive:true});
+});
+window.addEventListener('resize',()=>{if(window.innerWidth>900) setHeroCompact(false);});
 
 let _priceCur='soles';
 let _priceTab='precio';
@@ -6420,6 +6478,20 @@ document.addEventListener('touchend', e => {
     if(total > 1) cimgMove(pid, dx < 0 ? 1 : -1, total);
   }
   _cimgTouchX = null; _cimgTouchPid = null;
+}, {passive:true});
+// Touch/swipe en las fotos de las tarjetas de resultados (antes solo con flechas)
+let _cardTouch = null;
+document.addEventListener('touchstart', e => {
+  const img = e.target.closest('.p-card .card-img');
+  const track = img && img.querySelector('[id^="cimgt-"]');
+  _cardTouch = track ? { pid: track.id.replace('cimgt-',''), total: track.children.length,
+    x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+}, {passive:true});
+document.addEventListener('touchend', e => {
+  if(!_cardTouch) return;
+  const t = _cardTouch; _cardTouch = null;
+  const dx = e.changedTouches[0].clientX - t.x, dy = e.changedTouches[0].clientY - t.y;
+  if(t.total > 1 && Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) cimgMove(t.pid, dx < 0 ? 1 : -1, t.total);
 }, {passive:true});
 function cimgMove(pid, dir, total){
   _cimgIdx[pid] = ((_cimgIdx[pid]||0) + dir + total) % total;
@@ -9444,10 +9516,13 @@ function toggleMobileMap(){
   if(_mobileMapOn){
     body.classList.add('mobile-map');
     btn.innerHTML='📋 Ver lista';
+    setHeroCompact(true);
     if(leafletMap) setTimeout(()=>leafletMap.invalidateSize(),60);
   } else {
     body.classList.remove('mobile-map');
     btn.innerHTML='🗺️ Ver mapa';
+    const list=document.getElementById('resList');
+    setHeroCompact(!!list&&list.scrollTop>60);
   }
 }
 
@@ -10044,6 +10119,140 @@ function _applyLandingHash(){
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
 </style>
 
+<style>
+/* ══════════════ MÓVIL: UX/UI (Android + iPhone) ══════════════ */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,select,label,[onclick]{-webkit-tap-highlight-color:rgba(8,145,178,.12);touch-action:manipulation}
+/* En pantallas táctiles el :hover se queda "pegado" tras tocar */
+@media (hover:none){
+  .p-card:hover{transform:none;box-shadow:none;border-color:var(--border)}
+  .p-card.selected{border-color:var(--blue)}
+  /* La vista previa del pin por hover obliga a doble toque en iPhone: el toque abre el detalle directo */
+  .lf-pin:hover .lf-hover-card{display:none}
+}
+/* iOS hace zoom al enfocar campos con texto < 16px */
+@media (pointer:coarse){
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]),select,textarea{font-size:16px!important}
+}
+
+.btn-hero-filters{display:none;align-items:center;justify-content:center;flex-shrink:0;width:44px;border:none;border-radius:var(--r);background:rgba(255,255,255,.18);color:#fff}
+@media(max-width:900px){
+  /* Buscador plegado: solo la fila de búsqueda + botón para volver a abrir filtros */
+  .search-hero.compact .filters-row,.search-hero.compact .adv-panel{display:none!important}
+  .search-hero.compact .search-row{margin-bottom:0}
+  .search-hero.compact .btn-hero-filters{display:flex}
+  /* Herramientas del mapa: fila deslizable arriba en vez de columna que tapa el mapa */
+  .panel-expand-btn{display:none!important}
+  .map-tools-tr{left:10px;right:10px;width:auto;flex-direction:row;overflow-x:auto;gap:6px;padding:2px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .map-tools-tr::-webkit-scrollbar{display:none}
+  .mtool-btn{width:auto;flex-shrink:0;border-radius:99px;padding:8px 12px;font-size:.78rem}
+  .mtool-sub{display:none}
+  .radius-panel,.poly-panel,.mtool-panel{top:58px;left:10px;right:10px;width:auto;max-height:calc(100% - 150px);overflow-y:auto;overscroll-behavior:contain}
+  .map-search-zone-btn{top:58px}
+  /* Resultados: 3 columnas no caben en un celular */
+  #viewToggle button:nth-child(3){display:none}
+  .res-list.view-3col .p-card{width:calc(50% - 5px)}
+  .res-list.view-3col .card-img{height:150px;min-height:150px}
+  /* Botones flotantes solo donde sirven */
+  body.show-user .mobile-map-toggle,body.show-legal .mobile-map-toggle{display:none!important}
+  body.show-user .floating-advisor-btn{display:none}
+  body:not(.show-home) .cookie-banner{bottom:var(--legal-h,34px)}
+  /* Áreas táctiles más cómodas (mín. ~34px) */
+  .seg button,.beds-group button{min-height:34px}
+  .adv-chip{padding:7px 12px;font-size:.8rem}
+  .cimg-arr{width:32px;height:32px}
+  .clear-filters-btn,.adv-toggle-btn{min-height:34px}
+  .view-toggle button{padding:8px 10px}
+  .card-detail-btn{min-height:32px}
+  /* Mi cuenta */
+  .us-container{padding:20px 14px 120px}
+  .us-card{padding:18px 16px}
+  .us-field input{min-width:0}
+  .us-field-row{flex-wrap:wrap}
+  .us-keys-balance{flex-wrap:wrap;padding:16px 18px}
+  .us-prop-card{gap:10px}
+  .us-prop-img{width:76px;height:60px}
+}
+
+@media(max-width:600px){
+  /* Header: todo debe caber (antes "Ingresar" quedaba fuera de pantalla) */
+  header,#homeView header{padding:0 10px;gap:6px}
+  .logo,#homeView .logo{flex-shrink:1;min-width:0}
+  .logo img,#homeView .logo img{height:28px!important;max-width:100%;object-fit:contain;object-position:left center}
+  header .btn-buy-keys{gap:4px}
+  .hide-xs,.bk-lbl{display:none}
+  header .btn-publish,#homeView .btn-pub{padding:8px 10px;font-size:.78rem;white-space:nowrap}
+  header .btn-buy-keys{padding:8px 10px}
+  #homeView .btn-ingresar{padding:9px 12px}
+  .notif-bell{padding:4px}
+  /* Buscador del inicio: el botón "Buscar" se cortaba */
+  #homeView .search-box input{min-width:0;padding:14px}
+  #homeView .search-box .btn-search{padding:14px 16px}
+  #homeView .ad-card{grid-template-columns:minmax(0,1fr)}
+  #homeView .carousel-arrow-left{left:4px}
+  #homeView .carousel-arrow-right{right:4px}
+  #homeView .props-grid>.prop-card{min-width:min(280px,82vw)}
+  #homeView .ad-content{padding:20px 18px}
+  #homeView .ad-actions{flex-wrap:wrap}
+  /* Barra de búsqueda de la app más compacta: deja más espacio a los resultados */
+  .search-hero{padding:10px 12px 8px}
+  .search-row{gap:8px;margin-bottom:8px}
+  .search-input-wrap{min-width:0}
+  .search-input-wrap input{padding:10px 12px 10px 36px}
+  .search-icon{left:12px}
+  .btn-search{padding:10px 16px}
+  .filters-row{gap:6px}
+  .filters-row .f-label:not(#dormsLabel){display:none}
+  /* Tarjetas en modo lista */
+  .res-header{gap:6px;padding:8px 10px}
+  .sort-sel{flex:1 1 auto;max-width:none}
+  .res-list.view-list .p-card{height:auto;min-height:118px}
+  .res-list.view-list .card-img{width:38%;max-width:160px;min-height:118px}
+  .res-list.view-list .card-body{padding:8px 10px}
+  .res-list.view-list .card-specs{gap:6px}
+  .res-list.view-list .card-sqm-lbl{display:none}
+  .res-list.view-list .card-price-row{flex-wrap:wrap;gap:4px 8px}
+  .res-list.view-2col .card-img{height:140px;min-height:140px}
+  .res-list.view-2col .card-body{padding:10px}
+  /* Barra legal: los enlaces se salían de la pantalla */
+  .global-legal-bar{padding:6px 10px;gap:2px}
+  .global-legal-bar .glb-copy{display:none}
+  .global-legal-bar .glb-links{flex-wrap:wrap;justify-content:center;gap:2px 14px}
+  .global-legal-bar .glb-links a{display:inline-block;padding:5px 0;font-size:.72rem;color:rgba(255,255,255,.55)}
+  /* Cookies */
+  .cookie-banner{padding:8px 12px;gap:6px}
+  .cookie-banner p{font-size:.72rem}
+  .cookie-btns button{min-height:36px}
+  .cookie-close{min-width:36px;min-height:36px}
+  /* Detalle: bloque "para quién" del histórico en una columna */
+  .gate-trio{grid-template-columns:1fr}
+  .gate-trio-col{flex-direction:row;flex-wrap:wrap;align-items:center;padding:14px}
+  .gate-trio-body{flex-basis:100%}
+  .detail-gate{padding:24px 16px}
+  /* Modales */
+  .modal-top{padding:18px 18px 16px}
+  .modal-body{padding:16px 18px}
+  .plans-grid{gap:8px}
+  /* Informe completo */
+  .fr-subbar{padding:0 10px}
+  .fr-subbar-left{gap:8px;min-width:0}
+  .fr-subbar-right{gap:6px}
+  .fr-nav-back{padding:6px 10px;white-space:nowrap}
+  .fr-btn-ghost{padding:6px 9px;font-size:.76rem;white-space:nowrap}
+  .fr-gallery{height:280px}
+}
+/* Celular en horizontal: poca altura, todo más compacto */
+@media(max-height:500px) and (orientation:landscape){
+  .search-hero{padding:8px 14px 6px}
+  .search-row{margin-bottom:6px}
+  .detail-header{height:140px}
+  .global-legal-bar{padding:4px 12px}
+  .global-legal-bar .glb-copy{display:none}
+  .cookie-banner{padding:6px 12px;gap:8px}
+  .fr-gallery{height:240px}
+}
+</style>
+
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
 <div id="userSection">
   <div class="us-container" id="userSectionContent"></div>
@@ -10243,6 +10452,17 @@ function _applyLandingHash(){
     <a href="#reclamaciones" onclick="showLegalPage('reclamaciones');return false;">Libro de Reclamaciones</a>
   </div>
 </div>
+
+<script>
+(function(){
+  const bar=document.getElementById('globalLegalBar');
+  if(!bar) return;
+  const sync=()=>document.documentElement.style.setProperty('--legal-h',bar.offsetHeight+'px');
+  sync();
+  if(window.ResizeObserver) new ResizeObserver(sync).observe(bar);
+  else window.addEventListener('resize',sync);
+})();
+</script>
 
 <!-- COOKIE CONSENT BANNER -->
 <div class="cookie-banner" id="cookieBanner">
