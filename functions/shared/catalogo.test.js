@@ -177,6 +177,14 @@ assert.ok(V({ type: 'Departamento', area: 80, floor: 9, unitFloors: 2, floors: 9
 const prefijos = ['título', 'descripción', 'dirección', 'distrito', 'tipo', 'operacion', 'moneda', 'precio', 'área techada', 'área de terreno'];
 C.verificarPublicacion({}).errores.forEach(e => assert.ok(prefijos.some(p => e.startsWith(p)), e));
 
+console.log('  matchEtiqueta');
+assert.strictEqual(C.matchEtiqueta('etiquetas_vista', 'vista al mar'), 'Vista al mar');
+assert.strictEqual(C.matchEtiqueta('etiquetas_ambientes', 'GIMNASIO'), 'Gimnasio');
+assert.strictEqual(C.matchEtiqueta('etiquetas_generales', 'Piscina'), 'Piscina propia');
+assert.strictEqual(C.matchEtiqueta('etiquetas_ambientes', 'Piscina (edificio)'), 'Piscina del edificio');
+assert.strictEqual(C.matchEtiqueta('etiquetas_generales', 'Gimnasio'), '', 'grupo incorrecto');
+assert.strictEqual(C.matchEtiqueta('etiquetas_vista', 'Helipuerto'), '');
+
 console.log('  listas canónicas coherentes');
 C.TYPES.forEach(t => assert.strictEqual(C.matchType(t), t));
 C.OPS.forEach(o => assert.strictEqual(C.matchOp(o), o));

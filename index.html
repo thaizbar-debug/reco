@@ -16,6 +16,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js"></script>
 <!-- Valores estándar y sinónimos, compartidos con las Cloud Functions (window.RecoCatalogo) -->
 <script src="functions/shared/catalogo.js"></script>
+<!-- Núcleo de importación compartido con las Cloud Functions (window.RecoImport; usa RecoCatalogo) -->
+<script src="functions/shared/import-core.js"></script>
 <!-- Geocodificación: HERE (principal) / Google Places (opcional) -->
 <script>
 // HERE API key. Owned by the thaizbar@gmail.com account on
@@ -6632,6 +6634,7 @@ function renderPublish(){
     </div>
   </section>`;
   if(_pubTab==='single') _rps();
+  else if(_pubBulkStep===1) _pubDraftsLoad();
 }
 
 function _rps(){
@@ -7245,7 +7248,8 @@ function _pubBulkGo(step){
   if(el && el.scrollIntoView) try{ el.scrollIntoView({block:'nearest'}); }catch(_){ }
 }
 function _pubBulkReset(){
-  _pubBulkRows=[]; _pubBulkFileName='';
+  _pubDraftsDelete(_pubBulkRows.map(a=>a.draftId));
+  _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[];
   if(typeof _pubBulkRaw!=='undefined'){ _pubBulkRaw=[]; _pubBulkHeaders=[]; _pubBulkMap={}; }
   _pubBulkGo(1);
 }
@@ -7285,16 +7289,17 @@ function _pubBulkStepBodyHTML(){
   return _pubBulkUploadHTML();
 }
 function _pubBulkUploadHTML(){
-  return `<div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla en Excel, rellena una fila por inmueble y súbela aquí. La hoja <em>Instrucciones</em> explica qué va en cada columna y qué valores admite.<br><strong>¿Ya tienes tu propio Excel?</strong> Súbelo igual: te preguntaremos a qué corresponde cada columna.</div></div>
+  return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
+    <div class="pub-tip"><span>💡</span><div><strong>Cómo funciona:</strong> Descarga la plantilla en Excel, rellena una fila por inmueble y súbela aquí. La hoja <em>Instrucciones</em> explica qué va en cada columna y qué valores admite.<br><strong>¿Ya tienes tu propio Excel?</strong> Súbelo igual: te preguntaremos a qué corresponde cada columna.<br><strong>¿Tienes un PDF, Word o PowerPoint?</strong> La IA lee cada página, encuentra los inmuebles y les asigna sus fotos; tú solo revisas.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFile(event.dataTransfer.files[0])">
       <div class="dz-icon">📁</div>
       <div class="dz-lbl">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-      <div class="dz-sub">Formatos soportados: .csv · .xlsx · .xls</div>
+      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) con tus inmuebles</div>
     </label>
-    <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFile(this.files[0])">
+    <input type="file" id="pubBulkInput" accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFile(this.files[0])">
     <div id="pubBulkPreview"></div>`;
 }
 // ── Paso 2: tabla editable ──
@@ -7303,16 +7308,21 @@ function _pubBulkEdit(i,key,val){
   const a=_pubBulkRows[i]; if(!a) return;
   a.row[key]=String(val==null?'':val).trim();
   a.row=_pubBulkStandardize(a.row).row;
+  if(!a.edited) a.edited={};
+  a.edited[key]=1;
   const v=_pubBulkValidateRow(a.row);
   a.valid=v.valid; a.errors=v.errors; a.warnings=(a.stdNotes||[]).concat(v.warnings||[]);
+  _pubDraftSync(a);
   _pubBulkRefresh();
 }
 function _pubBulkRemoveRow(i){
-  _pubBulkRows.splice(i,1);
+  const gone=_pubBulkRows.splice(i,1)[0];
+  _pubDraftsDelete([gone&&gone.draftId]);
   if(!_pubBulkRows.length){ _pubBulkReset(); return; }
   _pubBulkRefresh();
 }
 function _pubBulkDropInvalid(){
+  _pubDraftsDelete(_pubBulkRows.filter(a=>!a.valid).map(a=>a.draftId));
   _pubBulkRows=_pubBulkRows.filter(a=>a.valid);
   if(!_pubBulkRows.length){ toast('⚠️ No quedó ninguna fila válida'); _pubBulkReset(); return; }
   _pubBulkRefresh();
@@ -7326,17 +7336,22 @@ function _pubBulkCounts(){
   return { total:_pubBulkRows.length, valid, invalid:_pubBulkRows.length-valid };
 }
 function _pubBulkValidateHTML(){
+  _pubBulkMarkDupes();
   const c=_pubBulkCounts();
   if(!c.total) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay filas cargadas.</div>';
   const cost=c.valid*_PUB_BULK_COST_PER;
   const shortKeys=cost>0 && cost>S.keysLeft;
   const warnRows=_pubBulkRows.filter(a=>a.warnings&&a.warnings.length);
+  const hasAi=_pubBulkRows.some(a=>(a.aiFields||[]).length);
+  const dupeRows=_pubBulkRows.filter(a=>a.dupe).length;
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;font-weight:600">${esc(_pubBulkFileName||'Archivo cargado')} · ${c.total} fila${c.total!==1?'s':''} · <span style="color:var(--green)">${c.valid} lista${c.valid!==1?'s':''}</span>${c.invalid?` · <span style="color:var(--red)">${c.invalid} con errores</span>`:''}</div>
       <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
     </div>
     ${c.invalid?`<div class="pub-tip" style="margin-top:10px"><span>✏️</span><div>Corrige las celdas marcadas en rojo directamente en la tabla. También puedes eliminar una fila o descartar todas las que tienen errores.</div></div>`:''}
+    ${hasAi?`<div class="pub-tip" style="margin-top:10px"><span>✨</span><div>Las celdas con <strong>borde punteado</strong> las completamos automáticamente a partir de tu texto. Revísalas: en <span style="color:#d97706">naranja</span> están las que deducimos sin que estuvieran escritas.</div></div>`:''}
+    ${dupeRows?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⧉ ${dupeRows} fila${dupeRows!==1?'s':''} parece${dupeRows!==1?'n':''} repetida${dupeRows!==1?'s':''}. No bloquea el envío, pero revísalo para no publicar dos veces el mismo inmueble.</div>`:''}
     ${warnRows.length?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⚠️ ${warnRows.length} fila${warnRows.length!==1?'s':''} con advertencias (no bloquean): ${warnRows.slice(0,3).map((a,i)=>'fila '+(i+1)+': '+a.warnings[0]).join('; ')}${warnRows.length>3?' ...':''}</div>`:''}
     <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
       <table class="pub-preview-table">
@@ -7345,8 +7360,8 @@ function _pubBulkValidateHTML(){
           const bad=k=>!a.valid && a.errors.some(e=>e.toLowerCase().indexOf(_pubBulkErrKey(k))===0);
           return `<tr style="background:${a.valid?'transparent':'#fff8f8'}">
             <td>${i+1}</td>
-            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border:1px solid ${bad(k)?'var(--red)':'var(--border)'};border-radius:5px;padding:4px 6px;font-size:11px;background:#fff"></td>`).join('')}
-            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}</td>
+            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" title="${esc(_pubBulkCellTitle(a,k))}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border-radius:5px;padding:4px 6px;font-size:11px;background:#fff;${_pubBulkCellStyle(a,k,bad(k))}"></td>`).join('')}
+            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}${a.dupe?`<br><span style="color:#b08000" title="${esc(a.dupe)}">⧉ Repetido</span>`:''}${a.notes&&a.notes.length?`<br><span style="color:var(--muted)" title="${esc(a.notes.join(' '))}">ℹ ${a.notes.length}</span>`:''}</td>
             <td><button onclick="_pubBulkRemoveRow(${i})" title="Eliminar fila" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button></td>
           </tr>`;
         }).join('')}</tbody>
@@ -7361,6 +7376,17 @@ function _pubBulkValidateHTML(){
         ${c.invalid?`Corrige ${c.invalid} fila${c.invalid!==1?'s':''} para continuar`:shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:`Continuar a fotos → ${c.valid} inmueble${c.valid!==1?'s':''}`}
       </button>
     </div>`;
+}
+// Campos completados automáticamente y aún sin tocar: borde punteado
+// (naranja si la IA los dedujo sin que estuvieran escritos).
+function _pubBulkCellStyle(a,k,bad){
+  if(bad) return 'border:1px solid var(--red)';
+  if(!(a.aiFields||[]).includes(k) || (a.edited&&a.edited[k])) return 'border:1px solid var(--border)';
+  return (a.inferred||[]).includes(k) ? 'border:1px dashed #d97706;background:#fff7ed' : 'border:1px dashed #c9a227';
+}
+function _pubBulkCellTitle(a,k){
+  if(!(a.aiFields||[]).includes(k) || (a.edited&&a.edited[k])) return '';
+  return (a.inferred||[]).includes(k) ? 'Deducido automáticamente: confírmalo' : 'Detectado automáticamente: revísalo';
 }
 function _pubBulkErrKey(k){
   return ({direccion:'dirección',distrito:'distrito',titulo:'título',descripcion:'descripción',
@@ -7446,6 +7472,7 @@ function _pubBulkPhotosHTML(){
         <button onclick="event.stopPropagation();_pubBulkPhotoRemove(${i})" title="Quitar" style="position:absolute;top:3px;right:3px;border:none;border-radius:50%;width:18px;height:18px;line-height:1;cursor:pointer;background:rgba(0,0,0,.55);color:#fff;font-size:11px">✕</button>
       </div>`).join('')||'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
     </div>
+    ${_pubBulkPoolHTML(a)}
     <div class="pub-actions" style="margin-top:18px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="pub-btn ghost" onclick="${_pubBulkPhotoIdx===0?'_pubBulkGo(2)':'_pubBulkPhotoNav(-1)'}">← ${_pubBulkPhotoIdx===0?'Volver a revisar':'Anterior'}</button>
@@ -7582,7 +7609,11 @@ function _pubBulkFile(file){
       };
       reader.readAsArrayBuffer(file);
     });
-  } else { toast('⚠️ Formato no soportado. Usa CSV, XLSX o XLS.'); }
+  } else if(_PUB_DOC_TYPES.includes(ext)){
+    _pubDocImport(file);
+  } else if(ext==='doc'||ext==='ppt'){
+    toast('⚠️ Guarda el archivo como .docx / .pptx (o PDF) y vuelve a subirlo.');
+  } else { toast('⚠️ Formato no soportado. Usa Excel, CSV, PDF, Word (.docx) o PowerPoint (.pptx).'); }
 }
 function _pubParseCSV(text){
   // RFC-4180 parser; BUG-15: acepta punto y coma (Excel en español) y
@@ -7868,27 +7899,499 @@ function _pubBulkApplyMap(){
       const h=_pubBulkMap[key];
       out[key]=h?String(src[h]==null?'':src[h]).trim():'';
     });
-    out.precio=_pubCleanNumber(out.precio);
-    out.area_techada=_pubCleanNumber(out.area_techada);
-    out.area_terreno=_pubCleanNumber(out.area_terreno);
-    // antiguedad no: "a estrenar" o "2015" los resuelve _pubBulkStandardize.
-    ['nro_dormitorios','nro_banos','nro_estacionamientos','piso','niveles','nro_pisos'].forEach(k=>{ out[k]=_pubCleanNumber(out[k]); });
     return out;
   });
   _pubBulkLoadRows(rows);
 }
-function _pubCleanNumber(v){
-  const s=String(v==null?'':v).replace(/[^0-9,.\-]/g,'').replace(/\.(?=\d{3}\b)/g,'').replace(',','.');
-  return s;
+// Precio, áreas, ambientes, tipo, operación, moneda y distrito se
+// normalizan con RecoImport (functions/shared/import-core.js), el mismo
+// código que usa el servidor: "US$ 185,000", "S/ 450 mil", "3 dorm"…
+// Tipo, operación, moneda, estado, antigüedad y sí/no los estandariza
+// RecoCatalogo (dentro de normalizeRow); stdNotes son sus avisos.
+function _pubNormalizeImportRow(r){
+  if(typeof RecoImport==='undefined'){
+    if(typeof RecoCatalogo==='undefined') return { row:r, notes:[], stdNotes:[] };
+    const std=_pubBulkStandardize(r);
+    return { row:std.row, notes:[], stdNotes:std.notes };
+  }
+  const n=RecoImport.normalizeRow(r);
+  return { row:n.row, notes:_pubImportNotes(n.changes), stdNotes:n.notas||[] };
+}
+function _pubImportNotes(changes){
+  return (changes||[]).filter(c=>c.pii).map(c=>`Quitamos ${c.pii} dato${c.pii!==1?'s':''} de contacto de ${c.field}.`);
+}
+function _pubBulkEntry(row,extra){
+  const v=_pubBulkValidateRow(row);
+  const stdNotes=(extra&&extra.stdNotes)||[];
+  return { row, photos:[], draftId:null, source:_pubBulkSource, aiFields:[], inferred:[], edited:{}, notes:[], dupe:'', ...extra, ...v,
+    stdNotes, warnings:stdNotes.concat(v.warnings||[]) };
 }
 function _pubBulkLoadRows(rows){
-  _pubBulkRows = rows.map(r => {
-    const std=_pubBulkStandardize(r);
-    const v=_pubBulkValidateRow(std.row);
-    return { row:std.row, photos:[], stdNotes:std.notes, ...v, warnings:std.notes.concat(v.warnings||[]) };
-  });
+  _pubBulkSource = /\.csv$/i.test(_pubBulkFileName||'') ? 'csv' : 'excel';
+  _pubBulkBatchId = '';
+  _pubDocPhotoPool = [];
+  _pubBulkRows = rows.map(r => { const n=_pubNormalizeImportRow(r); return _pubBulkEntry(n.row,{notes:n.notes,stdNotes:n.stdNotes}); });
   _pubBulkPhotoIdx=0;
   _pubBulkGo(2);
+  _pubDraftsSave();
+  _pubLoadOwnFingerprints();
+}
+function _pubBulkSubmitPayload(a){
+  const d=_pubBulkRowToPubData(a.row);
+  if(a.source && a.source!=='excel' && a.source!=='csv') d.source=a.source;
+  if(a.draftId){ d.importDraftId=a.draftId; d.importEdits=Object.keys(a.edited||{}).length; }
+  return d;
+}
+
+// ── Borradores de importación (/importDrafts) — roadmap Fase 0 ──
+// Cada fila cargada se guarda como borrador para poder retomarla otro día.
+// publishProperty borra el borrador al publicar; si nadie lo publica, la
+// política TTL lo elimina a los 30 días. Las fotos no se guardan en el
+// borrador (son demasiado pesadas para Firestore).
+let _pubBulkBatchId = '';
+let _pubBulkSource = 'excel';
+let _pubDraftGroups = [];
+let _pubOwnFingerprints = null;
+const _PUB_DRAFT_TTL_DAYS = 30;
+const _pubDraftTimers = {};
+const _PUB_IMPORT_SOURCE_LABELS = { excel:'Excel', csv:'CSV', text:'Texto pegado', whatsapp:'WhatsApp', documento:'Documento', url:'Enlace', pdf:'PDF', feed:'Feed' };
+
+async function _pubDraftsSave(){
+  if(!auth.currentUser || typeof RecoImport==='undefined') return;
+  const pending=_pubBulkRows.filter(a=>!a.draftId);
+  if(!pending.length) return;
+  const col=db.collection('importDrafts');
+  if(!_pubBulkBatchId) _pubBulkBatchId=col.doc().id;
+  const ts=firebase.firestore.FieldValue.serverTimestamp();
+  const expiresAt=firebase.firestore.Timestamp.fromMillis(Date.now()+_PUB_DRAFT_TTL_DAYS*864e5);
+  // _PUB_BULK_MAX (200) < 500, el límite de escrituras por batch.
+  const batch=db.batch();
+  pending.forEach(a=>{
+    const ref=col.doc(); a.draftId=ref.id;
+    batch.set(ref,{ uid:auth.currentUser.uid, batchId:_pubBulkBatchId, source:_pubBulkSource,
+      sourceName:(_pubBulkFileName||'').slice(0,120)||null, row:a.row, aiFields:[], notes:a.notes||[],
+      fingerprint:RecoImport.fingerprint(a.row), status:'draft', edited:[], createdAt:ts, updatedAt:ts, expiresAt });
+  });
+  try{ await batch.commit(); }
+  catch(e){ console.warn('[reco] no se pudieron guardar los borradores:', e); pending.forEach(a=>{ a.draftId=null; }); }
+}
+function _pubDraftSync(a){
+  if(!a || !a.draftId) return;
+  const id=a.draftId;
+  clearTimeout(_pubDraftTimers[id]);
+  _pubDraftTimers[id]=setTimeout(()=>{
+    delete _pubDraftTimers[id];
+    db.collection('importDrafts').doc(id).update({ row:a.row, edited:Object.keys(a.edited||{}),
+      fingerprint:(typeof RecoImport!=='undefined'?RecoImport.fingerprint(a.row):''),
+      updatedAt:firebase.firestore.FieldValue.serverTimestamp() })
+      .catch(e=>console.warn('[reco] borrador no actualizado:', id, e));
+  },800);
+}
+function _pubDraftsDelete(ids){
+  ids=(ids||[]).filter(Boolean);
+  if(!ids.length || !auth.currentUser) return;
+  ids.forEach(id=>{ clearTimeout(_pubDraftTimers[id]); delete _pubDraftTimers[id]; });
+  for(let i=0;i<ids.length;i+=400){
+    const batch=db.batch();
+    ids.slice(i,i+400).forEach(id=>batch.delete(db.collection('importDrafts').doc(id)));
+    batch.commit().catch(e=>console.warn('[reco] borradores no eliminados:', e));
+  }
+}
+async function _pubDraftsLoad(){
+  if(!auth.currentUser || !document.getElementById('pubDraftsBanner')) return;
+  try{
+    const snap=await db.collection('importDrafts').where('uid','==',auth.currentUser.uid).get();
+    const groups={};
+    snap.docs.forEach(d=>{
+      const x=d.data();
+      const g=groups[x.batchId]||(groups[x.batchId]={ batchId:x.batchId, source:x.source, sourceName:x.sourceName, at:0, docs:[] });
+      g.docs.push({ id:d.id, ...x });
+      const t=x.createdAt&&x.createdAt.toMillis?x.createdAt.toMillis():0;
+      if(t>g.at) g.at=t;
+    });
+    _pubDraftGroups=Object.values(groups).sort((a,b)=>b.at-a.at);
+  }catch(e){ console.warn('[reco] no se pudieron leer los borradores:', e); return; }
+  const el=document.getElementById('pubDraftsBanner');
+  if(el) el.innerHTML=_pubDraftsBannerHTML();
+}
+function _pubDraftsBannerHTML(){
+  if(!_pubDraftGroups.length) return '';
+  return `<div class="pub-tip" style="margin-bottom:12px"><span>📝</span><div style="flex:1">
+    <strong>Tienes inmuebles sin publicar.</strong> Retómalos donde los dejaste (las fotos hay que volver a adjuntarlas).
+    ${_pubDraftGroups.map(g=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <div style="font-size:12px">${g.docs.length} inmueble${g.docs.length!==1?'s':''} · ${esc(g.sourceName||_PUB_IMPORT_SOURCE_LABELS[g.source]||'Importación')}${g.at?` · <span style="color:var(--muted)">${new Date(g.at).toLocaleDateString('es-PE')}</span>`:''}</div>
+      <div style="display:flex;gap:6px">
+        <button class="pub-btn primary" style="font-size:12px;padding:6px 12px" onclick="_pubDraftsResume('${esc(g.batchId)}')">Retomar</button>
+        <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubDraftsDiscard('${esc(g.batchId)}')">Descartar</button>
+      </div>
+    </div>`).join('')}
+  </div></div>`;
+}
+function _pubDraftsResume(batchId){
+  const g=_pubDraftGroups.find(x=>x.batchId===batchId);
+  if(g) _pubBulkLoadDrafts(g.docs,{ batchId:g.batchId, source:g.source, sourceName:g.sourceName });
+}
+function _pubDraftsDiscard(batchId){
+  const g=_pubDraftGroups.find(x=>x.batchId===batchId);
+  if(!g || !confirm(`¿Descartar ${g.docs.length} inmueble${g.docs.length!==1?'s':''} sin publicar?`)) return;
+  _pubDraftsDelete(g.docs.map(d=>d.id));
+  _pubDraftGroups=_pubDraftGroups.filter(x=>x!==g);
+  const el=document.getElementById('pubDraftsBanner');
+  if(el) el.innerHTML=_pubDraftsBannerHTML();
+}
+// Carga borradores en la bandeja de revisión. Lo usan "Retomar" y, en la
+// Fase 1, el resultado de extractListings (texto, WhatsApp, enlaces…).
+function _pubBulkLoadDrafts(drafts,meta){
+  _pubBulkBatchId=meta.batchId||'';
+  _pubBulkSource=meta.source||'excel';
+  _pubBulkFileName=meta.sourceName||_PUB_IMPORT_SOURCE_LABELS[_pubBulkSource]||'';
+  _pubBulkRows=drafts.map(d=>_pubBulkEntry(Object.assign({},d.row),{
+    draftId:d.id, source:d.source||_pubBulkSource, aiFields:d.aiFields||[], inferred:d.inferredFields||[],
+    edited:(d.edited||[]).reduce((o,k)=>{ o[k]=1; return o; },{}), notes:d.notes||[], photos:d.photos||[] }));
+  _pubDraftGroups=_pubDraftGroups.filter(x=>x.batchId!==_pubBulkBatchId);
+  _pubBulkPhotoIdx=0;
+  _pubBulkGo(2);
+  _pubLoadOwnFingerprints();
+}
+// Duplicados: contra las publicaciones propias y dentro del mismo lote.
+async function _pubLoadOwnFingerprints(){
+  if(!auth.currentUser || typeof RecoImport==='undefined') return;
+  try{
+    const snap=await db.collection('publications').where('userId','==',auth.currentUser.uid).get();
+    _pubOwnFingerprints=new Set(snap.docs.map(d=>RecoImport.fingerprint(d.data())).filter(Boolean));
+    if(_pubBulkStep===2) _pubBulkRefresh();
+  }catch(e){ console.warn('[reco] no se pudieron leer tus publicaciones para detectar duplicados:', e); }
+}
+function _pubBulkMarkDupes(){
+  if(typeof RecoImport==='undefined') return;
+  const seen={};
+  _pubBulkRows.forEach((a,i)=>{
+    const fp=RecoImport.fingerprint(a.row);
+    a.dupe='';
+    if(!fp) return;
+    if(_pubOwnFingerprints && _pubOwnFingerprints.has(fp)) a.dupe='Ya tienes una publicación con el mismo distrito, operación, tipo, área, precio y dormitorios.';
+    else if(seen[fp]) a.dupe='Repite los datos de la fila '+seen[fp]+'.';
+    else seen[fp]=i+1;
+  });
+}
+
+// ── Importar documentos (PDF, Word .docx, PowerPoint .pptx) ──
+// El documento se lee en el navegador: texto por página/diapositiva, fotos
+// incluidas y, si una página es un escaneo (sin texto seleccionable), una
+// imagen de la página para que la IA la lea. extractListings recibe el
+// texto con marcadores [FOTO id] y devuelve los inmuebles con los ids de sus
+// fotos; las fotos no salen del navegador hasta publicar.
+const _PUB_PDFJS_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+const _PUB_PDFJS_WORKER_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const _PUB_JSZIP_URL='https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+const _PUB_DOC_TYPES=['pdf','docx','pptx'];
+const _PUB_DOC_MAX_MB=40;
+const _PUB_DOC_MAX_PAGES=80;
+const _PUB_DOC_MAX_PHOTOS=150;
+const _PUB_DOC_MIN_PHOTO_PX=150;   // menos que esto: logo o ícono
+const _PUB_DOC_SCAN_MIN_CHARS=30;  // página con menos texto = escaneada
+const _PUB_DOC_PART_CHARS=18000;   // < IMPORT_TEXT_MAX_CHARS del servidor
+const _PUB_DOC_PART_SCANS=6;       // = IMPORT_DOC_MAX_IMAGES del servidor
+let _pubDocPhotoPool=[];           // fotos del documento, para asignarlas a mano
+
+function _pubLoadScript(url,globalName){
+  return new Promise((resolve,reject)=>{
+    if(window[globalName]) return resolve(window[globalName]);
+    const s=document.createElement('script');
+    s.src=url;
+    s.onload=()=>window[globalName]?resolve(window[globalName]):reject(new Error('No se pudo iniciar el lector de documentos.'));
+    s.onerror=()=>reject(new Error('No se pudo cargar el lector de documentos. Revisa tu conexión.'));
+    document.head.appendChild(s);
+  });
+}
+// Canvas → JPEG (máx. 1600 px, fondo blanco para PNG con transparencia).
+function _pubCanvasJpeg(src,w,h,max){
+  const r=Math.min(1,(max||1600)/Math.max(w,h));
+  const cv=document.createElement('canvas');
+  cv.width=Math.round(w*r); cv.height=Math.round(h*r);
+  const cx=cv.getContext('2d');
+  cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height);
+  cx.drawImage(src,0,0,cv.width,cv.height);
+  return cv.toDataURL('image/jpeg',0.85);
+}
+// Blob de imagen → JPEG, o null si es chica (logo) o el navegador no la
+// puede mostrar (EMF/WMF/TIFF de Office).
+function _pubDocBlobToJpeg(blob){
+  return new Promise(resolve=>{
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      const w=img.naturalWidth, h=img.naturalHeight;
+      const out=(w>=_PUB_DOC_MIN_PHOTO_PX && h>=_PUB_DOC_MIN_PHOTO_PX) ? _pubCanvasJpeg(img,w,h) : null;
+      URL.revokeObjectURL(url); resolve(out);
+    };
+    img.onerror=()=>{ URL.revokeObjectURL(url); resolve(null); };
+    img.src=url;
+  });
+}
+// Acumula secciones y fotos sin repetir la misma imagen (un logo en cada
+// página, o la misma foto en dos diapositivas).
+function _pubDocCollector(fileType){
+  const doc={ fileType, sections:[], photos:[], scans:[] };
+  const seen=new Set();
+  doc.addPhoto=(prefix,dataUrl)=>{
+    if(!dataUrl || doc.photos.length>=_PUB_DOC_MAX_PHOTOS) return null;
+    const key=dataUrl.length+':'+dataUrl.slice(-80);
+    if(seen.has(key)) return null;
+    seen.add(key);
+    const id=prefix+'-'+(doc.photos.filter(p=>p.id.indexOf(prefix+'-')===0).length+1);
+    doc.photos.push({ id, dataUrl });
+    return id;
+  };
+  return doc;
+}
+function _pubDocSectionText(label,text,ids){
+  return `=== ${label} ===\n${String(text||'').replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim()}`
+    +(ids.length?`\n${ids.map(id=>`[FOTO ${id}]`).join(' ')}`:'');
+}
+
+// ── PDF (pdf.js) ──
+async function _pubPdfImage(page,name){
+  const store=String(name).indexOf('g_')===0?page.commonObjs:page.objs;
+  const obj=await new Promise(res=>{ try{ store.get(name,res); }catch(_){ res(null); } });
+  if(!obj || obj.width<_PUB_DOC_MIN_PHOTO_PX || obj.height<_PUB_DOC_MIN_PHOTO_PX) return null;
+  if(obj.bitmap) return _pubCanvasJpeg(obj.bitmap,obj.width,obj.height);
+  if(!obj.data) return null;
+  // ImageKind de pdf.js: 1 = 1 bit gris, 2 = RGB, 3 = RGBA.
+  const cv=document.createElement('canvas'); cv.width=obj.width; cv.height=obj.height;
+  const cx=cv.getContext('2d'); const id=cx.createImageData(obj.width,obj.height);
+  const n=obj.width*obj.height, src=obj.data, dst=id.data;
+  if(obj.kind===3) dst.set(src.subarray(0,n*4));
+  else if(obj.kind===2){ for(let i=0,j=0;i<n;i++,j+=3){ dst[i*4]=src[j]; dst[i*4+1]=src[j+1]; dst[i*4+2]=src[j+2]; dst[i*4+3]=255; } }
+  else { const rowBytes=(obj.width+7)>>3; for(let y=0;y<obj.height;y++) for(let x=0;x<obj.width;x++){ const v=(src[y*rowBytes+(x>>3)]>>(7-(x&7)))&1?255:0; const k=(y*obj.width+x)*4; dst[k]=dst[k+1]=dst[k+2]=v; dst[k+3]=255; } }
+  cx.putImageData(id,0,0);
+  return _pubCanvasJpeg(cv,obj.width,obj.height);
+}
+async function _pubDocReadPdf(buf,progress){
+  const pdfjs=await _pubLoadScript(_PUB_PDFJS_URL,'pdfjsLib');
+  pdfjs.GlobalWorkerOptions.workerSrc=_PUB_PDFJS_WORKER_URL;
+  const pdf=await pdfjs.getDocument({ data:buf }).promise;
+  const doc=_pubDocCollector('pdf');
+  const total=Math.min(pdf.numPages,_PUB_DOC_MAX_PAGES);
+  doc.truncated=pdf.numPages>total;
+  const IMG_OPS=[pdfjs.OPS.paintImageXObject,pdfjs.OPS.paintImageXObjectRepeat].filter(x=>x!=null);
+  for(let p=1;p<=total;p++){
+    progress(`Leyendo página ${p} de ${total}…`);
+    const page=await pdf.getPage(p);
+    const tc=await page.getTextContent();
+    const text=tc.items.map(it=>(it.str||'')+(it.hasEOL?'\n':' ')).join('');
+    if(text.replace(/\s/g,'').length<_PUB_DOC_SCAN_MIN_CHARS){
+      // Página escaneada: la imagen de la página entera va a la IA.
+      const vp=page.getViewport({ scale:1 });
+      const scale=Math.min(2,1600/Math.max(vp.width,vp.height));
+      const v2=page.getViewport({ scale });
+      const cv=document.createElement('canvas'); cv.width=Math.round(v2.width); cv.height=Math.round(v2.height);
+      await page.render({ canvasContext:cv.getContext('2d'), viewport:v2 }).promise;
+      doc.scans.push({ page:String(p), dataUrl:cv.toDataURL('image/jpeg',0.8) });
+      doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p} (escaneada, ver imagen)`,text,[]), photoIds:[], scan:true });
+      continue;
+    }
+    const ops=await page.getOperatorList();
+    const ids=[], names=new Set();
+    for(let i=0;i<ops.fnArray.length;i++){
+      if(!IMG_OPS.includes(ops.fnArray[i])) continue;
+      const name=ops.argsArray[i][0];
+      if(names.has(name)) continue;
+      names.add(name);
+      const id=doc.addPhoto('p'+p,await _pubPdfImage(page,name));
+      if(id) ids.push(id);
+    }
+    doc.sections.push({ label:`Página ${p}`, text:_pubDocSectionText(`Página ${p}`,text,ids), photoIds:ids });
+  }
+  return doc;
+}
+
+// ── Office (.docx / .pptx son ZIP con XML) ──
+function _pubXml(str){ return new DOMParser().parseFromString(str,'application/xml'); }
+async function _pubZipRels(zip,path){
+  const f=zip.file(path); const out={};
+  if(!f) return out;
+  const x=_pubXml(await f.async('string'));
+  Array.from(x.getElementsByTagName('Relationship')).forEach(r=>{ out[r.getAttribute('Id')]={ target:r.getAttribute('Target'), type:r.getAttribute('Type')||'' }; });
+  return out;
+}
+function _pubZipResolve(base,target){
+  if(/^\//.test(target)) return target.slice(1);
+  const parts=base.split('/'); parts.pop();
+  target.split('/').forEach(seg=>{ if(seg==='..') parts.pop(); else if(seg && seg!=='.') parts.push(seg); });
+  return parts.join('/');
+}
+async function _pubZipImage(zip,path){
+  const f=zip.file(path);
+  if(!f || !/\.(png|jpe?g|gif|webp|bmp)$/i.test(path)) return null;
+  return _pubDocBlobToJpeg(await f.async('blob'));
+}
+async function _pubDocReadDocx(buf,progress){
+  const JSZip=await _pubLoadScript(_PUB_JSZIP_URL,'JSZip');
+  const zip=await JSZip.loadAsync(buf);
+  const main=zip.file('word/document.xml');
+  if(!main) throw new Error('El archivo no parece un Word (.docx) válido.');
+  progress('Leyendo el documento…');
+  const rels=await _pubZipRels(zip,'word/_rels/document.xml.rels');
+  const body=_pubXml(await main.async('string')).getElementsByTagName('w:body')[0];
+  const doc=_pubDocCollector('docx');
+  let n=1, text='', pending=[];
+  const flush=async ()=>{
+    const ids=[];
+    for(const rid of pending){ const r=rels[rid]; if(r){ const id=doc.addPhoto('d'+n,await _pubZipImage(zip,_pubZipResolve('word/document.xml',r.target))); if(id) ids.push(id); } }
+    if(text.trim()||ids.length) doc.sections.push({ label:`Sección ${n}`, text:_pubDocSectionText(`Sección ${n}`,text,ids), photoIds:ids });
+    n++; text=''; pending=[];
+  };
+  // Recorre el cuerpo en orden: párrafos, tablas (celdas separadas por "|"),
+  // imágenes (a:blip / v:imagedata) y saltos de página (nueva sección).
+  const walk=async node=>{
+    for(const el of Array.from(node.childNodes)){
+      if(el.nodeType!==1) continue;
+      const tag=el.nodeName;
+      if(tag==='w:t') text+=el.textContent;
+      else if(tag==='w:tab') text+='\t';
+      else if(tag==='w:br'){ if(el.getAttribute('w:type')==='page') await flush(); else text+='\n'; }
+      else if(tag==='a:blip'){ const rid=el.getAttribute('r:embed'); if(rid){ pending.push(rid); text+=' '; } }
+      else if(tag==='v:imagedata'){ const rid=el.getAttribute('r:id'); if(rid) pending.push(rid); }
+      else if(tag==='w:tc'){
+        // Celda en una sola línea; filas como "Antigüedad | 2015".
+        const start=text.length;
+        await walk(el);
+        const cell=text.slice(start).replace(/\s+/g,' ').trim();
+        text=text.slice(0,start)+(cell?cell+' | ':'');
+      }
+      else {
+        await walk(el);
+        if(tag==='w:p') text+='\n';
+        else if(tag==='w:tr') text=text.replace(/ \| $/,'')+'\n';
+      }
+    }
+  };
+  if(body) await walk(body);
+  await flush();
+  return doc;
+}
+async function _pubDocReadPptx(buf,progress){
+  const JSZip=await _pubLoadScript(_PUB_JSZIP_URL,'JSZip');
+  const zip=await JSZip.loadAsync(buf);
+  // Orden de la presentación (p:sldIdLst); si falta, por número de archivo.
+  const presRels=await _pubZipRels(zip,'ppt/_rels/presentation.xml.rels');
+  const presFile=zip.file('ppt/presentation.xml');
+  let slides=[];
+  if(presFile){
+    const pres=_pubXml(await presFile.async('string'));
+    slides=Array.from(pres.getElementsByTagName('p:sldId')).map(s=>presRels[s.getAttribute('r:id')])
+      .filter(Boolean).map(r=>_pubZipResolve('ppt/presentation.xml',r.target));
+  }
+  if(!slides.length) slides=Object.keys(zip.files).filter(f=>/^ppt\/slides\/slide\d+\.xml$/.test(f))
+    .sort((a,b)=>Number(a.match(/(\d+)\.xml$/)[1])-Number(b.match(/(\d+)\.xml$/)[1]));
+  if(!slides.length) throw new Error('El archivo no parece un PowerPoint (.pptx) válido.');
+  const doc=_pubDocCollector('pptx');
+  const total=Math.min(slides.length,_PUB_DOC_MAX_PAGES);
+  doc.truncated=slides.length>total;
+  const paras=x=>Array.from(x.getElementsByTagName('a:p'))
+    .map(p=>Array.from(p.getElementsByTagName('a:t')).map(t=>t.textContent).join('')).filter(t=>t.trim()).join('\n');
+  for(let i=0;i<total;i++){
+    progress(`Leyendo diapositiva ${i+1} de ${total}…`);
+    const path=slides[i];
+    const f=zip.file(path); if(!f) continue;
+    const x=_pubXml(await f.async('string'));
+    const relsPath=path.replace(/slides\/(slide\d+\.xml)$/,'slides/_rels/$1.rels');
+    const rels=await _pubZipRels(zip,relsPath);
+    let text=paras(x);
+    const notesRel=Object.values(rels).find(r=>/notesSlide$/.test(r.type));
+    if(notesRel){
+      const nf=zip.file(_pubZipResolve(path,notesRel.target));
+      if(nf){ const nt=paras(_pubXml(await nf.async('string'))).replace(/^\d+$/gm,'').trim(); if(nt) text+=`\nNotas: ${nt}`; }
+    }
+    const ids=[];
+    for(const b of Array.from(x.getElementsByTagName('a:blip'))){
+      const r=rels[b.getAttribute('r:embed')];
+      if(!r) continue;
+      const id=doc.addPhoto('s'+(i+1),await _pubZipImage(zip,_pubZipResolve(path,r.target)));
+      if(id) ids.push(id);
+    }
+    doc.sections.push({ label:`Diapositiva ${i+1}`, text:_pubDocSectionText(`Diapositiva ${i+1}`,text,ids), photoIds:ids });
+  }
+  return doc;
+}
+async function _pubDocRead(file,progress){
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  if(!_PUB_DOC_TYPES.includes(ext)) throw new Error('Formato no soportado.');
+  if(file.size>_PUB_DOC_MAX_MB*1048576) throw new Error(`El archivo pesa más de ${_PUB_DOC_MAX_MB} MB. Divídelo o comprime sus imágenes.`);
+  const buf=await file.arrayBuffer();
+  progress=progress||(()=>{});
+  if(ext==='pdf') return _pubDocReadPdf(buf,progress);
+  if(ext==='docx') return _pubDocReadDocx(buf,progress);
+  return _pubDocReadPptx(buf,progress);
+}
+// Partes para extractListings: secciones enteras, sin pasar el límite de
+// texto ni de páginas escaneadas por llamada.
+function _pubDocParts(doc){
+  const parts=[]; let cur=null;
+  const scanOf=s=>doc.scans.find(x=>s.scan && s.label===`Página ${x.page}`);
+  doc.sections.forEach(s=>{
+    const t=s.text.length>_PUB_DOC_PART_CHARS ? s.text.slice(0,_PUB_DOC_PART_CHARS) : s.text;
+    const scan=scanOf(s);
+    if(!cur || cur.text.length+t.length+2>_PUB_DOC_PART_CHARS || (scan && cur.images.length>=_PUB_DOC_PART_SCANS)){
+      cur={ text:'', photoIds:[], images:[] }; parts.push(cur);
+    }
+    cur.text+=(cur.text?'\n\n':'')+t;
+    cur.photoIds.push(...s.photoIds);
+    if(scan) cur.images.push(scan);
+  });
+  return parts;
+}
+function _pubDocProgress(msg){
+  const el=document.getElementById('pubBulkPreview');
+  if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:var(--light);border-radius:8px;font-size:13px">⏳ ${esc(msg)}</div>`;
+}
+async function _pubDocImport(file){
+  if(!auth.currentUser){ toast('⚠️ Inicia sesión para leer documentos con IA'); openAuthModal('login'); return; }
+  if(!_ensureEmailVerified()) return;
+  _pubBulkFileName=file.name;
+  try{
+    const doc=await _pubDocRead(file,_pubDocProgress);
+    const parts=_pubDocParts(doc);
+    if(!parts.length) throw new Error('No encontramos texto ni páginas legibles en el documento.');
+    const call=_getFunctions().httpsCallable('extractListings');
+    const drafts=[]; let batchId='';
+    for(let i=0;i<parts.length;i++){
+      _pubDocProgress(`Buscando inmuebles con IA${parts.length>1?` (parte ${i+1} de ${parts.length})`:''}… ${doc.photos.length} foto${doc.photos.length!==1?'s':''} encontrada${doc.photos.length!==1?'s':''}.`);
+      const res=await call({ kind:'document', fileType:doc.fileType, text:parts[i].text, photoIds:parts[i].photoIds,
+        images:parts[i].images, sourceName:file.name.slice(0,120), batchId:batchId||undefined });
+      batchId=res.data.batchId;
+      drafts.push(...(res.data.drafts||[]));
+    }
+    if(!drafts.length){ _pubDocProgress('No encontramos inmuebles en el documento. Revisa que tenga precio, ubicación o áreas.'); return; }
+    const byId=Object.fromEntries(doc.photos.map(p=>[p.id,p.dataUrl]));
+    drafts.forEach(d=>{ d.photos=(d.fotos||[]).map(id=>byId[id]).filter(Boolean).slice(0,_PUB_BULK_PHOTO_MAX); });
+    _pubDocPhotoPool=doc.photos.map(p=>p.dataUrl);
+    _pubBulkLoadDrafts(drafts,{ batchId, source:'documento', sourceName:file.name });
+    const conFotos=drafts.filter(d=>d.photos.length).length;
+    toast(`📄 ${drafts.length} inmueble${drafts.length!==1?'s':''} encontrado${drafts.length!==1?'s':''}${doc.photos.length?` · fotos asignadas a ${conFotos}`:''}${doc.truncated?` · solo se leyeron las primeras ${_PUB_DOC_MAX_PAGES} páginas`:''}`);
+  }catch(e){
+    console.error('[reco] importar documento:', e);
+    const msg=(e && e.message) || 'No se pudo leer el documento.';
+    _pubDocProgress('⚠️ '+msg);
+    toast('⚠️ '+msg);
+  }
+}
+// Paso de fotos: agrega una foto del documento al inmueble actual.
+function _pubBulkPoolAdd(i){
+  const a=_pubBulkCurrentRow(), ph=_pubDocPhotoPool[i];
+  if(!a || !ph) return;
+  if(!a.photos) a.photos=[];
+  if(a.photos.includes(ph)) return;
+  if(a.photos.length>=_PUB_BULK_PHOTO_MAX){ toast(`⚠️ Máximo ${_PUB_BULK_PHOTO_MAX} fotos por inmueble`); return; }
+  a.photos.push(ph);
+  _pubBulkRefresh();
+}
+function _pubBulkPoolHTML(a){
+  if(!_pubDocPhotoPool.length) return '';
+  const used=new Set(_pubBulkRows.flatMap(r=>r.photos||[]));
+  return `<div style="margin-top:14px"><div style="font-size:12px;font-weight:600">Fotos del documento <span style="font-weight:400;color:var(--muted)">· toca una para agregarla a este inmueble (las atenuadas ya están asignadas)</span></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${_pubDocPhotoPool.map((ph,i)=>`<img src="${ph}" onclick="_pubBulkPoolAdd(${i})" title="Agregar a este inmueble" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${(a.photos||[]).includes(ph)?'var(--blue)':'transparent'};opacity:${used.has(ph)&&!(a.photos||[]).includes(ph)?'.45':'1'}">`).join('')}</div></div>`;
 }
 
 async function _pubBulkSubmit(){
@@ -7908,10 +8411,12 @@ async function _pubBulkSubmit(){
     if(aborted) break;
     const r = valid[i].row;
     const rowPhotos = valid[i].photos || [];
+    const payload = _pubBulkSubmitPayload(valid[i]);
     if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: <span style="color:var(--muted)">${(r.direccion||'').slice(0,40)}</span>`;
     try {
-      const res = await call(_pubBulkRowToPubData(r));
+      const res = await call(payload);
       ok++;
+      valid[i].draftId = null; // publishProperty ya borró el borrador
       const pubId = res && res.data && res.data.publicationId;
       if(pubId && rowPhotos.length){
         try{
@@ -7953,7 +8458,7 @@ async function _pubBulkSubmit(){
   if(closeBtn){ closeBtn.setAttribute('onclick', closeBtn.dataset._prevOnclick||'closePublish()'); delete closeBtn.dataset._prevOnclick; }
   toast(failed.length ? `⚠️ ${ok} publicadas · ${failed.length} fallaron` : `🚀 ¡${ok} publicación${ok!==1?'es':''} enviada${ok!==1?'s':''}!`);
   if(!failed.length){
-    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1;
+    _pubBulkRows=[]; _pubBulkFileName=''; _pubBulkStep=1; _pubBulkBatchId=''; _pubBulkSource='excel'; _pubDocPhotoPool=[];
     setTimeout(()=>closePublish(),2200);
   }
 }

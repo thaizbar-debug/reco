@@ -215,7 +215,7 @@
     'Terreno': { requiere: 'terreno', noAplica: NO_APLICA_TERRENO },
     'Otros': { requiere: 'alguna' },
   };
-  const ETIQUETAS = { beds: 'dormitorios', baths: 'baños', parking: 'estacionamientos', floor: 'piso',
+  const NOMBRE_CAMPO = { beds: 'dormitorios', baths: 'baños', parking: 'estacionamientos', floor: 'piso',
     floors: 'pisos del edificio', unitFloors: 'niveles', age: 'antigüedad', ascensor: 'ascensor',
     amoblado: 'amoblado', petFriendly: 'pet friendly' };
   const MAX_TITULO = 200;
@@ -286,7 +286,7 @@
     (regla.noAplica || []).forEach((k) => {
       const esBool = ['ascensor', 'amoblado', 'petFriendly'].includes(k);
       const tiene = esBool ? p[k] === true : (k === 'unitFloors' ? num(p[k]) > 1 : num(p[k]) > 0);
-      if (tiene) ignorados.push(ETIQUETAS[k]);
+      if (tiene) ignorados.push(NOMBRE_CAMPO[k]);
       datos[k] = esBool ? false : (k === 'unitFloors' ? 1 : 0);
     });
     if (ignorados.length) avisos.push(`${type}: ${ignorados.join(', ')} no aplica${ignorados.length > 1 ? 'n' : ''} y no se publicará${ignorados.length > 1 ? 'n' : ''}.`);
@@ -294,7 +294,41 @@
     return { errores, avisos, datos };
   }
 
+  // ── Etiquetas de características (columnas etiquetas_* de la plantilla) ──
+  // Mismas listas que _PUB_FEATS_* en index.html (un test las compara). La
+  // IA solo puede elegir de aquí; matchEtiqueta acepta mayúsculas/tildes
+  // distintas y los nombres antiguos.
+  const ETIQUETAS = {
+    etiquetas_generales: ['Baño de servicio', 'Walk-in Closet', 'Armario/Closet', 'Balcón', 'Intercomunicador',
+      'Jacuzzi', 'Jardín propio', 'Piscina propia', 'Terraza propia', 'Aire Acondicionado',
+      'Propiedad de Lujo o Exclusiva', 'Propiedad de Campo o Rural', 'Propiedad Inteligente',
+      'Propiedad Eco-amigable o Sostenible', 'Propiedad de Playa'],
+    etiquetas_ambientes: ['Cafetería del edificio', 'Lavandería del edificio', 'Patio común', 'Sala de estar común', 'Recepción', 'Conserje',
+      'Salida directa a parque', 'Zona de Parrilla (BBQ)', 'Sala de juegos', 'Depósito', 'Oficinas/Co-work',
+      'Piscina del edificio', 'Salón de usos múltiples', 'Sauna/Spa', 'Sótano', 'Áreas verdes',
+      'Canchas deportivas', 'Gimnasio', 'Juegos infantiles',
+      'Acceso para personas con movilidad reducida', 'Estacionamiento para visitas'],
+    etiquetas_vista: ['Vista a parque', 'Vista al mar', 'Vista a calle', 'Vista a área interior', 'Vista a campo', 'Vista a paisaje'],
+    etiquetas_acceso: ['Calle', 'Avenida', 'Jirón', 'Pasaje', 'Carretera', 'Alameda', 'Boulevard', 'Vía privada', 'Callejón'],
+    etiquetas_zonas: ['Residencial', 'Comercial', 'Industrial', 'Rural', 'Mixta', 'Semi-urbana', 'Conservación'],
+  };
+  const ETIQUETAS_ANTIGUAS = { 'Jardín': 'Jardín propio', 'Piscina': 'Piscina propia', 'Terraza': 'Terraza propia',
+    'Área de cafetería': 'Cafetería del edificio', 'Área de lavandería': 'Lavandería del edificio', 'Patio': 'Patio común',
+    'Área común': 'Sala de estar común', 'Acceso a parque': 'Salida directa a parque',
+    'Piscina (edificio)': 'Piscina del edificio', 'Vista interior': 'Vista a área interior', 'Privado': 'Vía privada' };
+  // Etiqueta canónica de esa columna, o '' si no pertenece a ella.
+  function matchEtiqueta(columna, v) {
+    const n = norm(v);
+    if (!n) return '';
+    const lista = ETIQUETAS[columna] || [];
+    const directa = lista.find((t) => norm(t) === n);
+    if (directa) return directa;
+    const antigua = Object.keys(ETIQUETAS_ANTIGUAS).find((t) => norm(t) === n);
+    return antigua && lista.includes(ETIQUETAS_ANTIGUAS[antigua]) ? ETIQUETAS_ANTIGUAS[antigua] : '';
+  }
+
   return {
+    ETIQUETAS, matchEtiqueta,
     TYPES, OPS, CURRENCIES, ESTADOS, ESTADOS_SIN_ANTIGUEDAD, REGLAS_TIPO,
     norm, matchType, matchOp, matchEstado, matchCurrency, matchBool, parseAntiguedad,
     resolveEstadoAntiguedad, standardizeRow, verificarPublicacion,

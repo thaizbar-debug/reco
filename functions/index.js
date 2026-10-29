@@ -20,8 +20,9 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const RecoCatalogo = require('./shared/catalogo');
+const RecoImport = require('./shared/import-core');
 
 initializeApp();
 const db = getFirestore();
@@ -122,7 +123,20 @@ function requireVerifiedAuth(request) {
 
 // Tipo, operación, moneda y estado: valores canónicos y sinónimos en
 // shared/catalogo.js (el mismo archivo que usa index.html).
-const PUB_SOURCES = ['single', 'bulk'];
+// 'bulk' = Excel/CSV (nombre histórico); el resto son los canales del
+// roadmap de carga inteligente (docs/ROADMAP-CARGA-INTELIGENTE.md).
+const PUB_SOURCES = ['single', 'bulk', 'text', 'whatsapp', 'documento', 'url', 'pdf', 'feed'];
+
+// ── Importación (Fase 0) ──
+// Borradores en /importDrafts: se borran solos (política TTL sobre
+// expiresAt) si nadie los publica en IMPORT_DRAFT_TTL_DAYS.
+const IMPORT_DRAFT_TTL_DAYS = 30;
+const IMPORT_TEXT_MAX_CHARS = 20000;
+const IMPORT_MAX_LISTINGS_PER_CALL = 50;
+const IMPORT_AI_LIMIT_PER_HOUR = 30;
+const IMPORT_AI_KINDS = ['text', 'document'];
+const IMPORT_TEXT_CHANNELS = ['text', 'whatsapp'];
+const DRAFT_ID_RE = /^[A-Za-z0-9]{1,40}$/;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // unlockProperty — spend 1 key, receive premium fields for one property.
@@ -337,10 +351,16 @@ exports.publishProperty = onCall(
 
     const userRef = db.collection('users').doc(uid);
     const pubRef = db.collection('publications').doc(); // pre-generate id
+    // Si viene de un borrador de importación, se borra en la misma
+    // transacción: o queda publicado y sin borrador, o nada cambia.
+    const draftRef = (typeof raw.importDraftId === 'string' && DRAFT_ID_RE.test(raw.importDraftId))
+      ? db.collection('importDrafts').doc(raw.importDraftId) : null;
 
     return db.runTransaction(async (tx) => {
       const userSnap = await tx.get(userRef);
       const userData = userSnap.exists ? userSnap.data() : {};
+      const draftSnap = draftRef ? await tx.get(draftRef) : null;
+      const draft = (draftSnap && draftSnap.exists && draftSnap.data().uid === uid) ? draftSnap.data() : null;
       const currentKeys = Number(userData.keysLeft) || 0;
       if (PUBLISH_COST > 0 && currentKeys < PUBLISH_COST) {
         throw new HttpsError(
@@ -381,8 +401,16 @@ exports.publishProperty = onCall(
         // al tipo ya en 0 (p. ej. dormitorios en un Terreno).
         ...verif.datos,
       };
+      pubData.fingerprint = RecoImport.fingerprint(pubData);
+      if (draft) {
+        // Métricas de calidad de la importación (roadmap 0.5).
+        pubData.importChannel = draft.source || null;
+        pubData.importAiFields = Array.isArray(draft.aiFields) ? draft.aiFields.length : 0;
+        pubData.importEdits = Math.min(50, Math.max(0, Math.floor(Number(raw.importEdits) || 0)));
+      }
 
       tx.set(pubRef, pubData);
+      if (draft) tx.delete(draftRef);
 
       // Con costo 0 no se debita nada ni se ensucia el historial de
       // llaves con movimientos vacíos.
@@ -1421,6 +1449,220 @@ Reglas:
       titulo: String(parsed.titulo || '').trim().slice(0, 200),
       descripcion: String(parsed.descripcion || '').trim().slice(0, 5000),
     };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// extractListings — motor de extracción del roadmap de carga inteligente.
+//
+// Convierte una entrada libre en inmuebles del esquema canónico de 31
+// columnas y los guarda como borradores en /importDrafts. Nunca publica: el
+// usuario revisa y publica desde la bandeja de carga masiva (publishProperty
+// con importDraftId). Extraer es gratis; las llaves se cobran al publicar.
+//
+// Entradas (kind):
+//   'text'      notas o mensajes de WhatsApp pegados.
+//   'document'  PDF, Word o PowerPoint leído en el navegador (index.html →
+//               _pubDocRead). El texto llega con encabezados "=== Página N ==="
+//               y marcadores [FOTO id] donde estaban las fotos; las fotos
+//               quedan en el navegador y la IA solo devuelve sus ids. Las
+//               páginas escaneadas (sin capa de texto) llegan como imagen y
+//               las lee el modelo con visión. Un documento largo se manda en
+//               varias partes con el mismo batchId.
+//
+// Client contract:
+//   const fn = _getFunctions().httpsCallable('extractListings');
+//   const { data } = await fn({ kind: 'text', text, channel?: 'text'|'whatsapp', sourceName? });
+//   const { data } = await fn({ kind: 'document', text, fileType: 'pdf'|'docx'|'pptx',
+//     photoIds: ['p1-1', …], images: [{ page: '3', dataUrl: 'data:image/jpeg;base64,…' }],
+//     sourceName?, batchId? });
+//   // data = { batchId, drafts: [{ id, row, aiFields, inferredFields, notes, fotos }] }
+//
+// Errors (HttpsError):
+//   unauthenticated / failed-precondition — sin sesión o email sin verificar
+//   invalid-argument      — kind no soportado, entrada vacía, muy larga o
+//                           imágenes inválidas / demasiadas
+//   resource-exhausted    — superó IMPORT_AI_LIMIT_PER_HOUR (cada parte cuenta)
+//   internal              — la IA falló o no devolvió JSON válido
+//
+// Antialucinación (en este orden): salida estructurada con null permitido,
+// guardInvented (vacía precio/área/ambientes cuyo número no aparece en el
+// texto fuente; con páginas escaneadas, también vale la transcripción que la
+// IA devuelve en `evidencia`) y normalizeRow determinista (catálogo de
+// sinónimos y abreviaturas, etiquetas, verificación por tipo en la bandeja).
+// ─────────────────────────────────────────────────────────────────────────────
+const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx'];
+const IMPORT_DOC_MAX_IMAGES = 6;
+const IMPORT_DOC_MAX_IMAGE_CHARS = 1500000;
+const IMPORT_DOC_MAX_PHOTO_IDS = 300;
+const IMPORT_IMAGE_RE = /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/;
+const IMPORT_PHOTO_ID_RE = /^[a-z0-9-]{1,24}$/;
+
+function _extractSystemPrompt() {
+  const etiquetas = Object.entries(RecoCatalogo.ETIQUETAS)
+    .map(([k, lista]) => `   ${k}: ${lista.join(' | ')}`).join('\n');
+  return `Eres un asistente que extrae fichas de inmuebles en Perú a partir de texto libre o documentos (notas, mensajes de WhatsApp, avisos de portales, PDF, Word o presentaciones de inmobiliarias).
+
+Reglas:
+1. Un elemento en "inmuebles" por cada inmueble distinto. Si un mismo inmueble ocupa varias páginas o diapositivas, combina su información en un solo elemento. Si no hay ningún inmueble, devuelve "inmuebles": [].
+2. Usa SOLO datos presentes en la entrada. Si un dato no aparece, devuelve null. Nunca inventes precio, área, dormitorios, baños ni dirección.
+3. Copia los números tal como aparecen (ej. "185 mil", "US$ 185,000", "85 m2"); no conviertas monedas.
+4. Interpreta sinónimos y abreviaturas habituales en Perú: Dpto./Depa/Depto. (departamento), Of. (oficina), Loc. (local), Lote/Terr. (terreno), Vta. (venta), Alq./Arriendo (alquiler), S/ o S/. (soles), US$ o U$S (dólares), dorm./hab. (dormitorios), bñs/SS.HH. (baños), cochera (estacionamiento), m2/mts (metros cuadrados), En planos/Preventa/Proy. (en proyecto), E/C/En obra/En const. (en construcción), A/E/a estrenar (construido, antigüedad 0).
+5. tipo_publicacion: "Venta" o "Alquiler". tipo_propiedad: Departamento, Casa, Oficina, Local comercial, Terreno u Otros. estado: Construido, En proyecto o En construcción. tipo_moneda: USD o PEN.
+6. distrito: el distrito tal como aparece (ej. "Miraflores", "Surco"). direccion: calle y número si aparecen; si solo hay referencia ("cerca al parque Kennedy"), úsala.
+7. Áreas: area_techada es el área construida/techada/útil; area_terreno, la del terreno o lote. En un terreno o lote, el área va en area_terreno; area_techada solo si se menciona algo construido.
+8. Etiquetas: usa SOLO valores exactos de estas listas, separados por ";" (null si ninguno aplica). "Piscina" de un edificio o condominio es "Piscina del edificio"; si es del inmueble, "Piscina propia".
+${etiquetas}
+9. departamento y provincia pueden ir en null. antiguedad: años o año de construcción tal como aparecen.
+10. titulo: un título breve (máx. 90 caracteres) usando solo datos de la entrada. descripcion: el texto original de ese inmueble, sin teléfonos, correos ni nombres de personas.
+11. campos_inferidos: lista los nombres de los campos que dedujiste y no estaban escritos literalmente (por ejemplo tipo_propiedad deducido de "depa" no es inferido; tipo_publicacion deducido del contexto sí lo es). El título siempre es inferido.
+12. fotos: en documentos, las fotos aparecen como marcadores [FOTO id] en el lugar donde estaban. Asigna a cada inmueble los ids de SUS fotos (normalmente las de su misma página o diapositiva). No incluyas logos, íconos ni fotos de otro inmueble. Sin marcadores, devuelve [].
+13. evidencia: copia literal (máx. 600 caracteres) del fragmento de donde salen el precio, las áreas y los ambientes. En páginas escaneadas (imágenes), transcribe lo que lees en ellas.`;
+}
+
+async function _openaiStructured(systemPrompt, userContent, schemaName, schema) {
+  const key = openaiKey.value();
+  if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+    }),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
+  return JSON.parse(body.choices?.[0]?.message?.content || '{}');
+}
+
+// Valida la entrada de kind 'document' y arma el contenido multimodal.
+function _extractDocumentInput(d, text) {
+  const fileType = IMPORT_DOC_TYPES.includes(d.fileType) ? d.fileType : null;
+  if (!fileType) throw new HttpsError('invalid-argument', 'Formato de documento no soportado (PDF, Word .docx o PowerPoint .pptx).');
+  const images = Array.isArray(d.images) ? d.images : [];
+  if (images.length > IMPORT_DOC_MAX_IMAGES) {
+    throw new HttpsError('invalid-argument', `Demasiadas páginas escaneadas en una parte (máx. ${IMPORT_DOC_MAX_IMAGES}).`);
+  }
+  images.forEach((im) => {
+    const url = im && typeof im.dataUrl === 'string' ? im.dataUrl : '';
+    if (!IMPORT_IMAGE_RE.test(url) || url.length > IMPORT_DOC_MAX_IMAGE_CHARS) {
+      throw new HttpsError('invalid-argument', 'Imagen de página inválida o demasiado grande.');
+    }
+  });
+  if (!text && !images.length) throw new HttpsError('invalid-argument', 'El documento no tiene texto ni páginas legibles.');
+  const photoIds = (Array.isArray(d.photoIds) ? d.photoIds : [])
+    .filter((id) => typeof id === 'string' && IMPORT_PHOTO_ID_RE.test(id)).slice(0, IMPORT_DOC_MAX_PHOTO_IDS);
+  const content = [{ type: 'text', text: text || '(El documento solo tiene páginas escaneadas.)' }];
+  images.forEach((im) => {
+    content.push({ type: 'text', text: `Página escaneada ${String(im.page || '').slice(0, 10)}:` });
+    content.push({ type: 'image_url', image_url: { url: im.dataUrl, detail: 'high' } });
+  });
+  return { fileType, photoIds, images: images.length, content };
+}
+
+exports.extractListings = onCall(
+  {
+    region: REGION,
+    maxInstances: 10,
+    timeoutSeconds: 300,
+    memory: '512MiB',
+    consumeAppCheckToken: true,
+    enforceAppCheck: true,
+    secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'extractListings');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+
+    if (!IMPORT_AI_KINDS.includes(d.kind)) {
+      throw new HttpsError('invalid-argument', 'Tipo de importación no soportado.');
+    }
+    const isDoc = d.kind === 'document';
+    const text = String(d.text || '').trim();
+    if (!text && !isDoc) throw new HttpsError('invalid-argument', 'Pega el texto con los inmuebles.');
+    if (text.length > IMPORT_TEXT_MAX_CHARS) {
+      throw new HttpsError('invalid-argument', `El texto es muy largo (máx. ${IMPORT_TEXT_MAX_CHARS} caracteres). Divídelo en partes.`);
+    }
+    const doc = isDoc ? _extractDocumentInput(d, text) : null;
+    const channel = isDoc ? 'documento' : (IMPORT_TEXT_CHANNELS.includes(d.channel) ? d.channel : 'text');
+    const sourceName = String(d.sourceName || '').replace(/[\r\n]/g, ' ').trim().slice(0, 120) || null;
+
+    // ── Rate limit: hour-bucket in importUsage/{uid} ──
+    const hour = new Date().toISOString().slice(0, 13);
+    const usageRef = db.collection('importUsage').doc(uid);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(usageRef);
+      const data = snap.data() || {};
+      if (data.hour === hour && (data.count || 0) >= IMPORT_AI_LIMIT_PER_HOUR) {
+        throw new HttpsError('resource-exhausted',
+          `Límite de ${IMPORT_AI_LIMIT_PER_HOUR} importaciones por hora alcanzado. Intenta más tarde.`);
+      }
+      tx.set(usageRef, {
+        hour,
+        count: data.hour === hour ? (data.count || 0) + 1 : 1,
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    });
+
+    const t0 = Date.now();
+    let parsed;
+    try {
+      parsed = await _openaiStructured(_extractSystemPrompt(), doc ? doc.content : text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+    } catch (e) {
+      logger.error('[extractListings] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', isDoc ? 'No pudimos leer el documento. Intenta de nuevo.' : 'No pudimos leer el texto. Intenta de nuevo.');
+    }
+    const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
+
+    // Las partes de un mismo documento comparten batchId (y su "Retomar").
+    const batchId = (typeof d.batchId === 'string' && DRAFT_ID_RE.test(d.batchId))
+      ? d.batchId : db.collection('importDrafts').doc().id;
+    const expiresAt = Timestamp.fromMillis(Date.now() + IMPORT_DRAFT_TTL_DAYS * 864e5);
+    const batch = db.batch();
+    const drafts = items.map((it) => {
+      const rawRow = {};
+      RecoImport.AI_FIELDS.forEach((k) => { rawRow[k] = it[k] == null ? '' : String(it[k]); });
+      // Con páginas escaneadas el texto del documento no tiene esos números:
+      // la transcripción de la IA (evidencia) también cuenta como fuente.
+      const fuente = doc && doc.images ? `${text}\n${String(it.evidencia || '')}` : text;
+      const guarded = RecoImport.guardInvented(rawRow, fuente);
+      const { row, changes, notas } = RecoImport.normalizeRow(guarded.row);
+      const aiFields = RecoImport.COLS.filter((k) => row[k] !== '');
+      const inferredFields = (Array.isArray(it.campos_inferidos) ? it.campos_inferidos : [])
+        .filter((k) => aiFields.includes(k));
+      const fotos = doc ? [...new Set((Array.isArray(it.fotos) ? it.fotos : []).filter((id) => doc.photoIds.includes(id)))] : [];
+      const notes = guarded.dropped.map((k) => `Quitamos ${k}: no aparece en ${isDoc ? 'el documento' : 'el texto'}.`)
+        .concat(changes.filter((c) => c.pii).map((c) => `Quitamos ${c.pii} dato(s) de contacto de ${c.field}.`))
+        .concat(notas);
+      const ref = db.collection('importDrafts').doc();
+      batch.set(ref, {
+        uid, batchId, source: channel, sourceName,
+        ...(doc && { fileType: doc.fileType, docPhotos: fotos.length }),
+        row, aiFields, inferredFields, notes,
+        fingerprint: RecoImport.fingerprint(row),
+        status: 'draft',
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+        expiresAt,
+      });
+      return { id: ref.id, row, aiFields, inferredFields, notes, fotos };
+    });
+    batch.set(db.collection('importEvents').doc(), {
+      uid, kind: d.kind, channel, chars: text.length, listings: drafts.length,
+      ...(doc && { fileType: doc.fileType, pageImages: doc.images, photos: doc.photoIds.length }),
+      ms: Date.now() - t0, createdAt: FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+
+    return { batchId, drafts };
   }
 );
 
