@@ -139,4 +139,23 @@ assert.strictEqual(item.additionalProperties, false);
 assert.deepStrictEqual(item.required.slice().sort(), Object.keys(item.properties).sort());
 assert.ok(!item.properties.latitud);
 
+console.log('  parseListingHtml / pageToText');
+const page = R.parseListingHtml(`<html><head><title>Dpto en venta | Portal</title>
+<meta property="og:title" content="Dpto en Miraflores"><meta property="og:image" content="/fotos/og.jpg">
+<meta name="description" content="85 m&sup2; &ndash; 3 dorm">
+<script type="application/ld+json">{"@type":"Offer","price":"185000","image":{"url":"https://cdn.x.pe/a.webp"}}</script>
+<script id="__NEXT_DATA__" type="application/json">{"props":{"listing":{"price":{"amount":185000},"totalArea":85,"trackingId":"zzz","photos":["https://cdn.x.pe/b.jpg"]}}}</script>
+<script>var noise = 1;</script><style>.x{}</style></head>
+<body><h1>Departamento</h1><p>Jes&uacute;s Mar&iacute;a</p><img src="/static/logo.png"><img data-src="https://cdn.x.pe/c.jpg"></body></html>`, 'https://portal.pe/aviso/1');
+assert.strictEqual(page.title, 'Dpto en venta | Portal');
+assert.strictEqual(page.meta.description, '85 m² – 3 dorm');
+assert.deepStrictEqual(page.images, ['https://portal.pe/fotos/og.jpg', 'https://cdn.x.pe/a.webp', 'https://cdn.x.pe/b.jpg', 'https://cdn.x.pe/c.jpg']);
+assert.deepStrictEqual(page.datos, ['amount: 185000', 'totalArea: 85']);
+assert.ok(page.text.includes('Jesús María'));
+assert.ok(!/noise|\.x\{/.test(page.text));
+const pt = R.pageToText(page, 'https://portal.pe/aviso/1', ['u-1'], 2000);
+assert.ok(pt.startsWith('URL: https://portal.pe/aviso/1'));
+assert.ok(pt.includes('"price":"185000"') && pt.endsWith('[FOTO u-1]'));
+assert.ok(R.pageToText({ text: 'x'.repeat(50000) }, 'https://a.pe', [], 3000).length <= 3000);
+
 console.log('\n  ✓ import-core: todos los tests pasaron');

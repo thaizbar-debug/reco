@@ -313,7 +313,123 @@
     },
   };
 
+  // ── Páginas de avisos (importar desde enlace, roadmap 1.4) ──
+  // Extrae de un HTML lo útil para la IA, sin dependencias: título, meta
+  // (og:*, description), JSON-LD, los datos de __NEXT_DATA__ con nombres de
+  // campos inmobiliarios, el texto visible y las URLs de fotos (primero las
+  // declaradas por la página: og:image, JSON-LD; después las del contenido).
+  const PAGE_KEY_RE = /price|precio|amount|monto|currency|moneda|area|surface|superficie|metr|m2|room|dorm|habita|bath|bano|toilet|parking|estacion|cochera|garage|floor|piso|planta|age|antig|year|construc|address|direcc|street|calle|district|distrit|barrio|neighbo|city|ciudad|title|titulo|descrip|operation|operaci|transaction|type|tipo|propert|inmueble|amenit|feature|caracter|lat|lng|lon|status|estado/i;
+  const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', ndash: '–', mdash: '—', hellip: '…',
+    sup2: '²', deg: '°', middot: '·', laquo: '«', raquo: '»', iquest: '¿', iexcl: '¡', ordm: 'º', ordf: 'ª', euro: '€',
+    aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú', ntilde: 'ñ', uuml: 'ü',
+    Aacute: 'Á', Eacute: 'É', Iacute: 'Í', Oacute: 'Ó', Uacute: 'Ú', Ntilde: 'Ñ', Uuml: 'Ü' };
+  function decodeEntities(s) {
+    return String(s || '').replace(/&(#x[0-9a-f]+|#\d+|[a-z0-9]+);/gi, (m, e) => {
+      if (e[0] === '#') {
+        const n = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+        return n > 0 && n < 0x110000 ? String.fromCodePoint(n) : m;
+      }
+      return ENTITIES[e] || ENTITIES[e.toLowerCase()] || m;
+    });
+  }
+  function absUrl(u, base) {
+    try { const x = new URL(decodeEntities(String(u).trim()), base); return /^https?:$/.test(x.protocol) ? x.href : ''; } catch (_) { return ''; }
+  }
+  const IMG_URL_RE = /\.(jpe?g|png|webp)(\?|#|$)/i;
+  function parseListingHtml(html, baseUrl) {
+    const h = String(html || '');
+    const attr = (tag, name) => { const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, 'i')); return m ? decodeEntities(m[2] != null ? m[2] : m[3]) : ''; };
+    const titleM = h.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const meta = {};
+    (h.match(/<meta\b[^>]*>/gi) || []).forEach((tag) => {
+      const k = (attr(tag, 'property') || attr(tag, 'name')).toLowerCase();
+      const v = attr(tag, 'content');
+      if (k && v && /^(og:|twitter:|description$|keywords$|product:)/.test(k) && !meta[k]) meta[k] = v.slice(0, 1000);
+    });
+    const jsonld = [];
+    const images = [];
+    const addImg = (u) => { const a = absUrl(u, baseUrl); if (a && !images.includes(a)) images.push(a); };
+    ['og:image', 'og:image:url', 'og:image:secure_url', 'twitter:image'].forEach((k) => { if (meta[k]) addImg(meta[k]); });
+    const scriptRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+    // Fotos del JSON-LD: valores bajo image / photo / thumbnail (también
+    // { image: { url } }) y cualquier URL con extensión de imagen.
+    const collectImages = (v, key, depth) => {
+      if (v == null || depth > 8) return;
+      if (typeof v === 'string') {
+        if (/^(https?:|\/)/.test(v) && (/^(image|photo|thumbnail)/i.test(key) || IMG_URL_RE.test(v))) addImg(v);
+        return;
+      }
+      if (Array.isArray(v)) { v.forEach((x) => collectImages(x, key, depth + 1)); return; }
+      if (typeof v === 'object') Object.keys(v).forEach((k) => collectImages(v[k], /^(url|contenturl)$/i.test(k) ? key : k, depth + 1));
+    };
+    let m;
+    let nextData = '';
+    while ((m = scriptRe.exec(h))) {
+      const attrs = m[1];
+      if (/application\/ld\+json/i.test(attrs)) {
+        const raw = m[2].trim();
+        jsonld.push(raw.slice(0, 8000));
+        try { collectImages(JSON.parse(raw), '', 0); } catch (_) { /* JSON-LD inválido: se usa como texto */ }
+      } else if (/id\s*=\s*["']__NEXT_DATA__["']/i.test(attrs)) {
+        nextData = m[2];
+      }
+    }
+    // __NEXT_DATA__ (Next.js) trae el aviso completo, pero también mucho
+    // ruido: solo se guardan los valores cuyo nombre suena a dato inmobiliario.
+    const datos = [];
+    if (nextData) {
+      try {
+        const seen = new Set();
+        const walk = (v, key, depth) => {
+          if (depth > 12 || datos.join('\n').length > 6000) return;
+          if (v == null) return;
+          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+            const sv = String(v);
+            if (typeof v === 'string' && /^https?:\/\//.test(sv)) { if (IMG_URL_RE.test(sv)) addImg(sv); return; }
+            if (key && PAGE_KEY_RE.test(key) && sv.length <= 400) {
+              const line = `${key}: ${sv}`;
+              if (!seen.has(line)) { seen.add(line); datos.push(line); }
+            }
+            return;
+          }
+          if (Array.isArray(v)) { v.slice(0, 60).forEach((x) => walk(x, key, depth + 1)); return; }
+          if (typeof v === 'object') Object.keys(v).forEach((k) => walk(v[k], k, depth + 1));
+        };
+        walk(JSON.parse(nextData), '', 0);
+      } catch (_) { /* no es JSON */ }
+    }
+    (h.match(/<img\b[^>]*>/gi) || []).forEach((tag) => {
+      const u = attr(tag, 'data-src') || attr(tag, 'data-lazy') || attr(tag, 'src');
+      if (u && IMG_URL_RE.test(u) && !/logo|icon|sprite|avatar|placeholder|pixel/i.test(u)) addImg(u);
+    });
+    const text = decodeEntities(h
+      .replace(/<(script|style|noscript|svg|template|iframe)\b[\s\S]*?<\/\1>/gi, ' ')
+      .replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr|section|article)>/gi, '\n')
+      .replace(/<[^>]+>/g, ' '))
+      .replace(/[ \t ]+/g, ' ').replace(/\s*\n\s*/g, '\n').replace(/\n{2,}/g, '\n').trim();
+    return {
+      title: titleM ? decodeEntities(titleM[1]).replace(/\s+/g, ' ').trim().slice(0, 300) : '',
+      meta, jsonld: jsonld.slice(0, 5), datos, text: text.slice(0, 30000), images: images.slice(0, 60),
+    };
+  }
+  // Texto que ve la IA para una página (también la que manda el marcador del
+  // navegador), dentro de `max` caracteres; las fotos van como [FOTO id].
+  function pageToText(p, url, photoIds, max) {
+    const lim = max || 18000;
+    const parts = [`URL: ${url}`];
+    if (p.title) parts.push(`Título: ${p.title}`);
+    const metaLines = Object.entries(p.meta || {}).filter(([k]) => !/image/.test(k)).map(([k, v]) => `${k}: ${v}`);
+    if (metaLines.length) parts.push(`Metadatos:\n${metaLines.join('\n')}`);
+    if ((p.jsonld || []).length) parts.push(`Datos estructurados (JSON-LD):\n${p.jsonld.join('\n').slice(0, 6000)}`);
+    if ((p.datos || []).length) parts.push(`Datos de la página:\n${p.datos.join('\n').slice(0, 5000)}`);
+    const fotos = (photoIds || []).length ? `\n${photoIds.map((id) => `[FOTO ${id}]`).join(' ')}` : '';
+    const head = parts.join('\n\n');
+    const room = Math.max(0, lim - head.length - fotos.length - 40);
+    return `${head}\n\nTexto de la página:\n${String(p.text || '').slice(0, room)}${fotos}`;
+  }
+
   return {
+    parseListingHtml, pageToText,
     COLS, REQUIRED, DISTRICTS, IMPORT_SOURCES, RESO_MAP,
     AI_FIELDS, EXTRACTION_SCHEMA,
     norm, cleanText, parseNumber, parseMoney, detectCurrency, parseCount, matchDistrict,
