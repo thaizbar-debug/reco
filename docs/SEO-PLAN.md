@@ -53,38 +53,36 @@
 **Pendiente (fuera del código):**
 
 - Para incluir las **publicaciones de usuarios aprobadas** (Firestore), crear en GitHub → Settings → Secrets → Actions el secreto `FIREBASE_SERVICE_ACCOUNT`. Su valor es el JSON de una cuenta de servicio de `reco-5a5dd` con rol de solo lectura en Firestore (`roles/datastore.viewer`). La lectura anónima por REST está bloqueada, probablemente por App Check. Sin el secreto, solo se generan las fichas de `data/properties.json`.
-- Si `main` tiene protección de rama que impide pushes del bot `github-actions[bot]`, permitirlo o cambiar el paso final del workflow por un PR automático.
+- `main` está protegida. Si rechaza el push del bot, el workflow deja los cambios en la rama `chore/seo-regen` y abre un PR automático. Para que pueda abrirlo, activar en GitHub → Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Para que el push sea directo, agregar `github-actions[bot]` como excepción en la protección de `main`.
 - Tras el deploy: enviar `sitemap.xml` en Search Console y pedir la indexación de 3–5 fichas para acelerar.
 
-## Fase 3 — "Búsqueda especial" (páginas por distrito, m², tipo)
+## Fase 3 — "Búsqueda especial" ✅ (en código)
 
-**Requisito del negocio:** estas páginas **no** deben verse en la landing ni en la navegación principal (no queremos parecernos a Urbania). Se llega a ellas por:
+**Requisito del negocio:** estas páginas **no** aparecen en la landing ni en la navegación principal (no queremos parecernos a Urbania). Se llega a ellas solo por:
 
-1. Un único enlace discreto **"Búsqueda especial"** en el footer de `index.html` (columna "Explorar") y de `landing.html`.
+1. El enlace discreto **"Búsqueda especial"** en el footer de `index.html` (columna "Explorar"), de `landing.html` y de las fichas.
 2. El `sitemap.xml`, que es la vía por la que Google las encuentra.
 
-### Estructura
+Las genera el mismo `scripts/build-seo-pages.js` (código en `scripts/seo/`):
 
-```
-/busqueda-especial/                          ← hub (al que lleva el footer)
-/busqueda-especial/departamentos-en-venta-miraflores/
-/busqueda-especial/departamentos-en-alquiler-san-isidro/
-/busqueda-especial/casas-en-venta-la-molina/
-/busqueda-especial/precio-m2-barranco/        ← datos de data/precios_distrito_2025.csv
-/busqueda-especial/departamentos-venta-surco-60-a-90-m2/
-/busqueda-especial/departamentos-venta-miraflores-3-dormitorios/
-```
+| Ruta | Contenido |
+|---|---|
+| `/busqueda-especial/` | Buscador (operación, tipo, distrito, m² mín./máx., dormitorios, precio máx.) que filtra `inmuebles.json` en el navegador y guarda los filtros en la URL. Debajo, un directorio con todas las búsquedas, la tabla de precio del m² por distrito y los enlaces "En toda Lima". |
+| `/busqueda-especial/{tipos}-en-{venta o alquiler}-en-{distrito}/` | Ej. `departamentos-en-venta-en-miraflores`. Incluye: H1, resumen con datos (cantidad, precio mediano, rango, área mediana, US$/m²), los avisos (hasta 48, del más barato al más caro), "Ver en el mapa" (abre la app filtrada) y búsquedas relacionadas. |
+| `.../{tipos}-en-{op}-en-lima/` | Lo mismo para toda Lima Metropolitana y Callao. |
+| `...-{n}-dormitorios/`, `...-4-o-mas-dormitorios/` | Variantes por dormitorios (departamentos y casas). |
+| `...-hasta-60-m2/`, `...-60-a-90-m2/` … `...-mas-de-180-m2/` | Variantes por metraje (departamentos). |
+| `/busqueda-especial/precio-m2-{distrito}/` | Mediana y rango (P25–P75) del precio de oferta por m² de departamentos y casas en venta (avisos actuales en US$), serie de tasaciones por año (solo años con 30+ tasaciones), enlace a históricos en el mapa y comparativo de distritos. |
 
-- **Hub `/busqueda-especial/`:** un buscador con filtros (operación, tipo, distrito, rango de m², dormitorios, precio) y, debajo, un directorio de enlaces a todas las combinaciones. El directorio es lo que permite que Google rastree todas las páginas.
-- **Cada página de combinación incluye:**
-  - un H1 con la búsqueda exacta ("Departamentos en venta en Miraflores"),
-  - un párrafo con datos propios: mediana USD/m², P25–P75 y transacciones de los últimos 18 meses,
-  - el listado de los inmuebles que coinciden (enlaces a sus fichas de la Fase 2),
-  - un botón "Ver en el mapa" que abre la app con el filtro aplicado (`index.html#op=venta&...`),
-  - enlaces a distritos vecinos y rangos de m² cercanos (enlazado interno).
-- **Combinaciones iniciales:** {venta, alquiler} × {departamento, casa, oficina, terreno} × los 16 distritos con datos (Ate, Barranco, Breña, Chorrillos, Jesús María, La Molina, Lince, Los Olivos, Magdalena, Miraflores, Pueblo Libre, San Borja, San Isidro, San Miguel, Surco, Surquillo), más las páginas de "precio m²" por distrito y los rangos de m²/dormitorios en los distritos con más oferta.
-- **Regla anti contenido pobre:** solo se publica (y se incluye en el sitemap) una combinación con al menos 3 inmuebles activos o con datos de precio del distrito. Las demás llevan `noindex`.
-- Las páginas se generan con el mismo pipeline estático de la Fase 2.
+**Reglas de calidad:**
+
+- Una combinación se publica solo si tiene **3 o más avisos**.
+- Si dos combinaciones listan exactamente los mismos avisos, se publica una sola (evita contenido duplicado).
+- Las cifras no mezclan monedas.
+- Un área menor a 10 m² se trata como "sin dato": hay avisos cargados con "1 m²" (por ejemplo Calle Cantuarias 355 y Santander 186), que conviene corregir en el origen.
+- `data/precios_distrito_2025.csv` **no se usa**: no está claro de dónde salen sus datos y no coincide con la serie de tasaciones de la app.
+
+Resultado actual: 268 páginas (buscador + combinaciones + 26 distritos con precio del m²).
 
 ## SEM — Anuncios patrocinados (recién después de las Fases 1 y 2 + medición)
 

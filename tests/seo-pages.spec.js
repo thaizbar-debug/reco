@@ -49,3 +49,56 @@ test.describe('SEO: fichas de inmuebles', () => {
     expect(errors).toEqual([]);
   });
 });
+
+const SEARCH = path.join(ROOT, 'busqueda-especial');
+const searchSlugs = fs.readdirSync(SEARCH).filter(f => fs.statSync(path.join(SEARCH, f)).isDirectory());
+
+test.describe('SEO: Búsqueda especial', () => {
+  test('el enlace "Búsqueda especial" está solo en el footer de index y landing', () => {
+    for (const f of ['index.html', 'landing.html']) {
+      const html = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      const start = html.indexOf('<footer>');
+      const footer = html.slice(start, html.indexOf('</footer>', start));
+      expect(footer).toContain('href="/busqueda-especial/"');
+      expect(html.split('href="/busqueda-especial/"').length - 1).toBe(1);
+    }
+  });
+
+  test('cada página de combinación lista al menos 3 avisos y tiene JSON-LD válido', () => {
+    for (const s of searchSlugs.filter(x => !x.startsWith('precio-m2-'))) {
+      const html = fs.readFileSync(path.join(SEARCH, s, 'index.html'), 'utf8');
+      expect(html).toContain(`<link rel="canonical" href="https://recosac.com/busqueda-especial/${s}/"/>`);
+      const ld = JSON.parse(html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s)[1]);
+      const page = ld['@graph'].find(n => n['@type'] === 'CollectionPage');
+      expect(page.mainEntity.numberOfItems).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  test('el sitemap incluye el buscador y todas las páginas de búsqueda', () => {
+    const sitemap = fs.readFileSync(path.join(ROOT, 'sitemap.xml'), 'utf8');
+    expect(sitemap).toContain('https://recosac.com/busqueda-especial/</loc>');
+    for (const s of searchSlugs) expect(sitemap).toContain(`https://recosac.com/busqueda-especial/${s}/`);
+  });
+
+  test('el buscador filtra por distrito, tipo y m²', async ({ page }) => {
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto('http://localhost:3123/busqueda-especial/');
+    await page.selectOption('select[name="t"]', 'Departamento');
+    await page.selectOption('select[name="d"]', 'Miraflores');
+    await page.fill('input[name="amin"]', '60');
+    await page.fill('input[name="amax"]', '120');
+    await page.click('#bsForm button');
+    await expect(page.locator('#bsRes h2')).toHaveText(/\d+ resultados?/);
+    const metas = await page.locator('#bsRes .related small').allTextContents();
+    expect(metas.length).toBeGreaterThan(0);
+    for (const m of metas) {
+      expect(m).toContain('Miraflores');
+      const area = parseFloat(m.match(/([\d.]+) m²/)[1]);
+      expect(area).toBeGreaterThanOrEqual(60);
+      expect(area).toBeLessThanOrEqual(120);
+    }
+    expect(page.url()).toContain('d=Miraflores');
+    expect(errors).toEqual([]);
+  });
+});
