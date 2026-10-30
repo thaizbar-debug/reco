@@ -559,8 +559,9 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
   });
 
   // ── Photo assistant (MEJ-01) ─────────────────────────────────────
-  test('_PUB_BULK_PHOTO_MAX is 12', async ({ page }) => {
-    const max = await page.evaluate(() => _PUB_BULK_PHOTO_MAX);
-    expect(max).toBe(12);
+  // Mismo máximo que "Publicar uno" (antes 12).
+  test('_PUB_BULK_PHOTO_MAX is 20, same as the single form', async ({ page }) => {
+    const r = await page.evaluate(() => [_PUB_BULK_PHOTO_MAX, _PUB_MAX_PHOTOS]);
+    expect(r).toEqual([20, 20]);
   });
 });

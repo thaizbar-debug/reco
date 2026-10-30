@@ -74,6 +74,7 @@ function loadRealHandler() {
     'firebase-functions/v2/firestore': {
       onDocumentWritten: () => ({}),
       onDocumentCreated: () => ({}),
+      onDocumentDeleted: () => ({}),
     },
     'firebase-functions/v2/scheduler': {
       onSchedule: () => ({}),

@@ -101,6 +101,7 @@ function createMockBucket() {
   return {
     name: 'reco-test.appspot.com',
     files: {},
+    deleteFiles({ prefix }) { Object.keys(this.files).filter((k) => k.startsWith(prefix)).forEach((k) => delete this.files[k]); return Promise.resolve(); },
     file(p) {
       const b = this;
       return {
@@ -111,6 +112,7 @@ function createMockBucket() {
           b.files[dest._path] = { ...b.files[p], opts }; return Promise.resolve();
         },
         download() { return b.files[p] ? Promise.resolve([b.files[p].buf]) : Promise.reject(new Error('No such object: ' + p)); },
+        delete() { if (!b.files[p]) return Promise.reject(new Error('No such object: ' + p)); delete b.files[p]; return Promise.resolve(); },
       };
     },
   };
@@ -148,7 +150,7 @@ function loadFunctions(opts) {
       defineSecret(name) { return { value: () => (secrets[name] != null ? secrets[name] : 'fake-key'), name }; },
       defineString(name) { return { value: () => (secrets[name] != null ? secrets[name] : ''), name }; },
     },
-    'firebase-functions/v2/firestore': { onDocumentWritten: handlerOf, onDocumentCreated: handlerOf },
+    'firebase-functions/v2/firestore': { onDocumentWritten: handlerOf, onDocumentCreated: handlerOf, onDocumentDeleted: handlerOf },
     'firebase-functions/v2/scheduler': { onSchedule: handlerOf },
     'firebase-functions': { logger: { info() {}, warn() {}, error() {} } },
     'firebase-admin/app': { initializeApp() {} },

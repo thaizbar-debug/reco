@@ -2993,6 +2993,7 @@ function _pubDocToProperty(id, p){
     gradient: 'linear-gradient(135deg,#667eea,#764ba2)',
     emoji: '🏙️',
     photoUrls: Array.isArray(p.photoUrls) ? p.photoUrls : [],
+    thumbUrls: Array.isArray(p.thumbUrls) ? p.thumbUrls : [],
     listedAt: p.listedAt || null,
     // Community-publication ownership fields. Static properties keep these
     // undefined; only the "contactar vendedor/arrendador" flow depends on
@@ -3008,7 +3009,9 @@ function driveAssets(p){
   // Community publications carry their photo URLs straight from Firebase
   // Storage. Skip the Drive lookup entirely for them.
   if(p && typeof p === 'object' && Array.isArray(p.photoUrls) && p.photoUrls.length){
-    return { photos: p.photoUrls.slice(), partidas: [] };
+    // thumbs: miniaturas de 480 px (tarjetas, mapa); si una no existe, la foto.
+    const th = Array.isArray(p.thumbUrls) ? p.thumbUrls : [];
+    return { photos: p.photoUrls.slice(), thumbs: p.photoUrls.map((u,i)=>th[i]||u), partidas: [] };
   }
   const id = (typeof p === 'object' && p !== null) ? p.id : p;
   const op = (typeof p === 'object' && p !== null) ? p.op : null;
@@ -3564,7 +3567,7 @@ function renderCards(list){
 
   el.innerHTML=tablePrefix+list.map((p,_idx)=>{
     const cardAssets=driveAssets(p);
-    const photos=cardAssets.photos;
+    const photos=cardAssets.thumbs||cardAssets.photos;
     const pid=_idx+'_'+p.id.replace(/[^a-zA-Z0-9]/g,'_');
     const slides = photos.length
       ? photos.map(u=>`<div class="cimg-slide"><img src="${esc(u)}" loading="lazy"></div>`).join('')
@@ -4431,7 +4434,7 @@ function fmtPinPrice(price){
 
 function _pinHoverHtml(p){
   const assets=driveAssets(p);
-  const photos=assets.photos||[];
+  const photos=assets.thumbs||assets.photos||[];
   const hid='hpin_'+String(p.id).replace(/[^a-zA-Z0-9]/g,'_');
   const slides=photos.length
     ? photos.map(u=>`<div class="cimg-slide"><img src="${esc(u)}" loading="lazy"></div>`).join('')
@@ -7056,16 +7059,19 @@ function _pFeat(feat,checked){
 // _pd.photos. storage.rules solo acepta image/jpeg, image/png e
 // image/webp y hasta 10 MB: una foto HEIC de iPhone o un JPG de 12 MB
 // era rechazada por Storage con "User does not have permission".
-function _pubToJpegDataUrl(file){
+// Al convertir también se borra el EXIF (incluida la ubicación GPS) y se
+// analiza la calidad de la foto (_pubPhotoMeta).
+function _pubFileToJpeg(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onerror=()=>reject(new Error('No se pudo leer '+file.name));
     reader.onload=e=>{
       const img=new Image();
-      img.onerror=()=>reject(new Error('Formato no soportado ('+(file.type||file.name)+'). Convertila a JPG o PNG.'));
+      img.onerror=()=>reject(Object.assign(new Error('Formato no soportado ('+(file.type||file.name)+'). Convertila a JPG o PNG.'),{ decode:true }));
       img.onload=()=>{
         const MAX=1920;
-        let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+        const w0=img.naturalWidth||img.width, h0=img.naturalHeight||img.height;
+        let w=w0, h=h0;
         if(!w||!h){reject(new Error('Imagen inválida: '+file.name));return;}
         if(w>MAX||h>MAX){const r=Math.min(MAX/w,MAX/h);w=Math.round(w*r);h=Math.round(h*r);}
         const cv=document.createElement('canvas');
@@ -7073,12 +7079,221 @@ function _pubToJpegDataUrl(file){
         const cx=cv.getContext('2d');
         cx.fillStyle='#fff';cx.fillRect(0,0,w,h);
         cx.drawImage(img,0,0,w,h);
-        resolve(cv.toDataURL('image/jpeg',0.85));
+        const dataUrl=cv.toDataURL('image/jpeg',0.85);
+        _pubPhotoMeta.set(dataUrl,_pubPhotoAnalyze(cv,w0,h0));
+        resolve(dataUrl);
       };
       img.src=e.target.result;
     };
     reader.readAsDataURL(file);
   });
+}
+// Fotos HEIC/HEIF (iPhone): Safari las abre, Chrome y Android no. Si el
+// navegador no puede, se convierten con heic2any (se carga solo entonces).
+const _PUB_HEIC_URL='https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+const _pubIsHeic=(f)=>/heic|heif/i.test(f.type||'') || /\.(heic|heif)$/i.test(f.name||'');
+async function _pubToJpegDataUrl(file){
+  try{ return await _pubFileToJpeg(file); }
+  catch(e){
+    if(!e.decode || !_pubIsHeic(file)) throw e;
+    let conv;
+    try{
+      const lib=await _pubLoadScript(_PUB_HEIC_URL,'heic2any');
+      conv=await lib({ blob:file, toType:'image/jpeg', quality:0.9 });
+    }catch(_){ throw new Error('No pudimos convertir la foto de iPhone '+file.name+'. Ábrela y guárdala como JPG.'); }
+    const blob=Array.isArray(conv)?conv[0]:conv;
+    return _pubFileToJpeg(new File([blob],file.name.replace(/\.(heic|heif)$/i,'.jpg'),{ type:'image/jpeg' }));
+  }
+}
+
+// ── Calidad de las fotos (sin IA, en el navegador) ──
+// _pubPhotoMeta: dataUrl → { hash, oscura, borrosa, chica }.
+//   hash     huella perceptual (dHash 8×8) para detectar fotos repetidas
+//   oscura   brillo medio bajo
+//   borrosa  poco detalle (varianza del laplaciano)
+//   chica    menos de 800 px de lado (se verá pixelada)
+const _pubPhotoMeta=new Map();
+const _PUB_PHOTO_DUP_DIST=5;
+function _pubPhotoAnalyze(cv,w0,h0){
+  try{
+    // Huella: 9×8 en grises, cada pixel contra el de su derecha.
+    const a=document.createElement('canvas'); a.width=9; a.height=8;
+    const ax=a.getContext('2d'); ax.drawImage(cv,0,0,9,8);
+    const d=ax.getImageData(0,0,9,8).data;
+    const g=(x,y)=>{ const k=(y*9+x)*4; return d[k]*0.299+d[k+1]*0.587+d[k+2]*0.114; };
+    let hash='';
+    for(let y=0;y<8;y++) for(let x=0;x<8;x++) hash+=g(x,y)>g(x+1,y)?'1':'0';
+    // Brillo y nitidez sobre una copia de 256 px.
+    const k=Math.min(1,256/Math.max(cv.width,cv.height));
+    const W=Math.max(3,Math.round(cv.width*k)), H=Math.max(3,Math.round(cv.height*k));
+    const b=document.createElement('canvas'); b.width=W; b.height=H;
+    const bx=b.getContext('2d'); bx.drawImage(cv,0,0,W,H);
+    const p=bx.getImageData(0,0,W,H).data;
+    const gray=new Float32Array(W*H);
+    let sum=0;
+    for(let i=0;i<W*H;i++){ gray[i]=p[i*4]*0.299+p[i*4+1]*0.587+p[i*4+2]*0.114; sum+=gray[i]; }
+    let ls=0, ls2=0, n=0;
+    for(let y=1;y<H-1;y++) for(let x=1;x<W-1;x++){
+      const i=y*W+x;
+      const l=gray[i-1]+gray[i+1]+gray[i-W]+gray[i+W]-4*gray[i];
+      ls+=l; ls2+=l*l; n++;
+    }
+    const varLap=n?ls2/n-(ls/n)*(ls/n):0;
+    return { hash, oscura:sum/(W*H)<55, borrosa:varLap<25, chica:Math.max(w0,h0)<800 };
+  }catch(_){ return { hash:'', oscura:false, borrosa:false, chica:false }; }
+}
+function _pubHashDist(a,b){
+  if(!a||!b||a.length!==b.length) return 99;
+  let d=0; for(let i=0;i<a.length;i++) if(a[i]!==b[i]) d++;
+  return d;
+}
+// Índice de una foto casi igual en la lista (-1 si no hay).
+function _pubPhotoDuplicateOf(list,dataUrl){
+  const m=_pubPhotoMeta.get(dataUrl);
+  return list.findIndex(u=>u===dataUrl || (m && m.hash && _pubHashDist(m.hash,(_pubPhotoMeta.get(u)||{}).hash)<=_PUB_PHOTO_DUP_DIST));
+}
+function _pubPhotoIssues(dataUrl){
+  const m=_pubPhotoMeta.get(dataUrl)||{};
+  const out=[];
+  if(m.oscura) out.push('Oscura');
+  if(m.borrosa) out.push('Borrosa');
+  if(m.chica) out.push('Baja resolución');
+  return out;
+}
+// Convierte los archivos y los agrega a la lista sin pasar el máximo ni
+// repetir fotos. → { agregadas, repetidas, fallidas }
+async function _pubAddPhotoFiles(list,files,max,onAdded){
+  const r={ agregadas:0, repetidas:[], fallidas:0 };
+  for(const file of Array.from(files||[])){
+    if(!_isImageFile(file)) continue;
+    if(list.length>=max){ toast('⚠️ Máximo '+max+' fotos por inmueble.'); break; }
+    try{
+      const url=await _pubToJpegDataUrl(file);
+      if(_pubPhotoDuplicateOf(list,url)>=0){ r.repetidas.push(file.name); continue; }
+      list.push(url); r.agregadas++;
+      if(onAdded) onAdded();
+    }catch(err){
+      r.fallidas++;
+      console.warn('[reco] foto descartada:', file.name, err);
+      toast('⚠️ '+(err.message||('No se pudo procesar '+file.name)));
+    }
+  }
+  if(r.repetidas.length) toast(`ℹ️ ${r.repetidas.length} foto${r.repetidas.length!==1?'s':''} repetida${r.repetidas.length!==1?'s':''}: no se agregó${r.repetidas.length!==1?'aron':''}.`);
+  return r;
+}
+
+// ── Tira de fotos: portada, orden y avisos (publicar uno y carga masiva) ──
+// ns: 'pd' (formulario) | 'bulk' (inmueble actual de la carga masiva).
+function _pubPhotoListOf(ns){
+  if(ns==='bulk'){ const a=_pubBulkCurrentRow(); if(!a) return []; if(!a.photos) a.photos=[]; return a.photos; }
+  if(ns==='pe') return _pe ? _pe.photos : [];
+  return _pd.photos;
+}
+function _pubPhotoRefresh(ns){ if(ns==='bulk') _pubBulkRefresh(); else if(ns==='pe') _pubPeRender(); else _pubRenderPhotos(); }
+
+// ── Editar las fotos de una publicación ya enviada (Mis publicaciones) ──
+// Quitar, ordenar, elegir portada y agregar (también las que no se subieron).
+// Las nuevas se suben a Storage y updatePublicationPhotos guarda el orden;
+// si la publicación estaba aprobada y hay fotos nuevas, vuelve a revisión.
+let _pe=null; // { pubId, status, photos:[url|dataUrl], thumbs:Map(url→thumb) }
+function _pubPhotoEditor(pub){
+  const thumbs=new Map();
+  (pub.photoUrls||[]).forEach((u,i)=>thumbs.set(u,(pub.thumbUrls||[])[i]||''));
+  _pe={ pubId:pub.id, status:pub.status, photos:(pub.photoUrls||[]).slice(), thumbs, guardando:false };
+  let ov=document.getElementById('pubPeOverlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='pubPeOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:10040;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px';
+    ov.onclick=(e)=>{ if(e.target===ov && !(_pe&&_pe.guardando)) _pubPeClose(); };
+    document.body.appendChild(ov);
+  }
+  _pubPeRender();
+}
+function _pubPeClose(){ const ov=document.getElementById('pubPeOverlay'); if(ov) ov.remove(); _pe=null; }
+function _pubPeRender(){
+  const ov=document.getElementById('pubPeOverlay');
+  if(!ov||!_pe) return;
+  const nuevas=_pe.photos.filter(u=>u.indexOf('data:')===0).length;
+  ov.innerHTML=`<div class="us-card" style="width:100%;max-width:720px;margin:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:1.05rem">📷 Fotos de la publicación</div>
+      <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" ${_pe.guardando?'disabled':''} onclick="_pubPeClose()">Cerrar</button></div>
+    <div style="font-size:.78rem;color:var(--muted);margin:4px 0 10px">Arrastra para ordenar, ⭐ para la portada, ✕ para quitar. ${_pe.status==='approved'?'Si agregas fotos nuevas, la publicación vuelve a revisión antes de mostrarse con ellas.':''}</div>
+    <div class="pub-photos" id="pubPePhotos">${_pubPhotoStripHTML('pe',_pe.photos)}</div>
+    ${_pubPhotoAdviceHTML(_pe.photos)}
+    <label class="pub-btn ghost" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:10px;cursor:pointer">+ Agregar fotos
+      <input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_pubPeAdd(this.files);this.value=''"></label>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="pub-btn primary" id="pubPeSave" ${_pe.guardando?'disabled':''} onclick="_pubPeSave()">${_pe.guardando?'Guardando…':`Guardar${nuevas?` (${nuevas} nueva${nuevas!==1?'s':''})`:''}`}</button>
+    </div></div>`;
+}
+async function _pubPeAdd(files){ if(!_pe) return; await _pubAddPhotoFiles(_pe.photos,files,_PUB_MAX_PHOTOS,_pubPeRender); _pubPeRender(); }
+async function _pubPeSave(){
+  if(!_pe || _pe.guardando) return;
+  _pe.guardando=true; _pubPeRender();
+  try{
+    // Las nuevas se numeran después de la más alta que ya existe.
+    const nums=_pe.photos.concat([..._pe.thumbs.keys()]).map(u=>{ const m=decodeURIComponent(String(u)).match(/\/t?(\d+)\.jpg/); return m?Number(m[1]):-1; });
+    const start=Math.max(-1,...nums)+1;
+    const nuevas=_pe.photos.filter(u=>u.indexOf('data:')===0);
+    const up=nuevas.length?await _uploadPublicationPhotos(_pe.pubId,nuevas,start,_pubUploadProgress):{ urls:[], thumbs:[], failed:0 };
+    let k=0; const urls=[], thumbs=[];
+    _pe.photos.forEach(u=>{
+      if(u.indexOf('data:')!==0){ urls.push(u); thumbs.push(_pe.thumbs.get(u)||''); return; }
+      const i=k++;
+      if(i<up.urls.length){ urls.push(up.urls[i]); thumbs.push(up.thumbs[i]||''); }
+    });
+    const res=await _getFunctions().httpsCallable('updatePublicationPhotos')({ pubId:_pe.pubId, photoUrls:urls, thumbUrls:thumbs });
+    const vuelve=res.data && res.data.status==='pending' && _pe.status!=='pending';
+    toast(up.failed?`⚠️ ${up.failed} foto${up.failed!==1?'s':''} no se subieron; el resto se guardó.`
+      :vuelve?'✅ Fotos guardadas. La publicación vuelve a revisión por las fotos nuevas.':'✅ Fotos guardadas.');
+    _pubPeClose();
+    const el=document.getElementById('userSectionContent');
+    if(el && typeof renderPublicaciones==='function') renderPublicaciones(el);
+  }catch(e){
+    console.error('[reco] fotos no guardadas:', e);
+    toast('⚠️ '+((e&&e.message)||'No se pudieron guardar las fotos.'));
+    if(_pe){ _pe.guardando=false; _pubPeRender(); }
+  }
+}
+function _pubPhotoOp(ns,op,i,j){
+  const L=_pubPhotoListOf(ns);
+  if(i<0||i>=L.length) return;
+  if(op==='quitar') L.splice(i,1);
+  else {
+    const to=op==='portada'?0:op==='izq'?i-1:op==='der'?i+1:j;
+    if(to==null||to<0||to>=L.length||to===i) return;
+    const [x]=L.splice(i,1); L.splice(to,0,x);
+  }
+  _pubPhotoRefresh(ns);
+}
+let _pubPhotoDrag=null;
+function _pubPhotoStripHTML(ns,photos){
+  const n=photos.length;
+  const btn='border:none;border-radius:6px;cursor:pointer;background:rgba(0,0,0,.6);color:#fff;font-size:11px;line-height:1;padding:3px 5px';
+  return photos.map((ph,i)=>{
+    const iss=_pubPhotoIssues(ph);
+    return `<div class="pub-photo-slot filled" draggable="true" data-i="${i}" style="position:relative;overflow:hidden;cursor:grab"
+      ondragstart="_pubPhotoDrag=${i}" ondragover="event.preventDefault()" ondrop="event.preventDefault();_pubPhotoOp('${ns}','mover',_pubPhotoDrag,${i});_pubPhotoDrag=null">
+      <img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none">
+      <button onclick="event.stopPropagation();_pubPhotoOp('${ns}','quitar',${i})" title="Quitar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:22px;padding:0">✕</button>
+      ${iss.length?`<div title="${esc(iss.join(', '))}" style="position:absolute;top:4px;left:4px;background:#f59e0b;color:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:2px 5px;max-width:70%;line-height:1.3">⚠️ ${esc(iss.join(' · '))}</div>`:''}
+      ${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:3px">⭐ PORTADA</div>'
+        :`<div style="position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px">
+          <button onclick="event.stopPropagation();_pubPhotoOp('${ns}','izq',${i})" title="Mover a la izquierda" style="${btn}">◀</button>
+          <button onclick="event.stopPropagation();_pubPhotoOp('${ns}','portada',${i})" title="Usar como portada" style="${btn}">⭐</button>
+          ${i<n-1?`<button onclick="event.stopPropagation();_pubPhotoOp('${ns}','der',${i})" title="Mover a la derecha" style="${btn}">▶</button>`:''}
+        </div>`}
+    </div>`;
+  }).join('');
+}
+// Resumen bajo la tira: cuántas tienen avisos y cuántas faltan para 5.
+function _pubPhotoAdviceHTML(photos){
+  const malas=photos.filter(p=>_pubPhotoIssues(p).length).length;
+  const out=[];
+  if(malas) out.push(`⚠️ ${malas} foto${malas!==1?'s':''} con aviso (oscura, borrosa o de baja resolución): si puedes, cámbiala${malas!==1?'s':''} por una mejor.`);
+  if(photos.length && photos.length<5) out.push(`💡 Los avisos con 5 fotos o más reciben más contactos (tienes ${photos.length}).`);
+  if(photos.length>1) out.push('Arrastra para ordenar o usa ⭐ para elegir la portada.');
+  return out.length?`<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">${out.join('<br>')}</div>`:'';
 }
 const _PUB_MAX_PHOTOS=20;
 function _isImageFile(f){
@@ -7086,7 +7301,7 @@ function _isImageFile(f){
   const ext=(f.name||'').split('.').pop().toLowerCase();
   return ['jpg','jpeg','png','webp','heic','heif','bmp','gif','tiff','tif','avif'].includes(ext);
 }
-function _pubRemovePhoto(i){_pd.photos.splice(i,1);_pubRenderPhotos();}
+function _pubRemovePhoto(i){_pubPhotoOp('pd','quitar',i);}
 
 let _aiCopyLastResult = null;
 function _pubAiPrompt(){
@@ -7135,25 +7350,16 @@ function _pubAiApply(){
 
 function _pubRenderPhotos(){
   const prev=document.getElementById('pubPhotoPreview');
-  if(prev)prev.innerHTML=_pd.photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button onclick="_pubRemovePhoto(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:22px;padding:0" title="Quitar foto">✕</button>${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}</div>`).join('');
+  if(prev)prev.innerHTML=_pubPhotoStripHTML('pd',_pd.photos);
   const cnt=document.getElementById('pubPhotoCount');
-  if(cnt)cnt.innerHTML=`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`;
+  if(cnt)cnt.innerHTML=(_pd.photos.length>0?`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`:'')+_pubPhotoAdviceHTML(_pd.photos);
 }
 async function _pubHandleFiles(files){
   const fileArr=Array.from(files);
   const inp=document.getElementById('pubFileInput');
   if(inp)inp.value='';
-  for(const file of fileArr){
-    if(!_isImageFile(file))continue;
-    if(_pd.photos.length>=_PUB_MAX_PHOTOS){toast('⚠️ Máximo '+_PUB_MAX_PHOTOS+' fotos por publicación.');break;}
-    try{
-      _pd.photos.push(await _pubToJpegDataUrl(file));
-      _pubRenderPhotos();
-    }catch(err){
-      console.warn('[reco] foto descartada:', file.name, err);
-      toast('⚠️ '+(err.message||('No se pudo procesar '+file.name)));
-    }
-  }
+  await _pubAddPhotoFiles(_pd.photos,fileArr,_PUB_MAX_PHOTOS,_pubRenderPhotos);
+  _pubRenderPhotos();
   if(inp){ try{ inp.value=''; }catch(_){} }
 }
 // Verificación previa a publicar (RecoCatalogo.verificarPublicacion), la
@@ -7189,21 +7395,85 @@ function _pubSetType(v){
   if(c) c.innerHTML=_pubAreaReqMark(v,'techada');
 }
 function _pb(){_ps=1;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
-// start: número de la primera foto (cuando el servidor ya copió otras antes,
-// p. ej. las del bot de WhatsApp).
-async function _uploadPublicationPhotos(pubId, photos, start){
-  if(!photos || !photos.length) return [];
+// Miniatura (480 px) de una foto ya en JPEG: la usan las tarjetas, el mapa
+// y Mis publicaciones para no descargar la foto grande.
+const _PUB_THUMB_PX=480;
+function _pubThumbDataUrl(dataUrl){
+  return new Promise((ok)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const w=img.naturalWidth, h=img.naturalHeight, k=Math.min(1,_PUB_THUMB_PX/Math.max(w,h));
+      const cv=document.createElement('canvas'); cv.width=Math.round(w*k); cv.height=Math.round(h*k);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      ok(cv.toDataURL('image/jpeg',0.75));
+    };
+    img.onerror=()=>ok(null);
+    img.src=dataUrl;
+  });
+}
+// Sube un archivo con hasta 3 intentos (1 s y 3 s de espera): una señal
+// móvil que se corta un momento no pierde la foto.
+async function _pubPutWithRetry(path, blob){
+  let last;
+  for(let i=0;i<3;i++){
+    try{
+      const snap=await storage.ref(path).put(blob,{ contentType:'image/jpeg' });
+      return await snap.ref.getDownloadURL();
+    }catch(e){
+      last=e;
+      if(e && /unauthorized|unauthenticated|quota/.test(String(e.code||''))) break;
+      if(i<2) await new Promise(r=>setTimeout(r,i?3000:1000));
+    }
+  }
+  throw last;
+}
+// Sube las fotos de una publicación, 3 a la vez, con su miniatura:
+// publications/{pubId}/{uid}/{n}.jpg y t{n}.jpg. start: número de la primera
+// (cuando el servidor ya copió otras antes, p. ej. las del bot de WhatsApp,
+// o al agregar fotos a una publicación existente). onProgress(hechas, total).
+// → { urls, thumbs, failed }: las que fallan después de los reintentos no
+// cortan las demás; el orden se respeta.
+async function _uploadPublicationPhotos(pubId, photos, start, onProgress){
+  const out={ urls:[], thumbs:[], failed:0 };
+  if(!photos || !photos.length) return out;
   const uid = auth.currentUser && auth.currentUser.uid;
   if(!uid) throw new Error('unauthenticated');
-  const urls = [];
-  for(let i=0; i<photos.length; i++){
-    const dataUrl = photos[i];
-    const blob = await (await fetch(dataUrl)).blob();
-    const ref = storage.ref(`publications/${pubId}/${uid}/${(start||0)+i}.jpg`);
-    const snap = await ref.put(blob, { contentType: 'image/jpeg' });
-    urls.push(await snap.ref.getDownloadURL());
+  const res=new Array(photos.length);
+  let next=0, done=0, lastErr=null;
+  const worker=async()=>{
+    while(next<photos.length){
+      const i=next++;
+      const n=(start||0)+i;
+      try{
+        const blob=await (await fetch(photos[i])).blob();
+        const url=await _pubPutWithRetry(`publications/${pubId}/${uid}/${n}.jpg`, blob);
+        let thumb='';
+        try{
+          const t=await _pubThumbDataUrl(photos[i]);
+          if(t) thumb=await _pubPutWithRetry(`publications/${pubId}/${uid}/t${n}.jpg`, await (await fetch(t)).blob());
+        }catch(_){ /* sin miniatura: se usa la foto */ }
+        res[i]={ url, thumb };
+      }catch(e){ res[i]=null; lastErr=e; }
+      done++;
+      if(onProgress) onProgress(done,photos.length);
+    }
+  };
+  await Promise.all(Array.from({ length:Math.min(3,photos.length) },worker));
+  res.forEach(r=>{ if(r){ out.urls.push(r.url); out.thumbs.push(r.thumb); } else out.failed++; });
+  if(!out.urls.length && lastErr) throw lastErr;
+  return out;
+}
+// Barra de progreso de la subida de fotos (abajo de la pantalla).
+function _pubUploadProgress(done,total){
+  let el=document.getElementById('pubUploadBar');
+  if(!el){
+    el=document.createElement('div'); el.id='pubUploadBar';
+    el.style.cssText='position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:10050;background:#0f172a;color:#fff;border-radius:12px;padding:10px 14px;font-size:13px;min-width:240px;box-shadow:0 6px 24px rgba(0,0,0,.25)';
+    document.body.appendChild(el);
   }
-  return urls;
+  const pct=total?Math.round(done*100/total):100;
+  el.innerHTML=`📤 Subiendo fotos ${done} de ${total}<div style="height:6px;background:rgba(255,255,255,.2);border-radius:99px;margin-top:6px;overflow:hidden"><div style="height:100%;width:${pct}%;background:#22d3ee;transition:width .2s"></div></div>`;
+  if(done>=total) setTimeout(()=>{ const x=document.getElementById('pubUploadBar'); if(x) x.remove(); },800);
 }
 
 async function _ppub(){
@@ -7251,10 +7521,12 @@ async function _ppub(){
     // marca el doc para que moderación lo detecte, en vez de dejar un
     // registro huérfano sin imágenes, y se avisa al usuario.
     try {
-      const photoUrls = await _uploadPublicationPhotos(publicationId, _pd.photos || []);
-      if(photoUrls.length){
-        await db.collection('publications').doc(publicationId).update({ photoUrls, photosPending: false });
+      const up = await _uploadPublicationPhotos(publicationId, _pd.photos || [], 0, _pubUploadProgress);
+      if(up.urls.length){
+        await db.collection('publications').doc(publicationId).update({ photoUrls: up.urls, thumbUrls: up.thumbs,
+          photosPending: up.failed>0, ...(up.failed && { photoError: `${up.failed} foto(s) no se subieron` }) });
       }
+      if(up.failed) toast(`⚠️ ${up.failed} foto${up.failed!==1?'s':''} no se subieron. Agrégalas desde Mis publicaciones → 📷 Fotos.`);
     } catch(upErr){
       console.error('[reco] photo upload failed:', upErr.code, upErr.message, 'pubId:', publicationId, 'uid:', auth.currentUser && auth.currentUser.uid);
       try {
@@ -7263,7 +7535,7 @@ async function _ppub(){
           photoError: String((upErr && upErr.code) || (upErr && upErr.message) || 'upload-failed').slice(0,200)
         });
       } catch(_){}
-      toast('⚠️ El anuncio se creó pero las fotos no se subieron. Editalo desde "Mis publicaciones" para reintentar.');
+      toast('⚠️ El anuncio se creó pero las fotos no se subieron. Agrégalas desde Mis publicaciones → 📷 Fotos.');
     }
     // Server told us the authoritative keysLeft after the debit; use
     // it instead of the stale local counter.
@@ -7549,7 +7821,8 @@ function _pubBulkErrKey(k){
 }
 // ── MEJ-01: Asistente de fotos por inmueble ──
 let _pubBulkPhotoIdx = 0;
-const _PUB_BULK_PHOTO_MAX = 12;
+// Mismo máximo que el formulario de una publicación.
+const _PUB_BULK_PHOTO_MAX = 20;
 function _pubBulkValidRows(){ return _pubBulkRows.filter(a=>a.valid); }
 function _pubBulkCurrentRow(){
   const list=_pubBulkValidRows();
@@ -7571,17 +7844,8 @@ async function _pubBulkPhotoFiles(files){
   const a=_pubBulkCurrentRow();
   if(!a) return;
   if(!a.photos) a.photos=[];
-  for(const file of Array.from(files||[])){
-    if(a.photos.length>=_PUB_BULK_PHOTO_MAX){ toast(`⚠️ Máximo ${_PUB_BULK_PHOTO_MAX} fotos por inmueble`); break; }
-    if(!file.type.startsWith('image/') && !/\.(heic|heif)$/i.test(file.name)) continue;
-    try{
-      a.photos.push(await _pubToJpegDataUrl(file));
-      _pubBulkRefresh();
-    }catch(err){
-      console.warn('[reco] foto de carga masiva descartada:', file.name, err);
-      toast('⚠️ '+(err.message||('No se pudo procesar '+file.name)));
-    }
-  }
+  await _pubAddPhotoFiles(a.photos,files,_PUB_BULK_PHOTO_MAX,_pubBulkRefresh);
+  _pubBulkRefresh();
   const inp=document.getElementById('pubBulkPhotoInput'); if(inp) inp.value='';
 }
 function _pubBulkPhotoRemove(i){
@@ -7747,13 +8011,8 @@ function _pubBulkPhotosHTML(){
     <input type="file" id="pubBulkPhotoInput" accept="image/*,.heic,.heif" multiple
       style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"
       onchange="_pubBulkPhotoFiles(this.files)">
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-      ${photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden;width:84px;height:84px">
-        <img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">
-        ${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}
-        <button onclick="event.stopPropagation();_pubBulkPhotoRemove(${i})" title="Quitar" style="position:absolute;top:3px;right:3px;border:none;border-radius:50%;width:18px;height:18px;line-height:1;cursor:pointer;background:rgba(0,0,0,.55);color:#fff;font-size:11px">✕</button>
-      </div>`).join('')||'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
-    </div>
+    <div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',photos)}</div>
+    ${photos.length?_pubPhotoAdviceHTML(photos):'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
     ${_pubBulkPoolHTML(a)}
     <div class="pub-actions" style="margin-top:18px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -9412,8 +9671,11 @@ async function _pubBulkSubmit(){
       const serverUrls = (res && res.data && res.data.photoUrls) || [];
       if(pubId && rowPhotos.length){
         try{
-          const urls = await _uploadPublicationPhotos(pubId, rowPhotos, serverUrls.length);
-          if(urls.length) await db.collection('publications').doc(pubId).update({ photoUrls: serverUrls.concat(urls), photosPending: false });
+          const up = await _uploadPublicationPhotos(pubId, rowPhotos, serverUrls.length,
+            (d,t)=>{ if(prog) prog.innerHTML=`📤 Subiendo ${i+1} / ${valid.length}: fotos ${d} de ${t}`; });
+          if(up.urls.length) await db.collection('publications').doc(pubId).update({ photoUrls: serverUrls.concat(up.urls),
+            thumbUrls: serverUrls.map(()=> '').concat(up.thumbs), photosPending: up.failed>0,
+            ...(up.failed && { photoError: `${up.failed} foto(s) no se subieron` }) });
         }catch(upErr){
           console.error('[reco] bulk photo upload failed:', pubId, upErr);
           try{ await db.collection('publications').doc(pubId).update({ photosPending:true, photoError:String((upErr&&upErr.code)||(upErr&&upErr.message)||'upload-failed').slice(0,200) }); }catch(_){}
@@ -11016,7 +11278,7 @@ async function renderAdminPanel(el){
   } else {
     html += pubs.map(pub => {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
-        ? `<div style="background:url('${esc(pub.photoUrls[0])}') center/cover;height:160px;border-radius:8px 8px 0 0"></div>`
+        ? `<div style="background:url('${esc((pub.thumbUrls&&pub.thumbUrls[0])||pub.photoUrls[0])}') center/cover;height:160px;border-radius:8px 8px 0 0"></div>`
         : '<div style="background:var(--light);display:flex;align-items:center;justify-content:center;font-size:2rem;height:160px;border-radius:8px 8px 0 0">🏠</div>';
       const photosExtra = (pub.photoUrls && pub.photoUrls.length > 1) ? `<span style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:.7rem;padding:3px 8px;border-radius:99px">+${pub.photoUrls.length-1} fotos</span>` : '';
       const actions = _adminTab==='pending'
@@ -11127,7 +11389,7 @@ async function _adminGrantKeys(){
 function _propCard(p, opts) {
   opts = opts || {};
   var assets = driveAssets(p);
-  var photo = assets.photos.length ? assets.photos[0] : '';
+  var photo = assets.photos.length ? (assets.thumbs||assets.photos)[0] : '';
   var imgHtml = photo ? '<img class="us-prop-img" src="'+photo+'" loading="lazy">' : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">'+p.emoji+'</div>';
   var removeBtn = opts.onRemove ? '<button class="us-prop-remove" onclick="event.stopPropagation();'+opts.onRemove+'" title="Eliminar">✕</button>' : '';
   return '<div class="us-prop-card" onclick="closeUserSection();goToApp(\'#prop='+p.id+'\')">'
@@ -12014,10 +12276,13 @@ async function renderPublicaciones(el) {
       + '<div style="font-size:.78rem;color:var(--muted);line-height:1.5">'+_PUB_REVIEW_NOTE+'</div></div>'
       + '</div>';
   }
+  // Para el editor de fotos (📷 Fotos).
+  window._myPubs = {};
+  pubs.forEach(function(p){ window._myPubs[p.id] = p; });
   if (pubs.length) {
     html += pubs.map(function(pub) {
       const thumb = (pub.photoUrls && pub.photoUrls[0])
-        ? `<div class="us-prop-img" style="background:url('${esc(pub.photoUrls[0])}') center/cover"></div>`
+        ? `<div class="us-prop-img" style="background:url('${esc((pub.thumbUrls&&pub.thumbUrls[0])||pub.photoUrls[0])}') center/cover"></div>`
         : '<div class="us-prop-img" style="display:flex;align-items:center;justify-content:center;font-size:1.5rem">🏠</div>';
       return '<div class="us-prop-card" style="flex-wrap:wrap">'
         + '<div style="display:flex;gap:14px;width:100%">'
@@ -12031,7 +12296,8 @@ async function renderPublicaciones(el) {
         + '<button class="us-prop-remove" onclick="event.stopPropagation();removeMyPub(\''+esc(pub.id)+'\')" title="Eliminar">✕</button>'
         + '</div>'
         + _pubStatusDetail(pub)
-        + (pub.photosPending ? '<div style="font-size:.74rem;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 9px;margin-top:6px">⚠️ Las fotos no se subieron. Vuelve a publicar el inmueble con las imágenes para que pase la revisión.</div>' : '')
+        + (pub.photosPending ? '<div style="font-size:.74rem;color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:6px 9px;margin-top:6px">⚠️ '+(pub.photoUrls&&pub.photoUrls.length?'Algunas fotos no se subieron.':'Las fotos no se subieron.')+' Agrégalas con "📷 Fotos" para que pase la revisión.</div>' : '')
+        + '<button class="pub-btn ghost" style="font-size:12px;padding:6px 12px;margin-top:8px" onclick="event.stopPropagation();_pubPhotoEditor(_myPubs[\''+esc(pub.id)+'\'])">📷 Fotos ('+((pub.photoUrls||[]).length)+')</button>'
         + '</div>';
     }).join('');
   } else if(queryError){
@@ -12045,12 +12311,9 @@ async function renderPublicaciones(el) {
 async function removeMyPub(id) {
   if(!confirm('¿Eliminar esta publicación?')) return;
   try {
+    // Las fotos las borra el servidor (cleanupPublicationPhotos) al eliminarse
+    // la publicación, también cuando la elimina un admin.
     await db.collection('publications').doc(id).delete();
-    // Best-effort delete of photos; ignore errors (already deleted, no permission, etc.)
-    for(let i=0; i<20; i++){
-      try { await storage.ref(`publications/${id}/${i}.jpg`).delete(); }
-      catch(_){ break; }
-    }
     toast('Publicación eliminada');
     renderPublicaciones(document.getElementById('userSectionContent'));
   } catch(e){

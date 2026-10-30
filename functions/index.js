@@ -15,7 +15,7 @@
 
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret, defineString } = require('firebase-functions/params');
-const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -3951,6 +3951,99 @@ exports.sendVerificationViaResend = onCall(
       throw new HttpsError('internal', 'No pudimos enviar el email de verificación. Intentá de nuevo.');
     }
     return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fotos de publicaciones (Storage: publications/{pubId}/{uid}/{n}.jpg y su
+// miniatura t{n}.jpg).
+//
+//   cleanupPublicationPhotos  trigger: al eliminar una publicación (el dueño
+//                             o un admin) se borran todas sus fotos.
+//   updatePublicationPhotos   callable: el dueño cambia las fotos de una
+//                             publicación ya enviada (quitar, ordenar, elegir
+//                             portada, agregar las que no se subieron). Si
+//                             agrega fotos a una publicación aprobada o
+//                             rechazada, vuelve a revisión.
+//
+// Client contract:
+//   await httpsCallable('updatePublicationPhotos')({ pubId, photoUrls, thumbUrls })
+//   // → { status, photoUrls, thumbUrls, removed }
+// Las fotos nuevas las sube el navegador antes (storage.rules deja escribir
+// al dueño en publications/{pubId}/{uid}/); aquí solo se aceptan URLs de esa
+// carpeta.
+// ─────────────────────────────────────────────────────────────────────────────
+const PUB_MAX_PHOTOS = 20;
+exports.cleanupPublicationPhotos = onDocumentDeleted(
+  { region: REGION, document: 'publications/{pubId}' },
+  async (event) => {
+    const pubId = event.params && event.params.pubId;
+    if (!pubId || !/^[A-Za-z0-9]{1,40}$/.test(pubId)) return;
+    try {
+      const { getStorage } = require('firebase-admin/storage');
+      await getStorage().bucket().deleteFiles({ prefix: `publications/${pubId}/` });
+    } catch (e) {
+      logger.warn('[cleanupPublicationPhotos] no se borraron las fotos', { pubId, err: e && e.message });
+    }
+  }
+);
+
+// URL de descarga de Storage → ruta del archivo ('' si no es de Storage).
+function _storagePathOf(u) {
+  const m = String(u || '').match(/^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/([^?#]+)/);
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]); } catch (_) { return ''; }
+}
+exports.updatePublicationPhotos = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'updatePublicationPhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const pubId = String(d.pubId || '');
+    if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+    const ref = db.collection('publications').doc(pubId);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+    const pub = snap.data();
+
+    const own = (u, thumb) => {
+      const p = _storagePathOf(u);
+      return new RegExp(`^publications/${pubId}/${uid}/${thumb ? 't' : ''}\\d{1,3}\\.jpg$`).test(p) ? p : '';
+    };
+    const urls = Array.isArray(d.photoUrls) ? d.photoUrls.map(String) : [];
+    if (urls.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+    if (new Set(urls).size !== urls.length) throw new HttpsError('invalid-argument', 'Hay fotos repetidas.');
+    // Las fotos que ya tenía (p. ej. copiadas del bot) se aceptan aunque no
+    // sigan el patrón; las nuevas tienen que estar en la carpeta del dueño.
+    const antes = new Set(Array.isArray(pub.photoUrls) ? pub.photoUrls : []);
+    if (!urls.every((u) => antes.has(u) || own(u, false))) throw new HttpsError('invalid-argument', 'Foto no válida para esta publicación.');
+    let thumbs = Array.isArray(d.thumbUrls) ? d.thumbUrls.map(String) : [];
+    const thumbsAntes = new Set(Array.isArray(pub.thumbUrls) ? pub.thumbUrls : []);
+    if (thumbs.length !== urls.length || !thumbs.every((u) => !u || thumbsAntes.has(u) || own(u, true))) thumbs = [];
+
+    const nuevas = urls.filter((u) => !antes.has(u));
+    const quitadas = [...antes].filter((u) => !urls.includes(u));
+    const quitadasThumbs = [...thumbsAntes].filter((u) => !thumbs.includes(u));
+    const up = {
+      photoUrls: urls, thumbUrls: thumbs, photosPending: false, photoError: null,
+      photosUpdatedAt: FieldValue.serverTimestamp(),
+    };
+    // Fotos nuevas en una publicación ya revisada: vuelve a moderación.
+    if (nuevas.length && (pub.status === 'approved' || pub.status === 'rejected')) up.status = 'pending';
+    await ref.update(up);
+
+    // Se borran del Storage las que se quitaron (solo las de la carpeta del dueño).
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    let removed = 0;
+    for (const u of quitadas.concat(quitadasThumbs)) {
+      const path = _storagePathOf(u);
+      if (!path.startsWith(`publications/${pubId}/`)) continue;
+      try { await bucket.file(path).delete(); removed++; } catch (_) { /* ya no estaba */ }
+    }
+    return { status: up.status || pub.status, photoUrls: urls, thumbUrls: thumbs, removed };
   }
 );
 
