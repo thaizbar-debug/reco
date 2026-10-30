@@ -29,19 +29,32 @@
 5. Unificar el correo de contacto: `landing.html` usa `anuncios@reco.pe` y el dominio es `recosac.com`.
 6. ⚠️ Seguridad: `robots.txt` **no** oculta archivos. Todo lo que está en el repo es público en el sitio, incluidos `data/reco_github_repo.zip`, los `.xlsx` y los `.docx`. Hay que sacarlos del sitio publicado si no deben ser públicos.
 
-## Fase 2 — Fichas de inmuebles indexables
+## Fase 2 — Fichas de inmuebles indexables ✅ (en código)
 
-- Usar URLs reales en lugar de `#prop=`: `/inmueble/{tipo}-{operacion}-{distrito}-{dormitorios}-dorm-{id}`.
-  Ejemplo: `/inmueble/departamento-venta-barranco-3-dorm-abc123`.
-- Generar el HTML estático de cada ficha con un script en GitHub Actions que lea Firestore. Cada ficha lleva:
-  - un `<h1>` con la dirección,
-  - descripción, precio y m²,
+- [x] `scripts/build-seo-pages.js` genera `inmueble/{tipo}-{operacion}-{distrito}-{id}/index.html` por cada inmueble en **Venta/Alquiler**.
+  Ejemplo: `/inmueble/departamento-venta-miraflores-118-ci1508-25/`.
+  - La URL no incluye precio ni dormitorios, así no cambia si se edita el aviso.
+  - Los **Histórico no se publican**, porque su detalle se desbloquea con llaves.
+- [x] Cada ficha incluye:
+  - un H1 y una descripción redactada a partir de los datos,
+  - precio, precio/m², áreas y características,
   - fotos con `alt`,
-  - JSON-LD (`RealEstateListing` / `Offer`),
-  - canonical propio,
-  - un enlace para "ver en el mapa" que abre la app (`index.html#prop=ID`).
-- Regenerar `sitemap.xml` en cada corrida. Al despublicar un inmueble, devolver 404 o redirigir.
-- Mantener el `#prop=` interno de la app. Las páginas nuevas son la puerta de entrada desde Google.
+  - JSON-LD `RealEstateListing` + `BreadcrumbList`, canonical y Open Graph con la foto del inmueble,
+  - 6 inmuebles relacionados del mismo distrito (enlazado interno),
+  - botones "Contactar" y "Ver en el mapa" que abren la app (`/index.html#prop=ID`), donde vive el flujo de contacto.
+- [x] Solo muestra datos que la app ya muestra públicamente. Nunca datos del dueño.
+- [x] `sitemap.xml` se regenera completo con todas las fichas.
+- [x] `404.html` para avisos retirados ("Este inmueble ya no está disponible").
+- [x] Workflow `.github/workflows/seo-pages.yml`:
+  - regenera y hace commit en `main` cuando cambia `data/properties.json`, y cada día a las 04:17 de Lima;
+  - también se puede correr a mano desde Actions.
+- [x] Tests en `tests/seo-pages.spec.js`.
+
+**Pendiente (fuera del código):**
+
+- Para incluir las **publicaciones de usuarios aprobadas** (Firestore), crear en GitHub → Settings → Secrets → Actions el secreto `FIREBASE_SERVICE_ACCOUNT`. Su valor es el JSON de una cuenta de servicio de `reco-5a5dd` con rol de solo lectura en Firestore (`roles/datastore.viewer`). La lectura anónima por REST está bloqueada, probablemente por App Check. Sin el secreto, solo se generan las fichas de `data/properties.json`.
+- Si `main` tiene protección de rama que impide pushes del bot `github-actions[bot]`, permitirlo o cambiar el paso final del workflow por un PR automático.
+- Tras el deploy: enviar `sitemap.xml` en Search Console y pedir la indexación de 3–5 fichas para acelerar.
 
 ## Fase 3 — "Búsqueda especial" (páginas por distrito, m², tipo)
 

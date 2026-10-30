@@ -1,0 +1,57 @@
+name: Páginas SEO de inmuebles
+
+# Regenera inmueble/<slug>/index.html y sitemap.xml (scripts/build-seo-pages.js)
+# y hace commit en main si algo cambió. Corre cuando cambia el feed estático y
+# una vez al día para recoger las publicaciones de usuarios aprobadas en
+# Firestore (requiere el secreto FIREBASE_SERVICE_ACCOUNT; sin él solo se
+# generan las fichas de data/properties.json).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/properties.json
+      - scripts/build-seo-pages.js
+      - .github/workflows/seo-pages.yml
+  schedule:
+    - cron: '17 9 * * *' # 04:17 hora de Lima
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: seo-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar firebase-admin (solo si hay credenciales)
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            npm install --no-save --no-package-lock firebase-admin@12
+          fi
+      - name: Generar páginas
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: node scripts/build-seo-pages.js
+      - name: Commit si hay cambios
+        run: |
+          git add -A inmueble sitemap.xml
+          if git diff --cached --quiet; then
+            echo "Sin cambios."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(seo): regenerar fichas de inmuebles y sitemap"
+          git push
