@@ -1,8 +1,8 @@
-name: Páginas SEO de inmuebles
+name: Páginas SEO
 
-# Regenera inmueble/<slug>/index.html y sitemap.xml (scripts/build-seo-pages.js)
-# y hace commit en main si algo cambió (o abre un PR si main lo rechaza). Corre cuando cambia el feed estático y
-# una vez al día para recoger las publicaciones de usuarios aprobadas en
+# Regenera inmueble/, busqueda-especial/ y sitemap.xml (scripts/build-seo-pages.js)
+# y hace commit en main si algo cambió (o abre un PR si main lo rechaza).
+# Corre cuando cambia el feed estático o el generador, y una vez al día para recoger las publicaciones de usuarios aprobadas en
 # Firestore (requiere el secreto FIREBASE_SERVICE_ACCOUNT; sin él solo se
 # generan las fichas de data/properties.json).
 
@@ -11,7 +11,9 @@ on:
     branches: [main]
     paths:
       - data/properties.json
+      - data/serie_precios_tasaciones_compact.json
       - scripts/build-seo-pages.js
+      - scripts/seo/**
       - .github/workflows/seo-pages.yml
   schedule:
     - cron: '17 9 * * *' # 04:17 hora de Lima
