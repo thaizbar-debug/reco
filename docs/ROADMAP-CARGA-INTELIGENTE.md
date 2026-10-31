@@ -143,7 +143,7 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | # | Dónde quedó |
 |---|---|
 | 2.1 | Bot: `whatsappLink` (código `VINCULAR`), `whatsappWebhook` (firma de Meta, guarda cada mensaje una sola vez) y `whatsappProcessMessage` (comandos, sesión, notas de voz transcritas con Whisper, fotos a Storage `imports/`, mismo pipeline de extracción, respuesta con resumen y enlace a `#borradores`). Lógica pura en `functions/whatsapp-core.js`. Al publicar, `publishProperty` copia las fotos del bot a `publications/`. **Configuración pendiente:** `docs/WHATSAPP-BOT.md`. |
-| 2.2 | Paso de fotos → "Súbelas de una vez": agrupación por fecha de captura y GPS del EXIF (`_pubExifInfo`, `_pubGroupPhotos`: grupo nuevo a los 15 min o 200 m), propuesta de un grupo por inmueble y asignación con un clic. Pendiente: clasificar ambientes, elegir portada y detectar marcas de agua (requieren IA de visión por foto). |
+| 2.2 | Paso de fotos → "Súbelas de una vez": agrupación por fecha de captura y GPS del EXIF (`_pubExifInfo`, `_pubGroupPhotos`: grupo nuevo a los 15 min o 200 m), propuesta de un grupo por inmueble y asignación con un clic. Clasificar ambientes, elegir portada y detectar marcas de agua: "✨ Ordenar con IA" (`analyzePhotos`, ver Fotos). Desde Google Drive: una subcarpeta por inmueble (`docs/GOOGLE-DRIVE.md`). |
 | 2.3 | "Importar todos los de mi perfil": `importListingPage` `modo: 'perfil'` lista los avisos (sin IA; `extractListingLinks`), el corredor elige y se importan uno por uno al mismo lote. Si se acaba el límite por hora, se carga lo importado y se avisa cuántos faltan. |
 | 2.4 | Además de PDF/Word/PowerPoint: **flyers o capturas** (varias imágenes a la vez) como páginas escaneadas (`fileType: 'imagenes'`). Pendiente: .doc/.ppt antiguos. |
 | 2.5 | `manifest.webmanifest` (app instalable, `share_target`) + `sw.js` (solo recibe lo compartido; no cachea nada más) + `_pubReadShared`: documentos/Excel/chats, texto (con fotos), enlaces o imágenes ("¿fotos o flyers?") van al importador correcto. |
@@ -183,6 +183,15 @@ Tras probar con un post de Facebook, un brochure en PDF y enlaces de Facebook, T
 | M3 | **Enlace de cualquier post o web** | `importListingPage` acepta cualquier web pública y lee posts de Facebook, Instagram, TikTok y YouTube por sus vías públicas de inserción (`functions/social-core.js`), con transcripción del video si es descargable. Ver `docs/REDES-SOCIALES.md`. |
 | M3b | Conectar página de Facebook / Instagram | `metaConnect` + `metaOAuth` (Graph API): ver los últimos posts y traerlos de a 10. Requiere la app de Meta y su revisión. |
 | M4 | Video subido | Reel/TikTok descargado: hasta 6 imágenes + audio transcrito (Whisper). |
+
+### Carga de fotos
+
+| Parte | Qué | Dónde quedó |
+|---|---|---|
+| 1 | Arreglos y lo básico | Borrado al eliminar (`cleanupPublicationPhotos`), subida de a 3 con reintentos, miniaturas de 480 px, portada y orden, editor "📷 Fotos" (`updatePublicationPhotos`), HEIC en cualquier navegador. |
+| 2 | Calidad sin IA | Repetidas (dHash), oscuras, borrosas y de baja resolución, en el navegador. |
+| 3 | **Fotos con IA** | "✨ Ordenar con IA" (`analyzePhotos`, `functions/photo-core.js`): ambiente de cada foto, portada (buena y sin marca de agua, texto ni personas; nunca un plano), orden por ambientes con planos al final, y aviso de marcas de agua de otros portales. Copias de 512 px en baja resolución (pocos tokens); cuenta en el límite de 30 por hora. |
+| 4 | **Google Drive** | "📁 Desde Google Drive": enlace de carpeta o foto compartida (API de Drive con la clave de la web) y, si se configura, Google Picker para fotos privadas (`drive.file`). En la carga masiva, una subcarpeta por inmueble, asignada por nombre. Configuración: `docs/GOOGLE-DRIVE.md`. |
 
 ## 5. Matriz de priorización
 

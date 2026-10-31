@@ -15,7 +15,7 @@
 
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret, defineString } = require('firebase-functions/params');
-const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -3951,6 +3951,176 @@ exports.sendVerificationViaResend = onCall(
       throw new HttpsError('internal', 'No pudimos enviar el email de verificación. Intentá de nuevo.');
     }
     return { ok: true };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fotos de publicaciones (Storage: publications/{pubId}/{uid}/{n}.jpg y su
+// miniatura t{n}.jpg).
+//
+//   cleanupPublicationPhotos  trigger: al eliminar una publicación (el dueño
+//                             o un admin) se borran todas sus fotos.
+//   updatePublicationPhotos   callable: el dueño cambia las fotos de una
+//                             publicación ya enviada (quitar, ordenar, elegir
+//                             portada, agregar las que no se subieron). Si
+//                             agrega fotos a una publicación aprobada o
+//                             rechazada, vuelve a revisión.
+//
+// Client contract:
+//   await httpsCallable('updatePublicationPhotos')({ pubId, photoUrls, thumbUrls })
+//   // → { status, photoUrls, thumbUrls, removed }
+// Las fotos nuevas las sube el navegador antes (storage.rules deja escribir
+// al dueño en publications/{pubId}/{uid}/); aquí solo se aceptan URLs de esa
+// carpeta.
+// ─────────────────────────────────────────────────────────────────────────────
+const PUB_MAX_PHOTOS = 20;
+exports.cleanupPublicationPhotos = onDocumentDeleted(
+  { region: REGION, document: 'publications/{pubId}' },
+  async (event) => {
+    const pubId = event.params && event.params.pubId;
+    if (!pubId || !/^[A-Za-z0-9]{1,40}$/.test(pubId)) return;
+    try {
+      const { getStorage } = require('firebase-admin/storage');
+      await getStorage().bucket().deleteFiles({ prefix: `publications/${pubId}/` });
+    } catch (e) {
+      logger.warn('[cleanupPublicationPhotos] no se borraron las fotos', { pubId, err: e && e.message });
+    }
+  }
+);
+
+// URL de descarga de Storage → ruta del archivo ('' si no es de Storage).
+function _storagePathOf(u) {
+  const m = String(u || '').match(/^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/([^?#]+)/);
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]); } catch (_) { return ''; }
+}
+exports.updatePublicationPhotos = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'updatePublicationPhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const pubId = String(d.pubId || '');
+    if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+    const ref = db.collection('publications').doc(pubId);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+    const pub = snap.data();
+
+    const own = (u, thumb) => {
+      const p = _storagePathOf(u);
+      return new RegExp(`^publications/${pubId}/${uid}/${thumb ? 't' : ''}\\d{1,3}\\.jpg$`).test(p) ? p : '';
+    };
+    const urls = Array.isArray(d.photoUrls) ? d.photoUrls.map(String) : [];
+    if (urls.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+    if (new Set(urls).size !== urls.length) throw new HttpsError('invalid-argument', 'Hay fotos repetidas.');
+    // Las fotos que ya tenía (p. ej. copiadas del bot) se aceptan aunque no
+    // sigan el patrón; las nuevas tienen que estar en la carpeta del dueño.
+    const antes = new Set(Array.isArray(pub.photoUrls) ? pub.photoUrls : []);
+    if (!urls.every((u) => antes.has(u) || own(u, false))) throw new HttpsError('invalid-argument', 'Foto no válida para esta publicación.');
+    let thumbs = Array.isArray(d.thumbUrls) ? d.thumbUrls.map(String) : [];
+    const thumbsAntes = new Set(Array.isArray(pub.thumbUrls) ? pub.thumbUrls : []);
+    if (thumbs.length !== urls.length || !thumbs.every((u) => !u || thumbsAntes.has(u) || own(u, true))) thumbs = [];
+
+    const nuevas = urls.filter((u) => !antes.has(u));
+    const quitadas = [...antes].filter((u) => !urls.includes(u));
+    const quitadasThumbs = [...thumbsAntes].filter((u) => !thumbs.includes(u));
+    const up = {
+      photoUrls: urls, thumbUrls: thumbs, photosPending: false, photoError: null,
+      photosUpdatedAt: FieldValue.serverTimestamp(),
+    };
+    // Fotos nuevas en una publicación ya revisada: vuelve a moderación.
+    if (nuevas.length && (pub.status === 'approved' || pub.status === 'rejected')) up.status = 'pending';
+    await ref.update(up);
+
+    // Se borran del Storage las que se quitaron (solo las de la carpeta del dueño).
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    let removed = 0;
+    for (const u of quitadas.concat(quitadasThumbs)) {
+      const path = _storagePathOf(u);
+      if (!path.startsWith(`publications/${pubId}/`)) continue;
+      try { await bucket.file(path).delete(); removed++; } catch (_) { /* ya no estaba */ }
+    }
+    return { status: up.status || pub.status, photoUrls: urls, thumbUrls: thumbs, removed };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// analyzePhotos — fotos con IA: ambiente de cada foto, calidad, marcas de
+// agua, texto encima y personas; propone la portada y el orden
+// (functions/photo-core.js). Cuenta en el límite por hora de la IA.
+//   photos  [dataUrl JPEG chico (~512 px)] o [{ url }] de una publicación
+//           propia (pubId): las URLs se leen de Storage en el servidor.
+// No guarda nada: el navegador aplica el orden y muestra los avisos.
+// ─────────────────────────────────────────────────────────────────────────────
+const RecoPhotos = require('./photo-core');
+const PHOTO_AI_MAX_CHARS = 400 * 1024;
+const PHOTO_AI_MAX_BYTES = 3 * 1024 * 1024;
+exports.analyzePhotos = onCall(
+  {
+    region: REGION, maxInstances: 10, timeoutSeconds: 120, memory: '512MiB',
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'analyzePhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const items = Array.isArray(d.photos) ? d.photos : [];
+    if (items.length < 2) throw new HttpsError('invalid-argument', 'Agrega al menos 2 fotos.');
+    if (items.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+
+    // Fotos ya subidas: solo las de una publicación propia.
+    let permitidas = null;
+    if (items.some((it) => typeof it !== 'string')) {
+      const pubId = String(d.pubId || '');
+      if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+      const snap = await db.collection('publications').doc(pubId).get();
+      if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+      const p = snap.data();
+      permitidas = new Set([].concat(p.photoUrls || [], p.thumbUrls || []));
+    }
+    const sinFoto = () => new HttpsError('invalid-argument', 'Foto no válida.');
+    const leer = [];
+    for (const it of items) {
+      if (typeof it === 'string') {
+        if (!IMPORT_IMAGE_RE.test(it) || it.length > PHOTO_AI_MAX_CHARS) throw sinFoto();
+        leer.push(it);
+        continue;
+      }
+      const url = it && typeof it.url === 'string' ? it.url : '';
+      const path = _storagePathOf(url);
+      if (!permitidas || !permitidas.has(url) || !path.startsWith('publications/')) throw sinFoto();
+      leer.push(path);
+    }
+
+    await _importRateLimit(uid);
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    const dataUrls = [];
+    for (const x of leer) {
+      if (x.startsWith('data:')) { dataUrls.push(x); continue; }
+      let buf;
+      try { [buf] = await bucket.file(x).download(); } catch (_) { throw new HttpsError('not-found', 'Una de las fotos ya no existe. Recarga la página.'); }
+      if (buf.length > PHOTO_AI_MAX_BYTES) throw new HttpsError('invalid-argument', 'Una de las fotos es demasiado grande.');
+      dataUrls.push(`data:image/jpeg;base64,${buf.toString('base64')}`);
+    }
+
+    let parsed;
+    try {
+      parsed = await _openaiStructured(RecoPhotos.PROMPT, RecoPhotos.content(dataUrls), 'fotos', RecoPhotos.SCHEMA);
+    } catch (e) {
+      logger.error('[analyzePhotos] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', 'No pudimos revisar las fotos. Intenta de nuevo.');
+    }
+    const r = RecoPhotos.normalizar(parsed, dataUrls.length);
+    await db.collection('importEvents').doc().set({
+      uid, kind: 'fotos', channel: 'fotos', photos: dataUrls.length,
+      marcaAgua: r.fotos.filter((f) => f.marcaAgua).length, createdAt: FieldValue.serverTimestamp(),
+    });
+    return r;
   }
 );
 

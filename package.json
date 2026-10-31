@@ -4,6 +4,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "heic2any": "^0.0.4",
     "jszip": "^3.10.1",
     "pdfjs-dist": "^3.11.174",
     "serve": "^14.2.6",

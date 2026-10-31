@@ -78,7 +78,7 @@ function loadHandlers() {
       defineSecret(name) { return { value: () => (SECRETS[name] != null ? SECRETS[name] : 'fake-key'), name }; },
       defineString(name) { return { value: () => (SECRETS[name] != null ? SECRETS[name] : ''), name }; },
     },
-    'firebase-functions/v2/firestore': { onDocumentWritten: () => ({}), onDocumentCreated: handlerOf },
+    'firebase-functions/v2/firestore': { onDocumentWritten: () => ({}), onDocumentCreated: handlerOf, onDocumentDeleted: () => ({}) },
     'firebase-functions/v2/scheduler': { onSchedule: () => ({}) },
     'firebase-functions': { logger: { info() {}, warn() {}, error() {} } },
     'firebase-admin/app': { initializeApp() {} },
