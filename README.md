@@ -22,8 +22,9 @@ El proyecto usa [Playwright](https://playwright.dev/) como suite de pruebas E2E.
 | Fase 3: pantalla de Integraciones y estado "Retirada" | `tests/import-fase3.spec.js` | 6 |
 | Captación desde redes: enlace de posts de Facebook / Instagram / TikTok y de cualquier web, video subido y conectar página de Facebook / Instagram (handlers reales) | `tests/import-redes.test.js` | 8 |
 | Captación desde redes en la web: PDF de proyecto (fotos y planos), video (imágenes + audio), post privado y tarjeta de Facebook / Instagram | `tests/import-redes.spec.js` | 6 |
-| Fotos: borrar al eliminar la publicación y editar las fotos de una publicación enviada (handlers reales) | `tests/fotos.test.js` | 3 |
+| Fotos: borrar al eliminar la publicación, editar las fotos de una publicación enviada y fotos con IA (`analyzePhotos`) (handlers reales) | `tests/fotos.test.js` | 5 |
 | Fotos en la web: repetidas, oscuras, borrosas y de baja resolución; portada y orden; HEIC; subida en paralelo con reintentos y miniaturas; editor en Mis publicaciones | `tests/fotos.spec.js` | 8 |
+| Fotos con IA en la web (portada, orden, ambientes, marcas de agua) y fotos desde Google Drive (carpeta compartida, subcarpetas por inmueble, Google Picker) | `tests/fotos-ia-drive.spec.js` | 9 |
 
 El catálogo de valores estándar (`functions/shared/catalogo.js`), los normalizadores (`functions/shared/import-core.js`), el bot de WhatsApp (`functions/whatsapp-core.js`), el núcleo de feeds (`functions/feed-core.js`) y la lectura de posts de redes (`functions/social-core.js`) tienen tests unitarios sin dependencias:
 `cd functions && npm test`.

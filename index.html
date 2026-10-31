@@ -6862,10 +6862,8 @@ function _rps(){
           <div class="dz-sub">JPG, PNG, HEIC y más · Mínimo 3 fotos (máx ${_PUB_MAX_PHOTOS}) · La primera será portada</div>
         </label>
         <input type="file" id="pubFileInput" accept="image/*,.heic,.heif" multiple style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubHandleFiles(this.files)">
-        <div class="pub-photos" id="pubPhotoPreview" style="margin-top:12px">
-          ${_pd.photos.map((ph,i)=>`<div class="pub-photo-slot filled" style="position:relative;overflow:hidden"><img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px"><button onclick="_pubRemovePhoto(${i})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:22px;padding:0" title="Quitar foto">✕</button>${i===0?'<div style="position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:2px">PORTADA</div>':''}</div>`).join('')}
-        </div>
-        <div id="pubPhotoCount" style="font-size:11px;color:var(--muted);margin-top:6px">${_pd.photos.length>0?`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`:''}</div>
+        <div class="pub-photos" id="pubPhotoPreview" style="margin-top:12px">${_pubPhotoStripHTML('pd',_pd.photos)}</div>
+        <div id="pubPhotoCount" style="font-size:11px;color:var(--muted);margin-top:6px">${_pubPhotoCountHTML()}</div>
         <h3 style="margin-top:22px">📝 Descripción</h3>
         ${_AI_COPY_ENABLED ? `<div style="margin-bottom:14px">
           <button id="pubAiBtn" onclick="_pubAiCopy()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px">✨ Redactar con IA</button>
@@ -7154,10 +7152,14 @@ function _pubPhotoDuplicateOf(list,dataUrl){
 }
 function _pubPhotoIssues(dataUrl){
   const m=_pubPhotoMeta.get(dataUrl)||{};
+  const ai=_pubPhotoAi.get(dataUrl)||{};
   const out=[];
   if(m.oscura) out.push('Oscura');
   if(m.borrosa) out.push('Borrosa');
   if(m.chica) out.push('Baja resolución');
+  if(ai.marcaAgua) out.push('Marca de agua');
+  if(ai.texto) out.push('Texto encima');
+  if(ai.personas) out.push('Personas');
   return out;
 }
 // Convierte los archivos y los agrega a la lista sin pasar el máximo ni
@@ -7220,6 +7222,7 @@ function _pubPeRender(){
     <div style="font-size:.78rem;color:var(--muted);margin:4px 0 10px">Arrastra para ordenar, ⭐ para la portada, ✕ para quitar. ${_pe.status==='approved'?'Si agregas fotos nuevas, la publicación vuelve a revisión antes de mostrarse con ellas.':''}</div>
     <div class="pub-photos" id="pubPePhotos">${_pubPhotoStripHTML('pe',_pe.photos)}</div>
     ${_pubPhotoAdviceHTML(_pe.photos)}
+    ${_pubPhotoToolsHTML('pe')}
     <label class="pub-btn ghost" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:10px;cursor:pointer">+ Agregar fotos
       <input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_pubPeAdd(this.files);this.value=''"></label>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
@@ -7272,11 +7275,15 @@ function _pubPhotoStripHTML(ns,photos){
   const btn='border:none;border-radius:6px;cursor:pointer;background:rgba(0,0,0,.6);color:#fff;font-size:11px;line-height:1;padding:3px 5px';
   return photos.map((ph,i)=>{
     const iss=_pubPhotoIssues(ph);
+    const amb=_PUB_AMBIENTE_LBL[(_pubPhotoAi.get(ph)||{}).ambiente]||'';
     return `<div class="pub-photo-slot filled" draggable="true" data-i="${i}" style="position:relative;overflow:hidden;cursor:grab"
       ondragstart="_pubPhotoDrag=${i}" ondragover="event.preventDefault()" ondrop="event.preventDefault();_pubPhotoOp('${ns}','mover',_pubPhotoDrag,${i});_pubPhotoDrag=null">
       <img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none">
       <button onclick="event.stopPropagation();_pubPhotoOp('${ns}','quitar',${i})" title="Quitar foto" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:13px;line-height:22px;padding:0">✕</button>
-      ${iss.length?`<div title="${esc(iss.join(', '))}" style="position:absolute;top:4px;left:4px;background:#f59e0b;color:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:2px 5px;max-width:70%;line-height:1.3">⚠️ ${esc(iss.join(' · '))}</div>`:''}
+      <div style="position:absolute;top:4px;left:4px;max-width:70%;display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+        ${iss.length?`<div title="${esc(iss.join(', '))}" style="background:#f59e0b;color:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:2px 5px;line-height:1.3">⚠️ ${esc(iss.join(' · '))}</div>`:''}
+        ${amb?`<div class="pub-photo-amb" style="background:rgba(37,99,235,.85);color:#fff;border-radius:6px;font-size:9px;font-weight:700;padding:2px 5px;line-height:1.3">${esc(amb)}</div>`:''}
+      </div>
       ${i===0?'<div style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:#fff;font-weight:600;background:rgba(0,0,0,.45);padding:3px">⭐ PORTADA</div>'
         :`<div style="position:absolute;bottom:3px;left:0;right:0;display:flex;justify-content:center;gap:3px">
           <button onclick="event.stopPropagation();_pubPhotoOp('${ns}','izq',${i})" title="Mover a la izquierda" style="${btn}">◀</button>
@@ -7289,13 +7296,355 @@ function _pubPhotoStripHTML(ns,photos){
 // Resumen bajo la tira: cuántas tienen avisos y cuántas faltan para 5.
 function _pubPhotoAdviceHTML(photos){
   const malas=photos.filter(p=>_pubPhotoIssues(p).length).length;
+  const tipos=[...new Set(photos.flatMap(_pubPhotoIssues))].map(t=>t.toLowerCase());
   const out=[];
-  if(malas) out.push(`⚠️ ${malas} foto${malas!==1?'s':''} con aviso (oscura, borrosa o de baja resolución): si puedes, cámbiala${malas!==1?'s':''} por una mejor.`);
+  if(malas) out.push(`⚠️ ${malas} foto${malas!==1?'s':''} con aviso (${esc(tipos.join(', '))}): si puedes, cámbiala${malas!==1?'s':''} por una mejor.`);
+  if(photos.some(p=>(_pubPhotoAi.get(p)||{}).marcaAgua)) out.push('🚫 Usa fotos propias: las que tienen logo o marca de agua de otro portal o inmobiliaria pueden traerte reclamos.');
   if(photos.length && photos.length<5) out.push(`💡 Los avisos con 5 fotos o más reciben más contactos (tienes ${photos.length}).`);
   if(photos.length>1) out.push('Arrastra para ordenar o usa ⭐ para elegir la portada.');
   return out.length?`<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">${out.join('<br>')}</div>`:'';
 }
 const _PUB_MAX_PHOTOS=20;
+
+// ── Fotos con IA: ambiente, marca de agua, portada y orden (analyzePhotos) ──
+// _pubPhotoAi: foto (dataUrl o URL) → { ambiente, calidad, marcaAgua, texto, personas }.
+const _pubPhotoAi=new Map();
+const _PUB_AMBIENTE_LBL={ fachada:'Fachada', sala:'Sala', comedor:'Comedor', cocina:'Cocina', dormitorio:'Dormitorio', bano:'Baño',
+  terraza:'Terraza', vista:'Vista', area_comun:'Área común', estacionamiento:'Estacionamiento', exterior:'Exterior', plano:'Plano', otro:'' };
+let _pubPhotoAiBusy=null;
+// Copia de máx. 512 px para la IA (basta para reconocer el ambiente y cuesta poco).
+function _pubPhotoSmall(dataUrl){
+  return new Promise((ok,no)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const r=Math.min(1,512/Math.max(img.naturalWidth||1,img.naturalHeight||1));
+      const cv=document.createElement('canvas');
+      cv.width=Math.max(1,Math.round((img.naturalWidth||1)*r)); cv.height=Math.max(1,Math.round((img.naturalHeight||1)*r));
+      const cx=cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,cv.width,cv.height); cx.drawImage(img,0,0,cv.width,cv.height);
+      ok(cv.toDataURL('image/jpeg',0.8));
+    };
+    img.onerror=()=>no(new Error('No pudimos leer una de las fotos.'));
+    img.src=dataUrl;
+  });
+}
+async function _pubPhotoAiRun(ns){
+  const L=_pubPhotoListOf(ns);
+  if(L.length<2 || _pubPhotoAiBusy) return;
+  _pubPhotoAiBusy=ns; _pubPhotoRefresh(ns);
+  try{
+    const orig=L.slice();
+    // Las fotos ya subidas (editor) se mandan por URL: el servidor las lee.
+    const photos=[];
+    for(const u of orig) photos.push(u.indexOf('data:')===0?await _pubPhotoSmall(u):{ url:(ns==='pe'&&_pe&&_pe.thumbs.get(u))||u });
+    const res=await _getFunctions().httpsCallable('analyzePhotos')({ photos, ...(ns==='pe'&&_pe&&{ pubId:_pe.pubId }) });
+    const r=(res&&res.data)||{};
+    (r.fotos||[]).forEach((f,i)=>{ if(orig[i]) _pubPhotoAi.set(orig[i],f); });
+    // El orden se aplica solo si la lista no cambió mientras tanto.
+    const actual=_pubPhotoListOf(ns);
+    const nuevo=(r.orden||[]).map(i=>orig[i]);
+    const igual=actual.length===orig.length && actual.every((u,i)=>u===orig[i]);
+    if(igual && nuevo.length===orig.length && nuevo.every(Boolean) && new Set(nuevo).size===orig.length) actual.splice(0,actual.length,...nuevo);
+    const port=_PUB_AMBIENTE_LBL[(_pubPhotoAi.get(actual[0])||{}).ambiente]||'';
+    const marcas=actual.filter(u=>(_pubPhotoAi.get(u)||{}).marcaAgua).length;
+    toast(`✨ Fotos ordenadas${port?` · portada: ${port.toLowerCase()}`:''}${marcas?` · ${marcas} con marca de agua`:''}. Puedes cambiar lo que quieras.`);
+  }catch(e){
+    console.warn('[reco] analyzePhotos:', e);
+    toast('⚠️ '+((e&&e.message)||'No pudimos revisar las fotos.'));
+  }finally{
+    _pubPhotoAiBusy=null; _pubPhotoRefresh(ns);
+  }
+}
+// Botones bajo la tira de fotos: Google Drive y ordenar con IA.
+function _pubPhotoToolsHTML(ns){
+  const n=_pubPhotoListOf(ns).length;
+  const b='font-size:11px;padding:5px 10px';
+  return `<div class="pub-photo-tools" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('${ns}')">📁 Desde Google Drive</button>
+    ${_AI_COPY_ENABLED&&n>1?`<button type="button" class="pub-btn ghost" style="${b}" ${_pubPhotoAiBusy?'disabled':''} onclick="_pubPhotoAiRun('${ns}')" title="Elige la portada, ordena por ambientes y avisa de marcas de agua">${_pubPhotoAiBusy===ns?'✨ Revisando fotos…':'✨ Ordenar con IA'}</button>`:''}
+  </div>`;
+}
+
+// ── Fotos desde Google Drive ──
+// 1) Enlace de una carpeta o foto compartida ("Cualquier persona con el
+//    enlace"): se lee con la API de Drive y la clave de la web, sin cuenta.
+// 2) "Elegir de mi Google Drive" (Google Picker): fotos privadas; Google pide
+//    permiso solo para las fotos elegidas (drive.file). Aparece al configurar
+//    _GOOGLE_DRIVE.clientId y appId (docs/GOOGLE-DRIVE.md).
+// Se descargan en el navegador y siguen el camino de las fotos del equipo
+// (HEIC, calidad, repetidas). En la carga masiva, una subcarpeta por inmueble.
+const _GOOGLE_DRIVE={ apiKey:'', clientId:'', appId:'' }; // apiKey vacía = la de Firebase
+const _DRIVE_API='https://www.googleapis.com/drive/v3/';
+const _DRIVE_FOLDER='application/vnd.google-apps.folder';
+const _DRIVE_MAX_BYTES=30*1024*1024;
+const _DRIVE_MAX_CARPETAS=40;
+const _DRIVE_FIELDS='id,name,mimeType,size,resourceKey,imageMediaMetadata/time';
+function _driveKey(){ return _GOOGLE_DRIVE.apiKey || (typeof firebaseConfig!=='undefined' && firebaseConfig.apiKey) || ''; }
+// Enlace de Drive → { id, tipo:'carpeta'|'archivo'|null, resourceKey } o null.
+function _driveLinkInfo(link){
+  let u; try{ u=new URL(String(link||'').trim()); }catch(_){ return null; }
+  if(!/^(drive|docs)\.google\.com$/i.test(u.hostname)) return null;
+  const resourceKey=u.searchParams.get('resourcekey')||'';
+  let m=u.pathname.match(/\/folders\/([\w-]{10,})/);
+  if(m) return { id:m[1], tipo:'carpeta', resourceKey };
+  m=u.pathname.match(/\/file\/d\/([\w-]{10,})/);
+  if(m) return { id:m[1], tipo:'archivo', resourceKey };
+  const id=u.searchParams.get('id');
+  return id && /^[\w-]{10,}$/.test(id) ? { id, tipo:null, resourceKey } : null;
+}
+const _driveEsFoto=(f)=>/^image\//.test((f&&f.mimeType)||'') && !(Number(f.size)>_DRIVE_MAX_BYTES);
+const _driveNatural=(a,b)=>String(a.name||'').localeCompare(String(b.name||''),'es',{ numeric:true, sensitivity:'base' });
+// auth: { token } (Picker) o { keys } (enlaces con resourcekey).
+async function _driveApi(path,params,auth){
+  const q=new URLSearchParams({ supportsAllDrives:'true', ...(params||{}) });
+  const headers={};
+  if(auth && auth.token) headers.Authorization='Bearer '+auth.token; else q.set('key',_driveKey());
+  if(auth && auth.keys && auth.keys.length) headers['X-Goog-Drive-Resource-Keys']=auth.keys.join(',');
+  let res;
+  try{ res=await fetch(_DRIVE_API+path+'?'+q.toString(),{ headers }); }
+  catch(_){ throw new Error('No pudimos conectar con Google Drive. Revisa tu conexión.'); }
+  if(res.ok) return params && params.alt==='media' ? res.blob() : res.json();
+  let reason='';
+  try{ const b=await res.json(); const e=(b&&b.error)||{}; reason=[((e.errors||[])[0]||{}).reason, e.status, e.message].filter(Boolean).join(' '); }catch(_){}
+  if(res.status===429 || /rateLimit|userRateLimit/i.test(reason)) throw new Error('Google Drive pidió esperar un momento. Intenta en un minuto.');
+  if(res.status===403 && /accessNotConfigured|SERVICE_DISABLED|API_KEY|keyInvalid|referer|has not been used/i.test(reason)){
+    throw new Error('Google Drive todavía no está activado en ReCo. Mientras tanto, descarga las fotos y súbelas desde tu equipo.');
+  }
+  throw Object.assign(new Error('No pudimos abrir esa carpeta. En Drive: Compartir → Acceso general → "Cualquier persona con el enlace" y copia el enlace otra vez.'),{ status:res.status });
+}
+async function _driveChildren(id,auth){
+  const out=[];
+  let pageToken='';
+  for(let p=0;p<5;p++){
+    const r=await _driveApi('files',{ q:`'${id}' in parents and trashed=false`, fields:`nextPageToken,files(${_DRIVE_FIELDS})`,
+      pageSize:'200', includeItemsFromAllDrives:'true', ...(pageToken&&{ pageToken }) },auth);
+    out.push(...((r&&r.files)||[]));
+    if(!r || !r.nextPageToken) break;
+    pageToken=r.nextPageToken;
+  }
+  return out;
+}
+// Enlace → { nombre, fotos:[archivo], carpetas:[{ nombre, fotos }], auth }.
+async function _driveRead(link){
+  const info=_driveLinkInfo(link);
+  if(!info) throw new Error('Pega el enlace de una carpeta o una foto de Google Drive (https://drive.google.com/…).');
+  const auth={ keys:info.resourceKey?[`${info.id}/${info.resourceKey}`]:[] };
+  const meta=await _driveApi('files/'+info.id,{ fields:_DRIVE_FIELDS },auth);
+  if(meta.mimeType!==_DRIVE_FOLDER){
+    if(!_driveEsFoto(meta)) throw new Error('Ese enlace no es una foto ni una carpeta de fotos.');
+    return { nombre:meta.name||'', fotos:[meta], carpetas:[], auth };
+  }
+  const hijos=await _driveChildren(meta.id,auth);
+  const fotos=hijos.filter(_driveEsFoto).sort(_driveNatural);
+  const carpetas=[];
+  for(const c of hijos.filter(h=>h.mimeType===_DRIVE_FOLDER).sort(_driveNatural).slice(0,_DRIVE_MAX_CARPETAS)){
+    if(c.resourceKey) auth.keys.push(`${c.id}/${c.resourceKey}`);
+    const fs=(await _driveChildren(c.id,auth)).filter(_driveEsFoto).sort(_driveNatural);
+    if(fs.length) carpetas.push({ nombre:c.name||'', fotos:fs });
+  }
+  return { nombre:meta.name||'', fotos, carpetas, auth };
+}
+// Descarga de a 3 → { files:[File] (en orden), fallidas }.
+async function _driveDownload(fotos,auth,onProgress){
+  const out=new Array(fotos.length);
+  let next=0, done=0, fallidas=0;
+  const worker=async()=>{
+    while(next<fotos.length){
+      const i=next++; const f=fotos[i];
+      try{
+        const keys=((auth&&auth.keys)||[]).concat(f.resourceKey?[`${f.id}/${f.resourceKey}`]:[]);
+        const blob=await _driveApi('files/'+f.id,{ alt:'media' },{ ...(auth||{}), keys });
+        const t=Date.parse(String((f.imageMediaMetadata||{}).time||'').replace(/^(\d{4}):(\d\d):(\d\d) /,'$1-$2-$3T'));
+        out[i]=new File([blob],f.name||`foto-${i+1}.jpg`,{ type:f.mimeType||blob.type, ...(t?{ lastModified:t }:{}) });
+      }catch(e){ fallidas++; console.warn('[reco] Drive: foto no descargada', f.name, e); }
+      done++;
+      if(onProgress) onProgress(done,fotos.length);
+    }
+  };
+  await Promise.all([worker(),worker(),worker()]);
+  return { files:out.filter(Boolean), fallidas };
+}
+// Google Picker (fotos privadas). → { fotos, auth:{ token } }
+async function _drivePicker(max){
+  await _pubLoadScript('https://accounts.google.com/gsi/client','google');
+  const gapi=await _pubLoadScript('https://apis.google.com/js/api.js','gapi');
+  await new Promise((ok)=>gapi.load('picker',ok));
+  const token=await new Promise((ok,no)=>{
+    google.accounts.oauth2.initTokenClient({
+      client_id:_GOOGLE_DRIVE.clientId, scope:'https://www.googleapis.com/auth/drive.file',
+      callback:(t)=>(t&&t.access_token?ok(t.access_token):no(new Error('No se dio permiso para ver tus fotos de Drive.'))),
+      error_callback:()=>no(new Error('Se cerró la ventana de Google.')),
+    }).requestAccessToken();
+  });
+  if(!document.getElementById('pubPickerCss')){
+    const st=document.createElement('style'); st.id='pubPickerCss';
+    st.textContent='.picker-dialog-bg,.picker-dialog{z-index:20000!important}'; // encima del formulario
+    document.head.appendChild(st);
+  }
+  const docs=await new Promise((ok)=>{
+    const P=google.picker;
+    new P.PickerBuilder()
+      .addView(new P.DocsView(P.ViewId.DOCS_IMAGES).setIncludeFolders(true))
+      .enableFeature(P.Feature.MULTISELECT_ENABLED).setMaxItems(max)
+      .setOAuthToken(token).setDeveloperKey(_driveKey()).setAppId(_GOOGLE_DRIVE.appId)
+      .setLocale('es').setTitle('Elige las fotos del inmueble')
+      .setCallback((d)=>{ if(d.action===P.Action.PICKED) ok(d.docs||[]); else if(d.action===P.Action.CANCEL) ok([]); })
+      .build().setVisible(true);
+  });
+  return { fotos:docs.filter(x=>/^image\//.test(x.mimeType||'')).map(x=>({ id:x.id, name:x.name, mimeType:x.mimeType, size:x.sizeBytes, resourceKey:x.resourceKey })), auth:{ token } };
+}
+// Carpeta → inmueble de la carga masiva por palabras en común con la
+// dirección o el título ("Av. Pardo 340 - Miraflores" ↔ "Pardo 340"). -1 = ninguno.
+function _pubDriveMatchRow(nombre,rows,usadas){
+  const pal=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').match(/[a-z]{3,}|\d+/g)||[];
+  const t=new Set(pal(nombre));
+  let best=-1, score=0;
+  rows.forEach((a,i)=>{
+    if(usadas.has(i)) return;
+    const s=pal([a.row.direccion,a.row.titulo,a.row.distrito].join(' ')).filter(w=>t.has(w)).length;
+    if(s>score){ score=s; best=i; }
+  });
+  return best;
+}
+// ns: 'pd' | 'bulk' | 'pe' (fotos de un inmueble) | 'batch' (todas las de la carga masiva).
+let _drv=null;
+function _pubDriveAdd(ns,files){
+  if(ns==='bulk') return _pubBulkPhotoFiles(files);
+  if(ns==='pe') return _pubPeAdd(files);
+  if(ns==='batch') return _pubPhotoBatchFiles(files);
+  return _pubHandleFiles(files);
+}
+function _pubDriveOpen(ns){
+  _drv={ ns, link:'', res:null, estado:'', error:'' };
+  let ov=document.getElementById('pubDriveOverlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='pubDriveOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:10060;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px';
+    ov.onclick=(e)=>{ if(e.target===ov && _drv && !_drv.estado) _pubDriveClose(); };
+    document.body.appendChild(ov);
+  }
+  _pubDriveRender();
+}
+function _pubDriveClose(){ const ov=document.getElementById('pubDriveOverlay'); if(ov) ov.remove(); _drv=null; }
+function _pubDriveRender(){
+  const ov=document.getElementById('pubDriveOverlay');
+  if(!ov || !_drv) return;
+  const r=_drv.res, ocupado=!!_drv.estado;
+  const elegir=r && !ocupado && _drv.ns!=='batch' && r.carpetas.length;
+  ov.innerHTML=`<div class="us-card" style="width:100%;max-width:560px;margin:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:1.05rem">📁 Fotos desde Google Drive</div>
+      <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" ${ocupado?'disabled':''} onclick="_pubDriveClose()">Cerrar</button></div>
+    <div style="font-size:.8rem;color:var(--muted);margin:6px 0 10px;line-height:1.5">Pega el enlace de la carpeta (o de una foto). En Drive: <b>Compartir → Acceso general → Cualquier persona con el enlace</b> → Copiar enlace.
+      ${_drv.ns==='batch'?'<br>Si la carpeta tiene <b>una subcarpeta por inmueble</b>, armamos un grupo con cada una.':''}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <input id="pubDriveLink" type="url" placeholder="https://drive.google.com/drive/folders/…" value="${esc(_drv.link)}" ${ocupado?'disabled':''}
+        onkeydown="if(event.key==='Enter')_pubDriveLink()" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px">
+      <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" ${ocupado?'disabled':''} onclick="_pubDriveLink()">Traer fotos</button>
+    </div>
+    ${_GOOGLE_DRIVE.clientId?`<div style="text-align:center;font-size:11px;color:var(--muted);margin:10px 0 6px">o, si la carpeta no está compartida</div>
+      <button class="pub-btn ghost" style="width:100%;font-size:12px;padding:8px" ${ocupado?'disabled':''} onclick="_pubDrivePick()">Elegir fotos de mi Google Drive</button>`:''}
+    <div id="pubDriveStatus" style="font-size:12px;margin-top:10px;color:${_drv.error?'var(--red)':'var(--muted)'}">${esc(_drv.error||_drv.estado)}</div>
+    ${elegir?`<div style="margin-top:10px;font-size:12px;font-weight:700">"${esc(r.nombre)}" tiene varias carpetas. ¿Cuál es la de este inmueble?</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+        ${r.fotos.length?`<button class="pub-btn ghost" style="font-size:12px;padding:7px 10px;text-align:left" onclick="_pubDriveUse(-1)">🖼️ Fotos sueltas de la carpeta (${r.fotos.length})</button>`:''}
+        ${r.carpetas.map((c,i)=>`<button class="pub-btn ghost" style="font-size:12px;padding:7px 10px;text-align:left" onclick="_pubDriveUse(${i})">📂 ${esc(c.nombre)} (${c.fotos.length} foto${c.fotos.length!==1?'s':''})</button>`).join('')}
+      </div>`:''}
+  </div>`;
+}
+function _pubDriveStatus(txt){ if(_drv){ _drv.estado=txt; _drv.error=''; } const el=document.getElementById('pubDriveStatus'); if(el){ el.style.color='var(--muted)'; el.textContent=txt; } }
+function _pubDriveFail(e){
+  if(!_drv) return;
+  const ov=document.getElementById('pubDriveOverlay'); if(ov) ov.style.display='';
+  _drv.estado=''; _drv.error=(e&&e.message)||'No pudimos traer las fotos.';
+  _pubDriveRender();
+}
+async function _pubDriveLink(){
+  if(!_drv || _drv.estado) return;
+  _drv.link=((document.getElementById('pubDriveLink')||{}).value||'').trim();
+  _drv.res=null; _drv.error=''; _drv.estado='Leyendo la carpeta…'; _pubDriveRender();
+  try{
+    const r=await _driveRead(_drv.link);
+    if(!r.fotos.length && !r.carpetas.length) throw new Error('No encontramos fotos en esa carpeta.');
+    _drv.res=r; _drv.estado='';
+    if(_drv.ns==='batch') return await _pubDriveBatch(r);
+    if(!r.carpetas.length) return await _pubDriveUse(-1);
+    if(!r.fotos.length && r.carpetas.length===1) return await _pubDriveUse(0);
+    _pubDriveRender(); // que elija la carpeta
+  }catch(e){ _pubDriveFail(e); }
+}
+async function _pubDriveUse(i){
+  if(!_drv || !_drv.res) return;
+  const r=_drv.res;
+  try{ await _pubDriveImport(i<0?r.fotos:r.carpetas[i].fotos,r.auth); }
+  catch(e){ _pubDriveFail(e); }
+}
+// Descarga y agrega las fotos (sin pasar el máximo del inmueble).
+async function _pubDriveImport(fotos,auth){
+  const ns=_drv.ns;
+  const libre=ns==='batch'?_PUB_BATCH_MAX:Math.max(0,_PUB_MAX_PHOTOS-_pubPhotoListOf(ns).length);
+  if(!libre){ toast(`⚠️ Ya tienes ${_PUB_MAX_PHOTOS} fotos, el máximo por inmueble.`); return _pubDriveClose(); }
+  const sel=fotos.slice(0,libre);
+  _drv.estado=`Descargando 0 de ${sel.length}…`; _drv.error=''; _pubDriveRender();
+  const { files, fallidas }=await _driveDownload(sel,auth,(d,t)=>_pubDriveStatus(`Descargando ${d} de ${t}…`));
+  if(!files.length) throw new Error('No pudimos descargar las fotos. Revisa que estén compartidas.');
+  _pubDriveClose();
+  await _pubDriveAdd(ns,files);
+  const avisos=[];
+  if(fallidas) avisos.push(`${fallidas} no se pudieron descargar`);
+  if(fotos.length>sel.length) avisos.push(`trajimos ${sel.length} de ${fotos.length} (máximo ${ns==='batch'?_PUB_BATCH_MAX:_PUB_MAX_PHOTOS})`);
+  if(avisos.length) toast('ℹ️ Fotos de Drive: '+avisos.join(' · ')+'.');
+}
+// Carga masiva: una subcarpeta = un grupo, asignado al inmueble con el nombre
+// más parecido (o en orden). Las fotos sueltas se agrupan por fecha y lugar.
+async function _pubDriveBatch(r){
+  if(!r.carpetas.length) return _pubDriveImport(r.fotos,r.auth);
+  const rows=_pubBulkValidRows();
+  const total=r.carpetas.reduce((s,c)=>s+Math.min(c.fotos.length,_PUB_BULK_PHOTO_MAX),0);
+  _drv.estado=`Descargando 0 de ${total}…`; _drv.error=''; _pubDriveRender();
+  let hechas=0, fallidas=0;
+  const usadas=new Set(), grupos=[];
+  for(const c of r.carpetas){
+    const d=await _driveDownload(c.fotos.slice(0,_PUB_BULK_PHOTO_MAX),r.auth,()=>_pubDriveStatus(`Descargando ${++hechas} de ${total}…`));
+    fallidas+=d.fallidas;
+    const photos=[];
+    for(const f of d.files){
+      try{ const u=await _pubToJpegDataUrl(f); if(_pubPhotoDuplicateOf(photos,u)<0) photos.push(u); }catch(_){ fallidas++; }
+    }
+    if(!photos.length) continue;
+    let row=_pubDriveMatchRow(c.nombre,rows,usadas);
+    if(row<0) row=rows.findIndex((x,i)=>!usadas.has(i));
+    if(row>=0) usadas.add(row);
+    grupos.push({ photos, when:0, row, nombre:c.nombre });
+  }
+  _pubDriveClose();
+  _pubPhotoGroups=grupos;
+  _pubDocPhotoPool=_pubDocPhotoPool.concat(grupos.flatMap(g=>g.photos));
+  toast(`📁 ${grupos.length} carpeta${grupos.length!==1?'s':''} de Drive${fallidas?` · ${fallidas} foto${fallidas!==1?'s':''} no se pudieron leer`:''}. Revisa a qué inmueble va cada una.`);
+  _pubBulkRefresh();
+  if(r.fotos.length) await _pubPhotoBatchFilesFromDrive(r);
+}
+// Fotos sueltas de la carpeta raíz (además de las subcarpetas): se agregan
+// como grupos por fecha y lugar, sin perder los de las subcarpetas.
+async function _pubPhotoBatchFilesFromDrive(r){
+  const previos=_pubPhotoGroups;
+  const d=await _driveDownload(r.fotos.slice(0,_PUB_BATCH_MAX),r.auth);
+  await _pubPhotoBatchFiles(d.files);
+  _pubPhotoGroups=previos.concat(_pubPhotoGroups.map(g=>({ ...g, row:-1 })));
+  _pubBulkRefresh();
+}
+async function _pubDrivePick(){
+  if(!_drv || _drv.estado) return;
+  const ov=document.getElementById('pubDriveOverlay');
+  if(ov) ov.style.display='none'; // el Picker de Google se muestra encima de la página
+  try{
+    const max=_drv.ns==='batch'?_PUB_BATCH_MAX:Math.max(1,_PUB_MAX_PHOTOS-_pubPhotoListOf(_drv.ns).length);
+    const r=await _drivePicker(max);
+    if(ov) ov.style.display='';
+    if(!_drv) return;
+    if(!r.fotos.length){ _pubDriveRender(); return; }
+    await _pubDriveImport(r.fotos,r.auth);
+  }catch(e){ _pubDriveFail(e); }
+}
+
 function _isImageFile(f){
   if(f.type && f.type.startsWith('image/'))return true;
   const ext=(f.name||'').split('.').pop().toLowerCase();
@@ -7352,7 +7701,12 @@ function _pubRenderPhotos(){
   const prev=document.getElementById('pubPhotoPreview');
   if(prev)prev.innerHTML=_pubPhotoStripHTML('pd',_pd.photos);
   const cnt=document.getElementById('pubPhotoCount');
-  if(cnt)cnt.innerHTML=(_pd.photos.length>0?`${_pd.photos.length} foto${_pd.photos.length!==1?'s':''} cargada${_pd.photos.length!==1?'s':''}. ${_pd.photos.length<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`:'')+_pubPhotoAdviceHTML(_pd.photos);
+  if(cnt)cnt.innerHTML=_pubPhotoCountHTML();
+}
+function _pubPhotoCountHTML(){
+  const n=_pd.photos.length;
+  return (n>0?`${n} foto${n!==1?'s':''} cargada${n!==1?'s':''}. ${n<3?'<strong style="color:var(--red)">Mínimo 3.</strong>':'<strong style="color:var(--green)">✓ Listo.</strong>'} (máx ${_PUB_MAX_PHOTOS})`:'')
+    +_pubPhotoAdviceHTML(_pd.photos)+_pubPhotoToolsHTML('pd');
 }
 async function _pubHandleFiles(files){
   const fileArr=Array.from(files);
@@ -7964,7 +8318,8 @@ function _pubPhotoGroupsApply(){
 function _pubPhotoBatchHTML(rows){
   const input=`<input type="file" id="pubBatchInput" accept="image/*,.heic,.heif" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="_pubPhotoBatchFiles(this.files)">`;
   if(!_pubPhotoGroups.length){
-    return `${input}<div style="margin-top:10px;font-size:12px;color:var(--muted)">📦 ¿Tienes todas las fotos juntas? <a href="#" onclick="event.preventDefault();document.getElementById('pubBatchInput').click()" style="color:var(--blue);font-weight:600">Súbelas de una vez</a> y las agrupamos por inmueble según cuándo y dónde se tomaron.</div>`;
+    return `${input}<div style="margin-top:10px;font-size:12px;color:var(--muted)">📦 ¿Tienes todas las fotos juntas? <a href="#" onclick="event.preventDefault();document.getElementById('pubBatchInput').click()" style="color:var(--blue);font-weight:600">Súbelas de una vez</a> y las agrupamos por inmueble según cuándo y dónde se tomaron.
+      ¿Están en Google Drive? <a href="#" onclick="event.preventDefault();_pubDriveOpen('batch')" style="color:var(--blue);font-weight:600">Pega el enlace de la carpeta</a> (una subcarpeta por inmueble).</div>`;
   }
   const opts=sel=>`<option value="-1"${sel===-1?' selected':''}>— no asignar —</option>`+rows.map((r,i)=>`<option value="${i}"${sel===i?' selected':''}>${i+1}. ${esc(String(r.row.direccion||r.row.titulo||'').slice(0,40))}</option>`).join('');
   return `${input}<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
@@ -7972,7 +8327,7 @@ function _pubPhotoBatchHTML(rows){
     <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Propusimos un grupo por inmueble en el orden de tu lista. Cambia lo que no corresponda y confirma.</div>
     ${_pubPhotoGroups.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border)">
       <div style="display:flex;gap:4px">${g.photos.slice(0,5).map(ph=>`<img src="${ph}" style="width:44px;height:44px;object-fit:cover;border-radius:5px">`).join('')}${g.photos.length>5?`<span style="font-size:11px;color:var(--muted);align-self:center">+${g.photos.length-5}</span>`:''}</div>
-      <div style="font-size:11px;color:var(--muted);min-width:110px">${g.photos.length} foto${g.photos.length!==1?'s':''}${g.when?` · ${new Date(g.when).toLocaleString('es-PE',{ day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}`:''}</div>
+      <div style="font-size:11px;color:var(--muted);min-width:110px">${g.nombre?`📂 ${esc(g.nombre)} · `:''}${g.photos.length} foto${g.photos.length!==1?'s':''}${g.when?` · ${new Date(g.when).toLocaleString('es-PE',{ day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}`:''}</div>
       <select onchange="_pubPhotoGroupSet(${i},this.value)" style="flex:1;min-width:160px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:11px">${opts(g.row)}</select>
     </div>`).join('')}
     <div style="display:flex;gap:8px;margin-top:8px">
@@ -8013,6 +8368,7 @@ function _pubBulkPhotosHTML(){
       onchange="_pubBulkPhotoFiles(this.files)">
     <div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',photos)}</div>
     ${photos.length?_pubPhotoAdviceHTML(photos):'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
+    ${_pubPhotoToolsHTML('bulk')}
     ${_pubBulkPoolHTML(a)}
     <div class="pub-actions" style="margin-top:18px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">

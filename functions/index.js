@@ -4048,6 +4048,83 @@ exports.updatePublicationPhotos = onCall(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// analyzePhotos — fotos con IA: ambiente de cada foto, calidad, marcas de
+// agua, texto encima y personas; propone la portada y el orden
+// (functions/photo-core.js). Cuenta en el límite por hora de la IA.
+//   photos  [dataUrl JPEG chico (~512 px)] o [{ url }] de una publicación
+//           propia (pubId): las URLs se leen de Storage en el servidor.
+// No guarda nada: el navegador aplica el orden y muestra los avisos.
+// ─────────────────────────────────────────────────────────────────────────────
+const RecoPhotos = require('./photo-core');
+const PHOTO_AI_MAX_CHARS = 400 * 1024;
+const PHOTO_AI_MAX_BYTES = 3 * 1024 * 1024;
+exports.analyzePhotos = onCall(
+  {
+    region: REGION, maxInstances: 10, timeoutSeconds: 120, memory: '512MiB',
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [openaiKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'analyzePhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const items = Array.isArray(d.photos) ? d.photos : [];
+    if (items.length < 2) throw new HttpsError('invalid-argument', 'Agrega al menos 2 fotos.');
+    if (items.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+
+    // Fotos ya subidas: solo las de una publicación propia.
+    let permitidas = null;
+    if (items.some((it) => typeof it !== 'string')) {
+      const pubId = String(d.pubId || '');
+      if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+      const snap = await db.collection('publications').doc(pubId).get();
+      if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+      const p = snap.data();
+      permitidas = new Set([].concat(p.photoUrls || [], p.thumbUrls || []));
+    }
+    const sinFoto = () => new HttpsError('invalid-argument', 'Foto no válida.');
+    const leer = [];
+    for (const it of items) {
+      if (typeof it === 'string') {
+        if (!IMPORT_IMAGE_RE.test(it) || it.length > PHOTO_AI_MAX_CHARS) throw sinFoto();
+        leer.push(it);
+        continue;
+      }
+      const url = it && typeof it.url === 'string' ? it.url : '';
+      const path = _storagePathOf(url);
+      if (!permitidas || !permitidas.has(url) || !path.startsWith('publications/')) throw sinFoto();
+      leer.push(path);
+    }
+
+    await _importRateLimit(uid);
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    const dataUrls = [];
+    for (const x of leer) {
+      if (x.startsWith('data:')) { dataUrls.push(x); continue; }
+      let buf;
+      try { [buf] = await bucket.file(x).download(); } catch (_) { throw new HttpsError('not-found', 'Una de las fotos ya no existe. Recarga la página.'); }
+      if (buf.length > PHOTO_AI_MAX_BYTES) throw new HttpsError('invalid-argument', 'Una de las fotos es demasiado grande.');
+      dataUrls.push(`data:image/jpeg;base64,${buf.toString('base64')}`);
+    }
+
+    let parsed;
+    try {
+      parsed = await _openaiStructured(RecoPhotos.PROMPT, RecoPhotos.content(dataUrls), 'fotos', RecoPhotos.SCHEMA);
+    } catch (e) {
+      logger.error('[analyzePhotos] OpenAI error', { err: e && e.message });
+      throw new HttpsError('internal', 'No pudimos revisar las fotos. Intenta de nuevo.');
+    }
+    const r = RecoPhotos.normalizar(parsed, dataUrls.length);
+    await db.collection('importEvents').doc().set({
+      uid, kind: 'fotos', channel: 'fotos', photos: dataUrls.length,
+      marcaAgua: r.fotos.filter((f) => f.marcaAgua).length, createdAt: FieldValue.serverTimestamp(),
+    });
+    return r;
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // onPublicationModerated — Firestore trigger on /publications/{pubId}.
 //
 // When a publication's status transitions to 'approved' or 'rejected',
