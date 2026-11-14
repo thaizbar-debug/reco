@@ -1608,6 +1608,7 @@ async function _openaiStructured(systemPrompt, userContent, schemaName, schema) 
     body: JSON.stringify({
       model: 'gpt-4o-mini',
       temperature: 0,
+      max_tokens: 16000,
       response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
       messages: [
         { role: 'system', content: systemPrompt },
@@ -1617,8 +1618,14 @@ async function _openaiStructured(systemPrompt, userContent, schemaName, schema) 
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
-  return JSON.parse(body.choices?.[0]?.message?.content || '{}');
+  const choice = body.choices?.[0] || {};
+  // Respuesta cortada por largo (p. ej. un proyecto con decenas de unidades):
+  // el JSON queda incompleto. Quien llama puede pedir una respuesta más corta.
+  if (choice.finish_reason === 'length') throw Object.assign(new Error('Respuesta de la IA cortada por largo'), { truncated: true });
+  return JSON.parse(choice.message?.content || '{}');
 }
+// Si la lista de inmuebles no entra en la respuesta, se pide de nuevo más corta.
+const IMPORT_SHORT_PROMPT = `\n\nIMPORTANTE: la respuesta anterior fue demasiado larga. Devuelve como máximo 12 inmuebles (en un proyecto, una entrada por tipología, no por unidad), con descripcion de máximo 400 caracteres y evidencia de máximo 300.`;
 
 // Valida la entrada de kind 'document' y arma el contenido multimodal.
 function _extractDocumentInput(d, text) {
@@ -1676,9 +1683,14 @@ async function _extractAndSaveDrafts(o) {
   const t0 = Date.now();
   let parsed;
   try {
-    parsed = await _openaiStructured(_extractSystemPrompt(), o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+    parsed = await _openaiStructured(_extractSystemPrompt(), o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA)
+      .catch((e) => {
+        if (!e || !e.truncated) throw e;
+        logger.warn(`[${o.fn}] respuesta larga: se pide más corta`);
+        return _openaiStructured(_extractSystemPrompt() + IMPORT_SHORT_PROMPT, o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+      });
   } catch (e) {
-    logger.error(`[${o.fn}] OpenAI error`, { err: e && e.message });
+    logger.error(`[${o.fn}] OpenAI error`, { err: e && e.message, truncated: !!(e && e.truncated), chars: String(o.text || '').length });
     throw new HttpsError('internal', o.errorMessage || 'No pudimos leer el contenido. Intenta de nuevo.');
   }
   const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
@@ -1895,18 +1907,15 @@ exports.mapImportColumns = onCall(
 //                      Instagram, TikTok o YouTube (social-core.js lee sus
 //                      páginas públicas de inserción; si el post trae un video
 //                      descargable, se transcribe su audio). Si el sitio
-//                      bloquea la descarga → failed-precondition,
-//                      details.reason 'blocked' (el cliente ofrece el marcador
-//                      "Enviar a ReCo"); un post privado → 'social-private';
+//                      bloquea la descarga (también a través del servicio de
+//                      lectura, ver _fetchPageHtml) → failed-precondition,
+//                      details.reason 'blocked' (el cliente ofrece pegar el
+//                      texto); un post privado → 'social-private';
 //                      el enlace de un perfil de red → 'social-profile'.
 //   { url, modo: 'perfil' }  Perfil de un portal, página de resultados o
 //                      listado de proyectos de una web: devuelve { avisos:
 //                      [{ url, title }] } (máx. IMPORT_PROFILE_MAX_LISTINGS)
 //                      sin usar la IA.
-//   { url, pagina }    Lo manda el marcador del navegador, que corre en la
-//                      página del aviso que el usuario ya tiene abierta:
-//                      { title, meta, jsonld, text, images }. Sirve para
-//                      cualquier dominio.
 // Siempre: declaraAutorizacion === true (el usuario declara que es el
 // anunciante o tiene autorización). Las fotos (máx. IMPORT_URL_MAX_PHOTOS)
 // las descarga el servidor y vuelven como data URL con su id; la IA solo ve
@@ -1982,7 +1991,7 @@ async function _assertPublicUrl(u) {
   return url;
 }
 // GET con validación SSRF en cada salto, timeout y tope de bytes.
-async function _safeFetch(u, { maxBytes, accept }) {
+async function _safeFetch(u, { maxBytes, accept, headers }) {
   let url = await _assertPublicUrl(u);
   for (let hop = 0; hop <= 3; hop++) {
     const ctrl = new AbortController();
@@ -1990,7 +1999,7 @@ async function _safeFetch(u, { maxBytes, accept }) {
     try {
       const res = await fetch(url.href, {
         redirect: 'manual', signal: ctrl.signal,
-        headers: { 'User-Agent': IMPORT_FETCH_UA, 'Accept': accept, 'Accept-Language': 'es-PE,es;q=0.9' },
+        headers: headers || { 'User-Agent': IMPORT_FETCH_UA, 'Accept': accept, 'Accept-Language': 'es-PE,es;q=0.9' },
       });
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
         url = await _assertPublicUrl(new URL(res.headers.get('location'), url).href);
@@ -2014,20 +2023,39 @@ async function _safeFetch(u, { maxBytes, accept }) {
 }
 // Una foto por URL (validación SSRF, tope de tamaño, descarta íconos).
 // → { buf, mime } o null.
-async function _fetchImage(u) {
-  try {
-    const r = await _safeFetch(u, { maxBytes: IMPORT_URL_PHOTO_BYTES, accept: 'image/jpeg,image/png,image/webp' });
-    const type = (r.type.match(/^image\/(jpeg|png|webp)/i) || [])[0];
-    if (r.status !== 200 || !type || r.truncated || r.body.length < IMPORT_URL_MIN_PHOTO_BYTES) return null;
+// servicio: la página se leyó por el servicio de lectura; si el portal también
+// bloquea sus fotos, se piden por el mismo servicio.
+async function _fetchImage(u, servicio) {
+  const valida = (r) => {
+    const type = (String(r && r.type).match(/^image\/(jpeg|png|webp)/i) || [])[0];
+    if (!r || r.status !== 200 || !type || r.truncated || r.body.length < IMPORT_URL_MIN_PHOTO_BYTES) return null;
     return { buf: r.body, mime: type.toLowerCase() };
-  } catch (_) { return null; /* foto inaccesible: se omite */ }
+  };
+  let im = null;
+  try {
+    im = valida(await _safeFetch(u, { maxBytes: IMPORT_URL_PHOTO_BYTES, accept: 'image/jpeg,image/png,image/webp' }));
+  } catch (_) { im = null; /* foto inaccesible */ }
+  if (im || !servicio) return im;
+  try {
+    await _assertPublicUrl(u);
+    const key = scraperKey.value() || '';
+    if (!key) return null;
+    const [req1] = _scraperRequests(String(scraperProvider.value() || 'scrapingbee').toLowerCase(), key, u);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_FETCH_TIMEOUT_MS * 2);
+    try {
+      const res = await fetch(req1, { signal: ctrl.signal });
+      const buf = Buffer.from(await res.arrayBuffer());
+      return valida({ status: res.status, type: res.headers.get('content-type') || '', body: buf, truncated: buf.length > IMPORT_URL_PHOTO_BYTES });
+    } finally { clearTimeout(timer); }
+  } catch (_) { return null; }
 }
-async function _downloadPhotos(urls) {
+async function _downloadPhotos(urls, opts) {
   const photos = [];
   let total = 0;
   for (const u of urls) {
     if (photos.length >= IMPORT_URL_MAX_PHOTOS || total >= IMPORT_URL_PHOTOS_TOTAL_BYTES) break;
-    const im = await _fetchImage(u);
+    const im = await _fetchImage(u, !!(opts && opts.servicio));
     if (!im) continue;
     total += im.buf.length;
     photos.push({ id: `u-${photos.length + 1}`, dataUrl: `data:${im.mime};base64,${im.buf.toString('base64')}` });
@@ -2036,15 +2064,73 @@ async function _downloadPhotos(urls) {
 }
 // HTML de una página pública. 403/429/503 o páginas de verificación
 // ("captcha", "Just a moment") = el sitio no deja descargar desde un
-// servidor → reason 'blocked' (el cliente ofrece el marcador).
-async function _fetchPageHtml(url) {
-  const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
-    .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
-  const html = r ? r.body.toString('utf8') : '';
-  if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
-    throw new HttpsError('failed-precondition', 'Esa página no permitió leerla desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador o pega el texto del aviso.', { reason: 'blocked' });
+// servidor. Los portales grandes (Urbania, Adondevivir…) están detrás de
+// protecciones anti-bots que bloquean a los servidores en la nube:
+//   1) se reintenta con los encabezados de un navegador;
+//   2) si hay un servicio de lectura configurado (SCRAPER_PROVIDER +
+//      SCRAPER_API_KEY, ver docs/LECTURA-DE-PORTALES.md), se lee a través de él;
+//   3) si no, reason 'blocked' (el cliente ofrece pegar el texto).
+const scraperKey = defineSecret('SCRAPER_API_KEY');
+const scraperProvider = defineString('SCRAPER_PROVIDER', { default: 'scrapingbee' });
+const IMPORT_SCRAPER_TIMEOUT_MS = 70000;
+const IMPORT_BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'es-PE,es;q=0.9,en;q=0.8',
+  'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none', 'Upgrade-Insecure-Requests': '1',
+};
+const _pageBlocked = (r) => !r || r.status !== 200 || !/html/i.test(r.type) || !r.body.length
+  || /captcha|cf-chl|just a moment|access denied|attention required|px-captcha|are you a robot|verify you are human/i.test(r.body.toString('utf8', 0, 6000));
+// Pedido al servicio de lectura → [{ url, params }] en orden de costo (el
+// segundo, más caro, solo si el primero también fue bloqueado).
+function _scraperRequests(provider, key, target) {
+  const q = (base, p) => `${base}?${new URLSearchParams(p).toString()}`;
+  if (provider === 'zenrows') {
+    return [q('https://api.zenrows.com/v1/', { apikey: key, url: target, premium_proxy: 'true', proxy_country: 'pe' }),
+      q('https://api.zenrows.com/v1/', { apikey: key, url: target, js_render: 'true', premium_proxy: 'true', proxy_country: 'pe' })];
   }
-  return { html, url: r.url };
+  if (provider === 'scraperapi') {
+    return [q('https://api.scraperapi.com/', { api_key: key, url: target, country_code: 'pe', premium: 'true' }),
+      q('https://api.scraperapi.com/', { api_key: key, url: target, country_code: 'pe', ultra_premium: 'true' })];
+  }
+  return [q('https://app.scrapingbee.com/api/v1/', { api_key: key, url: target, premium_proxy: 'true', country_code: 'pe', render_js: 'false' }),
+    q('https://app.scrapingbee.com/api/v1/', { api_key: key, url: target, stealth_proxy: 'true', country_code: 'pe' })];
+}
+async function _scraperFetch(target) {
+  let key = '';
+  try { key = scraperKey.value() || ''; } catch (_) { key = ''; }
+  if (!key) return null;
+  const provider = String(scraperProvider.value() || 'scrapingbee').toLowerCase();
+  for (const u of _scraperRequests(provider, key, target)) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_SCRAPER_TIMEOUT_MS);
+    try {
+      const res = await fetch(u, { signal: ctrl.signal, headers: { 'Accept': 'text/html' } });
+      const body = Buffer.from(await res.arrayBuffer()).subarray(0, IMPORT_URL_HTML_BYTES);
+      const r = { status: res.status, type: res.headers.get('content-type') || 'text/html', body, url: target };
+      if (!_pageBlocked(r)) return r;
+      logger.warn('[importListingPage] servicio de lectura sin éxito', { provider, status: res.status });
+    } catch (e) {
+      logger.warn('[importListingPage] servicio de lectura falló', { provider, err: e && e.message });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
+}
+async function _fetchPageHtml(url, uid) {
+  const get = (headers) => _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml', headers })
+    .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
+  let r = await get();
+  let via = 'directo';
+  if (_pageBlocked(r)) { r = await get(IMPORT_BROWSER_HEADERS); via = 'navegador'; }
+  if (_pageBlocked(r)) { r = await _scraperFetch((r && r.url) || url.href); via = 'servicio'; }
+  if (_pageBlocked(r)) {
+    logger.warn('[importListingPage] página bloqueada', { host: url.hostname });
+    await db.collection('importEvents').doc().set({ uid: uid || null, kind: 'bloqueado', channel: 'url', host: url.hostname, createdAt: FieldValue.serverTimestamp() }).catch(() => {});
+    throw new HttpsError('failed-precondition', `${url.hostname.replace(/^www\./, '')} no dejó que ReCo leyera la página. Copia el texto del aviso y pégalo en "Pegar texto".`, { reason: 'blocked' });
+  }
+  return { html: r.body.toString('utf8'), url: r.url, via };
 }
 // Sigue las redirecciones de un enlace corto (facebook.com/share/…, vm.tiktok…)
 // sin leer el cuerpo. Si la red manda al login, el destino real va en next=.
@@ -2119,21 +2205,6 @@ async function _videoTranscript(videoUrl) {
     return '';
   }
 }
-// Página que manda el marcador: se aceptan solo strings y con tope.
-function _cleanPagina(p) {
-  const str = (v, n) => String(v == null ? '' : v).slice(0, n);
-  const meta = {};
-  Object.entries(p && typeof p.meta === 'object' ? p.meta : {}).slice(0, 40)
-    .forEach(([k, v]) => { meta[str(k, 60)] = str(v, 1000); });
-  return {
-    title: str(p.title, 300), meta,
-    jsonld: (Array.isArray(p.jsonld) ? p.jsonld : []).slice(0, 5).map((x) => str(x, 8000)),
-    datos: [],
-    text: str(p.text, 30000),
-    images: (Array.isArray(p.images) ? p.images : []).slice(0, 60).map((x) => str(x, 2000)).filter((x) => /^https?:\/\//.test(x)),
-  };
-}
-
 exports.importListingPage = onCall(
   {
     region: REGION,
@@ -2142,7 +2213,7 @@ exports.importListingPage = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [openaiKey, scraperKey],
   },
   async (request) => {
     _logAppCheck(request, 'importListingPage');
@@ -2161,11 +2232,11 @@ exports.importListingPage = onCall(
     // avisos, sin IA (no consume el límite por hora). El cliente elige
     // cuáles importar y llama de nuevo, uno por uno, con el mismo lote.
     const social = RecoSocial.detect(url.href);
-    if (!(d.pagina && typeof d.pagina === 'object')) await _fetchRateLimit(uid);
+    await _fetchRateLimit(uid);
     if (d.modo === 'perfil') {
       // Perfiles de redes: solo con la cuenta conectada (Integraciones).
       if (social) throw _socialError('social-profile');
-      const r = await _fetchPageHtml(url);
+      const r = await _fetchPageHtml(url, uid);
       const avisos = RecoImport.extractListingLinks(r.html, r.url, IMPORT_PROFILE_MAX_LISTINGS,
         { generic: !_importHostAllowed(new URL(r.url).hostname) });
       await db.collection('importEvents').doc().set({
@@ -2176,16 +2247,15 @@ exports.importListingPage = onCall(
 
     let pagina;
     let red = null;
-    const viaMarcador = !!(d.pagina && typeof d.pagina === 'object');
-    if (viaMarcador) {
-      pagina = _cleanPagina(d.pagina);
-    } else if (social) {
+    let via = null;
+    if (social) {
       const s = await _readSocial(url.href, social);
       pagina = s.pagina;
       red = s.det.red;
     } else {
-      const r = await _fetchPageHtml(url);
+      const r = await _fetchPageHtml(url, uid);
       pagina = RecoImport.parseListingHtml(r.html, r.url);
+      via = r.via;
     }
     if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length && !(pagina.images || []).length) {
       throw new HttpsError('invalid-argument', 'La página no tiene contenido legible.');
@@ -2202,7 +2272,7 @@ exports.importListingPage = onCall(
       if (t) { pagina.text = `${pagina.text}\n\nLo que se dice en el video:\n${t}`.trim(); transcrito = true; }
     }
 
-    const photos = await _downloadPhotos(pagina.images);
+    const photos = await _downloadPhotos(pagina.images, { servicio: via === 'servicio' });
     const photoIds = photos.map((p) => p.id);
     const text = RecoImport.pageToText(pagina, url.href, photoIds, IMPORT_TEXT_MAX_CHARS - 500);
     const result = await _extractAndSaveDrafts({
@@ -2211,7 +2281,7 @@ exports.importListingPage = onCall(
       text, photoIds, sourceLabel: 'la página',
       errorMessage: 'No pudimos leer el aviso. Intenta de nuevo o pega su texto.',
       draftExtra: { sourceUrl: url.href.slice(0, 500) },
-      eventExtra: { host: url.hostname, viaMarcador, photos: photos.length, ...(red && { red, video: transcrito }) },
+      eventExtra: { host: url.hostname, photos: photos.length, ...(via && { via }), ...(red && { red, video: transcrito }) },
     });
     // Un aviso suele ser un solo inmueble: si la IA no le asignó fotos, son
     // todas las de la página. Solo vuelven las fotos asignadas.

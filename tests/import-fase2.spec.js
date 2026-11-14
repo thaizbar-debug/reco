@@ -111,7 +111,7 @@ test.describe('Fase 2: perfil completo de un portal', () => {
     });
     await page.fill('#pubUrlInput', 'https://urbania.pe/inmobiliarias/demo-1234567');
     await page.check('#pubUrlAuth');
-    await page.click('text=Importar todos los de mi perfil');
+    await page.click('text=o todos los de mi perfil');
     await page.waitForFunction(() => document.getElementById('pubBulkPreview').textContent.includes('3 avisos en el perfil'));
     await page.evaluate(() => { _pubProfileAvisos[2].sel = false; _pubProfileRender(); });
     await page.click('text=Importar 2 avisos');

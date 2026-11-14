@@ -126,7 +126,7 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | 1.2 | Tarjeta "Pegar texto" → `extractListings` (`kind: 'text'`), en partes de ≤ 18 000 caracteres. Si lo pegado es un chat, se trata como WhatsApp (sin nombres). |
 | 1.3 | `.zip` (con fotos) o `.txt` exportados → `_pubWaRead`: formatos Android e iPhone, adjuntos como `[FOTO w-N]` (sin stickers), remitentes como "Contacto N", lo más reciente de chats largos (120 000 caracteres). Va como `extractListings` `kind: 'document'`, `fileType: 'whatsapp'` (canal `whatsapp`). |
 | 1.4 | Tarjeta "Desde un enlace" → Cloud Function **`importListingPage`**: solo portales conocidos (`IMPORT_URL_HOSTS`), protección SSRF (IPs públicas, puertos 80/443, ≤ 3 redirecciones validadas, timeout y tope de tamaño), lectura de JSON-LD, metadatos, `__NEXT_DATA__` y texto (`parseListingHtml`), hasta 12 fotos descargadas por el servidor. Autorización del anunciante obligatoria. Las fotos se convierten a JPEG en el navegador. |
-| 1.5 | Marcador "📌 Enviar a ReCo" (`_pubBookmarkletCode`): corre en la página del aviso, abre ReCo en `#importar` y le pasa el aviso por `postMessage` (solo al origen de ReCo; ReCo solo acepta mensajes de la pestaña que la abrió). Sirve para cualquier portal y cuando el portal bloquea al servidor. |
+| 1.5 | ~~Marcador "Enviar a ReCo"~~ (retirado: era complicado para los usuarios). En su lugar, `importListingPage` reintenta como navegador y lee los portales protegidos a través de un **servicio de lectura** (ScrapingBee, ZenRows o ScraperAPI), también sus fotos. Ver `docs/LECTURA-DE-PORTALES.md`. |
 
 ### Fase 2 — Canales móviles y multimedia (1–3 meses)
 

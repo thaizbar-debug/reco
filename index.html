@@ -7997,7 +7997,6 @@ function _pubBulkStepBodyHTML(){
 function _pubBulkUploadHTML(){
   const box='border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff';
   return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
-    <div id="pubPendingPage">${_pubPendingPageHTML()}</div>
     <div id="pubSharedBox">${_pubSharedHTML()}</div>
     <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Pega el enlace de tu post de Facebook, Instagram o TikTok, de tu web o de tu aviso en un portal; o sube Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint, el chat de WhatsApp exportado, el video de un reel o capturas de pantalla. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
@@ -8013,16 +8012,15 @@ function _pubBulkUploadHTML(){
       <div style="margin-top:6px;line-height:1.6">Abre el chat o grupo donde compartes tus inmuebles → <strong>⋮ Más → Exportar chat</strong> (en iPhone: nombre del chat → <strong>Exportar chat</strong>) → <strong>Incluir archivos</strong>, y súbelo aquí. Las fotos se asignan solas a cada inmueble. Los nombres de quienes escriben no se envían a la IA.</div></details>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px">
       <div style="${box};border:2px solid var(--blue)">
-        <div style="font-size:13px;font-weight:700">🔗 Desde un enlace <span style="font-size:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 7px;margin-left:4px">Lo más rápido</span></div>
-        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">El enlace de tu post en <strong>Facebook, Instagram o TikTok</strong>, de la página del proyecto en tu web o de tu aviso en Urbania, Adondevivir, Properati, Babilonia y otros portales. Leemos el texto, las fotos y lo que se dice en el video.</div>
-        <input id="pubUrlInput" type="url" placeholder="https://www.facebook.com/… · instagram.com/p/… · tuweb.com/proyecto" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px">
-        <label style="display:flex;gap:6px;align-items:flex-start;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante de este aviso o tengo autorización para publicarlo en ReCo.</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar aviso</button>
-          <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubProfileList()" title="Pega el enlace de tu perfil en un portal o de la página de proyectos de tu web">Importar todos los de mi perfil o web</button>
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:8px">🔗 Desde un enlace <span style="font-size:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 7px">Lo más rápido</span>
+          <button type="button" class="pub-url-info" aria-label="¿Qué enlaces puedo pegar?" title="${esc(_PUB_URL_AYUDA)}" onclick="const t=document.getElementById('pubUrlAyuda');if(t)t.hidden=!t.hidden" style="margin-left:auto;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:50%;width:20px;height:20px;padding:0;font-size:11px;font-weight:700;cursor:pointer;line-height:18px">i</button></div>
+        <div id="pubUrlAyuda" hidden style="font-size:11px;color:var(--muted);background:var(--light);border-radius:8px;padding:6px 8px;margin-bottom:8px;line-height:1.5">${esc(_PUB_URL_AYUDA)}</div>
+        <input id="pubUrlInput" type="url" placeholder="Pega tu enlace (URL)" onkeydown="if(event.key==='Enter')_pubUrlImport()" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px">
+        <label style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante o tengo autorización</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar</button>
+          <a href="#" onclick="event.preventDefault();_pubProfileList()" title="Pega el enlace de tu perfil en un portal o de la página de proyectos de tu web" style="font-size:11px;color:var(--blue)">o todos los de mi perfil</a>
         </div>
-        <details id="pubMarcador" style="margin-top:10px;font-size:11px;color:var(--muted)"><summary style="cursor:pointer">📌 ¿Otro portal o no carga? Usa "Enviar a ReCo"</summary>
-          <div style="margin-top:6px;line-height:1.6">Arrastra este botón a tu barra de favoritos (en computadora): <a href="${_pubBookmarkletCode()}" onclick="event.preventDefault();toast('Arrástralo a tu barra de favoritos y úsalo en la página de tu aviso.')" style="display:inline-block;padding:3px 10px;border-radius:6px;background:var(--blue);color:#fff;font-weight:600;text-decoration:none">📌 Enviar a ReCo</a><br>Luego abre tu aviso en cualquier portal y haz clic en el favorito: ReCo se abre con el aviso listo para importar. Desde el celular, copia el texto del aviso y usa "Pegar texto".</div></details>
       </div>
       <div style="${box}">
         <div style="font-size:13px;font-weight:700">✍️ Pegar texto</div>
@@ -9727,12 +9725,20 @@ async function _pubWaImport(file){
   }catch(e){ _pubImportFail(e,'No se pudo leer el chat.'); }
 }
 
-// ── Desde un enlace (roadmap 1.4) y marcador "Enviar a ReCo" (1.5) ──
-let _pubPendingPage=null; // aviso recibido del marcador, a la espera de confirmar
-async function _pubUrlImport(fromPending){
-  const pend=fromPending?_pubPendingPage:null;
-  const url=pend?pend.url:String((document.getElementById('pubUrlInput')||{}).value||'').trim();
-  const authEl=document.getElementById(pend?'pubPendAuth':'pubUrlAuth');
+// ── Desde un enlace (roadmap 1.4) ──
+const _PUB_URL_AYUDA='El enlace de tu post en Facebook, Instagram o TikTok, de la página del proyecto en tu web o de tu aviso en Urbania, Adondevivir, Properati, Babilonia y otros portales. Leemos el texto, las fotos y lo que se dice en el video.';
+// La lectura de una página puede tardar (portal protegido + IA): más que el
+// minuto por defecto de los callables.
+const _PUB_URL_TIMEOUT_MS=300000;
+// La página no se pudo leer desde ReCo: se lleva al usuario a "Pegar texto".
+function _pubUrlBlocked(msg){
+  _pubDocProgress('⚠️ '+msg);
+  const t=document.getElementById('pubPasteText'); if(t){ t.focus({ preventScroll:true }); t.style.outline='2px solid var(--blue)'; }
+  toast('⚠️ '+msg);
+}
+async function _pubUrlImport(){
+  const url=String((document.getElementById('pubUrlInput')||{}).value||'').trim();
+  const authEl=document.getElementById('pubUrlAuth');
   _pubProfileAvisos=[];
   if(!/^https?:\/\/\S+\.\S+/i.test(url)){ toast('⚠️ Pega el enlace completo del aviso (https://…).'); return; }
   if(!authEl || !authEl.checked){ toast('⚠️ Confirma que eres el anunciante o tienes autorización para usar el aviso.'); return; }
@@ -9741,22 +9747,19 @@ async function _pubUrlImport(fromPending){
   _pubBulkFileName=host||'Enlace';
   try{
     _pubDocProgress(`Leyendo el aviso de ${host}…`);
-    const res=await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion:true, ...(pend && { pagina:pend.pagina }) });
+    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS })({ url, declaraAutorizacion:true });
     // Las fotos vienen tal cual del portal (webp, png…): se pasan a JPEG.
     const photos=[];
     for(const p of (res.data.photos||[])){
       const jpg=await _pubDocBlobToJpeg(await (await fetch(p.dataUrl)).blob());
       if(jpg) photos.push({ id:p.id, dataUrl:jpg });
     }
-    if(pend){ _pubPendingPage=null; const el=document.getElementById('pubPendingPage'); if(el) el.innerHTML=''; }
     _pubLoadExtracted(res.data.drafts||[],res.data.batchId,{ source:'url', sourceName:host, icon:'🔗',
       empty:'No encontramos un inmueble en esa página. Revisa que sea el enlace del aviso.' },photos);
   }catch(e){
     const reason=e && e.details && e.details.reason;
     if(reason==='blocked' || reason==='host-not-supported'){
-      _pubDocProgress('⚠️ '+e.message);
-      const d=document.getElementById('pubMarcador'); if(d) d.open=true;
-      toast('⚠️ '+e.message);
+      _pubUrlBlocked(e.message);
     } else if(reason==='social-private' || reason==='social-profile'){
       const el=document.getElementById('pubBulkPreview');
       if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:#fef3c7;border-radius:8px">${_pubSocialHelpHTML(reason,e.message)}</div>`;
@@ -9791,7 +9794,7 @@ async function _pubProfileList(){
   if(!url || !_pubImportReady('importar avisos')) return;
   try{
     _pubDocProgress('Buscando los avisos del perfil…');
-    const res=await _getFunctions().httpsCallable('importListingPage')({ url, declaraAutorizacion:true, modo:'perfil' });
+    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS })({ url, declaraAutorizacion:true, modo:'perfil' });
     _pubProfileAvisos=(res.data.avisos||[]).map((a,i)=>({ ...a, sel:i<_PUB_PROFILE_PRESELECT }));
     if(!_pubProfileAvisos.length){ _pubDocProgress('No encontramos avisos en esa página. Pega el enlace de tu perfil en el portal o de la página de proyectos de tu web.'); return; }
     _pubProfileRender();
@@ -9803,7 +9806,7 @@ async function _pubProfileList(){
       toast('⚠️ '+e.message);
       return;
     }
-    if(reason==='blocked' || reason==='host-not-supported'){ const d=document.getElementById('pubMarcador'); if(d) d.open=true; }
+    if(reason==='blocked' || reason==='host-not-supported'){ _pubUrlBlocked(e.message); return; }
     _pubImportFail(e,'No se pudo leer el perfil.');
   }
 }
@@ -9823,7 +9826,7 @@ async function _pubProfileImport(){
   if(!elegidos.length || !_pubImportReady('importar avisos')) return;
   let host=''; try{ host=new URL(elegidos[0].url).hostname.replace(/^www\./,''); }catch(_){}
   _pubBulkFileName=`${host} (perfil)`;
-  const call=_getFunctions().httpsCallable('importListingPage');
+  const call=_getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS });
   const drafts=[], photos=[];
   let batchId='', fallidos=0, limite=false;
   for(let k=0;k<elegidos.length;k++){
@@ -9849,31 +9852,6 @@ async function _pubProfileImport(){
     note:(fallidos?` · ${fallidos} no se pudieron leer`:'')+(limite?` · límite por hora: faltan ${pendientes}, vuelve en una hora`:''),
     empty:limite?'Se alcanzó el límite de importaciones por hora. Intenta en una hora.':'No pudimos importar los avisos elegidos.' },photos);
 }
-// Código del marcador: corre en la página del aviso (con la sesión y lo que
-// el navegador del usuario ya cargó), junta título, metadatos, JSON-LD,
-// texto y fotos grandes, abre ReCo y le pasa el aviso con postMessage
-// (solo al origen de ReCo).
-function _pubBookmarkletCode(){
-  const target=location.origin+location.pathname;
-  const src=`(()=>{const q=s=>Array.from(document.querySelectorAll(s));const meta={};q('meta[property],meta[name]').forEach(m=>{const k=(m.getAttribute('property')||m.getAttribute('name')||'').toLowerCase();if(/^(og:|twitter:|description$|product:)/.test(k)&&!meta[k])meta[k]=(m.content||'').slice(0,1000)});const imgs=q('img').filter(i=>i.naturalWidth>=300&&i.naturalHeight>=200).map(i=>i.currentSrc||i.src).filter(u=>/^https?:/.test(u));const p={title:document.title,meta,jsonld:q('script[type="application/ld+json"]').map(s=>s.textContent.slice(0,8000)).slice(0,5),text:(document.body.innerText||'').slice(0,30000),images:Array.from(new Set([meta['og:image']].concat(imgs).filter(Boolean))).slice(0,40)};const w=window.open(${JSON.stringify(target+'#importar')},'reco-import');const msg={type:'reco-import',url:location.href,pagina:p};let n=0;const t=setInterval(()=>{try{w.postMessage(msg,${JSON.stringify(location.origin)})}catch(e){}if(++n>60)clearInterval(t)},500);addEventListener('message',e=>{if(e.origin===${JSON.stringify(location.origin)}&&e.data==='reco-import-ok')clearInterval(t)})})()`;
-  return 'javascript:'+encodeURIComponent(src);
-}
-// Recibe el aviso del marcador: solo de la pestaña que abrió esta ventana.
-function _pubOnImportMessage(e){
-  const d=e.data;
-  if(!d || d.type!=='reco-import' || !window.opener || e.source!==window.opener) return;
-  try{ e.source.postMessage('reco-import-ok',e.origin); }catch(_){}
-  if(_pubPendingPage && _pubPendingPage.url===d.url) return;
-  if(typeof d.url!=='string' || !d.pagina || typeof d.pagina!=='object') return;
-  _pubPendingPage={ url:d.url.slice(0,2000), pagina:d.pagina };
-  const show=()=>{
-    if(!document.getElementById('pubModal').classList.contains('open')) openPublish();
-    _pubTab='bulk'; _pubBulkStep=1; renderPublish();
-  };
-  if(!auth.currentUser){ toast('🔗 Recibimos el aviso. Inicia sesión para importarlo.'); openAuthModal('login',show); return; }
-  show();
-}
-window.addEventListener('message',_pubOnImportMessage);
 
 // ── Compartir con ReCo desde el celular (roadmap 2.5) ──
 // Con ReCo instalada como app, "Compartir → ReCo" en la galería, WhatsApp o
@@ -9972,14 +9950,6 @@ if('serviceWorker' in navigator && (location.protocol==='https:' || location.hos
   window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(e=>console.warn('[reco] service worker:', e)); });
 }
 if(location.hash==='#compartido') _pubWhenAuthReady(()=>_pubReadShared());
-function _pubPendingPageHTML(){
-  if(!_pubPendingPage) return '';
-  let host=''; try{ host=new URL(_pubPendingPage.url).hostname.replace(/^www\./,''); }catch(_){}
-  return `<div class="pub-tip" style="margin-bottom:12px"><span>🔗</span><div style="flex:1"><strong>Recibimos un aviso de ${esc(host)}</strong>
-    <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(String(_pubPendingPage.pagina.title||'').slice(0,120))}</div>
-    <label style="display:flex;gap:6px;align-items:flex-start;font-size:12px;margin-top:8px"><input type="checkbox" id="pubPendAuth"> Soy el anunciante de este aviso o tengo autorización para publicarlo en ReCo.</label>
-    <button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:8px" onclick="_pubUrlImport(true)">Importar este aviso</button></div></div>`;
-}
 // Paso de fotos: agrega una foto del documento al inmueble actual.
 function _pubBulkPoolAdd(i){
   const a=_pubBulkCurrentRow(), ph=_pubDocPhotoPool[i];

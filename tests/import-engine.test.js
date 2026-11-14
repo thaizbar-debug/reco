@@ -433,7 +433,7 @@ test.describe('importListingPage', () => {
     const draft = Object.values(db.store).find((v) => v.status === 'draft');
     expect(draft).toMatchObject({ source: 'url', sourceUrl: 'https://urbania.pe/inmueble/dpto-123', sourceName: 'urbania.pe/inmueble/dpto-123' });
     const ev = Object.values(db.store).find((v) => v.kind === 'url');
-    expect(ev).toMatchObject({ channel: 'url', host: 'urbania.pe', viaMarcador: false, photos: 2 });
+    expect(ev).toMatchObject({ channel: 'url', host: 'urbania.pe', photos: 2, via: 'directo' });
   });
 
   test('sin autorización o enlace inválido (cualquier web pública se acepta)', async () => {
@@ -473,19 +473,19 @@ test.describe('importListingPage', () => {
     expect(seen).not.toContain('http://169.254.169.254/latest/meta-data');
   });
 
-  test('marcador: cualquier dominio; fotos a la red interna o chicas se omiten', async () => {
+  test('cualquier dominio; fotos a la red interna o chicas se omiten', async () => {
     const { importPage } = loadHandlers();
     restoreDns = mockDns({ 'intranet.local': '192.168.1.10' });
+    const imgs = ['http://127.0.0.1/x.jpg', 'https://intranet.local/y.jpg', 'https://cdn.portal-x.pe/mini.jpg', 'https://cdn.portal-x.pe/a.jpg']
+      .map((u) => `<img src="${u}">`).join('');
     const seen = mockNet({
+      'https://portal-x.pe/aviso/9': () => html(`<html><head><title>Casa en venta</title></head><body><p>Casa 200 m2 US$ 300 mil</p>${imgs}</body></html>`),
       'https://cdn.portal-x.pe/a.jpg': () => jpeg(50000),
       'https://cdn.portal-x.pe/mini.jpg': () => jpeg(500),
     }, { inmuebles: [aiItem({ tipo_propiedad: 'Casa', precio: 'US$ 300 mil', area_techada: '200', fotos: ['u-1'], evidencia: null })] });
-    const pagina = { title: 'Casa en venta', meta: { 'og:title': 'Casa' }, jsonld: [], text: 'Casa 200 m2 US$ 300 mil',
-      images: ['http://127.0.0.1/x.jpg', 'https://intranet.local/y.jpg', 'https://cdn.portal-x.pe/mini.jpg', 'https://cdn.portal-x.pe/a.jpg', 'javascript:alert(1)'] };
-    const res = await importPage(req('u1', { ...ok, url: 'https://portal-x.pe/aviso/9', pagina }));
+    const res = await importPage(req('u1', { ...ok, url: 'https://portal-x.pe/aviso/9' }));
     expect(seen).not.toContain('http://127.0.0.1/x.jpg');
     expect(seen).not.toContain('https://intranet.local/y.jpg');
-    expect(seen).not.toContain('https://portal-x.pe/aviso/9'); // el servidor no descarga la página
     expect(res.photos.map((p) => p.id)).toEqual(['u-1']);
     expect(res.drafts[0].row.precio).toBe('300000');
   });
