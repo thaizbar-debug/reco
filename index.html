@@ -7336,7 +7336,7 @@ async function _pubPhotoAiRun(ns){
     // Las fotos ya subidas (editor) se mandan por URL: el servidor las lee.
     const photos=[];
     for(const u of orig) photos.push(u.indexOf('data:')===0?await _pubPhotoSmall(u):{ url:(ns==='pe'&&_pe&&_pe.thumbs.get(u))||u });
-    const res=await _getFunctions().httpsCallable('analyzePhotos')({ photos, ...(ns==='pe'&&_pe&&{ pubId:_pe.pubId }) });
+    const res=await _getFunctions().httpsCallable('analyzePhotos',{ timeout:_PUB_IA_TIMEOUT_MS })({ photos, ...(ns==='pe'&&_pe&&{ pubId:_pe.pubId }) });
     const r=(res&&res.data)||{};
     (r.fotos||[]).forEach((f,i)=>{ if(orig[i]) _pubPhotoAi.set(orig[i],f); });
     // El orden se aplica solo si la lista no cambió mientras tanto.
@@ -7671,7 +7671,7 @@ async function _pubAiCopy(){
   if(errEl) errEl.style.display = 'none';
   if(outEl) outEl.style.display = 'none';
   try {
-    const fn = _getFunctions().httpsCallable('generateListingCopy');
+    const fn = _getFunctions().httpsCallable('generateListingCopy',{ timeout:_PUB_IA_TIMEOUT_MS });
     const res = await fn(_pubAiPrompt());
     _aiCopyLastResult = res.data;
     document.getElementById('pubAiOutTitle').textContent = res.data.titulo;
@@ -8643,7 +8643,7 @@ async function _pubBulkMapWithAI(){
   if(prev) prev.innerHTML='<div style="padding:12px 14px;margin-top:10px;background:var(--light);border-radius:8px;font-size:13px">🤖 Reconociendo las columnas de tu archivo…</div>';
   try{
     const sample=_pubBulkRaw.slice(0,5).map(r=>_pubBulkHeaders.map(h=>r[h]));
-    const res=await _getFunctions().httpsCallable('mapImportColumns')({ headers:_pubBulkHeaders.slice(0,80), sample });
+    const res=await _getFunctions().httpsCallable('mapImportColumns',{ timeout:_PUB_IA_TIMEOUT_MS })({ headers:_pubBulkHeaders.slice(0,80), sample });
     const used=new Set(Object.values(_pubBulkMap));
     Object.entries((res.data && res.data.mapeo)||{}).forEach(([k,h])=>{
       if(_PUB_MAP_LABELS[k] && !_pubBulkMap[k] && _pubBulkHeaders.includes(h) && !used.has(h)){ _pubBulkMap[k]=h; _pubBulkMapAI[k]=1; used.add(h); }
@@ -9567,7 +9567,7 @@ function _pubImportFail(e,fallback){
 // Envía las partes a extractListings con el mismo lote (base = campos
 // comunes de la llamada) y carga el resultado en la bandeja.
 async function _pubExtractParts(parts,base,meta,photos){
-  const call=_getFunctions().httpsCallable('extractListings');
+  const call=_getFunctions().httpsCallable('extractListings',{ timeout:_PUB_IA_TIMEOUT_MS });
   const drafts=[]; let batchId='';
   const n=(photos||[]).length;
   for(let i=0;i<parts.length;i++){
@@ -9727,9 +9727,10 @@ async function _pubWaImport(file){
 
 // ── Desde un enlace (roadmap 1.4) ──
 const _PUB_URL_AYUDA='El enlace de tu post en Facebook, Instagram o TikTok, de la página del proyecto en tu web o de tu aviso en Urbania, Adondevivir, Properati, Babilonia y otros portales. Leemos el texto, las fotos y lo que se dice en el video.';
-// La lectura de una página puede tardar (portal protegido + IA): más que el
-// minuto por defecto de los callables.
-const _PUB_URL_TIMEOUT_MS=300000;
+// Las llamadas con IA pueden tardar más que el minuto por defecto de los
+// callables: portal protegido, documento largo o el modelo de respaldo (si el
+// rápido falla, el servidor reintenta con otro en la misma llamada).
+const _PUB_IA_TIMEOUT_MS=300000;
 // La página no se pudo leer desde ReCo: se lleva al usuario a "Pegar texto".
 function _pubUrlBlocked(msg){
   _pubDocProgress('⚠️ '+msg);
@@ -9747,7 +9748,7 @@ async function _pubUrlImport(){
   _pubBulkFileName=host||'Enlace';
   try{
     _pubDocProgress(`Leyendo el aviso de ${host}…`);
-    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS })({ url, declaraAutorizacion:true });
+    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_IA_TIMEOUT_MS })({ url, declaraAutorizacion:true });
     // Las fotos vienen tal cual del portal (webp, png…): se pasan a JPEG.
     const photos=[];
     for(const p of (res.data.photos||[])){
@@ -9794,7 +9795,7 @@ async function _pubProfileList(){
   if(!url || !_pubImportReady('importar avisos')) return;
   try{
     _pubDocProgress('Buscando los avisos del perfil…');
-    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS })({ url, declaraAutorizacion:true, modo:'perfil' });
+    const res=await _getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_IA_TIMEOUT_MS })({ url, declaraAutorizacion:true, modo:'perfil' });
     _pubProfileAvisos=(res.data.avisos||[]).map((a,i)=>({ ...a, sel:i<_PUB_PROFILE_PRESELECT }));
     if(!_pubProfileAvisos.length){ _pubDocProgress('No encontramos avisos en esa página. Pega el enlace de tu perfil en el portal o de la página de proyectos de tu web.'); return; }
     _pubProfileRender();
@@ -9826,7 +9827,7 @@ async function _pubProfileImport(){
   if(!elegidos.length || !_pubImportReady('importar avisos')) return;
   let host=''; try{ host=new URL(elegidos[0].url).hostname.replace(/^www\./,''); }catch(_){}
   _pubBulkFileName=`${host} (perfil)`;
-  const call=_getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_URL_TIMEOUT_MS });
+  const call=_getFunctions().httpsCallable('importListingPage',{ timeout:_PUB_IA_TIMEOUT_MS });
   const drafts=[], photos=[];
   let batchId='', fallidos=0, limite=false;
   for(let k=0;k<elegidos.length;k++){
@@ -12292,7 +12293,7 @@ function _intMetaReturn(hash){
   });
 }
 _intMetaReturn(location.hash);
-function _intCall(name,data){ return _getFunctions().httpsCallable(name)(data).then(r=>r.data||{}); }
+function _intCall(name,data){ return _getFunctions().httpsCallable(name,{ timeout:_PUB_IA_TIMEOUT_MS })(data).then(r=>r.data||{}); }
 function _intErr(e,fallback){ console.error('[reco] integraciones:',e); toast('⚠️ '+((e&&e.message)||fallback)); }
 function _intWhen(ms){ return ms?_timeAgo(new Date(ms).toISOString()):''; }
 

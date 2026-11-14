@@ -30,6 +30,12 @@ const RecoSocial = require('./social-core');
 initializeApp();
 const db = getFirestore();
 
+// IA de texto e imágenes: Claude (ver _aiStructured). Modelo principal y de
+// respaldo configurables sin tocar el código.
+const anthropicKey = defineSecret('ANTHROPIC_API_KEY');
+const aiModel = defineString('AI_MODEL', { default: 'claude-haiku-5-5' });
+const aiFallbackModel = defineString('AI_FALLBACK_MODEL', { default: 'claude-sonnet-5-5' });
+// Transcripción de audio (notas de voz y videos): Whisper de OpenAI.
 const openaiKey = defineSecret('OPENAI_API_KEY');
 const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
 // Bot de WhatsApp (Cloud API de Meta). Ver whatsappWebhook más abajo.
@@ -1390,20 +1396,23 @@ exports.grantKeys = onCall(
   }
 );
 
-// MEJ-04: generateListingCopy — AI-powered listing description
-// Uses fetch() instead of the openai SDK to avoid an extra dependency in the
-// Cloud Function bundle; functionally identical (gpt-4o-mini, temperature 0.7,
-// response_format: json_object).
+// MEJ-04: generateListingCopy — AI-powered listing description (Claude vía
+// _aiStructured: modelo principal y, si falla, el de respaldo).
 // ─────────────────────────────────────────────────────────────────────────────
 const AI_COPY_LIMIT_PER_HOUR = 30;
+const AI_COPY_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['titulo', 'descripcion'],
+  properties: { titulo: { type: 'string' }, descripcion: { type: 'string' } },
+};
 
 exports.generateListingCopy = onCall(
   {
     region: REGION,
     maxInstances: 10,
+    timeoutSeconds: 300,
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'generateListingCopy');
@@ -1467,50 +1476,17 @@ Reglas:
    {"titulo":"...","descripcion":"..."}
    donde título ≤ 90 caracteres y descripción tiene entre 500 y 900 caracteres distribuidos en 2 a 3 párrafos separados por \\n\\n.`;
 
-    // ── Call OpenAI via fetch ──
-    const key = openaiKey.value();
-    if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
-
-    let body;
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          temperature: 0.7,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: JSON.stringify(ficha) },
-          ],
-        }),
-      });
-      body = await res.json();
-      if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
-    } catch (e) {
-      logger.error('[generateListingCopy] OpenAI error', { err: e && e.message });
-      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
-    }
-
-    const raw = (body.choices?.[0]?.message?.content || '').trim();
+    // ── IA (Claude, con respaldo en la misma llamada) ──
     let parsed;
     try {
-      parsed = JSON.parse(raw);
-    } catch (_) {
-      const titleMatch = raw.match(/"titulo"\s*:\s*"([^"]+)"/);
-      const descMatch = raw.match(/"descripcion"\s*:\s*"([^"]+)"/);
-      parsed = {
-        titulo: titleMatch ? titleMatch[1] : '',
-        descripcion: descMatch ? descMatch[1] : '',
-      };
-    }
-
-    if (!parsed.titulo && !parsed.descripcion) {
-      throw new HttpsError('internal', 'La IA no generó contenido válido.');
+      ({ data: parsed } = await _aiStructured({
+        fn: 'generateListingCopy', system: systemPrompt, content: JSON.stringify(ficha), schema: AI_COPY_SCHEMA, maxTokens: 4000,
+        validate: (r) => (r && String(r.titulo || '').trim() && String(r.descripcion || '').trim() ? true : 'Texto vacío'),
+      }));
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[generateListingCopy] IA error', { err: e && e.message });
+      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
     }
 
     return {
@@ -1599,30 +1575,100 @@ ${etiquetas}
 13. evidencia: copia literal (máx. 600 caracteres) del fragmento de donde salen el precio, las áreas y los ambientes. En páginas escaneadas (imágenes), transcribe lo que lees en ellas.`;
 }
 
-async function _openaiStructured(systemPrompt, userContent, schemaName, schema) {
-  const key = openaiKey.value();
-  if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 16000,
-      response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent },
-      ],
-    }),
+// ─────────────────────────────────────────────────────────────────────────────
+// IA (Claude). Cada pedido va primero al modelo rápido y económico (AI_MODEL,
+// Claude Haiku) y, si falla por cualquier motivo, se repite EN LA MISMA
+// LLAMADA con AI_FALLBACK_MODEL (Claude Sonnet): el usuario nunca tiene que
+// volver a intentar. Cuenta como falla:
+//   - error de la API (caída, sobrecarga, límite, tiempo agotado),
+//   - respuesta rechazada (refusal) o cortada por largo (max_tokens),
+//   - JSON que no se puede leer,
+//   - un resultado que no pasa la validación de quien llama (p. ej. ningún
+//     inmueble en un texto que claramente tiene contenido).
+// Contenido: texto, o partes { type: 'text', text }, { type: 'image', dataUrl }
+// y { type: 'pdf', name, data (base64) }.
+// ─────────────────────────────────────────────────────────────────────────────
+const AI_MAX_TOKENS = 16000;
+const AI_TIMEOUT_MS = 120000;
+const AI_IMAGE_RE = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/;
+function _aiModels(only) {
+  const primary = aiModel.value() || 'claude-haiku-5-5';
+  const fallback = aiFallbackModel.value() || 'claude-sonnet-5-5';
+  if (only === 'fallback') return [fallback];
+  return primary === fallback ? [primary] : [primary, fallback];
+}
+// Esquemas en el formato que acepta la salida estructurada de Claude:
+// { type: ['string', 'null'] } → anyOf.
+function _aiSchema(s) {
+  if (Array.isArray(s)) return s.map(_aiSchema);
+  if (!s || typeof s !== 'object') return s;
+  const out = {};
+  Object.entries(s).forEach(([k, v]) => { out[k] = k === 'enum' || k === 'required' ? v : _aiSchema(v); });
+  if (Array.isArray(out.type)) {
+    const tipos = out.type;
+    delete out.type;
+    return { anyOf: tipos.map((t) => ({ ...out, type: t })) };
+  }
+  return out;
+}
+function _aiContent(content) {
+  if (typeof content === 'string') return content;
+  return content.map((p) => {
+    // PDF (adjunto de un correo): Claude lo lee directamente, texto e imágenes.
+    if (p.type === 'pdf') return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: String(p.data || '') }, title: String(p.name || 'ficha.pdf').slice(0, 200) };
+    if (p.type !== 'image') return { type: 'text', text: String(p.text || '') };
+    const m = AI_IMAGE_RE.exec(p.dataUrl || '');
+    if (!m) throw new HttpsError('invalid-argument', 'Imagen inválida.');
+    return { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } };
   });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
-  const choice = body.choices?.[0] || {};
-  // Respuesta cortada por largo (p. ej. un proyecto con decenas de unidades):
-  // el JSON queda incompleto. Quien llama puede pedir una respuesta más corta.
-  if (choice.finish_reason === 'length') throw Object.assign(new Error('Respuesta de la IA cortada por largo'), { truncated: true });
-  return JSON.parse(choice.message?.content || '{}');
+}
+const _aiFail = (msg, extra) => Object.assign(new Error(msg), extra || {});
+// ultimo: es el último modelo de la lista. Los anteriores no se reintentan
+// (se pasa de inmediato al siguiente); el último reintenta una vez los errores
+// pasajeros de la API (sobrecarga, límite, red).
+async function _aiCall(model, o, ultimo) {
+  const { Anthropic } = require('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: anthropicKey.value(), maxRetries: ultimo ? 1 : 0, timeout: ultimo ? AI_TIMEOUT_MS : AI_TIMEOUT_MS / 2 });
+  const res = await client.messages.create({
+    model,
+    max_tokens: o.maxTokens || AI_MAX_TOKENS,
+    system: o.system,
+    messages: [{ role: 'user', content: _aiContent(o.content) }],
+    output_config: { effort: 'low', ...(o.schema && { format: { type: 'json_schema', schema: _aiSchema(o.schema) } }) },
+  });
+  if (res.stop_reason === 'refusal') throw _aiFail('La IA rechazó el pedido', { refusal: true });
+  // Cortada por largo (p. ej. un proyecto con decenas de unidades): el JSON queda incompleto.
+  if (res.stop_reason === 'max_tokens') throw _aiFail('Respuesta de la IA cortada por largo', { truncated: true });
+  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+  let data = text;
+  if (o.schema) {
+    try { data = JSON.parse(text); } catch (_) { throw _aiFail('Respuesta de la IA con JSON inválido'); }
+  }
+  const ok = o.validate ? o.validate(data) : true;
+  if (ok !== true) throw _aiFail(typeof ok === 'string' ? ok : 'Resultado de la IA no válido', { invalid: true, data });
+  return data;
+}
+// → { data, model, respaldo } (respaldo: lo resolvió el segundo modelo).
+// o: { fn, system, content, schema?, validate?, maxTokens?, only?: 'fallback',
+//      acceptInvalid?: si el último modelo también da un resultado "no válido"
+//      (p. ej. vacío), se devuelve igual en vez de fallar }.
+async function _aiStructured(o) {
+  if (!anthropicKey.value()) throw new HttpsError('failed-precondition', 'Clave de la IA no configurada.');
+  const models = _aiModels(o.only);
+  let last;
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const data = await _aiCall(models[i], o, i === models.length - 1);
+      if (i > 0) logger.info(`[${o.fn}] resuelto con el modelo de respaldo`, { model: models[i] });
+      return { data, model: models[i], respaldo: i > 0 };
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      last = e;
+      logger.warn(`[${o.fn}] ${models[i]} falló`, { err: e && e.message, status: e && e.status, truncated: !!(e && e.truncated) });
+    }
+  }
+  if (last && last.invalid && o.acceptInvalid) return { data: last.data, model: models[models.length - 1], respaldo: models.length > 1 };
+  throw last;
 }
 // Si la lista de inmuebles no entra en la respuesta, se pide de nuevo más corta.
 const IMPORT_SHORT_PROMPT = `\n\nIMPORTANTE: la respuesta anterior fue demasiado larga. Devuelve como máximo 12 inmuebles (en un proyecto, una entrada por tipología, no por unidad), con descripcion de máximo 400 caracteres y evidencia de máximo 300.`;
@@ -1647,7 +1693,7 @@ function _extractDocumentInput(d, text) {
   const content = [{ type: 'text', text: text || '(El documento solo tiene páginas escaneadas.)' }];
   images.forEach((im) => {
     content.push({ type: 'text', text: `Página escaneada ${String(im.page || '').slice(0, 10)}:` });
-    content.push({ type: 'image_url', image_url: { url: im.dataUrl, detail: 'high' } });
+    content.push({ type: 'image', dataUrl: im.dataUrl });
   });
   return { fileType, photoIds, images: images.length, content };
 }
@@ -1681,18 +1727,28 @@ async function _importRateLimit(uid) {
 //   draftExtra / eventExtra  campos adicionales para el borrador / evento
 async function _extractAndSaveDrafts(o) {
   const t0 = Date.now();
-  let parsed;
+  // Ningún inmueble en una fuente con contenido suele ser un error del modelo
+  // rápido: se prueba con el de respaldo (y si tampoco encuentra, es real).
+  const conContenido = Array.isArray(o.userContent) || (String(o.text || '').length >= 40 && /\d/.test(o.text));
+  const pedido = {
+    fn: o.fn, system: _extractSystemPrompt(), content: o.userContent || o.text, schema: RecoImport.EXTRACTION_SCHEMA,
+    validate: (r) => (!r || !Array.isArray(r.inmuebles) ? 'Respuesta sin lista de inmuebles'
+      : (!r.inmuebles.length && conContenido ? 'Ningún inmueble encontrado' : true)),
+    acceptInvalid: true,
+  };
+  let ia;
   try {
-    parsed = await _openaiStructured(_extractSystemPrompt(), o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA)
-      .catch((e) => {
-        if (!e || !e.truncated) throw e;
-        logger.warn(`[${o.fn}] respuesta larga: se pide más corta`);
-        return _openaiStructured(_extractSystemPrompt() + IMPORT_SHORT_PROMPT, o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
-      });
+    ia = await _aiStructured(pedido).catch((e) => {
+      if (!e || !e.truncated) throw e;
+      logger.warn(`[${o.fn}] respuesta larga: se pide más corta`);
+      return _aiStructured({ ...pedido, system: pedido.system + IMPORT_SHORT_PROMPT, only: 'fallback' });
+    });
   } catch (e) {
-    logger.error(`[${o.fn}] OpenAI error`, { err: e && e.message, truncated: !!(e && e.truncated), chars: String(o.text || '').length });
+    if (e instanceof HttpsError) throw e;
+    logger.error(`[${o.fn}] IA error`, { err: e && e.message, truncated: !!(e && e.truncated), chars: String(o.text || '').length });
     throw new HttpsError('internal', o.errorMessage || 'No pudimos leer el contenido. Intenta de nuevo.');
   }
+  const parsed = ia.data || {};
   const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
 
   // Las partes de una misma fuente comparten batchId (y su "Retomar").
@@ -1730,6 +1786,7 @@ async function _extractAndSaveDrafts(o) {
   });
   batch.set(db.collection('importEvents').doc(), {
     uid: o.uid, kind: o.kind, channel: o.channel, chars: o.text.length, listings: drafts.length,
+    modelo: ia.model, respaldo: ia.respaldo,
     ...(o.eventExtra || {}),
     ms: Date.now() - t0, createdAt: FieldValue.serverTimestamp(),
   });
@@ -1745,7 +1802,7 @@ exports.extractListings = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey, openaiKey],
   },
   async (request) => {
     _logAppCheck(request, 'extractListings');
@@ -1854,7 +1911,10 @@ Para cada campo de ReCo, indica el nombre EXACTO de la columna que lo contiene, 
 Campos de ReCo:
 ${RecoImport.COLS.map((k) => `- ${k}: ${IMPORT_COLUMN_HINTS[k]}`).join('\n')}`;
   const user = `Columnas: ${JSON.stringify(headers)}\nFilas de ejemplo:\n${sample.map((r) => JSON.stringify(r)).join('\n')}`;
-  const parsed = await _openaiStructured(prompt, user, 'mapeo_columnas', schema);
+  const { data: parsed } = await _aiStructured({
+    fn: 'mapImportColumns', system: prompt, content: user, schema, maxTokens: 4000,
+    validate: (r) => (r && r.mapeo && typeof r.mapeo === 'object' ? true : 'Respuesta sin mapeo'),
+  });
   const mapeo = {};
   Object.entries((parsed && parsed.mapeo) || {}).forEach(([k, v]) => {
     if (RecoImport.COLS.includes(k) && typeof v === 'string' && headers.includes(v)) mapeo[k] = v;
@@ -1866,9 +1926,10 @@ exports.mapImportColumns = onCall(
   {
     region: REGION,
     maxInstances: 10,
+    timeoutSeconds: 300,
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'mapImportColumns');
@@ -1887,7 +1948,7 @@ exports.mapImportColumns = onCall(
     try {
       mapeo = await _aiMapColumns(headers, sample);
     } catch (e) {
-      logger.error('[mapImportColumns] OpenAI error', { err: e && e.message });
+      logger.error('[mapImportColumns] IA error', { err: e && e.message });
       throw new HttpsError('internal', 'No pudimos reconocer las columnas. Indícalas a mano.');
     }
     await db.collection('importEvents').doc().set({
@@ -2213,7 +2274,7 @@ exports.importListingPage = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey, scraperKey],
+    secrets: [anthropicKey, openaiKey, scraperKey],
   },
   async (request) => {
     _logAppCheck(request, 'importListingPage');
@@ -2370,7 +2431,7 @@ async function _metaFetchPosts(red, pageId, token, after) {
 
 exports.metaConnect = onCall(
   { region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB', consumeAppCheckToken: true, enforceAppCheck: true,
-    secrets: [openaiKey, metaAppSecret] },
+    secrets: [anthropicKey, openaiKey, metaAppSecret] },
   async (request) => {
     _logAppCheck(request, 'metaConnect');
     requireVerifiedAuth(request);
@@ -2713,7 +2774,7 @@ async function _waProcessSession(phone, uid) {
 }
 
 exports.whatsappProcessMessage = onDocumentCreated(
-  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [openaiKey, waToken] },
+  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [anthropicKey, openaiKey, waToken] },
   async (event) => {
     const m = event.data && event.data.data();
     if (!m || !m.from) return;
@@ -3252,7 +3313,7 @@ async function _sourcePreview(input, mapping, usarIA) {
 exports.importSources = onCall(
   {
     region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB',
-    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [openaiKey],
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'importSources');
@@ -3802,7 +3863,7 @@ function _emailBody(text) {
   return String(text || '').replace(/\r/g, '').replace(/\n-- ?\n[\s\S]*$/, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 exports.emailProcess = onDocumentCreated(
-  { region: REGION, document: 'emailInbox/{msgId}', timeoutSeconds: 300, memory: '1GiB', secrets: [openaiKey] },
+  { region: REGION, document: 'emailInbox/{msgId}', timeoutSeconds: 300, memory: '1GiB', secrets: [anthropicKey] },
   async (event) => {
     const m = event.data && event.data.data();
     if (!m || !m.uid) return;
@@ -3829,7 +3890,7 @@ exports.emailProcess = onDocumentCreated(
     for (const pdf of (m.pdfs || [])) {
       try {
         const [buf] = await getStorage().bucket().file(pdf.path).download();
-        content.push({ type: 'file', file: { filename: pdf.name || 'ficha.pdf', file_data: `data:application/pdf;base64,${buf.toString('base64')}` } });
+        content.push({ type: 'pdf', name: pdf.name || 'ficha.pdf', data: buf.toString('base64') });
       } catch (e) {
         logger.warn('[emailProcess] PDF no disponible', { err: e && e.message });
       }
@@ -4130,8 +4191,8 @@ const PHOTO_AI_MAX_CHARS = 400 * 1024;
 const PHOTO_AI_MAX_BYTES = 3 * 1024 * 1024;
 exports.analyzePhotos = onCall(
   {
-    region: REGION, maxInstances: 10, timeoutSeconds: 120, memory: '512MiB',
-    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [openaiKey],
+    region: REGION, maxInstances: 10, timeoutSeconds: 300, memory: '512MiB',
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'analyzePhotos');
@@ -4180,9 +4241,13 @@ exports.analyzePhotos = onCall(
 
     let parsed;
     try {
-      parsed = await _openaiStructured(RecoPhotos.PROMPT, RecoPhotos.content(dataUrls), 'fotos', RecoPhotos.SCHEMA);
+      ({ data: parsed } = await _aiStructured({
+        fn: 'analyzePhotos', system: RecoPhotos.PROMPT, content: RecoPhotos.content(dataUrls), schema: RecoPhotos.SCHEMA, maxTokens: 4000,
+        validate: (r) => (r && Array.isArray(r.fotos) && r.fotos.length ? true : 'Respuesta sin fotos'),
+      }));
     } catch (e) {
-      logger.error('[analyzePhotos] OpenAI error', { err: e && e.message });
+      if (e instanceof HttpsError) throw e;
+      logger.error('[analyzePhotos] IA error', { err: e && e.message });
       throw new HttpsError('internal', 'No pudimos revisar las fotos. Intenta de nuevo.');
     }
     const r = RecoPhotos.normalizar(parsed, dataUrls.length);

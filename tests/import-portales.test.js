@@ -6,7 +6,7 @@
  */
 const { test, expect } = require('@playwright/test');
 const dns = require('dns');
-const { loadFunctions, req, mockFetch } = require('./helpers/mock-functions');
+const { loadFunctions, req, mockFetch, claude, CLAUDE_URL } = require('./helpers/mock-functions');
 
 const html = (s, status) => new Response(s, { status: status || 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
 const json = (o) => new Response(JSON.stringify(o), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -17,9 +17,9 @@ const AVISO = `<html><head><title>Nomad Living - San Isidro</title>
   <meta property="og:title" content="Nomad Living, departamentos en San Isidro">
   <script type="application/ld+json">{"@type":"Apartment","name":"Nomad Living","address":{"addressLocality":"San Isidro"}}</script>
   </head><body><h1>Nomad Living</h1><p>Departamentos de 1 y 2 dormitorios desde US$ 150,000 en San Isidro, 45 m².</p></body></html>`;
-const openai = (calls) => ['https://api.openai.com/v1/chat/completions', (u, init) => {
+const ia = (calls) => [CLAUDE_URL, (u, init) => {
   calls.push(JSON.parse(init.body));
-  return json({ choices: [{ message: { content: JSON.stringify({ inmuebles: [] }) } }] });
+  return claude({ inmuebles: [] });
 }];
 
 let origFetch, origLookup;
@@ -49,11 +49,11 @@ test.describe('Portales que bloquean a los servidores', () => {
     const chats = [];
     const net = mockFetch([
       ['https://urbania.pe/', (u, init) => (init.headers['Sec-Fetch-Mode'] ? html(AVISO) : html(CLOUDFLARE, 403))],
-      openai(chats),
+      ia(chats),
     ]);
     await F.exports.importListingPage.__handler(req('u1', { ...ok, url: URL_AVISO }));
     expect(net.some((c) => /scrapingbee/.test(c.url))).toBe(false);
-    expect(chats[0].messages[1].content).toContain('desde US$ 150,000');
+    expect(chats[0].messages[0].content).toContain('desde US$ 150,000');
     expect(Object.values(F.db.store).some((x) => x.channel === 'url' && x.via === 'navegador')).toBe(true);
   });
 
@@ -63,14 +63,14 @@ test.describe('Portales que bloquean a los servidores', () => {
     const net = mockFetch([
       ['https://urbania.pe/', () => html(CLOUDFLARE, 403)],
       ['https://app.scrapingbee.com/api/v1/', (u) => (new URL(u).searchParams.get('stealth_proxy') ? html(AVISO) : html(CLOUDFLARE, 200))],
-      openai(chats),
+      ia(chats),
     ]);
     await F.exports.importListingPage.__handler(req('u1', { ...ok, url: URL_AVISO }));
     const sb = net.filter((c) => c.url.startsWith('https://app.scrapingbee.com/')).map((c) => Object.fromEntries(new URL(c.url).searchParams));
     expect(sb).toHaveLength(2);
     expect(sb[0]).toMatchObject({ api_key: 'clave-sb', url: URL_AVISO, premium_proxy: 'true', country_code: 'pe' });
     expect(sb[1]).toMatchObject({ stealth_proxy: 'true' });
-    expect(chats[0].messages[1].content).toContain('Nomad Living');
+    expect(chats[0].messages[0].content).toContain('Nomad Living');
     expect(Object.values(F.db.store).some((x) => x.channel === 'url' && x.via === 'servicio')).toBe(true);
   });
 
@@ -86,31 +86,32 @@ test.describe('Portales que bloquean a los servidores', () => {
         if (/zonapropcdn/.test(target)) return new Response(Buffer.alloc(12000, 3), { status: 200, headers: { 'content-type': /webp/.test(target) ? 'image/webp' : 'image/jpeg' } });
         return html(GALERIA);
       }],
-      openai(chats),
+      ia(chats),
     ]);
     const res = await F.exports.importListingPage.__handler(req('u1', { ...ok, url: URL_AVISO }));
-    expect(chats[0].messages[1].content).toContain('[FOTO u-1] [FOTO u-2]');
+    expect(chats[0].messages[0].content).toContain('[FOTO u-1] [FOTO u-2]');
     expect(net.some((c) => c.url.includes('logo.png'))).toBe(false);
     const viaServicio = net.filter((c) => c.url.startsWith('https://app.scrapingbee.com/') && /zonapropcdn/.test(c.url));
     expect(viaServicio).toHaveLength(2);
     expect(res.drafts).toEqual([]);
   });
 
-  test('si la respuesta de la IA se corta por larga (proyecto con muchas unidades), se pide de nuevo más corta', async () => {
+  test('si la respuesta se corta por larga (proyecto con muchas unidades): Sonnet y, si también, Sonnet con respuesta más corta', async () => {
     const F = loadFunctions({ secrets: { SCRAPER_API_KEY: '' } });
     const chats = [];
     mockFetch([
       ['https://urbania.pe/', () => html(AVISO)],
-      ['https://api.openai.com/v1/chat/completions', (u, init) => {
+      [CLAUDE_URL, (u, init) => {
         chats.push(JSON.parse(init.body));
-        if (chats.length === 1) return json({ choices: [{ finish_reason: 'length', message: { content: '{"inmuebles":[{"titulo":"Nomad' } }] });
-        return json({ choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ inmuebles: [] }) } }] });
+        if (chats.length <= 2) return claude('{"inmuebles":[{"titulo":"Nomad', { stop_reason: 'max_tokens' });
+        return claude({ inmuebles: [] });
       }],
     ]);
     await F.exports.importListingPage.__handler(req('u1', { ...ok, url: URL_AVISO }));
-    expect(chats).toHaveLength(2);
+    expect(chats.map((c) => c.model)).toEqual(['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5']);
     expect(chats[0].max_tokens).toBe(16000);
-    expect(chats[1].messages[0].content).toContain('como máximo 12 inmuebles');
+    expect(chats[1].system).not.toContain('como máximo 12 inmuebles');
+    expect(chats[2].system).toContain('como máximo 12 inmuebles');
   });
 
   test('ZenRows y ScraperAPI con SCRAPER_PROVIDER; la lista de un perfil también usa el servicio', async () => {

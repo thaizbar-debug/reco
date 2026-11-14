@@ -4,7 +4,7 @@
  * de una publicación ya enviada.
  */
 const { test, expect } = require('@playwright/test');
-const { loadFunctions, req, mockFetch } = require('./helpers/mock-functions');
+const { loadFunctions, req, mockFetch, claude, CLAUDE_URL } = require('./helpers/mock-functions');
 
 const BUCKET = 'reco-test.appspot.com';
 const url = (path) => `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o/${encodeURIComponent(path)}?alt=media&token=t`;
@@ -69,13 +69,13 @@ test.describe('Fotos de publicaciones (servidor)', () => {
 
 test.describe('Fotos con IA (analyzePhotos)', () => {
   const foto = 'data:image/jpeg;base64,' + Buffer.alloc(300, 1).toString('base64');
-  const respuesta = (fotos, portada) => ({ choices: [{ message: { content: JSON.stringify({ portada, fotos }) } }] });
+  const respuesta = (fotos, portada) => claude({ portada, fotos });
   const f = (indice, ambiente, extra) => ({ indice, ambiente, calidad: 4, marca_agua: false, texto: false, personas: false, ...(extra || {}) });
 
   test('propone portada y orden, marca las fotos con marca de agua y cuenta en el límite por hora', async () => {
     const F = loadFunctions();
     const chats = [];
-    mockFetch([['https://api.openai.com/v1/chat/completions', (u, init) => {
+    mockFetch([[CLAUDE_URL, (u, init) => {
       chats.push(JSON.parse(init.body));
       return respuesta([f(0, 'bano'), f(1, 'fachada', { marca_agua: true }), f(2, 'sala'), f(3, 'plano')], 1);
     }]]);
@@ -83,17 +83,18 @@ test.describe('Fotos con IA (analyzePhotos)', () => {
     expect(r.portada).toBe(2); // la fachada tiene marca de agua: la sala
     expect(r.orden).toEqual([2, 0, 1, 3]);
     expect(r.fotos[1]).toMatchObject({ ambiente: 'fachada', marcaAgua: true });
-    const imgs = chats[0].messages[1].content.filter((x) => x.type === 'image_url');
+    const imgs = chats[0].messages[0].content.filter((x) => x.type === 'image');
     expect(imgs).toHaveLength(4);
-    expect(imgs[0].image_url.detail).toBe('low');
-    expect(chats[0].response_format.json_schema.name).toBe('fotos');
+    expect(imgs[0].source).toMatchObject({ type: 'base64', media_type: 'image/jpeg' });
+    expect(chats[0].output_config.format.schema.required).toEqual(['fotos', 'portada']);
+    expect(chats).toHaveLength(1);
     expect(F.db.store['importUsage/u1'].count).toBe(1);
     expect(Object.values(F.db.store).some((x) => x.kind === 'fotos' && x.marcaAgua === 1)).toBe(true);
   });
 
   test('valida las fotos: tamaño, formato, mínimo 2 y solo fotos de publicaciones propias', async () => {
     const F = loadFunctions();
-    mockFetch([['https://api.openai.com/', () => respuesta([f(0, 'sala'), f(1, 'cocina')], 0)]]);
+    mockFetch([[CLAUDE_URL, () => respuesta([f(0, 'sala'), f(1, 'cocina')], 0)]]);
     const an = F.exports.analyzePhotos.__handler;
     await expect(an(req('u1', { photos: [foto] }))).rejects.toThrow(/al menos 2/);
     await expect(an(req('u1', { photos: [foto, 'data:image/gif;base64,AAAA'] }))).rejects.toThrow(/no válida/);

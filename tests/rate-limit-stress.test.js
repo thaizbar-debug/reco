@@ -9,6 +9,7 @@
 const { test, expect } = require('@playwright/test');
 const Module = require('module');
 const path = require('path');
+const { claude } = require('./helpers/mock-functions');
 
 // ── In-memory Firestore mock ──
 function createMockFirestore() {
@@ -259,15 +260,8 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
     const uid = 'truncation-test-user';
     const longTitle = 'A'.repeat(500);
     const longDesc = 'B'.repeat(6000);
-    const fakeResponse = JSON.stringify({
-      choices: [{ message: { content: JSON.stringify({ titulo: longTitle, descripcion: longDesc }) } }],
-    });
-
     const origFetch = global.fetch;
-    global.fetch = async () => ({
-      ok: true,
-      json: async () => JSON.parse(fakeResponse),
-    });
+    global.fetch = async () => claude({ titulo: longTitle, descripcion: longDesc });
 
     try {
       const result = await handler(makeRequest(uid, { district: 'Miraflores', area: 120 }));

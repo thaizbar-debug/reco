@@ -219,4 +219,21 @@ function mockFetch(routes) {
 }
 const jpeg = (n, seed) => new Response(Buffer.alloc(n || 9000, seed || 7), { status: 200, headers: { 'content-type': 'image/jpeg' } });
 
-module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, STORAGE_MOCK_KEY };
+// IA (Claude, API de Messages). CLAUDE_URL para las rutas de mockFetch;
+// claude(payload) arma la respuesta (payload: objeto → JSON, o texto tal cual).
+// opts: { stop_reason, status, model }. Un status de error devuelve un error de la API.
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+function claude(payload, opts) {
+  const o = opts || {};
+  if (o.status && o.status >= 400) {
+    return new Response(JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }),
+      { status: o.status, headers: { 'content-type': 'application/json' } });
+  }
+  return new Response(JSON.stringify({
+    id: 'msg_test', type: 'message', role: 'assistant', model: o.model || 'claude-haiku-5-5',
+    content: [{ type: 'text', text: typeof payload === 'string' ? payload : JSON.stringify(payload) }],
+    stop_reason: o.stop_reason || 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 10 },
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
+module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, claude, CLAUDE_URL, STORAGE_MOCK_KEY };

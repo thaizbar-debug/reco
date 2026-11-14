@@ -64,7 +64,7 @@ se cortaba por largo y quedaba un JSON incompleto. Ahora:
 - Si igual se corta, se pide de nuevo más corta: como máximo 12 inmuebles, una entrada por tipología y no por
   unidad, con descripciones breves.
 - El registro de errores incluye si la respuesta se cortó y cuántos caracteres tenía la página, para diagnosticar
-  en Cloud Logging (`[importListingPage] OpenAI error`).
+  en Cloud Logging (`[importListingPage] IA error`). Desde la migración a Claude, si la respuesta se corta con Haiku se repite con Sonnet en la misma llamada (`docs/IA.md`).
 
 ## Fotos
 

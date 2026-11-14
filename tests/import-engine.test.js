@@ -7,6 +7,7 @@
 const { test, expect } = require('@playwright/test');
 const Module = require('module');
 const path = require('path');
+const { claude, CLAUDE_URL } = require('./helpers/mock-functions');
 const STORAGE_MOCK_KEY = '__mock_firebase_admin_storage__';
 
 function createMockFirestore() {
@@ -154,11 +155,12 @@ const mockBucket = {
 
 const req = (uid, data) => ({ auth: { uid, token: { email_verified: true, email: 'a@b.pe' } }, app: { appId: 't' }, data, rawRequest: { headers: {} } });
 
-function mockOpenAI(payload) {
+// IA simulada (Claude): guarda cada pedido y responde con payload.
+function mockAI(payload) {
   const calls = [];
   global.fetch = async (url, init) => {
     calls.push(JSON.parse(init.body));
-    return { ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(payload) } }] }) };
+    return claude(payload);
   };
   return calls;
 }
@@ -180,7 +182,7 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
 
   test('extrae, normaliza, descarta números inventados y guarda borradores', async () => {
     const { extract, db } = loadHandlers();
-    const calls = mockOpenAI({ inmuebles: [
+    const calls = mockAI({ inmuebles: [
       aiItem({ distrito: 'Surco', tipo_publicacion: 'Venta', tipo_propiedad: 'depa', nro_dormitorios: '3', nro_banos: '2',
         nro_estacionamientos: '1', area_techada: '90 m2', precio: 'US$ 185 mil', titulo: 'Depa en Surco',
         descripcion: 'Vendo depa en Surco, 3 dormitorios. Cel 987654321', campos_inferidos: ['titulo', 'precio_x'] }),
@@ -190,10 +192,13 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
 
     const res = await extract(req('u1', { kind: 'text', text: SOURCE_TEXT, channel: 'whatsapp' }));
 
-    // Salida estructurada estricta con el esquema compartido
-    expect(calls[0].response_format.type).toBe('json_schema');
-    expect(calls[0].response_format.json_schema.strict).toBe(true);
-    expect(calls[0].temperature).toBe(0);
+    // Salida estructurada con el esquema compartido, primero con el modelo rápido
+    expect(calls).toHaveLength(1);
+    expect(calls[0].model).toBe('claude-haiku-5-5');
+    expect(calls[0].output_config.format.type).toBe('json_schema');
+    expect(calls[0].output_config.format.schema.properties.inmuebles.type).toBe('array');
+    expect(calls[0].output_config.effort).toBe('low');
+    expect(calls[0].system).toContain('inmuebles');
 
     expect(res.drafts).toHaveLength(2);
     const [a, b] = res.drafts;
@@ -229,7 +234,7 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
 
   test('valida entrada: tipo no soportado, texto vacío y texto demasiado largo', async () => {
     const { extract } = loadHandlers();
-    mockOpenAI({ inmuebles: [] });
+    mockAI({ inmuebles: [] });
     await expect(extract(req('u1', { kind: 'url', text: 'x' }))).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(extract(req('u1', { kind: 'text', text: '   ' }))).rejects.toMatchObject({ code: 'invalid-argument' });
     await expect(extract(req('u1', { kind: 'text', text: 'x'.repeat(20001) }))).rejects.toMatchObject({ code: 'invalid-argument' });
@@ -238,7 +243,7 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
 
   test('rate limit: la llamada 31 de la hora se rechaza', async () => {
     const { extract, db } = loadHandlers();
-    mockOpenAI({ inmuebles: [] });
+    mockAI({ inmuebles: [] });
     db.store['importUsage/u2'] = { hour: new Date().toISOString().slice(0, 13), count: 30 };
     await expect(extract(req('u2', { kind: 'text', text: 'depa' }))).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
@@ -296,7 +301,7 @@ test.describe('extractListings: documentos', () => {
 
   test('envía texto + páginas escaneadas a la IA y devuelve las fotos de cada inmueble', async () => {
     const { extract, db } = loadHandlers();
-    const calls = mockOpenAI({ inmuebles: [
+    const calls = mockAI({ inmuebles: [
       aiItem({ distrito: 'Miraflores', tipo_publicacion: 'Vta.', tipo_propiedad: 'Dpto.', nro_dormitorios: '3', area_techada: '85 m2',
         precio: 'US$ 185,000', titulo: 'Dpto. en Miraflores', descripcion: 'Dpto. en Miraflores',
         etiquetas_vista: 'vista al mar', etiquetas_ambientes: 'Gimnasio; Helipuerto',
@@ -308,14 +313,15 @@ test.describe('extractListings: documentos', () => {
 
     const res = await extract(docReq());
 
-    const msg = calls[0].messages;
-    expect(msg[0].content).toContain('etiquetas_vista: Vista a parque | Vista al mar');
-    expect(msg[0].content).toContain('[FOTO id]');
-    expect(Array.isArray(msg[1].content)).toBe(true);
-    expect(msg[1].content[0]).toMatchObject({ type: 'text' });
-    expect(msg[1].content[0].text).toContain('[FOTO p1-1]');
-    expect(msg[1].content[1].text).toBe('Página escaneada 2:');
-    expect(msg[1].content[2]).toEqual({ type: 'image_url', image_url: { url: IMG, detail: 'high' } });
+    expect(calls[0].system).toContain('etiquetas_vista: Vista a parque | Vista al mar');
+    expect(calls[0].system).toContain('[FOTO id]');
+    const user = calls[0].messages[0].content;
+    expect(Array.isArray(user)).toBe(true);
+    expect(user[0]).toMatchObject({ type: 'text' });
+    expect(user[0].text).toContain('[FOTO p1-1]');
+    expect(user[1].text).toBe('Página escaneada 2:');
+    const [, mime, b64] = IMG.match(/^data:([^;]+);base64,(.+)$/);
+    expect(user[2]).toEqual({ type: 'image', source: { type: 'base64', media_type: mime, data: b64 } });
 
     const [a, b] = res.drafts;
     expect(a.fotos).toEqual(['p1-1', 'p1-2']); // ids que no vinieron del documento se descartan
@@ -333,7 +339,7 @@ test.describe('extractListings: documentos', () => {
 
   test('sin páginas escaneadas, la evidencia de la IA no alcanza para validar números', async () => {
     const { extract } = loadHandlers();
-    mockOpenAI({ inmuebles: [aiItem({ tipo_propiedad: 'Casa', precio: '999000', area_techada: '85', evidencia: 'Precio 999000', fotos: [] })] });
+    mockAI({ inmuebles: [aiItem({ tipo_propiedad: 'Casa', precio: '999000', area_techada: '85', evidencia: 'Precio 999000', fotos: [] })] });
     const res = await extract(docReq({ images: [] }));
     expect(res.drafts[0].row.precio).toBe('');
     expect(res.drafts[0].row.area_techada).toBe('85');
@@ -342,7 +348,7 @@ test.describe('extractListings: documentos', () => {
 
   test('las partes de un documento comparten batchId', async () => {
     const { extract } = loadHandlers();
-    mockOpenAI({ inmuebles: [] });
+    mockAI({ inmuebles: [] });
     const r1 = await extract(docReq());
     const r2 = await extract(docReq({ batchId: r1.batchId }));
     const r3 = await extract(docReq({ batchId: '../x' }));
@@ -352,7 +358,7 @@ test.describe('extractListings: documentos', () => {
 
   test('valida el documento: formato, imágenes y contenido', async () => {
     const { extract } = loadHandlers();
-    mockOpenAI({ inmuebles: [] });
+    mockAI({ inmuebles: [] });
     const bad = (over) => expect(extract(docReq(over))).rejects.toMatchObject({ code: 'invalid-argument' });
     await bad({ fileType: 'doc' });
     await bad({ images: Array.from({ length: 7 }, (_, i) => ({ page: String(i), dataUrl: IMG })) });
@@ -368,15 +374,15 @@ test.describe('extractListings: documentos', () => {
 // ── Fase 1: mapImportColumns e importListingPage ──
 const dns = require('dns');
 
-// fetch simulado por URL: OpenAI, páginas y fotos. Devuelve Response reales
+// fetch simulado por URL: IA (Claude), páginas y fotos. Devuelve Response reales
 // (el servidor lee el cuerpo como stream).
 function mockNet(routes, aiPayload) {
   const seen = [];
   global.fetch = async (url, init) => {
     seen.push(String(url));
-    if (String(url).startsWith('https://api.openai.com/')) {
+    if (String(url) === CLAUDE_URL) {
       seen.ai = JSON.parse(init.body);
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(aiPayload) } }] }), { status: 200 });
+      return claude(aiPayload);
     }
     const r = routes[String(url)];
     if (!r) return new Response('not found', { status: 404, headers: { 'content-type': 'text/plain' } });
@@ -418,7 +424,7 @@ test.describe('importListingPage', () => {
 
     const res = await importPage(req('u1', { ...ok, url: 'https://urbania.pe/inmueble/dpto-123' }));
 
-    const user = seen.ai.messages[1].content;
+    const user = seen.ai.messages[0].content;
     expect(user).toContain('URL: https://urbania.pe/inmueble/dpto-123');
     expect(user).toContain('"priceCurrency":"USD"');
     expect(user).toContain('Av. Larco 1150, Miraflores. 3 dormitorios, 85 m² techados');
@@ -501,10 +507,10 @@ test.describe('mapImportColumns', () => {
     const seen = mockNet({}, { mapeo: { area_techada: 'Mts2 const.', descripcion: 'Comentario', precio: 'Columna inventada' } });
     const res = await mapColumns(req('u1', { headers: ['Ubicación', 'Mts2 const.', 'Comentario', 'Ubicación', ''], sample: [['Av. 1', '85', 'ok']] }));
     expect(res.mapeo).toEqual({ area_techada: 'Mts2 const.', descripcion: 'Comentario' });
-    const schema = seen.ai.response_format.json_schema;
-    expect(schema.strict).toBe(true);
+    const schema = seen.ai.output_config.format;
+    expect(schema.type).toBe('json_schema');
     expect(schema.schema.properties.mapeo.properties.precio.anyOf[0].enum).toEqual(['Ubicación', 'Mts2 const.', 'Comentario']);
-    expect(seen.ai.messages[1].content).toContain('["Av. 1","85","ok"]');
+    expect(seen.ai.messages[0].content).toContain('["Av. 1","85","ok"]');
     expect(Object.values(db.store).find((v) => v.kind === 'columns')).toMatchObject({ headers: 3, mapped: 2 });
   });
 
@@ -529,7 +535,7 @@ const webhookReq = (payload, signature) => {
 const waMsg = (id, extra) => ({ id, from: PHONE, ts: 1761332700 + Number(String(id).replace(/\D/g, '') || 0), type: 'text', ...extra });
 const event = (msg) => ({ data: { data: () => msg } });
 
-// Red simulada: Graph API (envíos y media), descarga de media, OpenAI.
+// Red simulada: Graph API (envíos y media), descarga de media, Whisper y la IA.
 function mockWaNet(aiPayload) {
   const sent = [];
   const seen = { sent, ai: null, transcriptions: 0 };
@@ -541,9 +547,9 @@ function mockWaNet(aiPayload) {
     if (u === 'https://lookaside.fbsbx.com/img') return new Response(Buffer.alloc(30000, 1), { status: 200 });
     if (u === 'https://lookaside.fbsbx.com/aud') return new Response(Buffer.alloc(5000, 2), { status: 200 });
     if (u === 'https://api.openai.com/v1/audio/transcriptions') { seen.transcriptions++; return new Response(JSON.stringify({ text: 'tiene dos dormitorios y cochera' }), { status: 200 }); }
-    if (u === 'https://api.openai.com/v1/chat/completions') {
+    if (u === CLAUDE_URL) {
       seen.ai = JSON.parse(init.body);
-      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(aiPayload || { inmuebles: [] }) } }] }), { status: 200 });
+      return claude(aiPayload || { inmuebles: [] });
     }
     return new Response('not found', { status: 404 });
   };
@@ -623,7 +629,7 @@ test.describe('Bot de WhatsApp', () => {
 
     await waProcess(event(waMsg('m4', { text: 'LISTO' })));
     expect(net.transcriptions).toBe(1);
-    const user = net.ai.messages[1].content;
+    const user = net.ai.messages[0].content;
     expect(user).toContain('Corredor: Vendo depa en Lince 70 m2 US$ 120 mil');
     expect(user).toContain('Corredor: Sala [FOTO w-1]');
     expect(user).toContain('(nota de voz) tiene dos dormitorios y cochera');
@@ -713,11 +719,11 @@ test.describe('Fase 2: perfil de portal e imágenes sueltas', () => {
 
   test('imágenes sueltas (flyers): documento con páginas escaneadas', async () => {
     const { extract, db } = loadHandlers();
-    const calls = mockOpenAI({ inmuebles: [aiItem({ tipo_propiedad: 'Lote', area_terreno: '500', precio: 'US$ 90,000', fotos: [],
+    const calls = mockAI({ inmuebles: [aiItem({ tipo_propiedad: 'Lote', area_terreno: '500', precio: 'US$ 90,000', fotos: [],
       evidencia: 'TERRENO EN VENTA Lote de 500 m2 Precio US$ 90,000' })] });
     const res = await extract(req('u1', { kind: 'document', fileType: 'imagenes', text: '=== Imagen 1: flyer.jpg (ver imagen) ===',
       images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(100) }], photoIds: [] }));
-    expect(calls[0].messages[1].content[2].type).toBe('image_url');
+    expect(calls[0].messages[0].content[2].type).toBe('image');
     expect([res.drafts[0].row.area_terreno, res.drafts[0].row.precio]).toEqual(['500', '90000']); // vienen de la transcripción
     expect(Object.values(db.store).find((v) => v.status === 'draft')).toMatchObject({ source: 'documento', fileType: 'imagenes' });
   });

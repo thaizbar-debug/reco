@@ -8,8 +8,8 @@ const f = (indice, ambiente, calidad, extra) => ({ indice, ambiente, calidad, ma
 
 console.log('  content');
 const c = P.content(['data:image/jpeg;base64,AA', 'data:image/jpeg;base64,BB']);
-assert.strictEqual(c.filter((x) => x.type === 'image_url').length, 2);
-assert.ok(c.every((x) => x.type !== 'image_url' || x.image_url.detail === 'low'));
+assert.strictEqual(c.filter((x) => x.type === 'image').length, 2);
+assert.ok(c.every((x) => x.type !== 'image' || /^data:image\//.test(x.dataUrl)));
 assert.strictEqual(c[3].text, 'Foto 1:');
 
 console.log('  normalizar: portada de la IA y orden por ambientes');

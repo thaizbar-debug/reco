@@ -57,7 +57,7 @@ function content(dataUrls) {
   const out = [{ type: 'text', text: `${dataUrls.length} foto(s) del mismo inmueble:` }];
   dataUrls.forEach((u, i) => {
     out.push({ type: 'text', text: `Foto ${i}:` });
-    out.push({ type: 'image_url', image_url: { url: u, detail: 'low' } });
+    out.push({ type: 'image', dataUrl: u });
   });
   return out;
 }

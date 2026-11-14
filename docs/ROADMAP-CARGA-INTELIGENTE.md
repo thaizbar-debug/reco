@@ -90,7 +90,7 @@ Prioridad = impacto en número de corredores × facilidad técnica.
 | # | Dónde quedó |
 |---|---|
 | 0.1 | `firestore.rules` → `/importDrafts` (solo el dueño; el cliente solo crea borradores `excel`/`csv`, los de IA los escribe el servidor), `/importUsage`, `/importEvents`. TTL sobre `expiresAt` en `firestore.indexes.json`. |
-| 0.2 | `functions/index.js` → `extractListings` (`kind: 'text'`, canal `text`/`whatsapp`). Salida estructurada estricta (`gpt-4o-mini`, temperatura 0) + `guardInvented` + `normalizeRow`. Límite de 30 llamadas/hora y 50 inmuebles por llamada. |
+| 0.2 | `functions/index.js` → `extractListings` (`kind: 'text'`, canal `text`/`whatsapp`). Salida estructurada (Claude Haiku 5.5 y, si falla, Claude Sonnet 5.5 en la misma llamada; ver `docs/IA.md`) + `guardInvented` + `normalizeRow`. Límite de 30 llamadas/hora y 50 inmuebles por llamada. |
 | 0.3 | `functions/shared/import-core.js` → módulo único que usan el navegador (`window.RecoImport`) y el servidor. Incluye `RESO_MAP` y limpieza de teléfonos y correos. Los campos de opciones cerradas (tipo, operación, moneda, estado, antigüedad, sí/no; sinónimos y abreviaturas) se delegan en `functions/shared/catalogo.js`. Tests: `cd functions && npm test`. |
 | 0.4 | `index.html` → la carga masiva normaliza todas las filas, las guarda como borradores, muestra "Retomar / Descartar", resalta los campos de IA (borde punteado) y avisa de duplicados. `publishProperty` borra el borrador en la misma transacción en que publica. |
 | 0.5 | `importEvents` (por extracción: canal, caracteres, inmuebles, ms) y, en cada publicación importada, `importChannel`, `importAiFields`, `importEdits` y `fingerprint`. |

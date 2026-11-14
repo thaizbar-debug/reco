@@ -7,7 +7,7 @@ const { test, expect } = require('@playwright/test');
 const dns = require('dns');
 const fs = require('fs');
 const path = require('path');
-const { loadFunctions, req, mockFetch, jpeg } = require('./helpers/mock-functions');
+const { loadFunctions, req, mockFetch, jpeg, claude, CLAUDE_URL } = require('./helpers/mock-functions');
 
 const FIX = (f) => fs.readFileSync(path.join(__dirname, 'fixtures', 'redes', f), 'utf8');
 const html = (s, status) => new Response(s, { status: status || 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
@@ -21,9 +21,9 @@ function aiItem(over) {
   R.AI_FIELDS.forEach((k) => { it[k] = null; });
   return Object.assign(it, { campos_inferidos: [], fotos: [], evidencia: '' }, over);
 }
-// OpenAI simulado: chat (extracción) y Whisper (transcripción).
+// IA simulada (Claude) y Whisper (transcripción).
 const ai = (calls, item, transcript) => [
-  ['https://api.openai.com/v1/chat/completions', (u, init) => { calls.chat.push(JSON.parse(init.body)); return json({ choices: [{ message: { content: JSON.stringify({ inmuebles: item ? [aiItem(item)] : [] }) } }] }); }],
+  [CLAUDE_URL, (u, init) => { calls.chat.push(JSON.parse(init.body)); return claude({ inmuebles: item ? [aiItem(item)] : [] }); }],
   ['https://api.openai.com/v1/audio/transcriptions', (u, init) => { calls.whisper.push(init.body); return json({ text: transcript || '' }); }],
 ];
 
@@ -51,7 +51,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
     const res = await F.exports.importListingPage.__handler(req('u1', { ...ok, url: 'https://www.facebook.com/share/1Cemg2hZ7V/?mibextid=wwXIfr' }));
     const embed = net.find((c) => c.url.startsWith('https://www.facebook.com/plugins/post.php'));
     expect(decodeURIComponent(embed.url)).toContain(`href=${POST}&`); // sin mibextid
-    const sent = calls.chat[0].messages[1].content;
+    const sent = calls.chat[0].messages[0].content;
     expect(sent).toContain('147.78 m² techados + 68.59 m² de área libre');
     expect(sent).toContain('[FOTO u-1]');
     expect(sent).not.toContain('Me gusta');
@@ -62,7 +62,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
     expect(res.drafts[0].row.descripcion).not.toContain('932 559 809');
     expect(res.photos.map((p) => p.id)).toEqual(['u-1', 'u-2']);
     // El sistema de la IA trae las reglas nuevas.
-    const sys = calls.chat[0].messages[0].content;
+    const sys = calls.chat[0].system;
     expect(sys).toContain('"área libre", terraza, balcón, patio o jardín NO es area_terreno');
     expect(sys).toContain('Otros proyectos');
     expect(sys).toContain('baño de visita');
@@ -81,7 +81,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
     ]);
     const res = await F.exports.importListingPage.__handler(req('u1', { ...ok, url: 'https://www.instagram.com/p/DAbCdEfGh12/?igsh=abc' }));
     expect(calls.whisper).toHaveLength(1);
-    const sent = calls.chat[0].messages[1].content;
+    const sent = calls.chat[0].messages[0].content;
     expect(sent).toContain('VENDO DEPA EN MIRAFLORES');
     expect(sent).toContain('Lo que se dice en el video:\nEste departamento tiene cinco años');
     expect(sent).toContain('[FOTO u-3]');
@@ -102,7 +102,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
         area_techada: '250 m2', area_terreno: '300 m2', nro_dormitorios: '4', precio: 'US$ 520,000', titulo: 'Casa en La Molina', descripcion: 'x' }),
     ]);
     const res = await F.exports.importListingPage.__handler(req('u1', { ...ok, url: 'https://vm.tiktok.com/ZMabc123/' }));
-    expect(calls.chat[0].messages[1].content).toContain('Casa en La Molina 🏡 4 dorm');
+    expect(calls.chat[0].messages[0].content).toContain('Casa en La Molina 🏡 4 dorm');
     expect(res.drafts[0].row).toMatchObject({ area_terreno: '300', area_techada: '250', precio: '520000' });
     expect(res.photos).toHaveLength(1);
   });
@@ -145,7 +145,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
     ]);
     const imp = F.exports.importListingPage.__handler;
     const res = await imp(req('u1', { ...ok, url: 'https://tucaninversiones.com/balthazar/' }));
-    expect(calls.chat[0].messages[1].content).toContain('Departamentos de 2 y 3 dormitorios en Jesús María');
+    expect(calls.chat[0].messages[0].content).toContain('Departamentos de 2 y 3 dormitorios en Jesús María');
     expect(res.drafts[0].row).toMatchObject({ estado: 'En proyecto', tipo_moneda: 'PEN', precio: '389000' });
     expect(res.photos).toHaveLength(2); // fachada y sala; el logo no
     const lista = await imp(req('u1', { ...ok, url: 'https://tucaninversiones.com/proyectos/', modo: 'perfil' }));
@@ -167,9 +167,9 @@ test.describe('Video subido: imágenes del video + audio transcrito', () => {
       images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(200) }], photoIds: [], audio: { dataUrl: wav } }));
     expect(calls.whisper).toHaveLength(1);
     expect(calls.whisper[0].get('file').name).toBe('audio.wav');
-    const content = calls.chat[0].messages[1].content;
+    const content = calls.chat[0].messages[0].content;
     expect(content[0].text).toContain('Lo que se dice en el video:\nHola, alquilo este departamento en Lince de 70 metros');
-    expect(content.some((c) => c.type === 'image_url')).toBe(true);
+    expect(content.some((c) => c.type === 'image')).toBe(true);
     expect(res.drafts[0].row).toMatchObject({ distrito: 'Lince', area_techada: '70' });
     const draft = Object.values(F.db.store).find((v) => v.batchId === res.batchId);
     expect(draft.source).toBe('video');
@@ -256,13 +256,13 @@ test.describe('Conectar Facebook / Instagram y traer posts', () => {
     expect(draft[1]).toMatchObject({ source: 'redes', sourceName: 'Facebook · Inmobiliaria Sol', sourceUrl: 'https://www.facebook.com/111/posts/222', metaPostId: '111_222' });
     expect(draft[1].photoUrls).toHaveLength(2);
     expect(Object.keys(F.bucket.files).filter((p) => p.startsWith(`imports/u1/${draft[0].slice(13)}/`))).toHaveLength(2);
-    expect(calls.chat[0].messages[1].content).toContain('VENDO casa en Surco');
+    expect(calls.chat[0].messages[0].content).toContain('VENDO casa en Surco');
     expect((await mc(req('u1', { action: 'posts', red: 'facebook', id: '111' }))).posts[0].importado).toBe(true);
 
     // Instagram: el video del carrusel se transcribe.
     await mc(req('u1', { action: 'import', red: 'instagram', id: '178', postIds: ['17900000000000001'] }));
     expect(calls.whisper).toHaveLength(1);
-    expect(calls.chat[1].messages[1].content).toContain('Lo que se dice en el video:\nLa casa tiene jardín.');
+    expect(calls.chat[1].messages[0].content).toContain('Lo que se dice en el video:\nLa casa tiene jardín.');
 
     // Límite por hora: se detiene y lo informa.
     F.db.store['importUsage/u1'] = { hour: new Date().toISOString().slice(0, 13), count: 30 };
