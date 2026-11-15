@@ -1648,6 +1648,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .auth-switch{font-size:.82rem;color:var(--muted);text-align:center;margin-top:18px}
 .auth-switch a{color:var(--blue);font-weight:600;cursor:pointer;text-decoration:none}
 .auth-panel-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
+@media (max-width:480px){.pub-edit-txt{display:none}}
 </style>
 </head>
 <body>
@@ -6664,7 +6665,7 @@ function _pubFeatGroupHelp(k){
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
-  _ps=1;_pubTab='bulk'; // una sola entrada: ¿qué tienes? (o llenar a mano)
+  _ps=1;_pubTab='bulk';_pubEditRowIdx=-1; // una sola entrada: ¿qué tienes? (o llenar a mano)
   _pubTrack('inicio');
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
@@ -6702,7 +6703,9 @@ function renderPublish(){
       <h1 class="pub-title">Publicar inmuebles</h1>
       <p class="pub-subtitle">Uno o cien: trae lo que ya tienes y la IA arma las fichas.</p>
       ${_pubTab==='bulk'?_pubBulkHTML():`
-        <div style="margin:0 0 6px"><button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubSetTab('bulk')">← Otras formas de publicar</button></div>
+        <div style="margin:0 0 6px">${_pubEditRowIdx>=0
+          ?`<button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubBulkFullEditClose(${_pubEditRowIdx})">← Volver a la revisión sin guardar</button> <span style="font-size:12px;color:var(--muted);margin-left:6px">Editando ${esc(_pd.address||'inmueble '+(_pubEditRowIdx+1))} (${_pubEditRowIdx+1} de ${_pubBulkRows.length})</span>`
+          :`<button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubSetTab('bulk')">← Otras formas de publicar</button>`}</div>
         <div class="pub-stepper">
           <div class="pub-step ${_ps===1?'active':'done'}"><div class="circle">${_ps>1?'✓':'1'}</div><div class="label">Ubicación y datos</div></div>
           <div class="step-line ${_ps>1?'done':''}"></div>
@@ -6900,7 +6903,7 @@ function _rps(){
           <div style="font-size:1rem;font-weight:800;color:var(--blue);margin-top:8px">${_pd.currency==='PEN'?'S/':'$'} ${Number(_pd.price).toLocaleString()}</div>
           ${_pd.features.length>0?`<div style="margin-top:8px;font-size:11px;color:var(--muted)">${_pd.features.join(' · ')}</div>`:''}
         </div>
-        <div style="margin-top:16px;padding:14px;background:var(--light);border-radius:10px;border:1px solid var(--border)">
+        <div style="margin-top:16px;padding:14px;background:var(--light);border-radius:10px;border:1px solid var(--border);${_pubEditRowIdx>=0?'display:none':''}">
           <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${_PUB_COST>0?'Costo de publicación':'Publicación'}</div>
           <div style="display:flex;align-items:center;justify-content:space-between">
             ${_PUB_COST>0
@@ -6914,7 +6917,9 @@ function _rps(){
     </div>
     <div class="pub-actions">
       <button class="pub-btn ghost" onclick="_pb()">← Atrás</button>
-      <button class="pub-btn primary" onclick="_ppub()">Publicar ahora 🚀</button>
+      ${_pubEditRowIdx>=0
+        ?`<button class="pub-btn primary" onclick="_pubBulkFullEditSave()">✓ Guardar y volver a la revisión</button>`
+        :`<button class="pub-btn primary" onclick="_ppub()">Publicar ahora 🚀</button>`}
     </div>`;
   }
 }
@@ -8218,6 +8223,66 @@ function _pubBulkEdit(i,key,val){
   _pubDraftSync(a);
   _pubBulkRefresh();
 }
+// ── Editar un inmueble de la revisión con el formulario completo ──
+// Se abre el mismo formulario de "llenarlo a mano" con los datos de la fila
+// (incluidas etiquetas y fotos); al guardar, vuelve a la revisión.
+let _pubEditRowIdx=-1;
+function _pubBulkFullEdit(i){
+  const a=_pubBulkRows[i]; if(!a) return;
+  if(pubMap){ try{ pubMap.remove(); }catch(_){} pubMap=null; pubMarker=null; }
+  const d=_pubBulkRowToPubData(a.row);
+  const nivel=/^(Dúplex|Tríplex|\d+ niveles)$/;
+  _pd={ ...d, price:d.price||'', area:d.area||'', areaTerr:d.areaTerr||'',
+    features:(d.features||[]).filter(f=>!nivel.test(f)), photos:(a.photos||[]).slice() };
+  delete _pd.source;
+  if(a._iaOrden) _pd._iaOrden=true;
+  _pubEditRowIdx=i; _ps=1; _pubTab='single';
+  renderPublish();
+  const m=document.getElementById('pubModal'); if(m) try{ m.scrollTop=0; }catch(_){}
+}
+// _pd (formulario) → fila de la carga (mismas columnas que la plantilla).
+function _pubPdToBulkRow(pd,prev){
+  const num=(v)=>{ const n=Number(v); return n>0?String(n):''; };
+  const cnt=(v)=>String(Math.max(0,Number(v)||0));
+  const si=(b)=>b?'Sí':'No';
+  const feats=(pd.features||[]);
+  const grupo=(lista)=>feats.filter(f=>lista.includes(f)).join('; ');
+  const r={ ...(prev||{}),
+    direccion:String(pd.address||'').trim(), distrito:String(pd.district||'').trim(),
+    latitud:pd.lat!=null?String(pd.lat):'', longitud:pd.lng!=null?String(pd.lng):'',
+    mostrar_direccion:pd.hideExact?'No':'Sí',
+    tipo_propiedad:pd.type, tipo_publicacion:pd.op, tipo_moneda:pd.currency,
+    precio:num(pd.price), area_techada:num(pd.area), area_terreno:num(pd.areaTerr),
+    nro_dormitorios:cnt(pd.beds), nro_banos:cnt(pd.baths), nro_estacionamientos:cnt(pd.parking),
+    piso:cnt(pd.floor), niveles:String(Math.max(1,Number(pd.unitFloors)||1)), nro_pisos:cnt(pd.floors),
+    estado:pd.estado||'', antiguedad:_pubSinAntiguedad(pd.estado)?'0':cnt(pd.age),
+    ascensor:si(pd.ascensor), amoblado:si(pd.amoblado), pet_friendly:si(pd.petFriendly),
+    etiquetas_generales:grupo(_PUB_FEATS_GEN), etiquetas_ambientes:grupo(_PUB_FEATS_AMB),
+    etiquetas_vista:grupo(_PUB_FEATS_VISTA), etiquetas_acceso:grupo(_PUB_FEATS_ACCESO), etiquetas_zonas:grupo(_PUB_FEATS_ZONA),
+    titulo:String(pd.title||'').trim(), descripcion:String(pd.desc||'').trim() };
+  return r;
+}
+function _pubBulkFullEditSave(){
+  const i=_pubEditRowIdx, a=_pubBulkRows[i];
+  if(!a){ _pubBulkFullEditClose(); return; }
+  const antes=a.row;
+  a.row=_pubBulkStandardize(_pubPdToBulkRow(_pd,antes)).row;
+  if(!a.edited) a.edited={};
+  Object.keys(a.row).forEach(k=>{ if(String(a.row[k]??'')!==String(antes[k]??'')) a.edited[k]=1; });
+  a.photos=(_pd.photos||[]).slice();
+  if(_pd._iaOrden) a._iaOrden=true;
+  const v=_pubBulkValidateRow(a.row);
+  a.valid=v.valid; a.errors=v.errors; a.warnings=(a.stdNotes||[]).concat(v.warnings||[]);
+  _pubDraftSync(a);
+  toast(a.valid?'✅ Cambios guardados':'⚠️ Guardado: aún falta corregir algo');
+  _pubBulkFullEditClose(i);
+}
+function _pubBulkFullEditClose(abrir){
+  if(pubMap){ try{ pubMap.remove(); }catch(_){} pubMap=null; pubMarker=null; }
+  _pubEditRowIdx=-1; _pubTab='bulk'; _pubBulkStep=2;
+  _pubBulkPhotoIdx=(abrir!=null && _pubBulkRows[abrir])?abrir:-1;
+  renderPublish();
+}
 function _pubBulkRemoveRow(i){
   const gone=_pubBulkRows.splice(i,1)[0];
   if(_pubBulkPhotoIdx===i) _pubBulkPhotoIdx=-1; else if(_pubBulkPhotoIdx>i) _pubBulkPhotoIdx--;
@@ -8305,6 +8370,7 @@ function _pubBulkCardHTML(a,i){
         <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(resumen)}</div>
         <div style="font-size:11px;margin-top:2px">${estado} · 📷 ${fotos.length} foto${fotos.length!==1?'s':''}${a.dupe?' · <span style="color:#b08000">⧉ Repetido</span>':''}</div>
       </div>
+      <button onclick="event.stopPropagation();_pubBulkFullEdit(${i})" class="pub-btn ghost" title="Abrir el formulario completo: mapa, ambientes, pisos, etiquetas y fotos" aria-label="Editar" style="font-size:12px;padding:5px 10px;flex:0 0 auto">✏️<span class="pub-edit-txt"> Editar</span></button>
       <button onclick="event.stopPropagation();_pubBulkRemoveRow(${i})" title="Quitar este inmueble" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px">✕</button>
       <span style="color:var(--muted);font-size:12px">${abierta?'▲':'▼'}</span>
     </div>`;
@@ -8329,7 +8395,9 @@ function _pubBulkCardHTML(a,i){
     ${fotos.length||_pubPoolLibres(a).length?`<div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',fotos)}${_pubPoolTilesHTML(a)}</div>`:''}
     ${_pubPoolLibres(a).length?`<div style="font-size:11px;color:var(--muted);margin-top:4px">Las fotos con ＋ son de tus archivos y enlaces: tócalas para agregarlas.</div>`:''}
     ${fotos.length?_pubPhotoAdviceHTML(fotos):''}
-    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkToggle(${i})">Listo ✓</button></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkFullEdit(${i})" title="Mapa, dormitorios, baños, pisos, estado, etiquetas y fotos">✏️ Más detalles y etiquetas</button>
+      <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkToggle(${i})">Listo ✓</button></div>
   </div>`;
 }
 // Abre (o cierra) la tarjeta de un inmueble. Al abrir una con 2+ fotos que la

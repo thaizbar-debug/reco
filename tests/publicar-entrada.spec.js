@@ -138,3 +138,54 @@ test.describe('Publicar: una sola entrada', () => {
     expect(html).toContain('portal.pe (2)');
   });
 });
+
+test.describe('Revisar y publicar: editar con el formulario completo', () => {
+  test.beforeEach(async ({ page }) => { await setupImportPage(page); });
+
+  test('abre el formulario a mano con los datos, etiquetas y fotos de la fila; al guardar vuelve a la revisión', async ({ page }) => {
+    await page.evaluate(() => {
+      const base = { distrito: 'Miraflores', tipo_propiedad: 'Departamento', tipo_publicacion: 'Venta', tipo_moneda: 'USD', titulo: 'Depa', descripcion: 'Bonito' };
+      _pubBulkFileName = 'x.xlsx';
+      _pubBulkLoadRows([{ ...base, direccion: 'Av. Pardo 340', precio: '185000', area_techada: '90', nro_dormitorios: '3', niveles: '2',
+        etiquetas_generales: 'Balcón', etiquetas_vista: 'Vista al mar', ascensor: 'Sí' },
+        { ...base, direccion: 'Jr. Huiracocha 1200', precio: '120000', area_techada: '70' }]);
+      _pubBulkRows[0].photos = ['data:image/jpeg;base64,AAAA'];
+    });
+    await page.locator('#pubModal button', { hasText: '✏️ Editar' }).first().click();
+    const pd = await page.evaluate(() => ({ tab: _pubTab, ps: _ps, address: _pd.address, beds: _pd.beds, unitFloors: _pd.unitFloors,
+      ascensor: _pd.ascensor, features: _pd.features, photos: _pd.photos.length }));
+    expect(pd).toEqual({ tab: 'single', ps: 1, address: 'Av. Pardo 340', beds: 3, unitFloors: 2, ascensor: true,
+      features: ['Balcón', 'Vista al mar'], photos: 1 });
+    await expect(page.locator('#pubModal')).toContainText('Volver a la revisión sin guardar');
+    await expect(page.locator('#pubModal')).toContainText('1 de 2');
+
+    // Cambios en el formulario completo: más etiquetas, baños, estacionamiento y otra foto.
+    await page.evaluate(() => { _pd.features.push('Vista a parque', 'Avenida'); _pd.baths = 2; _pd.parking = 1; _pd.photos.push('data:image/jpeg;base64,BBBB'); _ps = 2; renderPublish(); });
+    await expect(page.locator('#pubModal')).not.toContainText('Publicar ahora');
+    await page.locator('#pubModal button', { hasText: 'Guardar y volver a la revisión' }).click();
+    const r = await page.evaluate(() => ({ tab: _pubTab, step: _pubBulkStep, abierta: _pubBulkPhotoIdx, row: _pubBulkRows[0].row,
+      edited: Object.keys(_pubBulkRows[0].edited).sort(), photos: _pubBulkRows[0].photos.length, valid: _pubBulkRows[0].valid,
+      payload: _pubBulkSubmitPayload(_pubBulkRows[0]), otra: _pubBulkRows[1].row.direccion }));
+    expect([r.tab, r.step, r.abierta, r.photos, r.valid]).toEqual(['bulk', 2, 0, 2, true]);
+    expect(r.row.etiquetas_vista).toBe('Vista al mar; Vista a parque');
+    expect(r.row.etiquetas_acceso).toBe('Avenida');
+    expect(r.row.nro_banos).toBe('2');
+    expect(r.edited).toEqual(expect.arrayContaining(['etiquetas_acceso', 'etiquetas_vista', 'nro_banos', 'nro_estacionamientos']));
+    expect(r.edited).not.toContain('direccion');
+    expect(r.payload.features).toEqual(expect.arrayContaining(['Balcón', 'Vista al mar', 'Vista a parque', 'Avenida', 'Dúplex']));
+    expect([r.payload.baths, r.payload.parking, r.payload.unitFloors, r.payload.ascensor]).toEqual([2, 1, 2, true]);
+    expect(r.otra).toBe('Jr. Huiracocha 1200');
+  });
+
+  test('volver sin guardar no cambia la fila', async ({ page }) => {
+    const r = await page.evaluate(() => {
+      _pubBulkFileName = 'x.xlsx';
+      _pubBulkLoadRows([{ direccion: 'A 1', distrito: 'Lince', tipo_propiedad: 'Casa', tipo_publicacion: 'Venta', precio: '1', area_techada: '90', titulo: 't', descripcion: 'd' }]);
+      _pubBulkFullEdit(0);
+      _pd.address = 'Otra dirección'; _pd.beds = 5;
+      _pubBulkFullEditClose(0);
+      return { tab: _pubTab, dir: _pubBulkRows[0].row.direccion, edited: _pubBulkRows[0].edited };
+    });
+    expect(r).toEqual({ tab: 'bulk', dir: 'A 1', edited: {} });
+  });
+});
