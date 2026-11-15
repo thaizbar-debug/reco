@@ -1648,7 +1648,7 @@ body.show-user > .search-hero,body.show-user > .app-body{display:none !important
 .auth-switch{font-size:.82rem;color:var(--muted);text-align:center;margin-top:18px}
 .auth-switch a{color:var(--blue);font-weight:600;cursor:pointer;text-decoration:none}
 .auth-panel-sub{font-size:.83rem;color:var(--muted);margin-bottom:18px;line-height:1.5}
-@media (max-width:480px){.pub-edit-txt{display:none}}
+@media (max-width:480px){.pub-edit-txt{display:none}.pub-card-thumb{width:48px!important;height:48px!important;flex-basis:48px!important}.pub-bulk-card{padding:10px!important}}
 </style>
 </head>
 <body>
@@ -6704,7 +6704,7 @@ function renderPublish(){
       <p class="pub-subtitle">Uno o cien: trae lo que ya tienes y la IA arma las fichas.</p>
       ${_pubTab==='bulk'?_pubBulkHTML():`
         <div style="margin:0 0 6px">${_pubEditRowIdx>=0
-          ?`<button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubBulkFullEditClose(${_pubEditRowIdx})">← Volver a la revisión sin guardar</button> <span style="font-size:12px;color:var(--muted);margin-left:6px">Editando ${esc(_pd.address||'inmueble '+(_pubEditRowIdx+1))} (${_pubEditRowIdx+1} de ${_pubBulkRows.length})</span>`
+          ?`<button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubBulkFullEditClose(${_pubEditRowIdx})">← Volver a la revisión sin guardar</button> <div style="font-size:12px;color:var(--muted);margin-top:6px">✏️ Editando <strong>${esc(_pd.address||'inmueble '+(_pubEditRowIdx+1))}</strong> · ${_pubEditRowIdx+1} de ${_pubBulkRows.length}</div>`
           :`<button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubSetTab('bulk')">← Otras formas de publicar</button>`}</div>
         <div class="pub-stepper">
           <div class="pub-step ${_ps===1?'active':'done'}"><div class="circle">${_ps>1?'✓':'1'}</div><div class="label">Ubicación y datos</div></div>
@@ -8364,11 +8364,11 @@ function _pubBulkCardHTML(a,i){
   const estado=a.valid?'<span style="color:var(--green);font-weight:600">✓ Lista</span>':`<span style="color:var(--red);font-weight:600">✗ ${a.errors.length} por corregir</span>`;
   const portada=fotos[0]?`<img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:22px">📷</span>';
   const head=`<div style="display:flex;gap:10px;align-items:center;cursor:pointer" onclick="_pubBulkToggle(${i})">
-      <div style="width:64px;height:64px;flex:0 0 64px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center">${portada}</div>
+      <div class="pub-card-thumb" style="width:64px;height:64px;flex:0 0 64px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center">${portada}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.direccion||r.titulo||'Inmueble '+(i+1))}</div>
         <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(resumen)}</div>
-        <div style="font-size:11px;margin-top:2px">${estado} · 📷 ${fotos.length} foto${fotos.length!==1?'s':''}${a.dupe?' · <span style="color:#b08000">⧉ Repetido</span>':''}</div>
+        <div style="font-size:11px;margin-top:2px">${estado} · <span style="white-space:nowrap">📷 ${fotos.length}<span class="pub-edit-txt"> foto${fotos.length!==1?'s':''}</span></span>${a.dupe?' · <span style="color:#b08000">⧉ Repetido</span>':''}</div>
       </div>
       <button onclick="event.stopPropagation();_pubBulkFullEdit(${i})" class="pub-btn ghost" title="Abrir el formulario completo: mapa, ambientes, pisos, etiquetas y fotos" aria-label="Editar" style="font-size:12px;padding:5px 10px;flex:0 0 auto">✏️<span class="pub-edit-txt"> Editar</span></button>
       <button onclick="event.stopPropagation();_pubBulkRemoveRow(${i})" title="Quitar este inmueble" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px">✕</button>
@@ -8388,7 +8388,7 @@ function _pubBulkCardHTML(a,i){
     ${a.valid?'':`<div style="margin-top:10px;padding:8px 10px;background:#fff1f1;border-radius:8px;font-size:12px;color:var(--red)">${a.errors.map(e=>`• ${esc(e)}`).join('<br>')}</div>`}
     ${(a.warnings||[]).length?`<div style="margin-top:6px;font-size:11px;color:#7a5a00">⚠ ${esc(a.warnings.join(' · '))}</div>`:''}
     ${(a.notes||[]).length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">ℹ ${esc(a.notes.join(' · '))}</div>`:''}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px">${_PUB_BULK_EDIT_COLS.map(campo).join('')}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px;margin-top:10px">${_PUB_BULK_EDIT_COLS.map(campo).join('')}</div>
     <div style="font-size:13px;font-weight:700;margin-top:14px">📸 Fotos</div>
     ${_pubBulkUploaderHTML(a)}
     ${_pubPhotoToolsHTML('bulk')}
