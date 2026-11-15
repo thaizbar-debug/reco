@@ -6858,8 +6858,9 @@ function _rps(){
           ondragleave="this.classList.remove('drag')"
           ondrop="_pubDropPhotos(event,_pubHandleFiles)">
           <div class="dz-icon">📷</div>
-          <div class="dz-lbl">Arrastra fotos, una carpeta o un ZIP</div>
-          <div class="dz-sub">o haz clic para elegirlas · mínimo 3, máximo ${_PUB_MAX_PHOTOS} · la primera es la portada</div>
+          <div class="dz-lbl">Arrastra aquí las fotos</div>
+          <div class="dz-sub">mínimo 3, máximo ${_PUB_MAX_PHOTOS} · la primera es la portada</div>
+          ${_pubPhotoSourcesHTML('pd')}
         </label>
         <input type="file" id="pubFileInput" accept="${_PUB_PHOTO_ACCEPT}" multiple style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubHandleFiles(this.files)">
         <div class="pub-photos" id="pubPhotoPreview" style="margin-top:12px">${_pubPhotoStripHTML('pd',_pd.photos)}</div>
@@ -7218,10 +7219,13 @@ function _pubDropPhotos(ev,fn){
   if(ev.currentTarget) ev.currentTarget.classList.remove('drag');
   _pubDroppedFiles(ev.dataTransfer).then(fn);
 }
+// Elegir fotos sueltas o un ZIP y pasarlos a fn.
+function _pubPickFiles(fn){ _pubPickFolder(fn,true); }
 // Elegir una carpeta entera (con sus subcarpetas) y pasarla a fn.
-function _pubPickFolder(fn){
+function _pubPickFolder(fn,sueltas){
   const inp=document.createElement('input');
-  inp.type='file'; inp.multiple=true; inp.setAttribute('webkitdirectory',''); inp.setAttribute('directory','');
+  inp.type='file'; inp.multiple=true;
+  if(sueltas) inp.accept=_PUB_PHOTO_ACCEPT; else { inp.setAttribute('webkitdirectory',''); inp.setAttribute('directory',''); }
   inp.style.cssText='position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
   inp.onchange=()=>{ const files=Array.from(inp.files||[]); inp.remove(); fn(files); };
   document.body.appendChild(inp);
@@ -7290,8 +7294,11 @@ function _pubPeRender(){
     <div class="pub-photos" id="pubPePhotos">${_pubPhotoStripHTML('pe',_pe.photos)}</div>
     ${_pubPhotoAdviceHTML(_pe.photos)}
     ${_pubPhotoToolsHTML('pe')}
-    <label class="pub-btn ghost" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:10px;cursor:pointer">+ Agregar fotos
-      <input type="file" accept="${_PUB_PHOTO_ACCEPT}" multiple style="display:none" onchange="_pubPeAdd(this.files);this.value=''"></label>
+    <div style="margin-top:12px;padding:12px;border:2px dashed var(--border);border-radius:10px;text-align:center"
+      ondragover="event.preventDefault()" ondrop="_pubDropPhotos(event,_pubPeAdd)">
+      <div style="font-size:13px;font-weight:600">+ Agregar fotos</div>
+      ${_pubPhotoSourcesHTML('pe')}
+    </div>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button class="pub-btn primary" id="pubPeSave" ${_pe.guardando?'disabled':''} onclick="_pubPeSave()">${_pe.guardando?'Guardando…':`Guardar${nuevas?` (${nuevas} nueva${nuevas!==1?'s':''})`:''}`}</button>
     </div></div>`;
@@ -7421,14 +7428,24 @@ async function _pubPhotoAiRun(ns){
     _pubPhotoAiBusy=null; _pubPhotoRefresh(ns);
   }
 }
-// Botones bajo la tira de fotos: Google Drive y ordenar con IA.
+// Las tres formas de traer fotos, siempre juntas y con el mismo nombre:
+// fotos sueltas (o un ZIP), una carpeta de la computadora y Google Drive.
+// Van dentro de la zona de fotos (por eso no propagan el clic).
+function _pubPhotoSourcesHTML(ns){
+  const b='flex:1 1 140px;font-size:12px;padding:8px 10px';
+  const no='event.preventDefault();event.stopPropagation();';
+  return `<div class="pub-photo-sources" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;width:100%;max-width:520px;margin-left:auto;margin-right:auto">
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFiles(f=>_pubDriveAdd('${ns}',f))" title="Fotos sueltas o un ZIP de tu computadora o celular">🖼️ Elegir fotos</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFolder(f=>_pubDriveAdd('${ns}',f))" title="Todas las fotos de una carpeta de tu computadora">📂 Elegir carpeta</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubDriveOpen('${ns}')" title="Pega el enlace de una carpeta compartida de Google Drive">☁️ Google Drive</button>
+  </div>`;
+}
+// Bajo la tira de fotos: ordenar con IA (con 2 fotos o más).
 function _pubPhotoToolsHTML(ns){
   const n=_pubPhotoListOf(ns).length;
-  const b='font-size:11px;padding:5px 10px';
+  if(!_AI_COPY_ENABLED || n<2) return '';
   return `<div class="pub-photo-tools" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(f=>_pubDriveAdd('${ns}',f))" title="Elige una carpeta de tu computadora">📂 Carpeta</button>
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('${ns}')">📁 Google Drive</button>
-    ${_AI_COPY_ENABLED&&n>1?`<button type="button" class="pub-btn ghost" style="${b}" ${_pubPhotoAiBusy?'disabled':''} onclick="_pubPhotoAiRun('${ns}')" title="Elige la portada, ordena por ambientes y avisa de marcas de agua">${_pubPhotoAiBusy===ns?'✨ Revisando fotos…':'✨ Ordenar con IA'}</button>`:''}
+    <button type="button" class="pub-btn ghost" style="font-size:11px;padding:5px 10px" ${_pubPhotoAiBusy?'disabled':''} onclick="_pubPhotoAiRun('${ns}')" title="Elige la portada, ordena por ambientes y avisa de marcas de agua">${_pubPhotoAiBusy===ns?'✨ Revisando fotos…':'✨ Ordenar con IA'}</button>
   </div>`;
 }
 
@@ -7599,15 +7616,19 @@ function _pubDriveRender(){
   const r=_drv.res, ocupado=!!_drv.estado;
   const elegir=r && !ocupado && _drv.ns!=='batch' && r.carpetas.length;
   ov.innerHTML=`<div class="us-card" style="width:100%;max-width:560px;margin:0">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:1.05rem">📁 Fotos desde Google Drive</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:1.05rem">☁️ Traer fotos de Google Drive</div>
       <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" ${ocupado?'disabled':''} onclick="_pubDriveClose()">Cerrar</button></div>
-    <div style="font-size:.8rem;color:var(--muted);margin:6px 0 10px;line-height:1.5">Pega el enlace de la carpeta (o de una foto). En Drive: <b>Compartir → Acceso general → Cualquier persona con el enlace</b> → Copiar enlace.
-      ${_drv.ns==='batch'?'<br>Si la carpeta tiene <b>una subcarpeta por inmueble</b>, armamos un grupo con cada una.':''}</div>
+    <ol style="font-size:.82rem;line-height:1.6;margin:8px 0 10px;padding-left:20px">
+      <li>En Google Drive, clic derecho en la carpeta${_drv.ns==='batch'?' (la que tiene una subcarpeta por inmueble)':' de este inmueble'} → <b>Compartir</b>.</li>
+      <li>En "Acceso general" elige <b>Cualquier persona con el enlace</b> y toca <b>Copiar enlace</b>.</li>
+      <li>Pégalo aquí:</li>
+    </ol>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <input id="pubDriveLink" type="url" placeholder="https://drive.google.com/drive/folders/…" value="${esc(_drv.link)}" ${ocupado?'disabled':''}
         onkeydown="if(event.key==='Enter')_pubDriveLink()" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px">
       <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" ${ocupado?'disabled':''} onclick="_pubDriveLink()">Traer fotos</button>
     </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px">Copiamos las fotos a ReCo; tu carpeta no cambia.</div>
     ${_GOOGLE_DRIVE.clientId?`<div style="text-align:center;font-size:11px;color:var(--muted);margin:10px 0 6px">o, si la carpeta no está compartida</div>
       <button class="pub-btn ghost" style="width:100%;font-size:12px;padding:8px" ${ocupado?'disabled':''} onclick="_pubDrivePick()">Elegir fotos de mi Google Drive</button>`:''}
     <div id="pubDriveStatus" style="font-size:12px;margin-top:10px;color:${_drv.error?'var(--red)':'var(--muted)'}">${esc(_drv.error||_drv.estado)}</div>
@@ -8411,16 +8432,18 @@ function _pubPhotoBatchHTML(rows){
   if(!_pubPhotoGroups.length){
     // Con un solo inmueble basta la zona de fotos de abajo.
     if(rows.length<2) return input;
-    const ayuda='Sube las fotos de todos tus inmuebles juntas (fotos sueltas, una carpeta, un ZIP o Google Drive). Si vienen en una subcarpeta por inmueble, cada subcarpeta va a su inmueble; si no, las agrupamos por fecha y lugar. Después revisas y confirmas.';
-    const b='font-size:12px;padding:6px 12px';
-    return `${input}<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:10px;background:#fff"
+    const ayuda='Ordena las fotos en una carpeta con una subcarpeta por inmueble, por ejemplo "Fotos/Av. Pardo 340" y "Fotos/Jr. Huiracocha 1200", y súbela entera (desde tu computadora, como ZIP o desde Google Drive). Cada subcarpeta se asigna sola al inmueble con el nombre más parecido. Si las fotos no están en subcarpetas, las agrupamos por fecha y lugar. Siempre revisas antes de confirmar.';
+    const b='flex:1 1 140px;font-size:12px;padding:8px 10px';
+    return `${input}<div style="margin-top:10px;padding:12px;border:1px dashed var(--border);border-radius:10px;background:#fff"
         ondragover="event.preventDefault()" ondrop="_pubDropPhotos(event,_pubPhotoBatchFiles)">
-      <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600">📦 ¿Fotos de varios inmuebles juntas? ${_pubInfoHTML('pubLoteAyuda',ayuda)}</span>
-      <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
-        <button class="pub-btn ghost" style="${b}" onclick="document.getElementById('pubBatchInput').click()">Subir todas</button>
-        <button class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(_pubPhotoBatchFiles)">📂 Carpeta</button>
-        <button class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('batch')">📁 Google Drive</button>
-      </span></div>${_pubInfoBoxHTML('pubLoteAyuda',ayuda)}`;
+      <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600">📦 Fotos de todos tus inmuebles a la vez<span style="margin-left:auto"></span>${_pubInfoHTML('pubLoteAyuda',ayuda)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">Una subcarpeta por inmueble y cada una se asigna sola.</div>
+      ${_pubInfoBoxHTML('pubLoteAyuda',ayuda)}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        <button class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(_pubPhotoBatchFiles)" title="La carpeta con una subcarpeta por inmueble">📂 Elegir carpeta</button>
+        <button class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('batch')" title="Pega el enlace de la carpeta compartida">☁️ Google Drive</button>
+        <button class="pub-btn ghost" style="${b}" onclick="document.getElementById('pubBatchInput').click()" title="Un ZIP o muchas fotos sueltas">🗜️ ZIP o fotos</button>
+      </div></div>`;
   }
   const opts=sel=>`<option value="-1"${sel===-1?' selected':''}>— no asignar —</option>`+rows.map((r,i)=>`<option value="${i}"${sel===i?' selected':''}>${i+1}. ${esc(String(r.row.direccion||r.row.titulo||'').slice(0,40))}</option>`).join('');
   return `${input}<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
@@ -8463,8 +8486,9 @@ function _pubBulkPhotosHTML(){
       ondragleave="this.classList.remove('drag')"
       ondrop="_pubDropPhotos(event,_pubBulkPhotoFiles)">
       <div class="dz-icon">📷</div>
-      <div class="dz-lbl">Arrastra fotos, una carpeta o un ZIP</div>
-      <div class="dz-sub">o haz clic para elegirlas · hasta ${_PUB_BULK_PHOTO_MAX}</div>
+      <div class="dz-lbl">Arrastra aquí las fotos de este inmueble</div>
+      <div class="dz-sub">hasta ${_PUB_BULK_PHOTO_MAX} · también una carpeta o un ZIP</div>
+      ${_pubPhotoSourcesHTML('bulk')}
     </div>
     <input type="file" id="pubBulkPhotoInput" accept="${_PUB_PHOTO_ACCEPT}" multiple
       style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"

@@ -58,8 +58,9 @@ test.describe('Fotos con IA', () => {
         strip: _pubPhotoStripHTML('pd', _pd.photos), advice: _pubPhotoAdviceHTML(_pd.photos), toasts: __toasts.join(' | ') };
     });
     expect(r.tools).toContain('✨ Ordenar con IA');
-    expect(r.tools).toContain('📁 Google Drive');
-    expect(r.tools).toContain('📂 Carpeta');
+    const fuentes = await page.evaluate(() => _pubPhotoSourcesHTML('pd'));
+    expect(fuentes).toContain('☁️ Google Drive');
+    expect(fuentes).toContain('📂 Elegir carpeta');
     expect(r.orden).toEqual([2, 0, 1]);
     expect(r.dims.every((d) => d <= 512)).toBe(true); // a la IA va una copia chica
     expect(r.issues).toEqual([[], [], ['Marca de agua']]);
@@ -176,7 +177,7 @@ test.describe('Fotos desde Google Drive', () => {
       Object.assign(__drive.archivos, { FOTOHUI001: { name: 'a.jpg', mimeType: 'image/jpeg' }, FOTOHUI002: { name: 'b.jpg', mimeType: 'image/jpeg' },
         FOTOPAR001: { name: 'c.jpg', mimeType: 'image/jpeg' } });
     });
-    await page.locator('#pubModal button', { hasText: '📁 Google Drive' }).first().click();
+    await page.locator('#pubModal button', { hasText: '☁️ Google Drive' }).first().click();
     await expect(page.locator('#pubDriveOverlay')).toContainText('una subcarpeta por inmueble');
     await page.locator('#pubDriveLink').fill('https://drive.google.com/drive/folders/RAIZ000002');
     await page.locator('#pubDriveOverlay button', { hasText: 'Traer fotos' }).click();

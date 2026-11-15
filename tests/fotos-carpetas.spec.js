@@ -37,8 +37,10 @@ test.describe('Fotos desde la computadora', () => {
       return { n: _pubBulkCurrentRow().photos.length, html: document.getElementById('pubBulkStepBody').innerHTML };
     });
     expect(r.n).toBe(2);
-    expect(r.html).toContain('Arrastra fotos, una carpeta o un ZIP');
-    expect(r.html).toContain('📂 Carpeta');
+    expect(r.html).toContain('Arrastra aquí las fotos de este inmueble');
+    expect(r.html).toContain('🖼️ Elegir fotos');
+    expect(r.html).toContain('📂 Elegir carpeta');
+    expect(r.html).toContain('☁️ Google Drive');
     expect(r.html).not.toContain('Agrega las fotos, inmueble por inmueble');
   });
 
@@ -64,7 +66,7 @@ test.describe('Fotos desde la computadora', () => {
       await _pubPhotoBatchFiles([zip]);
       return { html, grupos: _pubPhotoGroups.map((g) => ({ nombre: g.nombre, n: g.photos.length, row: g.row })) };
     });
-    expect(r.html).toContain('¿Fotos de varios inmuebles juntas?');
+    expect(r.html).toContain('Fotos de todos tus inmuebles a la vez');
     expect(r.grupos).toEqual([
       { nombre: 'Huiracocha 1200', n: 2, row: 1 },
       { nombre: 'Pardo 340 Miraflores', n: 1, row: 0 },
@@ -79,7 +81,7 @@ test.describe('Fotos desde la computadora', () => {
       _pubBulkRefresh();
       return document.getElementById('pubBulkStepBody').innerHTML;
     });
-    expect(r).not.toContain('¿Fotos de varios inmuebles juntas?');
+    expect(r).not.toContain('Fotos de todos tus inmuebles a la vez');
     expect(r).toContain('📎 Fotos de tus archivos y enlaces (2)');
   });
 });
