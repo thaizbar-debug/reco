@@ -42,7 +42,7 @@ test.describe('Fotos con IA', () => {
 
   test('ordena con la portada propuesta, muestra ambientes y avisa de marcas de agua', async ({ page }) => {
     const r = await page.evaluate(async () => {
-      _pd.photos = [];
+      _pd.photos = []; _pd._iaOrden = true; // aquí se prueba el botón; el orden automático tiene su propia prueba
       await _pubHandleFiles([await __mkFoto('bano.jpg', 3), await __mkFoto('fachada.jpg', 5), await __mkFoto('sala.jpg', 9)]);
       const antes = _pd.photos.slice();
       __fn.analyzePhotos = (d) => ({
@@ -69,6 +69,19 @@ test.describe('Fotos con IA', () => {
     expect(r.advice).toContain('marca de agua de otro portal');
     expect(r.toasts).toContain('portada: sala');
     expect(r.toasts).toContain('1 con marca de agua');
+  });
+
+  test('a mano: con 3 fotos la IA las ordena sola, una vez y sin avisos de error', async ({ page }) => {
+    const r = await page.evaluate(async () => {
+      _pd.photos = []; delete _pd._iaOrden;
+      __fn.analyzePhotos = (d) => ({ fotos: d.photos.map(() => ({ ambiente: 'sala' })), portada: 2, orden: [2, 0, 1] });
+      await _pubHandleFiles([await __mkFoto('a.jpg', 3), await __mkFoto('b.jpg', 5), await __mkFoto('c.jpg', 9)]);
+      for (let i = 0; i < 50 && _pubPhotoAiBusy; i++) await new Promise((ok) => setTimeout(ok, 50));
+      await _pubHandleFiles([await __mkFoto('d.jpg', 11)]);
+      for (let i = 0; i < 50 && _pubPhotoAiBusy; i++) await new Promise((ok) => setTimeout(ok, 50));
+      return { veces: __calls.filter((c) => c.name === 'analyzePhotos').length, n: _pd.photos.length };
+    });
+    expect(r).toEqual({ veces: 1, n: 4 });
   });
 
   test('si la lista cambió mientras la IA revisaba, no se reordena; con 1 foto no aparece el botón', async ({ page }) => {

@@ -20,6 +20,7 @@ async function setup(page) {
     window.__fn = {}; // nombre → (data) => result
     window._getFunctions = () => ({
       httpsCallable: (name) => async (data) => {
+        if (name === 'trackPublish') { (window.__track = window.__track || []).push(data.paso); return { data: { ok: true } }; } // métricas aparte
         window.__calls.push({ name, data });
         if (!window.__fn[name]) return { data: {} };
         return { data: await window.__fn[name](data) };

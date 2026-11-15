@@ -6665,6 +6665,7 @@ function _pubFeatGroupHelp(k){
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
   _ps=1;_pubTab='bulk'; // una sola entrada: ¿qué tienes? (o llenar a mano)
+  _pubTrack('inicio');
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
@@ -6693,7 +6694,7 @@ function _pubSetEstado(v){
   if(_pubSinAntiguedad(v)){ _pd.age=0; if(inp){ inp.value=0; inp.disabled=true; } }
   else if(inp) inp.disabled=false;
 }
-function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
+function _pubSetTab(tab){if(tab==='single'&&_pubTab!=='single')_pubTrack('manual');_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubMarker=null;}renderPublish();}
 
 function renderPublish(){
   document.getElementById('vPublish').innerHTML=`<section class="pub-wrap">
@@ -7758,7 +7759,7 @@ function _pubAiPrompt(){
     parking: _pd.parking, features: _pd.features
   };
 }
-async function _pubAiCopy(){
+async function _pubAiCopy(auto){
   const btn = document.getElementById('pubAiBtn');
   const loading = document.getElementById('pubAiLoading');
   const errEl = document.getElementById('pubAiError');
@@ -7772,11 +7773,15 @@ async function _pubAiCopy(){
     const fn = _getFunctions().httpsCallable('generateListingCopy',{ timeout:_PUB_IA_TIMEOUT_MS });
     const res = await fn(_pubAiPrompt());
     _aiCopyLastResult = res.data;
+    // Automático: si siguen vacíos, se rellenan directo (editables).
+    if(auto===true && !String(_pd.title||'').trim() && !String(_pd.desc||'').trim()){
+      _pubAiApply(); toast('✨ La IA redactó el título y la descripción: revísalos.'); return;
+    }
     document.getElementById('pubAiOutTitle').textContent = res.data.titulo;
     document.getElementById('pubAiOutDesc').textContent = res.data.descripcion;
     if(outEl) outEl.style.display = '';
   } catch(e) {
-    if(errEl){ errEl.textContent = e.message || 'Error al generar texto'; errEl.style.display = ''; }
+    if(errEl && auto!==true){ errEl.textContent = e.message || 'Error al generar texto'; errEl.style.display = ''; }
   } finally {
     btn.disabled = false;
     if(loading) loading.style.display = 'none';
@@ -7813,6 +7818,7 @@ async function _pubHandleFiles(files){
   await _pubAddPhotoFiles(_pd.photos,fileArr,_PUB_MAX_PHOTOS,_pubRenderPhotos);
   _pubRenderPhotos();
   if(inp){ try{ inp.value=''; }catch(_){} }
+  if(!_pd._iaOrden && _pd.photos.length>=3) _pubPhotoAutoOrden('pd',_pd);
 }
 // Verificación previa a publicar (RecoCatalogo.verificarPublicacion), la
 // misma que aplica publishProperty. Paso 1: sin título ni descripción.
@@ -7825,6 +7831,7 @@ function _pn(){
   if(v.errores.length){toast('⚠️ Revisa: '+v.errores.join('; '));return;}
   if(v.avisos.length) toast('ℹ️ '+v.avisos.join(' '));
   _ps=2;renderPublish();
+  if(_AI_COPY_ENABLED && !String(_pd.title||'').trim() && !String(_pd.desc||'').trim()) _pubAiCopy(true);
 }
 // Asterisco de obligatorio según el tipo (ver RecoCatalogo.REGLAS_TIPO).
 function _pubAreaReqMark(type,cual){
@@ -7965,6 +7972,7 @@ async function _ppub(){
     });
     const publicationId = res && res.data && res.data.publicationId;
     if(!publicationId) throw new Error('respuesta sin publicationId');
+    _pubTrack('publicado',{ canal:'single', n:1 });
     // Photos: uploaded to Storage under publications/{publicationId}/
     // AFTER the doc exists, then the owner writes photoUrls back to
     // the same doc via a normal Firestore update. Rules still allow
@@ -8046,9 +8054,12 @@ let _pubBulkStep = 1;
 let _pubBulkFileName = '';
 const _PUB_BULK_STEPS = ['Importar','Revisar y publicar'];
 
+let _pubBulkTrackedStep=0;
 function _pubBulkGo(step){
   _pubBulkStep = (step===3||step===4) ? 2 : step; // antiguos pasos de fotos y envío
   if(_pubBulkStep===2 && _pubBulkRows.length===1) _pubBulkPhotoIdx=0;
+  if(_pubBulkStep===2 && _pubBulkTrackedStep!==2) _pubTrack('revisar',{ canal:_pubBulkSource, n:_pubBulkRows.length });
+  _pubBulkTrackedStep=_pubBulkStep;
   renderPublish();
   const el=document.getElementById('pubBulkStepBody');
   if(el && el.scrollIntoView) try{ el.scrollIntoView({block:'nearest'}); }catch(_){ }
@@ -8152,6 +8163,7 @@ function _pubBulkUploadHTML(){
       </div>`:''}
     </div>
     <div id="pubBulkPreview"></div>
+    ${_pubMovilHTML()}
     <div style="text-align:center;margin-top:14px"><button type="button" class="pub-btn ghost" style="font-size:13px;padding:8px 16px" onclick="_pubSetTab('single')">✏️ Prefiero llenarlo a mano</button></div>`;
 }
 // ── Bot de WhatsApp (roadmap 2.1) ──
@@ -8585,7 +8597,7 @@ function _pubDownloadTemplate(){
         ['1. Escribe un inmueble por fila en la hoja "Inmuebles".'],
         ['2. No cambies ni traduzcas los nombres de las columnas.'],
         ['3. La fila de ejemplo puede borrarse antes de subir el archivo.'],
-        ['4. Sube el archivo en Publicar inmueble → Subir varios.'],
+        ['4. Sube el archivo en Publicar inmuebles.'],
         ['5. "departamento" y "provincia" se usan para ubicar mejor el punto en el mapa, no se guardan como dato aparte.'],
         ['6. "niveles" indica cuántos pisos ocupa el inmueble por dentro (1 = un solo nivel, 2 = dúplex).'],
         [],
@@ -9544,7 +9556,7 @@ function _pubDocParts(doc){
 }
 function _pubDocProgress(msg){
   const el=document.getElementById('pubBulkPreview');
-  if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:var(--light);border-radius:8px;font-size:13px">⏳ ${esc(msg)}</div>`;
+  if(el) el.innerHTML=`<div style="padding:12px 14px;margin-top:10px;background:var(--light);border-radius:8px;font-size:13px">${/^⚠️/.test(msg)?'':'⏳ '}${esc(msg)}</div>`;
 }
 async function _pubDocImport(file){
   if(!_pubImportReady('leer documentos')) return;
@@ -9687,6 +9699,20 @@ function _pubImportFail(e,fallback){
   const msg=(e && e.message) || fallback;
   _pubDocProgress('⚠️ '+msg);
   toast('⚠️ '+msg);
+  _pubTrack('fallo',{ canal:_pubBulkSource||'' });
+  // Nunca un callejón sin salida: otras formas de seguir.
+  const el=document.getElementById('pubBulkPreview');
+  if(el) el.insertAdjacentHTML('beforeend',_pubAlternativasHTML());
+}
+function _pubAlternativasHTML(){
+  const b='font-size:12px;padding:7px 12px';
+  return `<div class="pub-alternativas" style="margin-top:8px;padding:10px 12px;border:1px dashed var(--border);border-radius:8px;font-size:12px">
+    <div style="font-weight:600;margin-bottom:6px">¿Seguimos de otra forma?</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button type="button" class="pub-btn ghost" style="${b}" onclick="const t=document.getElementById('pubPasteText');if(t){t.scrollIntoView({block:'center'});t.focus();}">✍️ Pegar el texto del aviso</button>
+      <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubPickFiles(f=>_pubBulkFiles(f))" title="Una captura de pantalla del aviso o del flyer">📸 Subir una captura</button>
+      <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubSetTab('single')">✏️ Llenarlo a mano</button>
+    </div></div>`;
 }
 // Envía las partes a extractListings con el mismo lote (base = campos
 // comunes de la llamada) y carga el resultado en la bandeja.
@@ -9712,6 +9738,7 @@ function _pubLoadExtracted(drafts,batchId,meta,photos){
   if(meta.assignAllIfSingle && drafts.length===1 && !drafts[0].photos.length) drafts[0].photos=(photos||[]).map(p=>p.dataUrl).slice(0,_PUB_BULK_PHOTO_MAX);
   _pubDocPhotoPool=(photos||[]).map(p=>p.dataUrl);
   _pubBulkLoadDrafts(drafts,{ batchId, source:meta.source, sourceName:meta.sourceName });
+  _pubTrack('importado',{ canal:meta.source, n:drafts.length });
   const conFotos=drafts.filter(d=>d.photos.length).length;
   toast(`${meta.icon||'✨'} ${drafts.length} inmueble${drafts.length!==1?'s':''} encontrado${drafts.length!==1?'s':''}${(photos||[]).length?` · fotos asignadas a ${conFotos}`:''}${meta.note||''}`);
   return drafts.length;
@@ -9751,6 +9778,30 @@ async function _pubTextImport(){
   }catch(e){ _pubImportFail(e,'No se pudo leer el texto.'); }
 }
 
+// En el celular: instalar ReCo para compartir avisos, fotos y mensajes
+// directo al importador (share_target del manifest). No aparece si ya está
+// instalada o si la cerraron.
+let _pubInstallEvt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{ e.preventDefault(); _pubInstallEvt=e; });
+function _pubEsMovil(){ try{ return matchMedia('(max-width: 760px)').matches || matchMedia('(pointer: coarse)').matches; }catch(_){ return false; } }
+function _pubInstalada(){ try{ return matchMedia('(display-mode: standalone)').matches || navigator.standalone===true; }catch(_){ return false; } }
+function _pubMovilHTML(){
+  let cerrada=false; try{ cerrada=localStorage.getItem('reco_movil_tip')==='1'; }catch(_){}
+  if(!_pubEsMovil() || _pubInstalada() || cerrada) return '';
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent||'');
+  const accion=_pubInstallEvt
+    ? `<button type="button" class="pub-btn primary" style="font-size:12px;padding:7px 12px;margin-top:8px" onclick="_pubInstalar()">📲 Instalar ReCo</button>`
+    : `<div style="margin-top:6px">${ios?'Toca <strong>Compartir</strong> y luego <strong>Agregar a inicio</strong>.':'Menú del navegador <strong>⋮</strong> → <strong>Instalar app</strong> o <strong>Agregar a la pantalla principal</strong>.'}</div>`;
+  return `<div id="pubMovilTip" style="margin-top:12px;padding:12px 14px;border-radius:10px;background:#eef8fb;border:1px solid #bfe3ee;font-size:12px;line-height:1.5;position:relative">
+    <button type="button" onclick="try{localStorage.setItem('reco_movil_tip','1')}catch(_){};this.parentNode.remove()" title="Cerrar" style="position:absolute;top:6px;right:8px;border:none;background:none;color:var(--muted);cursor:pointer">✕</button>
+    <strong>📱 Más rápido desde el celular</strong><br>Instala ReCo y, desde WhatsApp, la galería o un portal, toca <strong>Compartir → ReCo</strong>: el aviso, las fotos o el mensaje llegan aquí solos.
+    ${accion}</div>`;
+}
+async function _pubInstalar(){
+  if(!_pubInstallEvt) return;
+  try{ _pubInstallEvt.prompt(); const r=await _pubInstallEvt.userChoice; if(r && r.outcome==='accepted'){ const t=document.getElementById('pubMovilTip'); if(t) t.remove(); } }catch(_){}
+  _pubInstallEvt=null;
+}
 // Embudo de publicación (métricas para el panel de admin). Nunca bloquea.
 function _pubTrack(paso,extra){
   try{ if(!auth.currentUser) return; _getFunctions().httpsCallable('trackPublish')({ paso, ...(extra||{}) }).catch(()=>{}); }catch(_){}
@@ -9777,6 +9828,7 @@ async function _pubStartImport(){
   const ta=document.getElementById('pubStartNota');
   const nota=String(ta && ta.value || '').trim();
   const photos=_pubStartPhotos.slice();
+  _pubTrack('fotos',{ conNota:nota.length>=15, n:photos.length });
   const vacia=()=>{
     _pubBulkFileName='Fotos';
     _pubBulkLoadRows([nota?{ descripcion:nota }:{}]);
@@ -9784,7 +9836,6 @@ async function _pubStartImport(){
     _pubBulkRows[0].photos=photos; _pubDocPhotoPool=[]; _pubStartPhotos=[];
     _pubBulkPhotoIdx=0; _pubBulkRefresh();
     if(photos.length>=2) _pubPhotoAutoOrden('bulk',_pubBulkRows[0]);
-    _pubTrack('fotos',{ conNota:!!nota });
   };
   if(nota.length<15) return vacia();
   if(!_pubImportReady('leer tu nota')) return;
@@ -10230,6 +10281,7 @@ async function _pubBulkSubmit(){
       }
     }
   }
+  if(ok>0) _pubTrack('publicado',{ canal:_pubBulkSource, n:ok });
   if(ok>0 && _PUB_BULK_COST_PER>0 && typeof addKeyHistoryEntry === 'function'){
     addKeyHistoryEntry('use', ok*_PUB_BULK_COST_PER, null, `Carga masiva: ${ok} inmueble${ok!==1?'s':''}`);
   }
@@ -11689,6 +11741,32 @@ async function _crMarkHandled(id){
 }
 
 let _adminTab = 'pending';
+let _adminStatsDias=30;
+const _ADMIN_PASOS={ inicio:'Abrió publicar', importado:'Importó con IA', fotos:'Empezó por fotos', manual:'Llenó a mano', revisar:'Llegó a revisar', publicado:'Publicó', fallo:'Falló una importación' };
+function _adminStatsHTML(r){
+  const max=Math.max(1,...r.embudo.map(x=>x.usuarios));
+  const barra=(x)=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0;font-size:.82rem">
+    <div style="width:150px;flex:0 0 150px">${esc(_ADMIN_PASOS[x.paso]||x.paso)}</div>
+    <div style="flex:1;background:var(--light);border-radius:4px;height:18px;overflow:hidden"><div style="width:${Math.round(x.usuarios/max*100)}%;height:100%;background:${x.paso==='fallo'?'var(--red)':'var(--blue)'}"></div></div>
+    <div style="width:110px;text-align:right;color:var(--muted)">${x.usuarios} usuarios · ${x.eventos}</div></div>`;
+  const dias=[7,30,90].map(d=>`<button onclick="_adminStatsDias=${d};renderAdminPanel(document.getElementById('userSectionContent'))" style="border:1px solid var(--border);background:${_adminStatsDias===d?'var(--blue)':'#fff'};color:${_adminStatsDias===d?'#fff':'inherit'};border-radius:6px;padding:4px 10px;font-size:.78rem;cursor:pointer">${d} días</button>`).join(' ');
+  const fila=(c)=>`<tr><td>${esc(c.canal)}</td><td style="text-align:right">${c.veces}</td><td style="text-align:right">${c.inmuebles}</td><td style="text-align:right">${c.vaciasPct}%</td><td style="text-align:right">${c.msPromedio!=null?(c.msPromedio/1000).toFixed(1)+' s':'—'}</td></tr>`;
+  return `<div class="us-card" style="padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px"><strong>Embudo de publicación</strong><div>${dias}</div></div>
+      ${r.embudo.map(barra).join('')}
+      <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:.85rem">
+        <div><strong style="font-size:1.3rem">${r.conversionPct}%</strong><br><span style="color:var(--muted)">de quienes abren publicar, publican</span></div>
+        <div><strong style="font-size:1.3rem">${r.respaldoPct}%</strong><br><span style="color:var(--muted)">de lecturas de IA usaron el modelo de respaldo</span></div>
+      </div>
+      ${r.truncado?'<p style="font-size:.75rem;color:var(--muted)">Se leyeron los primeros 20 000 eventos.</p>':''}
+    </div>
+    <div class="us-card" style="padding:18px;overflow-x:auto">
+      <strong>Por canal</strong>
+      <table style="width:100%;font-size:.8rem;margin-top:8px;border-collapse:collapse"><tr style="color:var(--muted)"><th style="text-align:left">Canal</th><th style="text-align:right">Veces</th><th style="text-align:right">Inmuebles</th><th style="text-align:right">Sin resultado</th><th style="text-align:right">Tiempo medio</th></tr>
+      ${r.canales.map(fila).join('')||'<tr><td colspan="5" style="color:var(--muted)">Sin datos</td></tr>'}</table>
+    </div>
+    ${r.bloqueados.length?`<div class="us-card" style="padding:18px"><strong>Sitios que bloquean la importación</strong><div style="font-size:.8rem;margin-top:6px">${r.bloqueados.map(b=>`${esc(b.host)} (${b.veces})`).join(' · ')}</div></div>`:''}`;
+}
 async function renderAdminPanel(el){
   el.innerHTML = '<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     + '<div class="us-title">🛡️ Moderación</div>'
@@ -11702,7 +11780,20 @@ async function renderAdminPanel(el){
 
   const tab = (key, label, count) => `<button onclick="_adminTab='${key}';renderAdminPanel(document.getElementById('userSectionContent'))" style="background:${_adminTab===key?'var(--blue)':'var(--bg)'};color:${_adminTab===key?'#fff':'var(--txt)'};border:1.5px solid ${_adminTab===key?'var(--blue)':'var(--border)'};padding:7px 14px;border-radius:var(--r);font-size:.82rem;font-weight:600;cursor:pointer">${label}${count!=null?' ('+count+')':''}</button>`;
 
-  const tabs = `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tab('pending','⏳ Pendientes')}${tab('approved','✓ Aprobadas')}${tab('rejected','✕ Rechazadas')}${tab('keys','🔑 Llaves')}${tab('audit','📜 Audit')}</div>`;
+  const tabs = `<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tab('pending','⏳ Pendientes')}${tab('approved','✓ Aprobadas')}${tab('rejected','✕ Rechazadas')}${tab('keys','🔑 Llaves')}${tab('audit','📜 Audit')}${tab('embudo','📈 Publicar')}</div>`;
+
+  // Embudo de publicación: resumen de publishStats.
+  if (_adminTab === 'embudo') {
+    const head = '<button class="us-back" onclick="closeUserSection()">← Volver</button><div class="us-title">🛡️ Moderación</div>' + tabs;
+    el.innerHTML = head + '<div class="us-card"><p style="color:var(--muted);text-align:center">Cargando…</p></div>';
+    try {
+      const r = (await _getFunctions().httpsCallable('publishStats')({ dias: _adminStatsDias })).data;
+      el.innerHTML = head + _adminStatsHTML(r);
+    } catch (e) {
+      el.innerHTML = head + '<div class="us-card"><p style="color:var(--red)">No se pudo cargar: ' + esc(e.message || '') + '</p></div>';
+    }
+    return;
+  }
 
   // Keys tab: grant keys to a user by email.
   if (_adminTab === 'keys') {
@@ -12407,7 +12498,7 @@ async function _intLoadMeta(action){
   try{
     const d=await _intCall('metaConnect',action?{ action }:{});
     if(!d.disponible){
-      box.innerHTML=head+'<p style="font-size:.82rem;color:var(--muted);line-height:1.5">Muy pronto podrás conectar tu página de Facebook o tu Instagram para traer todos tus posts de una vez. Mientras tanto, pega el enlace de cada post en <a href="#" onclick="event.preventDefault();closeUserSection();openPublish();_pubTab=\'bulk\';renderPublish()">Publicar → Subir varios → Desde un enlace</a>.</p>';
+      box.innerHTML=head+'<p style="font-size:.82rem;color:var(--muted);line-height:1.5">Muy pronto podrás conectar tu página de Facebook o tu Instagram para traer todos tus posts de una vez. Mientras tanto, pega el enlace de cada post en <a href="#" onclick="event.preventDefault();closeUserSection();openPublish();_pubTab=\'bulk\';renderPublish()">Publicar → Desde un enlace</a>.</p>';
       return;
     }
     _intMeta.cuentas=d.cuentas||[];

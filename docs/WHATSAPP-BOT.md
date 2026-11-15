@@ -61,7 +61,7 @@ const _PUB_WA_BOT_NUMBER='51987654321';
 
 ## 5. Probar
 
-1. En recosac.com → Publicar → Subir varios → **ReCo en tu WhatsApp** → *Conectar mi WhatsApp* → *Abrir WhatsApp* y enviar `VINCULAR 123456`. El bot responde "quedó conectado".
+1. En recosac.com → Publicar → **ReCo en tu WhatsApp** → *Conectar mi WhatsApp* → *Abrir WhatsApp* y enviar `VINCULAR 123456`. El bot responde "quedó conectado".
 2. Enviar un texto ("Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil"), 2 fotos y una nota de voz. Escribir **LISTO**.
 3. El bot responde con el resumen y el enlace. En `#borradores` aparece el inmueble con sus fotos.
 4. Publicarlo y comprobar que las fotos estén en la publicación.

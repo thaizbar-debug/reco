@@ -193,6 +193,18 @@ Tras probar con un post de Facebook, un brochure en PDF y enlaces de Facebook, T
 | 3 | **Fotos con IA** | "✨ Ordenar con IA" (`analyzePhotos`, `functions/photo-core.js`): ambiente de cada foto, portada (buena y sin marca de agua, texto ni personas; nunca un plano), orden por ambientes con planos al final, y aviso de marcas de agua de otros portales. Copias de 512 px en baja resolución (pocos tokens); cuenta en el límite de 30 por hora. |
 | 4 | **Google Drive** | "📁 Desde Google Drive": enlace de carpeta o foto compartida (API de Drive con la clave de la web) y, si se configura, Google Picker para fotos privadas (`drive.file`). En la carga masiva, una subcarpeta por inmueble, asignada por nombre. Configuración: `docs/GOOGLE-DRIVE.md`. |
 
+### Publicar más fácil (flujo completo)
+
+| # | Qué | Dónde quedó |
+|---|---|---|
+| 1 | **Una sola entrada** | "Publicar inmuebles" abre en *¿Qué tienes?*: archivo, enlace, texto o fotos. El formulario queda como "✏️ Prefiero llenarlo a mano", con vuelta atrás. |
+| 2 | **Empezar por las fotos** | Tarjeta "📷 Fotos del inmueble": fotos (computadora, carpeta o Drive) + nota escrita o dictada (🎤, Web Speech del navegador). Con nota, la IA arma la ficha; sin nota, queda la ficha con fotos para completar. |
+| 3 | **Revisar y publicar en una pantalla** | Los pasos Validar, Fotos y Enviar se unen: una tarjeta por inmueble con sus datos, fotos y "🚀 Publicar N inmuebles". Un solo cargador de fotos: con una subcarpeta por inmueble (o sin tarjeta abierta) las reparte; con una tarjeta abierta, las suma a ese inmueble. Las fotos de archivos y enlaces aparecen con ＋ en la misma grilla. |
+| 4 | **IA automática** | Al pasar al paso 2 a mano, título y descripción se redactan solos si están vacíos. Las fotos se ordenan solas (≥ 3 a mano; al abrir una tarjeta o agregar fotos en la revisión). |
+| 5 | **Celular primero** | En el celular, aviso para instalar ReCo y compartir avisos, fotos o mensajes directo al importador (`share_target`). |
+| 6 | **Sin callejones** | Si una importación falla: pegar el texto, subir una captura o llenarlo a mano. |
+| 7 | **Métricas** | `trackPublish` (pasos del embudo, máx. 120/h por usuario) y `publishStats` (solo admin) → Moderación → 📈 Publicar: embudo, conversión, canales, % de respaldo de IA y sitios que bloquean. Pruebas con corredores: `docs/PRUEBAS-CON-CORREDORES.md`. |
+
 ## 5. Matriz de priorización
 
 | Iniciativa | Usuarios beneficiados | Esfuerzo | Dependencias | Orden |

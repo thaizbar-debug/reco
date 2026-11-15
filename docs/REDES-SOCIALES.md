@@ -5,7 +5,7 @@ ofrece tres caminos, de menos a más completo:
 
 | Camino | Qué hace el corredor | Qué necesita ReCo |
 |---|---|---|
-| **1. Enlace de un post** | Pega el enlace de su post (o lo comparte a ReCo desde el celular) en *Publicar → Subir varios → Desde un enlace* | Nada: ya funciona al desplegar `importListingPage` |
+| **1. Enlace de un post** | Pega el enlace de su post (o lo comparte a ReCo desde el celular) en *Publicar → Desde un enlace* | Nada: ya funciona al desplegar `importListingPage` |
 | **2. Video o captura** | Sube el video del reel/TikTok (MP4/MOV) o una captura del post | Nada: `extractListings` |
 | **3. Conectar su página** | *Mi cuenta → Integraciones → Conectar con Facebook*, elige posts y los importa todos | App de Meta (abajo) |
 

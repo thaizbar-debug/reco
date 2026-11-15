@@ -11,7 +11,7 @@ ReCo usa dos servicios de IA, sin OpenAI:
 
 | Lugar de la plataforma | Función | Claude | Audio (Google) |
 |---|---|---|---|
-| Publicar → Subir varios: pegar texto, Excel/CSV, PDF, Word, PowerPoint, chat de WhatsApp, flyers y capturas | `extractListings` | ✅ | |
+| Publicar → ¿Qué tienes?: pegar texto, Excel/CSV, PDF, Word, PowerPoint, chat de WhatsApp, flyers y capturas | `extractListings` | ✅ | |
 | Publicar → video de un reel o TikTok | `extractListings` | ✅ imágenes del video | ✅ audio del video |
 | Publicar → Desde un enlace (portal, web, post de redes) | `importListingPage` | ✅ | ✅ audio del video del post |
 | Excel o feed con columnas desconocidas | `mapImportColumns`, `importSources` | ✅ | |
@@ -105,7 +105,7 @@ firebase deploy --only functions
 ```
 
 Pruebas rápidas después de desplegar:
-- **Claude:** Publicar → Subir varios → "Pegar texto" con un aviso corto. Debe aparecer el inmueble.
+- **Claude:** Publicar → "Pegar texto" con un aviso corto. Debe aparecer el inmueble.
 - **Audio:** subir un video corto de un reel o enviar una nota de voz al bot. En la ficha debe aparecer lo que se dice.
 - **Registro:** si algo falla, en Cloud Logging aparece `[función] <modelo> falló`, `[transcribe]` o
   `audio no transcrito`, con el motivo.

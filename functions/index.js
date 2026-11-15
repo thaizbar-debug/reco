@@ -4434,3 +4434,96 @@ exports.onPublicationModerated = onDocumentWritten(
     }
   }
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Embudo de publicación: el cliente marca cada paso (trackPublish) y el panel
+// de admin lo resume junto con las importaciones (publishStats).
+//
+// trackPublish  { paso, canal?, n?, conNota?, ms? } → { ok }
+//   Pasos: inicio · importado · fotos · manual · revisar · publicado · fallo.
+//   Máx. TRACK_MAX_HORA eventos por usuario y hora (los demás se ignoran).
+// publishStats  { dias? (1–90, 30) } → { embudo, canales, respaldoPct, bloqueados, ... }
+//   Solo admin.
+// ─────────────────────────────────────────────────────────────────────────────
+const TRACK_PASOS = ['inicio', 'importado', 'fotos', 'manual', 'revisar', 'publicado', 'fallo'];
+const TRACK_MAX_HORA = 120;
+
+exports.trackPublish = onCall(
+  { region: REGION, maxInstances: 5, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'trackPublish');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Inicia sesión.');
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const paso = String(d.paso || '');
+    if (!TRACK_PASOS.includes(paso)) throw new HttpsError('invalid-argument', 'paso inválido.');
+    const hora = new Date().toISOString().slice(0, 13);
+    const limRef = db.collection('trackLimits').doc(uid);
+    const permitido = await db.runTransaction(async (tx) => {
+      const s = await tx.get(limRef);
+      const l = s.exists ? s.data() : {};
+      const n = l.hora === hora ? Number(l.n) || 0 : 0;
+      if (n >= TRACK_MAX_HORA) return false;
+      tx.set(limRef, { hora, n: n + 1 });
+      return true;
+    });
+    if (!permitido) return { ok: false };
+    const num = (v, max) => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? Math.min(Math.round(x), max) : undefined; };
+    const ev = { uid, kind: 'embudo', paso, createdAt: FieldValue.serverTimestamp() };
+    const canal = String(d.canal || '').replace(/[^a-z_]/gi, '').slice(0, 20);
+    if (canal) ev.channel = canal;
+    const n = num(d.n, 500); if (n !== undefined) ev.listings = n;
+    const ms = num(d.ms, 3600e3); if (ms !== undefined) ev.ms = ms;
+    if (typeof d.conNota === 'boolean') ev.conNota = d.conNota;
+    await db.collection('importEvents').doc().set(ev);
+    return { ok: true };
+  }
+);
+
+// Resumen de importEvents (separado para poder probarlo sin Firestore).
+function _publishStatsResumen(eventos) {
+  const embudo = {}, usuarios = {};
+  TRACK_PASOS.forEach((p) => { embudo[p] = 0; usuarios[p] = new Set(); });
+  const canales = {}, bloqueados = {};
+  let ia = 0, respaldo = 0;
+  for (const e of eventos) {
+    if (e.kind === 'embudo') {
+      if (embudo[e.paso] === undefined) continue;
+      embudo[e.paso]++; if (e.uid) usuarios[e.paso].add(e.uid);
+      continue;
+    }
+    if (e.kind === 'bloqueado') { const h = String(e.host || '?'); bloqueados[h] = (bloqueados[h] || 0) + 1; continue; }
+    if (e.kind === 'sync') continue;
+    const c = canales[e.channel || e.kind || '?'] || (canales[e.channel || e.kind || '?'] = { veces: 0, inmuebles: 0, msTotal: 0, conMs: 0, vacias: 0 });
+    c.veces++;
+    c.inmuebles += Number(e.listings) || 0;
+    if (e.listings === 0) c.vacias++;
+    if (Number(e.ms) > 0) { c.msTotal += Number(e.ms); c.conMs++; }
+    if (e.modelo) { ia++; if (e.respaldo) respaldo++; }
+  }
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  const u = (p) => usuarios[p].size;
+  return {
+    embudo: TRACK_PASOS.map((p) => ({ paso: p, eventos: embudo[p], usuarios: u(p) })),
+    conversionPct: pct(u('publicado'), u('inicio')),
+    canales: Object.entries(canales).map(([canal, c]) => ({
+      canal, veces: c.veces, inmuebles: c.inmuebles, vaciasPct: pct(c.vacias, c.veces),
+      msPromedio: c.conMs ? Math.round(c.msTotal / c.conMs) : null,
+    })).sort((a, b) => b.veces - a.veces),
+    respaldoPct: pct(respaldo, ia),
+    bloqueados: Object.entries(bloqueados).map(([host, veces]) => ({ host, veces })).sort((a, b) => b.veces - a.veces).slice(0, 10),
+  };
+}
+
+exports.publishStats = onCall(
+  { region: REGION, maxInstances: 3, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'publishStats');
+    _requireAdminCaller(request);
+    const dias = Math.min(90, Math.max(1, Math.round(Number(request.data && request.data.dias) || 30)));
+    const desde = Timestamp.fromMillis(Date.now() - dias * 86400e3);
+    const snap = await db.collection('importEvents').where('createdAt', '>=', desde).limit(20000).get();
+    const eventos = snap.docs.map((x) => x.data());
+    return { dias, total: eventos.length, truncado: eventos.length >= 20000, ...(_publishStatsResumen(eventos)) };
+  }
+);

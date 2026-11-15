@@ -1,7 +1,7 @@
 # Fotos desde Google Drive
 
 Muchos corredores guardan las fotos de sus inmuebles en Google Drive, a veces con una carpeta por
-inmueble. ReCo las trae de dos formas, en "Publicar uno", en la carga masiva y en el editor
+inmueble. ReCo las trae de dos formas, al publicar (con la tarjeta Fotos del inmueble, a mano o al revisar varios) y en el editor
 "📷 Fotos" de Mis publicaciones:
 
 | Forma | Para qué | Qué necesita |
