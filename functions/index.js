@@ -35,8 +35,6 @@ const db = getFirestore();
 const anthropicKey = defineSecret('ANTHROPIC_API_KEY');
 const aiModel = defineString('AI_MODEL', { default: 'claude-haiku-5-5' });
 const aiFallbackModel = defineString('AI_FALLBACK_MODEL', { default: 'claude-sonnet-5-5' });
-// Transcripción de audio (notas de voz y videos): Whisper de OpenAI.
-const openaiKey = defineSecret('OPENAI_API_KEY');
 const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
 // Bot de WhatsApp (Cloud API de Meta). Ver whatsappWebhook más abajo.
 const waToken = defineSecret('WHATSAPP_TOKEN');
@@ -1539,7 +1537,7 @@ Reglas:
 // 'imagenes': flyers o capturas de pantalla sueltas (cada imagen va como
 // página escaneada).
 const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp', 'imagenes', 'video'];
-// Audio de un video subido (WAV 16 kHz mono, máx. ~150 s) para Whisper.
+// Audio de un video subido (WAV 16 kHz mono, máx. ~150 s) para transcribir (Speech-to-Text).
 const IMPORT_AUDIO_RE = /^data:audio\/(wav|x-wav|mpeg|mp4|webm|ogg);base64,[A-Za-z0-9+/=]+$/;
 const IMPORT_AUDIO_MAX_CHARS = 7 * 1024 * 1024;
 const IMPORT_DOC_MAX_IMAGES = 6;
@@ -1802,7 +1800,7 @@ exports.extractListings = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [anthropicKey, openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'extractListings');
@@ -1838,7 +1836,7 @@ exports.extractListings = onCall(
       try {
         const [head, b64] = audio.split(',');
         const mime = head.slice(5, head.indexOf(';'));
-        const t = await _transcribe(Buffer.from(b64, 'base64'), mime, `audio.${mime.split('/')[1].replace('x-', '').replace('mpeg', 'mp3')}`);
+        const t = await _transcribe(Buffer.from(b64, 'base64'), mime);
         if (t) {
           text = `${text}\n\nLo que se dice en el video:\n${t}`.trim();
           doc.content[0] = { type: 'text', text };
@@ -1994,7 +1992,7 @@ exports.mapImportColumns = onCall(
 // Cualquier otro sitio usa la detección genérica de enlaces de inmuebles.
 const IMPORT_URL_HOSTS = ['urbania.pe', 'adondevivir.com', 'properati.com.pe', 'babilonia.pe', 'nexoinmobiliario.pe',
   'mercadolibre.com.pe', 'infocasas.com.pe', 'remax.pe'];
-const IMPORT_VIDEO_MAX_BYTES = 24 * 1024 * 1024; // límite de Whisper: 25 MB
+const IMPORT_VIDEO_MAX_BYTES = 24 * 1024 * 1024; // video de un post (su audio va a Speech-to-Text)
 // Lecturas de páginas por usuario y hora (aparte del límite de la IA): un
 // enlace que falla no gasta una importación, pero el servidor no se puede usar
 // para descargar páginas sin tope.
@@ -2260,7 +2258,7 @@ async function _videoTranscript(videoUrl) {
   try {
     const r = await _safeFetch(videoUrl, { maxBytes: IMPORT_VIDEO_MAX_BYTES, accept: 'video/mp4,video/*' });
     if (r.status !== 200 || r.truncated || !/video|octet-stream/i.test(r.type) || r.body.length < 10000) return '';
-    return await _transcribe(r.body, 'video/mp4', 'video.mp4');
+    return await _transcribe(r.body, 'video/mp4');
   } catch (e) {
     logger.warn('[importListingPage] video no transcrito', { err: e && e.message });
     return '';
@@ -2274,7 +2272,7 @@ exports.importListingPage = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [anthropicKey, openaiKey, scraperKey],
+    secrets: [anthropicKey, scraperKey],
   },
   async (request) => {
     _logAppCheck(request, 'importListingPage');
@@ -2431,7 +2429,7 @@ async function _metaFetchPosts(red, pageId, token, after) {
 
 exports.metaConnect = onCall(
   { region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB', consumeAppCheckToken: true, enforceAppCheck: true,
-    secrets: [anthropicKey, openaiKey, metaAppSecret] },
+    secrets: [anthropicKey, metaAppSecret] },
   async (request) => {
     _logAppCheck(request, 'metaConnect');
     requireVerifiedAuth(request);
@@ -2680,17 +2678,85 @@ async function _waMedia(mediaId) {
   if (buf.length > WA_MEDIA_MAX_BYTES) throw new Error('media muy grande');
   return { buf, mime: String(meta.mime_type || '').split(';')[0] };
 }
-async function _transcribe(buf, mime, filename) {
-  const fd = new FormData();
-  fd.append('file', new Blob([buf], { type: mime || 'audio/ogg' }), filename || 'nota.ogg');
-  fd.append('model', 'whisper-1');
-  fd.append('language', 'es');
-  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST', headers: { Authorization: `Bearer ${openaiKey.value()}` }, body: fd,
-  });
-  const body = await r.json();
-  if (!r.ok) throw new Error(body.error?.message || `HTTP ${r.status}`);
-  return String(body.text || '').trim().slice(0, 4000);
+// ─────────────────────────────────────────────────────────────────────────────
+// Transcripción de audio — Google Cloud Speech-to-Text (API v2). Notas de voz
+// del bot, audio de los videos subidos y de los videos de posts. Usa la cuenta
+// de servicio de las funciones (sin clave): hay que habilitar la API y darle
+// el rol "Cloud Speech Client" (docs/IA.md). Formatos: OGG/Opus, WAV, MP3, MP4/AAC.
+//   1) recognize (síncrono) con el audio en el pedido: lo normal (audios cortos).
+//   2) Si Google no lo acepta así (audio largo o pesado), batchRecognize con el
+//      audio subido un momento a Cloud Storage; se espera el resultado.
+// Modelo, región e idioma se cambian sin tocar el código (STT_*).
+// ─────────────────────────────────────────────────────────────────────────────
+const sttLocation = defineString('STT_LOCATION', { default: 'us-central1' });
+const sttModel = defineString('STT_MODEL', { default: 'chirp_2' });
+const sttLanguage = defineString('STT_LANGUAGE', { default: 'es-US' });
+const STT_SYNC_MAX_BYTES = 9 * 1024 * 1024; // el pedido síncrono admite hasta 10 MB
+const STT_BATCH_WAIT_MS = 150000;
+const STT_POLL_MS = 1500;
+async function _gcpToken() {
+  const r = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+    { headers: { 'Metadata-Flavor': 'Google' } });
+  if (!r.ok) throw new Error(`token HTTP ${r.status}`);
+  return (await r.json()).access_token;
+}
+function _gcpProject() {
+  if (process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT) return process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+  try { return JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId || ''; } catch (_) { return ''; }
+}
+function _sttTarget() {
+  const loc = sttLocation.value() || 'us-central1';
+  return { host: loc === 'global' ? 'speech.googleapis.com' : `${loc}-speech.googleapis.com`, recognizer: `projects/${_gcpProject()}/locations/${loc}/recognizers/_` };
+}
+const _sttConfig = () => ({
+  autoDecodingConfig: {}, languageCodes: [sttLanguage.value() || 'es-US'], model: sttModel.value() || 'chirp_2',
+  features: { enableAutomaticPunctuation: true },
+});
+const _sttText = (results) => (results || []).map((r) => ((r.alternatives || [])[0] || {}).transcript || '')
+  .join(' ').replace(/\s+/g, ' ').trim().slice(0, 4000);
+async function _sttFetch(url, token, body) {
+  const r = await fetch(url, body ? { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : { headers: { Authorization: `Bearer ${token}` } });
+  const b = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error((b.error && b.error.message) || `HTTP ${r.status}`), { status: r.status });
+  return b;
+}
+async function _transcribe(buf, mime) {
+  if (!buf || !buf.length) return '';
+  const token = await _gcpToken();
+  const { host, recognizer } = _sttTarget();
+  if (buf.length <= STT_SYNC_MAX_BYTES) {
+    try {
+      const res = await _sttFetch(`https://${host}/v2/${recognizer}:recognize`, token, { config: _sttConfig(), content: buf.toString('base64') });
+      return _sttText(res.results);
+    } catch (e) {
+      // Permisos o API sin habilitar: el lote fallaría igual.
+      if (e.status !== 400) throw e;
+      logger.info('[transcribe] síncrono no aceptado: se usa el lote', { err: e.message });
+    }
+  }
+  const { getStorage } = require('firebase-admin/storage');
+  const bucket = getStorage().bucket();
+  const path = `tmp/transcripciones/${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  await bucket.file(path).save(buf, { contentType: mime || 'application/octet-stream', resumable: false });
+  try {
+    const uri = `gs://${bucket.name}/${path}`;
+    let op = await _sttFetch(`https://${host}/v2/${recognizer}:batchRecognize`, token,
+      { config: _sttConfig(), files: [{ uri }], recognitionOutputConfig: { inlineResponseConfig: {} } });
+    const t0 = Date.now();
+    while (!op.done) {
+      if (Date.now() - t0 > STT_BATCH_WAIT_MS) throw new Error('La transcripción tardó demasiado');
+      await new Promise((ok) => setTimeout(ok, STT_POLL_MS));
+      op = await _sttFetch(`https://${host}/v2/${op.name}`, token);
+    }
+    if (op.error && op.error.code) throw new Error(op.error.message || 'Error de transcripción');
+    const results = (op.response && op.response.results) || {};
+    const archivo = results[uri] || Object.values(results)[0] || {};
+    if (archivo.error && archivo.error.code) throw new Error(archivo.error.message || 'Error de transcripción');
+    return _sttText(((archivo.inlineResult && archivo.inlineResult.transcript) || archivo.transcript || {}).results);
+  } finally {
+    bucket.file(path).delete().catch(() => {});
+  }
 }
 // Foto a Storage con token de descarga (la web la muestra y, al publicar,
 // publishProperty la copia a publications/).
@@ -2774,7 +2840,7 @@ async function _waProcessSession(phone, uid) {
 }
 
 exports.whatsappProcessMessage = onDocumentCreated(
-  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [anthropicKey, openaiKey, waToken] },
+  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [anthropicKey, waToken] },
   async (event) => {
     const m = event.data && event.data.data();
     if (!m || !m.from) return;

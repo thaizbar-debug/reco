@@ -20,7 +20,7 @@ El proyecto usa [Playwright](https://playwright.dev/) como suite de pruebas E2E.
 | Fase 2: flyers, fotos en bloque (EXIF), perfil de portal, compartir desde el celular (service worker) y bot de WhatsApp en la web | `tests/import-fase2.spec.js` | 15 |
 | Fase 3: conexiones automáticas (feeds Kyero/JSON/CSV, Google Sheets, EasyBroker, Wasi), API pública con webhooks y correo de ingesta (handlers reales) | `tests/import-fase3.test.js` | 11 |
 | Fase 3: pantalla de Integraciones y estado "Retirada" | `tests/import-fase3.spec.js` | 6 |
-| Captación desde redes: enlace de posts de Facebook / Instagram / TikTok y de cualquier web, video subido y conectar página de Facebook / Instagram (handlers reales) | `tests/import-redes.test.js` | 8 |
+| Captación desde redes: enlace de posts de Facebook / Instagram / TikTok y de cualquier web, video subido y conectar página de Facebook / Instagram; audio con Google Speech-to-Text (directo y por lotes) (handlers reales) | `tests/import-redes.test.js` | 9 |
 | IA con respaldo: Claude Haiku y, si falla (error de la API, rechazo, JSON inválido, sin resultados), Claude Sonnet en la misma llamada; modelos configurables (handlers reales) | `tests/ia-respaldo.test.js` | 8 |
 | Portales protegidos (Urbania, Adondevivir): reintento como navegador, servicio de lectura (ScrapingBee, ZenRows, ScraperAPI), fotos dentro de scripts y respuesta de la IA cortada por larga (handlers reales) | `tests/import-portales.test.js` | 6 |
 | Captación desde redes en la web: PDF de proyecto (fotos y planos), video (imágenes + audio), post privado y tarjeta de Facebook / Instagram | `tests/import-redes.spec.js` | 6 |

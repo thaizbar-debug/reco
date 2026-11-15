@@ -144,6 +144,7 @@ function loadFunctions(opts) {
   const authUsers = (opts && opts.authUsers) || {};
   global.__recoMockBucket = bucket;
   installStorageMock();
+  if (!process.env.GCLOUD_PROJECT) process.env.GCLOUD_PROJECT = 'reco-test';
   const mocks = {
     'firebase-functions/v2/https': { onCall: handlerOf, onRequest: handlerOf, HttpsError },
     'firebase-functions/params': {
@@ -236,4 +237,29 @@ function claude(payload, opts) {
   }), { status: 200, headers: { 'content-type': 'application/json' } });
 }
 
-module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, claude, CLAUDE_URL, STORAGE_MOCK_KEY };
+// Transcripción (Google Cloud Speech-to-Text v2): rutas para mockFetch.
+// calls guarda cada pedido { url, body }; texto es lo que "se dijo".
+// opts.sync: respuesta del pedido síncrono (por defecto, el texto); { status: 400 }
+// fuerza el camino por lotes, que responde con el texto al primer sondeo.
+function speech(calls, texto, opts) {
+  const o = opts || {};
+  const res = (b, status) => new Response(JSON.stringify(b), { status: status || 200, headers: { 'content-type': 'application/json' } });
+  const resultado = { results: [{ alternatives: [{ transcript: texto || '' }] }] };
+  return [
+    ['http://metadata.google.internal/', () => res({ access_token: 'token-gcp', expires_in: 3600 })],
+    [/-speech\.googleapis\.com\/v2\/projects\/[^/]+\/locations\/[^/]+\/recognizers\/_:recognize$/, (u, init) => {
+      calls.push({ url: u, body: JSON.parse(init.body), auth: init.headers.Authorization });
+      return o.sync && o.sync.status ? res({ error: { code: o.sync.status, message: 'Audio too long' } }, o.sync.status) : res(resultado);
+    }],
+    [/-speech\.googleapis\.com\/v2\/projects\/[^/]+\/locations\/[^/]+\/recognizers\/_:batchRecognize$/, (u, init) => {
+      calls.push({ url: u, body: JSON.parse(init.body), lote: true });
+      return res({ name: 'projects/p/locations/l/operations/op1', done: false });
+    }],
+    [/-speech\.googleapis\.com\/v2\/projects\/p\/locations\/l\/operations\/op1$/, () => {
+      const uri = (calls.find((c) => c.lote) || { body: { files: [{}] } }).body.files[0].uri;
+      return res({ name: 'op1', done: true, response: { results: { [uri]: { inlineResult: { transcript: resultado } } } } });
+    }],
+  ];
+}
+
+module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, claude, CLAUDE_URL, speech, STORAGE_MOCK_KEY };

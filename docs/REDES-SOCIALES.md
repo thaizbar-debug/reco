@@ -25,7 +25,7 @@ insertar posts en otras webs** (`functions/social-core.js`):
 - Los enlaces cortos (`facebook.com/share/…`, `vm.tiktok.com/…`) se siguen hasta el post. Si la
   red manda al login, se toma el destino real del parámetro `next`.
 - Si el post trae un **video descargable** (reels de Instagram, videos de Facebook), su audio se
-  **transcribe con Whisper** y lo que dice el corredor (precio, áreas…) cuenta como fuente.
+  **transcribe con Google Speech-to-Text** y lo que dice el corredor (precio, áreas…) cuenta como fuente.
 - Se quitan los textos de la aplicación ("Me gusta", "Comentar"…), las fotos de perfil y los emojis.
 - **Post privado o que la red no muestra** → el corredor ve: "Sube una captura del post o pega su
   texto", con los dos botones. **Enlace de un perfil** → "Conecta tu página en Integraciones".
@@ -40,7 +40,7 @@ insertar posts en otras webs** (`functions/social-core.js`):
 
 - **Video** (MP4, MOV, WEBM; se descarga del celular desde la app de la red): el navegador toma
   hasta 6 imágenes del video (van a la IA y quedan como fotos) y el audio (mono, 16 kHz, hasta
-  150 s), que el servidor transcribe con Whisper.
+  150 s), que el servidor transcribe con Google Speech-to-Text.
 - **Captura** del post (con su texto): va como imagen a la IA, igual que un flyer.
 
 ## 3. Conectar la página de Facebook / Instagram (Graph API)

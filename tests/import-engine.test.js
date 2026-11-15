@@ -1,7 +1,7 @@
 /**
  * Fase 0 del roadmap de carga inteligente — ejecuta los handlers REALES de
  * extractListings y publishProperty (functions/index.js) con Firestore en
- * memoria y la API de OpenAI simulada (global.fetch), igual que
+ * memoria y la API de Claude simulada (global.fetch), igual que
  * rate-limit-stress.test.js.
  */
 const { test, expect } = require('@playwright/test');
@@ -248,7 +248,7 @@ test.describe('Fase 0: extractListings + publishProperty (handlers reales)', () 
     await expect(extract(req('u2', { kind: 'text', text: 'depa' }))).rejects.toMatchObject({ code: 'resource-exhausted' });
   });
 
-  test('error de OpenAI → internal, sin borradores', async () => {
+  test('error de la IA (Haiku y Sonnet) → internal, sin borradores', async () => {
     const { extract, db } = loadHandlers();
     global.fetch = async () => ({ ok: false, status: 500, json: async () => ({ error: { message: 'boom' } }) });
     await expect(extract(req('u3', { kind: 'text', text: 'depa' }))).rejects.toMatchObject({ code: 'internal' });
@@ -535,18 +535,23 @@ const webhookReq = (payload, signature) => {
 const waMsg = (id, extra) => ({ id, from: PHONE, ts: 1761332700 + Number(String(id).replace(/\D/g, '') || 0), type: 'text', ...extra });
 const event = (msg) => ({ data: { data: () => msg } });
 
-// Red simulada: Graph API (envíos y media), descarga de media, Whisper y la IA.
+// Red simulada: Graph API (envíos y media), descarga de media, Speech-to-Text y la IA.
 function mockWaNet(aiPayload) {
   const sent = [];
   const seen = { sent, ai: null, transcriptions: 0 };
   global.fetch = async (url, init) => {
     const u = String(url);
+    if (u.startsWith('http://metadata.google.internal/')) return new Response(JSON.stringify({ access_token: 't' }), { status: 200 });
+    if (/-speech\.googleapis\.com\/v2\/.*:recognize$/.test(u)) {
+      seen.transcriptions++;
+      seen.stt = JSON.parse(init.body);
+      return new Response(JSON.stringify({ results: [{ alternatives: [{ transcript: 'tiene dos dormitorios y cochera' }] }] }), { status: 200 });
+    }
     if (u === 'https://graph.facebook.com/v21.0/111222/messages') { sent.push(JSON.parse(init.body)); return new Response('{}', { status: 200 }); }
     if (u === 'https://graph.facebook.com/v21.0/MEDIA_IMG') return new Response(JSON.stringify({ url: 'https://lookaside.fbsbx.com/img', mime_type: 'image/jpeg', file_size: 30000 }), { status: 200 });
     if (u === 'https://graph.facebook.com/v21.0/MEDIA_AUD') return new Response(JSON.stringify({ url: 'https://lookaside.fbsbx.com/aud', mime_type: 'audio/ogg; codecs=opus' }), { status: 200 });
     if (u === 'https://lookaside.fbsbx.com/img') return new Response(Buffer.alloc(30000, 1), { status: 200 });
     if (u === 'https://lookaside.fbsbx.com/aud') return new Response(Buffer.alloc(5000, 2), { status: 200 });
-    if (u === 'https://api.openai.com/v1/audio/transcriptions') { seen.transcriptions++; return new Response(JSON.stringify({ text: 'tiene dos dormitorios y cochera' }), { status: 200 }); }
     if (u === CLAUDE_URL) {
       seen.ai = JSON.parse(init.body);
       return claude(aiPayload || { inmuebles: [] });
@@ -628,7 +633,8 @@ test.describe('Bot de WhatsApp', () => {
     expect(db.store[`whatsappSessions/${PHONE}`].items.map((i) => i.type)).toEqual(['text', 'image', 'audio']);
 
     await waProcess(event(waMsg('m4', { text: 'LISTO' })));
-    expect(net.transcriptions).toBe(1);
+    expect(net.transcriptions).toBe(1); // nota de voz OGG/Opus → Google Speech-to-Text
+    expect(net.stt.config).toMatchObject({ autoDecodingConfig: {}, languageCodes: ['es-US'], model: 'chirp_2' });
     const user = net.ai.messages[0].content;
     expect(user).toContain('Corredor: Vendo depa en Lince 70 m2 US$ 120 mil');
     expect(user).toContain('Corredor: Sala [FOTO w-1]');

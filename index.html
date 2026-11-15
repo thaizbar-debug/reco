@@ -9473,7 +9473,7 @@ async function _pubVideoFrames(v){
   }
   return out;
 }
-// Audio → WAV PCM 16 bits, mono, 16 kHz (lo que mejor recibe Whisper).
+// Audio → WAV PCM 16 bits, mono, 16 kHz (lo que mejor recibe la transcripción de Google).
 async function _pubVideoAudioWav(file){
   const Ctx=window.AudioContext||window.webkitAudioContext;
   if(!Ctx || typeof OfflineAudioContext==='undefined') return null;

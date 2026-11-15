@@ -7,7 +7,7 @@ const { test, expect } = require('@playwright/test');
 const dns = require('dns');
 const fs = require('fs');
 const path = require('path');
-const { loadFunctions, req, mockFetch, jpeg, claude, CLAUDE_URL } = require('./helpers/mock-functions');
+const { loadFunctions, req, mockFetch, jpeg, claude, CLAUDE_URL, speech } = require('./helpers/mock-functions');
 
 const FIX = (f) => fs.readFileSync(path.join(__dirname, 'fixtures', 'redes', f), 'utf8');
 const html = (s, status) => new Response(s, { status: status || 200, headers: { 'content-type': 'text/html; charset=utf-8' } });
@@ -21,10 +21,10 @@ function aiItem(over) {
   R.AI_FIELDS.forEach((k) => { it[k] = null; });
   return Object.assign(it, { campos_inferidos: [], fotos: [], evidencia: '' }, over);
 }
-// IA simulada (Claude) y Whisper (transcripción).
-const ai = (calls, item, transcript) => [
+// IA simulada (Claude) y transcripción (Google Speech-to-Text).
+const ai = (calls, item, transcript, sttOpts) => [
   [CLAUDE_URL, (u, init) => { calls.chat.push(JSON.parse(init.body)); return claude({ inmuebles: item ? [aiItem(item)] : [] }); }],
-  ['https://api.openai.com/v1/audio/transcriptions', (u, init) => { calls.whisper.push(init.body); return json({ text: transcript || '' }); }],
+  ...speech(calls.voz, transcript, sttOpts),
 ];
 
 let origFetch, origLookup;
@@ -38,7 +38,7 @@ test.afterEach(() => { global.fetch = origFetch; dns.promises.lookup = origLooku
 test.describe('Importar desde el enlace de un post o de cualquier web', () => {
   test('Facebook: enlace para compartir → login → post insertado; texto completo, fotos sin la de perfil, sin teléfono', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     const POST = 'https://www.facebook.com/becainmobiliaria/posts/pfbid02abc';
     const net = mockFetch([
       ['https://www.facebook.com/share/1Cemg2hZ7V/', () => redirect(`https://www.facebook.com/login/?next=${encodeURIComponent(POST + '?mibextid=wwXIfr')}`)],
@@ -70,7 +70,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
 
   test('Instagram: carrusel completo y el audio del reel transcrito como fuente', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     mockFetch([
       ['https://www.instagram.com/p/DAbCdEfGh12/embed/captioned/', () => html(FIX('ig-embed.html'))],
       [/video\.mp4/, () => new Response(Buffer.alloc(50000, 1), { status: 200, headers: { 'content-type': 'video/mp4' } })],
@@ -80,7 +80,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
       'Este departamento tiene cinco años de antigüedad y cochera.'),
     ]);
     const res = await F.exports.importListingPage.__handler(req('u1', { ...ok, url: 'https://www.instagram.com/p/DAbCdEfGh12/?igsh=abc' }));
-    expect(calls.whisper).toHaveLength(1);
+    expect(calls.voz).toHaveLength(1);
     const sent = calls.chat[0].messages[0].content;
     expect(sent).toContain('VENDO DEPA EN MIRAFLORES');
     expect(sent).toContain('Lo que se dice en el video:\nEste departamento tiene cinco años');
@@ -93,7 +93,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
 
   test('TikTok: enlace corto → oEmbed (texto y miniatura)', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     mockFetch([
       ['https://vm.tiktok.com/ZMabc123/', () => redirect('https://www.tiktok.com/@corredora.ana/video/7312345678901234567?_r=1&_t=x')],
       ['https://www.tiktok.com/oembed', () => json(FIX('tiktok-oembed.json'))],
@@ -109,7 +109,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
 
   test('post privado o página de login → social-private sin gastar el límite; perfil → social-profile', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     mockFetch([
       ['https://www.facebook.com/plugins/post.php', () => html(FIX('fb-login.html'))],
       ['https://www.facebook.com/share/privado/', () => redirect('https://www.facebook.com/login/')],
@@ -131,7 +131,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
 
   test('cualquier web (página de un proyecto) y su lista de proyectos', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     mockFetch([
       ['https://tucaninversiones.com/balthazar/', () => html(`<html><head><title>Balthazar | Tucán Inversiones</title>
         <meta property="og:image" content="https://tucaninversiones.com/wp-content/uploads/balthazar-fachada.jpg"></head>
@@ -157,7 +157,7 @@ test.describe('Importar desde el enlace de un post o de cualquier web', () => {
 test.describe('Video subido: imágenes del video + audio transcrito', () => {
   test('extractListings fileType video: transcribe el audio y lo usa como fuente', async () => {
     const F = loadFunctions();
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     mockFetch(ai(calls, { tipo_propiedad: 'Departamento', tipo_publicacion: 'Alquiler', distrito: 'Lince', area_techada: '70 m2',
       precio: 'dos mil trescientos soles', nro_dormitorios: '2', titulo: 'Depa en Lince', descripcion: 'x' },
     'Hola, alquilo este departamento en Lince de 70 metros, dos dormitorios, a 2,300 soles.'));
@@ -165,8 +165,11 @@ test.describe('Video subido: imágenes del video + audio transcrito', () => {
     const res = await F.exports.extractListings.__handler(req('u1', { kind: 'document', fileType: 'video', sourceName: 'reel.mp4',
       text: '=== Video: reel.mp4 (2 imágenes del video; el audio se transcribe) ===',
       images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(200) }], photoIds: [], audio: { dataUrl: wav } }));
-    expect(calls.whisper).toHaveLength(1);
-    expect(calls.whisper[0].get('file').name).toBe('audio.wav');
+    expect(calls.voz).toHaveLength(1);
+    expect(calls.voz[0].url).toBe('https://us-central1-speech.googleapis.com/v2/projects/reco-test/locations/us-central1/recognizers/_:recognize');
+    expect(calls.voz[0].auth).toBe('Bearer token-gcp');
+    expect(calls.voz[0].body.config).toMatchObject({ autoDecodingConfig: {}, languageCodes: ['es-US'], model: 'chirp_2' });
+    expect(calls.voz[0].body.content).toBe(wav.split(',')[1]);
     const content = calls.chat[0].messages[0].content;
     expect(content[0].text).toContain('Lo que se dice en el video:\nHola, alquilo este departamento en Lince de 70 metros');
     expect(content.some((c) => c.type === 'image')).toBe(true);
@@ -176,6 +179,23 @@ test.describe('Video subido: imágenes del video + audio transcrito', () => {
     expect(Object.values(F.db.store).find((v) => v.kind === 'document')).toMatchObject({ fileType: 'video', audio: true });
     await expect(F.exports.extractListings.__handler(req('u1', { kind: 'document', fileType: 'video', text: 'x',
       images: [], photoIds: [], audio: { dataUrl: 'data:text/html;base64,AAAA' } }))).rejects.toMatchObject({ code: 'invalid-argument' });
+  });
+
+  test('audio largo que Google no acepta en el pedido directo: se transcribe por lotes desde Storage y se borra', async () => {
+    const F = loadFunctions();
+    const calls = { chat: [], voz: [] };
+    mockFetch(ai(calls, { tipo_propiedad: 'Casa', tipo_publicacion: 'Venta', distrito: 'Surco', area_techada: '200 m2', precio: 'US$ 350,000',
+      titulo: 'Casa en Surco', descripcion: 'x' }, 'Vendo casa en Surco de 200 metros a 350 mil dólares.', { sync: { status: 400 } }));
+    const wav = 'data:audio/wav;base64,' + Buffer.alloc(3000, 1).toString('base64');
+    const res = await F.exports.extractListings.__handler(req('u1', { kind: 'document', fileType: 'video', sourceName: 'tour.mp4',
+      text: '=== Video: tour.mp4 ===', images: [{ page: '1', dataUrl: 'data:image/jpeg;base64,' + 'A'.repeat(200) }], photoIds: [], audio: { dataUrl: wav } }));
+    const lote = calls.voz.find((c) => c.lote);
+    expect(lote.body.files[0].uri).toMatch(/^gs:\/\/reco-test\.appspot\.com\/tmp\/transcripciones\//);
+    expect(lote.body.recognitionOutputConfig).toEqual({ inlineResponseConfig: {} });
+    expect(calls.chat[0].messages[0].content[0].text).toContain('Lo que se dice en el video:\nVendo casa en Surco de 200 metros');
+    expect(res.drafts[0].row).toMatchObject({ distrito: 'Santiago de Surco', precio: '350000' });
+    await new Promise((ok) => setTimeout(ok, 10));
+    expect(Object.keys(F.bucket.files).filter((k) => k.startsWith('tmp/'))).toEqual([]); // el audio temporal se borra
   });
 });
 
@@ -204,7 +224,7 @@ test.describe('Conectar Facebook / Instagram y traer posts', () => {
     const state = auth.searchParams.get('state');
     expect(F.db.store[`metaOAuthStates/${state}`].uid).toBe('u1');
 
-    const calls = { chat: [], whisper: [] };
+    const calls = { chat: [], voz: [] };
     const FB_POST = { id: '111_222', message: 'VENDO casa en Surco 4 dorm, 180 m2 construidos, 200 m2 de terreno. US$ 350,000. Jr. Las Gaviotas 120',
       created_time: '2026-10-20T10:00:00+0000', permalink_url: 'https://www.facebook.com/111/posts/222', full_picture: 'https://scontent.xx.fbcdn.net/v/t39.30808-6/a_n.jpg',
       attachments: { data: [{ media_type: 'album', subattachments: { data: [
@@ -261,7 +281,7 @@ test.describe('Conectar Facebook / Instagram y traer posts', () => {
 
     // Instagram: el video del carrusel se transcribe.
     await mc(req('u1', { action: 'import', red: 'instagram', id: '178', postIds: ['17900000000000001'] }));
-    expect(calls.whisper).toHaveLength(1);
+    expect(calls.voz).toHaveLength(1);
     expect(calls.chat[1].messages[0].content).toContain('Lo que se dice en el video:\nLa casa tiene jardín.');
 
     // Límite por hora: se detiene y lo informa.

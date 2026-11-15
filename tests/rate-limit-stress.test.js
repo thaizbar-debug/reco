@@ -153,13 +153,13 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
     const uid = 'stress-test-user';
 
     // Calls 1-30: all should pass the rate-limit check.
-    // They will fail at the fetch() to OpenAI — that's expected and fine.
+    // They will fail at the fetch() to the Claude API — that's expected and fine.
     // We catch those errors and only care about resource-exhausted.
     for (let i = 1; i <= 30; i++) {
       try {
         await handler(makeRequest(uid));
       } catch (e) {
-        // "fetch is not defined" or OpenAI errors are expected — rate limit passed
+        // "fetch is not defined" or Claude API errors are expected — rate limit passed
         if (e.code === 'resource-exhausted') {
           throw new Error(`Call ${i} was rejected by rate limit but should have passed`);
         }
@@ -227,7 +227,7 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
       if (e.code === 'resource-exhausted') {
         resetError = e;
       }
-      // Other errors (fetch/OpenAI) are fine — rate limit passed
+      // Other errors (fetch/Claude API) are fine — rate limit passed
     }
     expect(resetError).toBeUndefined();
 
