@@ -6856,12 +6856,12 @@ function _rps(){
         <label for="pubFileInput" class="pub-drop-zone" id="pubDropZone"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
-          ondrop="event.preventDefault();this.classList.remove('drag');_pubHandleFiles(event.dataTransfer.files)">
+          ondrop="_pubDropPhotos(event,_pubHandleFiles)">
           <div class="dz-icon">📷</div>
-          <div class="dz-lbl">Arrastra tus fotos aquí o haz clic</div>
-          <div class="dz-sub">JPG, PNG, HEIC y más · Mínimo 3 fotos (máx ${_PUB_MAX_PHOTOS}) · La primera será portada</div>
+          <div class="dz-lbl">Arrastra fotos, una carpeta o un ZIP</div>
+          <div class="dz-sub">o haz clic para elegirlas · mínimo 3, máximo ${_PUB_MAX_PHOTOS} · la primera es la portada</div>
         </label>
-        <input type="file" id="pubFileInput" accept="image/*,.heic,.heif" multiple style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubHandleFiles(this.files)">
+        <input type="file" id="pubFileInput" accept="${_PUB_PHOTO_ACCEPT}" multiple style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubHandleFiles(this.files)">
         <div class="pub-photos" id="pubPhotoPreview" style="margin-top:12px">${_pubPhotoStripHTML('pd',_pd.photos)}</div>
         <div id="pubPhotoCount" style="font-size:11px;color:var(--muted);margin-top:6px">${_pubPhotoCountHTML()}</div>
         <h3 style="margin-top:22px">📝 Descripción</h3>
@@ -7162,11 +7162,78 @@ function _pubPhotoIssues(dataUrl){
   if(ai.personas) out.push('Personas');
   return out;
 }
+// ── Fotos desde la computadora: sueltas, carpetas (elegidas o arrastradas) y ZIP ──
+// Cada File puede traer _ruta ("Depa Lince/sala.jpg") para agrupar por carpeta.
+const _pubIsZip=(f)=>/\.zip$/i.test(f.name||'') || /zip/i.test(f.type||'');
+const _PUB_FOTO_EXT_RE=/\.(jpe?g|png|webp|heic|heif|gif|bmp|avif|tiff?)$/i;
+async function _pubZipImages(file){
+  const JSZip=await _pubLoadScript(_PUB_JSZIP_URL,'JSZip');
+  const zip=await JSZip.loadAsync(await file.arrayBuffer());
+  const base=String(file._ruta||file.webkitRelativePath||'').replace(/[^/]*$/,'');
+  const entradas=Object.values(zip.files)
+    .filter(e=>!e.dir && !/(^|\/)(__MACOSX|\.)/.test(e.name) && _PUB_FOTO_EXT_RE.test(e.name))
+    .sort((a,b)=>a.name.localeCompare(b.name,'es',{ numeric:true }));
+  const out=[];
+  for(const e of entradas){
+    const nombre=e.name.split('/').pop();
+    const ext=nombre.split('.').pop().toLowerCase();
+    const type=ext==='png'?'image/png':ext==='webp'?'image/webp':/^hei[cf]$/.test(ext)?'image/heic':'image/jpeg';
+    const f=new File([await e.async('blob')],nombre,{ type, lastModified:(e.date&&e.date.getTime())||Date.now() });
+    f._ruta=base+e.name;
+    out.push(f);
+  }
+  return out;
+}
+// Archivos elegidos o arrastrados → solo fotos (los ZIP se abren).
+async function _pubExpandPhotoFiles(files){
+  const out=[];
+  for(const f of Array.from(files||[])){
+    if(_pubIsZip(f)){
+      try{ toast(`🗜️ Abriendo ${f.name}…`); out.push(...await _pubZipImages(f)); }
+      catch(e){ console.warn('[reco] zip:', e); toast(`⚠️ No pudimos abrir ${f.name}.`); }
+    } else if(_isImageFile(f)) out.push(f);
+  }
+  return out;
+}
+// Lo que se arrastró (fotos, ZIP o carpetas enteras) → File[]. Las entradas se
+// leen antes de cualquier espera: el navegador las invalida al terminar el evento.
+async function _pubDroppedFiles(dt){
+  const entradas=Array.from((dt&&dt.items)||[]).map(it=>it.webkitGetAsEntry&&it.webkitGetAsEntry()).filter(Boolean);
+  if(!entradas.length) return Array.from((dt&&dt.files)||[]);
+  const out=[];
+  const leer=async(en)=>{
+    if(en.isFile){ const f=await new Promise((ok,no)=>en.file(ok,no)); f._ruta=String(en.fullPath||'').replace(/^\/+/,''); out.push(f); }
+    else if(en.isDirectory){
+      const r=en.createReader();
+      let lote;
+      do{ lote=await new Promise((ok,no)=>r.readEntries(ok,no)); for(const x of lote) await leer(x); }while(lote.length);
+    }
+  };
+  for(const en of entradas){ try{ await leer(en); }catch(e){ console.warn('[reco] carpeta:', e); } }
+  return out;
+}
+// ondrop de las zonas de fotos: fn(archivos).
+function _pubDropPhotos(ev,fn){
+  ev.preventDefault();
+  if(ev.currentTarget) ev.currentTarget.classList.remove('drag');
+  _pubDroppedFiles(ev.dataTransfer).then(fn);
+}
+// Elegir una carpeta entera (con sus subcarpetas) y pasarla a fn.
+function _pubPickFolder(fn){
+  const inp=document.createElement('input');
+  inp.type='file'; inp.multiple=true; inp.setAttribute('webkitdirectory',''); inp.setAttribute('directory','');
+  inp.style.cssText='position:absolute;left:-9999px;width:1px;height:1px;opacity:0';
+  inp.onchange=()=>{ const files=Array.from(inp.files||[]); inp.remove(); fn(files); };
+  document.body.appendChild(inp);
+  inp.click();
+}
+const _PUB_PHOTO_ACCEPT='image/*,.heic,.heif,.zip,application/zip';
 // Convierte los archivos y los agrega a la lista sin pasar el máximo ni
-// repetir fotos. → { agregadas, repetidas, fallidas }
+// repetir fotos (los ZIP se abren). → { agregadas, repetidas, fallidas }
 async function _pubAddPhotoFiles(list,files,max,onAdded){
   const r={ agregadas:0, repetidas:[], fallidas:0 };
-  for(const file of Array.from(files||[])){
+  files=await _pubExpandPhotoFiles(files);
+  for(const file of files){
     if(!_isImageFile(file)) continue;
     if(list.length>=max){ toast('⚠️ Máximo '+max+' fotos por inmueble.'); break; }
     try{
@@ -7224,7 +7291,7 @@ function _pubPeRender(){
     ${_pubPhotoAdviceHTML(_pe.photos)}
     ${_pubPhotoToolsHTML('pe')}
     <label class="pub-btn ghost" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:10px;cursor:pointer">+ Agregar fotos
-      <input type="file" accept="image/*,.heic,.heif" multiple style="display:none" onchange="_pubPeAdd(this.files);this.value=''"></label>
+      <input type="file" accept="${_PUB_PHOTO_ACCEPT}" multiple style="display:none" onchange="_pubPeAdd(this.files);this.value=''"></label>
     <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
       <button class="pub-btn primary" id="pubPeSave" ${_pe.guardando?'disabled':''} onclick="_pubPeSave()">${_pe.guardando?'Guardando…':`Guardar${nuevas?` (${nuevas} nueva${nuevas!==1?'s':''})`:''}`}</button>
     </div></div>`;
@@ -7359,7 +7426,8 @@ function _pubPhotoToolsHTML(ns){
   const n=_pubPhotoListOf(ns).length;
   const b='font-size:11px;padding:5px 10px';
   return `<div class="pub-photo-tools" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('${ns}')">📁 Desde Google Drive</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(f=>_pubDriveAdd('${ns}',f))" title="Elige una carpeta de tu computadora">📂 Carpeta</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('${ns}')">📁 Google Drive</button>
     ${_AI_COPY_ENABLED&&n>1?`<button type="button" class="pub-btn ghost" style="${b}" ${_pubPhotoAiBusy?'disabled':''} onclick="_pubPhotoAiRun('${ns}')" title="Elige la portada, ordena por ambientes y avisa de marcas de agua">${_pubPhotoAiBusy===ns?'✨ Revisando fotos…':'✨ Ordenar con IA'}</button>`:''}
   </div>`;
 }
@@ -8279,9 +8347,18 @@ function _pubGroupPhotos(items){
   });
   return groups;
 }
+// Carpeta inmediata de una foto ("Depa Lince/sala.jpg" → "Depa Lince"; suelta → '').
+function _pubFotoCarpeta(f){
+  const partes=String(f.webkitRelativePath||f._ruta||'').replace(/^\/+/,'').split('/');
+  return partes.length>1?partes[partes.length-2]:'';
+}
+// Todas las fotos juntas (sueltas, carpeta o ZIP). Con subcarpetas: un grupo
+// por subcarpeta, asignado al inmueble de nombre más parecido. Sin ellas: por
+// fecha y lugar de captura (EXIF), el grupo N al inmueble N.
 async function _pubPhotoBatchFiles(files){
-  const list=Array.from(files||[]).filter(_isImageFile).slice(0,_PUB_BATCH_MAX);
+  const elegidos=Array.from(files||[]); // copia: vaciar el input vacía su FileList
   const inp=document.getElementById('pubBatchInput'); if(inp) inp.value='';
+  const list=(await _pubExpandPhotoFiles(elegidos)).slice(0,_PUB_BATCH_MAX);
   if(!list.length) return;
   const items=[];
   for(let i=0;i<list.length;i++){
@@ -8289,12 +8366,24 @@ async function _pubPhotoBatchFiles(files){
     const f=list[i];
     let exif={};
     if(/jpe?g$/i.test(f.type||f.name)) exif=_pubExifInfo(await f.slice(0,262144).arrayBuffer());
-    try{ items.push({ ...exif, time:exif.time||f.lastModified||0, dataUrl:await _pubToJpegDataUrl(f) }); }
+    try{ items.push({ ...exif, time:exif.time||f.lastModified||0, carpeta:_pubFotoCarpeta(f), dataUrl:await _pubToJpegDataUrl(f) }); }
     catch(e){ console.warn('[reco] foto descartada:', f.name, e); }
   }
   const rows=_pubBulkValidRows();
-  // Propuesta: el grupo N va al inmueble N (en el orden de la tabla).
-  _pubPhotoGroups=_pubGroupPhotos(items).map((g,i)=>({ photos:g.map(x=>x.dataUrl), when:g[0].time, row:i<rows.length?i:-1 }));
+  const carpetas=[...new Set(items.map(x=>x.carpeta))];
+  if(carpetas.length>=2){
+    const usadas=new Set();
+    _pubPhotoGroups=carpetas.map(c=>{
+      const g=items.filter(x=>x.carpeta===c);
+      let row=c?_pubDriveMatchRow(c,rows,usadas):-1;
+      if(row<0 && c) row=rows.findIndex((x,i)=>!usadas.has(i));
+      if(row>=0) usadas.add(row);
+      return { photos:g.map(x=>x.dataUrl), when:0, row, nombre:c||'Fotos sueltas' };
+    });
+  } else {
+    // Propuesta: el grupo N va al inmueble N (en el orden de la tabla).
+    _pubPhotoGroups=_pubGroupPhotos(items).map((g,i)=>({ photos:g.map(x=>x.dataUrl), when:g[0].time, row:i<rows.length?i:-1 }));
+  }
   _pubDocPhotoPool=_pubDocPhotoPool.concat(items.map(x=>x.dataUrl));
   toast(`📸 ${items.length} foto${items.length!==1?'s':''} en ${_pubPhotoGroups.length} grupo${_pubPhotoGroups.length!==1?'s':''}. Revisa a qué inmueble va cada uno.`);
   _pubBulkRefresh();
@@ -8318,10 +8407,20 @@ function _pubPhotoGroupsApply(){
   _pubBulkRefresh();
 }
 function _pubPhotoBatchHTML(rows){
-  const input=`<input type="file" id="pubBatchInput" accept="image/*,.heic,.heif" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="_pubPhotoBatchFiles(this.files)">`;
+  const input=`<input type="file" id="pubBatchInput" accept="${_PUB_PHOTO_ACCEPT}" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="_pubPhotoBatchFiles(this.files)">`;
   if(!_pubPhotoGroups.length){
-    return `${input}<div style="margin-top:10px;font-size:12px;color:var(--muted)">📦 ¿Tienes todas las fotos juntas? <a href="#" onclick="event.preventDefault();document.getElementById('pubBatchInput').click()" style="color:var(--blue);font-weight:600">Súbelas de una vez</a> y las agrupamos por inmueble según cuándo y dónde se tomaron.
-      ¿Están en Google Drive? <a href="#" onclick="event.preventDefault();_pubDriveOpen('batch')" style="color:var(--blue);font-weight:600">Pega el enlace de la carpeta</a> (una subcarpeta por inmueble).</div>`;
+    // Con un solo inmueble basta la zona de fotos de abajo.
+    if(rows.length<2) return input;
+    const ayuda='Sube las fotos de todos tus inmuebles juntas (fotos sueltas, una carpeta, un ZIP o Google Drive). Si vienen en una subcarpeta por inmueble, cada subcarpeta va a su inmueble; si no, las agrupamos por fecha y lugar. Después revisas y confirmas.';
+    const b='font-size:12px;padding:6px 12px';
+    return `${input}<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;border:1px dashed var(--border);border-radius:10px;background:#fff"
+        ondragover="event.preventDefault()" ondrop="_pubDropPhotos(event,_pubPhotoBatchFiles)">
+      <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600">📦 ¿Fotos de varios inmuebles juntas? ${_pubInfoHTML('pubLoteAyuda',ayuda)}</span>
+      <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="pub-btn ghost" style="${b}" onclick="document.getElementById('pubBatchInput').click()">Subir todas</button>
+        <button class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(_pubPhotoBatchFiles)">📂 Carpeta</button>
+        <button class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('batch')">📁 Google Drive</button>
+      </span></div>${_pubInfoBoxHTML('pubLoteAyuda',ayuda)}`;
   }
   const opts=sel=>`<option value="-1"${sel===-1?' selected':''}>— no asignar —</option>`+rows.map((r,i)=>`<option value="${i}"${sel===i?' selected':''}>${i+1}. ${esc(String(r.row.direccion||r.row.titulo||'').slice(0,40))}</option>`).join('');
   return `${input}<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
@@ -8343,7 +8442,9 @@ function _pubBulkPhotosHTML(){
   const a=_pubBulkCurrentRow();
   const photos=a.photos||[];
   const done=list.filter(x=>x.photos&&x.photos.length).length;
-  return `<div class="pub-tip"><span>📸</span><div><strong>Agrega las fotos, inmueble por inmueble.</strong> Los anuncios con fotos reciben muchos más contactos. Puedes saltar los que quieras y agregarlas después desde "Mis publicaciones".</div></div>
+  const ayuda='Los avisos con fotos reciben más contactos. Las fotos que encontramos en tus enlaces, PDF o presentaciones ya están en cada inmueble. Puedes saltar este paso y agregarlas después en "Mis publicaciones".';
+  return `<div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700">📸 Fotos de cada inmueble<span style="margin-left:auto"></span>${_pubInfoHTML('pubFotosAyuda',ayuda)}</div>
+    ${_pubInfoBoxHTML('pubFotosAyuda',ayuda)}
     ${_pubPhotoBatchHTML(list)}
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px">
       <div style="font-size:13px;font-weight:700">Inmueble ${_pubBulkPhotoIdx+1} de ${list.length}</div>
@@ -8360,17 +8461,16 @@ function _pubBulkPhotosHTML(){
       onclick="_pubBulkOpenPhotoPicker()"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
-      ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkPhotoFiles(event.dataTransfer.files)">
+      ondrop="_pubDropPhotos(event,_pubBulkPhotoFiles)">
       <div class="dz-icon">📷</div>
-      <div class="dz-lbl">Arrastra las fotos de este inmueble o haz clic para elegirlas</div>
-      <div class="dz-sub">JPG, PNG o fotos de iPhone · hasta ${_PUB_BULK_PHOTO_MAX} por inmueble</div>
+      <div class="dz-lbl">Arrastra fotos, una carpeta o un ZIP</div>
+      <div class="dz-sub">o haz clic para elegirlas · hasta ${_PUB_BULK_PHOTO_MAX}</div>
     </div>
-    <input type="file" id="pubBulkPhotoInput" accept="image/*,.heic,.heif" multiple
+    <input type="file" id="pubBulkPhotoInput" accept="${_PUB_PHOTO_ACCEPT}" multiple
       style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"
       onchange="_pubBulkPhotoFiles(this.files)">
-    <div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',photos)}</div>
-    ${photos.length?_pubPhotoAdviceHTML(photos):'<div style="font-size:12px;color:var(--muted)">Sin fotos todavía.</div>'}
     ${_pubPhotoToolsHTML('bulk')}
+    ${photos.length?`<div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',photos)}</div>${_pubPhotoAdviceHTML(photos)}`:''}
     ${_pubBulkPoolHTML(a)}
     <div class="pub-actions" style="margin-top:18px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -9968,7 +10068,7 @@ function _pubBulkPoolAdd(i){
 function _pubBulkPoolHTML(a){
   if(!_pubDocPhotoPool.length) return '';
   const used=new Set(_pubBulkRows.flatMap(r=>r.photos||[]));
-  return `<div style="margin-top:14px"><div style="font-size:12px;font-weight:600">Fotos del documento <span style="font-weight:400;color:var(--muted)">· toca una para agregarla a este inmueble (las atenuadas ya están asignadas)</span></div>
+  return `<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff"><div style="font-size:13px;font-weight:600">📎 Fotos de tus archivos y enlaces (${_pubDocPhotoPool.length}) <span style="font-weight:400;font-size:11px;color:var(--muted)">· toca para agregar a este inmueble</span></div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${_pubDocPhotoPool.map((ph,i)=>`<img src="${ph}" onclick="_pubBulkPoolAdd(${i})" title="Agregar a este inmueble" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${(a.photos||[]).includes(ph)?'var(--blue)':'transparent'};opacity:${used.has(ph)&&!(a.photos||[]).includes(ph)?'.45':'1'}">`).join('')}</div></div>`;
 }
 

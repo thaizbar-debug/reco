@@ -76,7 +76,7 @@ test.describe('Fase 2: fotos en bloque', () => {
       _pubBulkLoadRows([{ ...base, direccion: 'Casa A' }, { ...base, direccion: 'Casa B' }]);
       _pubBulkGo(3);
     });
-    expect(await page.evaluate(() => document.getElementById('pubBulkStepBody').innerHTML)).toContain('Súbelas de una vez');
+    expect(await page.evaluate(() => document.getElementById('pubBulkStepBody').innerHTML)).toContain('Subir todas');
     await page.setInputFiles('#pubBatchInput', FOTOS);
     await page.waitForFunction(() => _pubPhotoGroups.length > 0, null, { timeout: 30000 });
     const g = await page.evaluate(() => ({ groups: _pubPhotoGroups.map(x => [x.photos.length, x.row]), html: document.getElementById('pubBulkStepBody').innerHTML }));

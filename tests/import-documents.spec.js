@@ -107,7 +107,7 @@ test.describe('Importar documentos con IA', () => {
       _pubBulkPoolAdd(1); _pubBulkPoolAdd(1);
       return { html, photos: _pubBulkRows[0].photos.length };
     });
-    expect(r.html).toContain('Fotos del documento');
+    expect(r.html).toContain('Fotos de tus archivos y enlaces');
     expect(r.photos).toBe(1); // la misma foto no se agrega dos veces
   });
 
