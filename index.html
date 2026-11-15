@@ -6664,7 +6664,7 @@ function _pubFeatGroupHelp(k){
 
 function openPublish(){
   if(!auth.currentUser){toast('⚠️ Debes iniciar sesión para publicar un inmueble');openAuthModal('login',openPublish);return;}
-  _ps=1;_pubTab='single';
+  _ps=1;_pubTab='bulk'; // una sola entrada: ¿qué tienes? (o llenar a mano)
   if(pubMap){try{pubMap.remove();}catch(e){}pubMap=null;pubMarker=null;}
   _pd={op:'Venta',type:'Departamento',address:'',district:'',lat:null,lng:null,
        hideExact:false,currency:'USD',price:'',areaTerr:'',area:'',
@@ -6698,13 +6698,10 @@ function _pubSetTab(tab){_pubTab=tab;if(pubMap){pubMap.remove();pubMap=null;pubM
 function renderPublish(){
   document.getElementById('vPublish').innerHTML=`<section class="pub-wrap">
     <div style="max-width:1100px;margin:0 auto">
-      <h1 class="pub-title">Publicar Inmueble</h1>
-      <p class="pub-subtitle">Sube tu propiedad a Reco y llega a compradores e inversionistas.</p>
-      <div class="pub-tabs">
-        <button class="pub-tab${_pubTab==='single'?' active':''}" onclick="_pubSetTab('single')">📋 Publicar uno</button>
-        <button class="pub-tab${_pubTab==='bulk'?' active':''}" onclick="_pubSetTab('bulk')">📊 Subir varios (CSV / Excel)</button>
-      </div>
+      <h1 class="pub-title">Publicar inmuebles</h1>
+      <p class="pub-subtitle">Uno o cien: trae lo que ya tienes y la IA arma las fichas.</p>
       ${_pubTab==='bulk'?_pubBulkHTML():`
+        <div style="margin:0 0 6px"><button type="button" class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubSetTab('bulk')">← Otras formas de publicar</button></div>
         <div class="pub-stepper">
           <div class="pub-step ${_ps===1?'active':'done'}"><div class="circle">${_ps>1?'✓':'1'}</div><div class="label">Ubicación y datos</div></div>
           <div class="step-line ${_ps>1?'done':''}"></div>
@@ -7438,13 +7435,14 @@ async function _pubPhotoAiRun(ns,opts){
 // Las tres formas de traer fotos, siempre juntas y con el mismo nombre:
 // fotos sueltas (o un ZIP), una carpeta de la computadora y Google Drive.
 // Van dentro de la zona de fotos (por eso no propagan el clic).
-function _pubPhotoSourcesHTML(ns){
-  const b='flex:1 1 140px;font-size:12px;padding:8px 10px';
+function _pubPhotoSourcesHTML(ns,corto){
+  const b=corto?'flex:1 1 0;min-width:0;font-size:12px;padding:7px 4px;white-space:nowrap':'flex:1 1 140px;font-size:12px;padding:8px 10px';
   const no='event.preventDefault();event.stopPropagation();';
+  const t=corto?['🖼️ Fotos','📂 Carpeta','☁️ Drive']:['🖼️ Elegir fotos','📂 Elegir carpeta','☁️ Google Drive'];
   return `<div class="pub-photo-sources" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-top:12px;width:100%;max-width:520px;margin-left:auto;margin-right:auto">
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFiles(f=>_pubDriveAdd('${ns}',f))" title="Fotos sueltas o un ZIP de tu computadora o celular">🖼️ Elegir fotos</button>
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFolder(f=>_pubDriveAdd('${ns}',f))" title="Todas las fotos de una carpeta de tu computadora">📂 Elegir carpeta</button>
-    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubDriveOpen('${ns}')" title="Pega el enlace de una carpeta compartida de Google Drive">☁️ Google Drive</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFiles(f=>_pubDriveAdd('${ns}',f))" title="Fotos sueltas o un ZIP de tu computadora o celular">${t[0]}</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubPickFolder(f=>_pubDriveAdd('${ns}',f))" title="Todas las fotos de una carpeta de tu computadora">${t[1]}</button>
+    <button type="button" class="pub-btn ghost" style="${b}" onclick="${no}_pubDriveOpen('${ns}')" title="Pega el enlace de una carpeta compartida de Google Drive">${t[2]}</button>
   </div>`;
 }
 // Bajo la tira de fotos: ordenar con IA (con 2 fotos o más).
@@ -7603,6 +7601,7 @@ function _pubDriveAdd(ns,files){
   if(ns==='bulk') return _pubBulkPhotoFiles(files);
   if(ns==='pe') return _pubPeAdd(files);
   if(ns==='batch') return _pubPhotoBatchFiles(files);
+  if(ns==='start') return _pubStartAdd(files);
   return _pubHandleFiles(files);
 }
 function _pubDriveOpen(ns){
@@ -8100,6 +8099,7 @@ function _pubInfoBoxHTML(id,texto){
 }
 const _PUB_ARCHIVO_AYUDA='Excel o CSV (con la plantilla o tu propio formato), PDF, Word, PowerPoint, chat de WhatsApp exportado (.zip o .txt), flyers o capturas (varias a la vez) y videos de reels o TikTok. La IA arma las fichas con sus fotos; tú revisas y publicas.';
 const _PUB_TEXTO_AYUDA='Notas del celular, mensajes de WhatsApp o el texto de un aviso. Uno o muchos inmuebles.';
+const _PUB_FOTOS_AYUDA='Elige las fotos de un inmueble y, si quieres, escribe o dicta lo que sabes (precio, distrito, metros). La IA arma la ficha; si no escribes nada, completas los datos tú.';
 const _PUB_WABOT_AYUDA='Envía tus inmuebles a nuestro WhatsApp como texto, fotos o notas de voz y escribe LISTO. Aquí los revisas y publicas.';
 function _pubBulkUploadHTML(){
   // Recuadros iguales: título (con ⓘ), contenido y botones del mismo ancho al pie.
@@ -8134,7 +8134,16 @@ function _pubBulkUploadHTML(){
       <div style="${box}">
         ${head('✍️ Pegar texto','pubTextoAyuda',_PUB_TEXTO_AYUDA)}
         <textarea id="pubPasteText" rows="5" placeholder="Ej: Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12px;resize:vertical"></textarea>
+        ${_pubDictarHTML('pubPasteText')}
         <div style="${pie}"><button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubTextImport()">Importar</button></div>
+      </div>
+      <div style="${box}" id="pubStartCard" ondragover="event.preventDefault()" ondrop="_pubDropPhotos(event,f=>_pubDriveAdd('start',f))">
+        ${head('📷 Fotos del inmueble','pubFotosAyuda',_PUB_FOTOS_AYUDA)}
+        <div id="pubStartFotos">${_pubStartFotosHTML()}</div>
+        <div style="margin-top:-4px">${_pubPhotoSourcesHTML('start',true)}</div>
+        <textarea id="pubStartNota" rows="2" placeholder="Cuéntanos del inmueble (opcional): precio, distrito, metros…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12px;resize:vertical;margin-top:8px"></textarea>
+        ${_pubDictarHTML('pubStartNota')}
+        <div style="${pie}"><button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubStartImport()">Continuar</button></div>
       </div>
       ${_PUB_WA_BOT_NUMBER?`<div style="${box}">
         ${head('🤖 ReCo en tu WhatsApp','pubWaBotAyuda',_PUB_WABOT_AYUDA)}
@@ -8142,7 +8151,8 @@ function _pubBulkUploadHTML(){
         <div id="pubWaBotBox" style="${pie}"><button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubWaBotConnect()">Importar</button></div>
       </div>`:''}
     </div>
-    <div id="pubBulkPreview"></div>`;
+    <div id="pubBulkPreview"></div>
+    <div style="text-align:center;margin-top:14px"><button type="button" class="pub-btn ghost" style="font-size:13px;padding:8px 16px" onclick="_pubSetTab('single')">✏️ Prefiero llenarlo a mano</button></div>`;
 }
 // ── Bot de WhatsApp (roadmap 2.1) ──
 // Número del bot en formato internacional sin "+" (p. ej. '51987654321').
@@ -9739,6 +9749,77 @@ async function _pubTextImport(){
       { source:isChat?'whatsapp':'text', sourceName:_pubBulkFileName, icon:'✍️',
         empty:'No encontramos inmuebles en el texto. Incluye al menos precio, ubicación o áreas.' }, []);
   }catch(e){ _pubImportFail(e,'No se pudo leer el texto.'); }
+}
+
+// Embudo de publicación (métricas para el panel de admin). Nunca bloquea.
+function _pubTrack(paso,extra){
+  try{ if(!auth.currentUser) return; _getFunctions().httpsCallable('trackPublish')({ paso, ...(extra||{}) }).catch(()=>{}); }catch(_){}
+}
+// ── Empezar por las fotos: fotos + una nota (escrita o dictada) ──
+// Con nota, la IA arma la ficha y las fotos son suyas. Sin nota (o si la IA
+// no encuentra datos), queda una ficha con las fotos para completar.
+let _pubStartPhotos=[];
+async function _pubStartAdd(files){
+  const r=await _pubAddPhotoFiles(_pubStartPhotos,files,_PUB_BULK_PHOTO_MAX,_pubStartRefresh);
+  _pubStartRefresh();
+  return r;
+}
+function _pubStartRemove(i){ _pubStartPhotos.splice(i,1); _pubStartRefresh(); }
+function _pubStartRefresh(){ const el=document.getElementById('pubStartFotos'); if(el) el.innerHTML=_pubStartFotosHTML(); }
+function _pubStartFotosHTML(){
+  if(!_pubStartPhotos.length) return `<div style="font-size:12px;color:var(--muted)">Desde tu computadora, celular o Google Drive.</div>`;
+  const n=_pubStartPhotos.length;
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap">${_pubStartPhotos.slice(0,8).map((u,i)=>`<div style="position:relative;width:44px;height:44px;border-radius:6px;overflow:hidden"><img src="${u}" style="width:100%;height:100%;object-fit:cover"><button type="button" onclick="_pubStartRemove(${i})" title="Quitar" style="position:absolute;top:0;right:0;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:10px;line-height:14px;width:14px;height:14px;padding:0;cursor:pointer">✕</button></div>`).join('')}${n>8?`<div style="width:44px;height:44px;border-radius:6px;background:var(--light);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted)">+${n-8}</div>`:''}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">${n} foto${n!==1?'s':''} lista${n!==1?'s':''}</div>`;
+}
+async function _pubStartImport(){
+  if(!_pubStartPhotos.length){ toast('⚠️ Primero elige las fotos del inmueble.'); return; }
+  const ta=document.getElementById('pubStartNota');
+  const nota=String(ta && ta.value || '').trim();
+  const photos=_pubStartPhotos.slice();
+  const vacia=()=>{
+    _pubBulkFileName='Fotos';
+    _pubBulkLoadRows([nota?{ descripcion:nota }:{}]);
+    _pubBulkSource='single'; _pubBulkRows[0].source='single';
+    _pubBulkRows[0].photos=photos; _pubDocPhotoPool=[]; _pubStartPhotos=[];
+    _pubBulkPhotoIdx=0; _pubBulkRefresh();
+    if(photos.length>=2) _pubPhotoAutoOrden('bulk',_pubBulkRows[0]);
+    _pubTrack('fotos',{ conNota:!!nota });
+  };
+  if(nota.length<15) return vacia();
+  if(!_pubImportReady('leer tu nota')) return;
+  try{
+    _pubBulkFileName='Fotos y nota';
+    const n=await _pubExtractParts([{ text:nota }],{ kind:'text', channel:'text', sourceName:'Fotos y nota' },
+      { source:'text', sourceName:'Fotos y nota', icon:'📷', assignAllIfSingle:true, empty:'' },
+      photos.map((dataUrl,i)=>({ id:`f-${i+1}`, dataUrl })));
+    if(!n){ toast('📷 No encontramos todos los datos en tu nota: complétalos en la ficha.'); return vacia(); }
+    _pubStartPhotos=[];
+    const a=_pubBulkRows.length===1?_pubBulkRows[0]:null;
+    if(a){ _pubBulkPhotoIdx=0; _pubBulkRefresh(); if(a.photos.length>=2) _pubPhotoAutoOrden('bulk',a); }
+  }catch(e){ _pubImportFail(e,'No se pudo leer tu nota.'); }
+}
+
+// Dictado con el micrófono (Web Speech API del navegador; no envía audio a ReCo).
+function _pubDictarOk(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+function _pubDictarHTML(id){
+  if(!_pubDictarOk()) return '';
+  return `<button type="button" class="pub-btn ghost" id="${id}Mic" onclick="_pubDictar('${id}')" title="Dicta en vez de escribir" style="font-size:12px;padding:6px 10px;margin-top:6px;align-self:flex-start">🎤 Dictar</button>`;
+}
+let _pubDictado=null;
+function _pubDictar(id){
+  const btn=document.getElementById(id+'Mic'), ta=document.getElementById(id);
+  if(_pubDictado){ try{ _pubDictado.stop(); }catch(_){} return; }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR||!ta) return;
+  const rec=new SR(); rec.lang='es-PE'; rec.continuous=true; rec.interimResults=false;
+  const base=ta.value;
+  let dicho='';
+  rec.onresult=(e)=>{ for(let i=e.resultIndex;i<e.results.length;i++) if(e.results[i].isFinal) dicho+=(dicho?' ':'')+e.results[i][0].transcript.trim(); ta.value=(base?base.replace(/\s*$/,' '):'')+dicho; };
+  rec.onerror=(e)=>{ if(e.error==='not-allowed') toast('⚠️ Permite el micrófono para dictar.'); };
+  rec.onend=()=>{ _pubDictado=null; if(btn){ btn.textContent='🎤 Dictar'; btn.classList.remove('primary'); } };
+  try{ rec.start(); _pubDictado=rec; if(btn){ btn.textContent='⏹ Detener'; btn.classList.add('primary'); } }
+  catch(_){ toast('⚠️ No pudimos usar el micrófono.'); }
 }
 
 // ── Chat de WhatsApp exportado (roadmap 1.3) ──
