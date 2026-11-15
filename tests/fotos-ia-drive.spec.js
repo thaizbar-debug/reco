@@ -171,7 +171,7 @@ test.describe('Fotos desde Google Drive', () => {
       const row = (direccion, distrito) => _pubBulkEntry({ direccion, distrito, tipo_propiedad: 'Departamento', tipo_publicacion: 'Venta',
         tipo_moneda: 'USD', precio: '100000', area_techada: '80', titulo: 'Depa', descripcion: 'x' }, { photos: [] });
       _pubBulkRows = [row('Av. Pardo 340', 'Miraflores'), row('Jr. Huiracocha 1200', 'Jesús María')];
-      _pubBulkPhotoIdx = 0; _pubBulkGo(3);
+      _pubBulkPhotoIdx = -1; _pubBulkGo(2); // ninguna tarjeta abierta: el cargador de arriba reparte
       Object.assign(__drive.carpetas, { RAIZ000002: { name: 'Fotos', hijos: ['SUBHUIRA01', 'SUBPARDO01'] },
         SUBHUIRA01: { name: 'Huiracocha 1200', hijos: ['FOTOHUI001', 'FOTOHUI002'] }, SUBPARDO01: { name: 'Pardo 340 - Miraflores', hijos: ['FOTOPAR001'] } });
       Object.assign(__drive.archivos, { FOTOHUI001: { name: 'a.jpg', mimeType: 'image/jpeg' }, FOTOHUI002: { name: 'b.jpg', mimeType: 'image/jpeg' },

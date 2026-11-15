@@ -7401,7 +7401,14 @@ function _pubPhotoSmall(dataUrl){
     img.src=dataUrl;
   });
 }
-async function _pubPhotoAiRun(ns){
+// Orden con IA sin que el usuario lo pida (al tener fotos): una vez por
+// inmueble y en silencio si falla.
+function _pubPhotoAutoOrden(ns,a){
+  if(!_AI_COPY_ENABLED || _pubPhotoAiBusy) return;
+  if(a) a._iaOrden=true;
+  _pubPhotoAiRun(ns,{ auto:true });
+}
+async function _pubPhotoAiRun(ns,opts){
   const L=_pubPhotoListOf(ns);
   if(L.length<2 || _pubPhotoAiBusy) return;
   _pubPhotoAiBusy=ns; _pubPhotoRefresh(ns);
@@ -7423,7 +7430,7 @@ async function _pubPhotoAiRun(ns){
     toast(`✨ Fotos ordenadas${port?` · portada: ${port.toLowerCase()}`:''}${marcas?` · ${marcas} con marca de agua`:''}. Puedes cambiar lo que quieras.`);
   }catch(e){
     console.warn('[reco] analyzePhotos:', e);
-    toast('⚠️ '+((e&&e.message)||'No pudimos revisar las fotos.'));
+    if(!(opts&&opts.auto)) toast('⚠️ '+((e&&e.message)||'No pudimos revisar las fotos.'));
   }finally{
     _pubPhotoAiBusy=null; _pubPhotoRefresh(ns);
   }
@@ -7619,7 +7626,7 @@ function _pubDriveRender(){
     <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div style="font-weight:800;font-size:1.05rem">☁️ Traer fotos de Google Drive</div>
       <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" ${ocupado?'disabled':''} onclick="_pubDriveClose()">Cerrar</button></div>
     <ol style="font-size:.82rem;line-height:1.6;margin:8px 0 10px;padding-left:20px">
-      <li>En Google Drive, clic derecho en la carpeta${_drv.ns==='batch'?' (la que tiene una subcarpeta por inmueble)':' de este inmueble'} → <b>Compartir</b>.</li>
+      <li>En Google Drive, clic derecho en la carpeta${(_drv.ns==='batch'||(_drv.ns==='bulk'&&_pubBulkRows.length>=2&&!_pubBulkCurrentRow()))?' (la que tiene una subcarpeta por inmueble)':' de este inmueble'} → <b>Compartir</b>.</li>
       <li>En "Acceso general" elige <b>Cualquier persona con el enlace</b> y toca <b>Copiar enlace</b>.</li>
       <li>Pégalo aquí:</li>
     </ol>
@@ -7654,6 +7661,9 @@ async function _pubDriveLink(){
     const r=await _driveRead(_drv.link);
     if(!r.fotos.length && !r.carpetas.length) throw new Error('No encontramos fotos en esa carpeta.');
     _drv.res=r; _drv.estado='';
+    // Cargador de "Revisar y publicar": con una subcarpeta por inmueble (o sin
+    // tarjeta abierta) se reparte entre los inmuebles, igual que una carpeta.
+    if(_drv.ns==='bulk' && _pubBulkRows.length>=2 && (r.carpetas.length>=2 || !_pubBulkCurrentRow())) _drv.ns='batch';
     if(_drv.ns==='batch') return await _pubDriveBatch(r);
     if(!r.carpetas.length) return await _pubDriveUse(-1);
     if(!r.fotos.length && r.carpetas.length===1) return await _pubDriveUse(0);
@@ -7686,7 +7696,7 @@ async function _pubDriveImport(fotos,auth){
 // más parecido (o en orden). Las fotos sueltas se agrupan por fecha y lugar.
 async function _pubDriveBatch(r){
   if(!r.carpetas.length) return _pubDriveImport(r.fotos,r.auth);
-  const rows=_pubBulkValidRows();
+  const rows=_pubBulkRows;
   const total=r.carpetas.reduce((s,c)=>s+Math.min(c.fotos.length,_PUB_BULK_PHOTO_MAX),0);
   _drv.estado=`Descargando 0 de ${total}…`; _drv.error=''; _pubDriveRender();
   let hechas=0, fallidas=0;
@@ -8031,13 +8041,15 @@ function _pubShowSentScreen(){
     + '</div></div>';
 }
 // ── Carga masiva ──
-// MEJ-03 — Recorrido en cuatro pasos: 1 Archivo · 2 Validar · 3 Fotos · 4 Enviar
+// Recorrido en dos pasos: 1 Importar ("¿Qué tienes?") · 2 Revisar y publicar
+// (una tarjeta por inmueble con sus datos y sus fotos).
 let _pubBulkStep = 1;
 let _pubBulkFileName = '';
-const _PUB_BULK_STEPS = ['Archivo','Validar y corregir','Fotos','Enviar'];
+const _PUB_BULK_STEPS = ['Importar','Revisar y publicar'];
 
 function _pubBulkGo(step){
-  _pubBulkStep = step;
+  _pubBulkStep = (step===3||step===4) ? 2 : step; // antiguos pasos de fotos y envío
+  if(_pubBulkStep===2 && _pubBulkRows.length===1) _pubBulkPhotoIdx=0;
   renderPublish();
   const el=document.getElementById('pubBulkStepBody');
   if(el && el.scrollIntoView) try{ el.scrollIntoView({block:'nearest'}); }catch(_){ }
@@ -8066,7 +8078,7 @@ function _pubBulkStepperHTML(){
 function _pubBulkHTML(){
   return `<div class="pub-card" style="max-width:900px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-      <h3 style="margin:0">📊 Subir varios inmuebles</h3>
+      <h3 style="margin:0">${_pubBulkStep===2?'✅ Revisa y publica':'¿Qué tienes de tus inmuebles?'}</h3>
       ${_pubBulkStep===1?`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla Excel</button>`:`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkReset()">↺ Empezar de nuevo</button>`}
     </div>
     ${_pubBulkStepperHTML()}
@@ -8075,9 +8087,7 @@ function _pubBulkHTML(){
 }
 function _pubBulkStepBodyHTML(){
   if(_pubBulkStep==='map') return _pubBulkMapHTML();
-  if(_pubBulkStep===2) return _pubBulkValidateHTML();
-  if(_pubBulkStep===3) return _pubBulkPhotosHTML();
-  if(_pubBulkStep===4) return _pubBulkSendHTML();
+  if(_pubBulkStep===2) return _pubBulkReviewHTML();
   return _pubBulkUploadHTML();
 }
 // Botón ⓘ con su ayuda (oculta hasta tocarlo; el texto también va de tooltip).
@@ -8188,6 +8198,7 @@ function _pubBulkEdit(i,key,val){
 }
 function _pubBulkRemoveRow(i){
   const gone=_pubBulkRows.splice(i,1)[0];
+  if(_pubBulkPhotoIdx===i) _pubBulkPhotoIdx=-1; else if(_pubBulkPhotoIdx>i) _pubBulkPhotoIdx--;
   _pubDraftsDelete([gone&&gone.draftId]);
   if(!_pubBulkRows.length){ _pubBulkReset(); return; }
   _pubBulkRefresh();
@@ -8206,48 +8217,106 @@ function _pubBulkCounts(){
   const valid=_pubBulkRows.filter(a=>a.valid).length;
   return { total:_pubBulkRows.length, valid, invalid:_pubBulkRows.length-valid };
 }
-function _pubBulkValidateHTML(){
+// ── Paso 2: Revisar y publicar ──
+// Una tarjeta por inmueble: resumen, estado y fotos; al abrirla, sus datos y
+// su grilla de fotos. Un solo cargador de fotos: dentro de la tarjeta abierta
+// (van a ese inmueble) o, con todas cerradas, arriba (con una subcarpeta por
+// inmueble se reparten solas; si no, se agrupan por fecha y lugar).
+const _PUB_BULK_LABELS={ direccion:'Dirección', distrito:'Distrito', tipo_publicacion:'Operación', tipo_propiedad:'Tipo',
+  tipo_moneda:'Moneda', precio:'Precio', area_techada:'Área techada (m²)', area_terreno:'Área de terreno (m²)', titulo:'Título', descripcion:'Descripción' };
+function _pubBulkReviewHTML(){
   _pubBulkMarkDupes();
   const c=_pubBulkCounts();
-  if(!c.total) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay filas cargadas.</div>';
+  if(!c.total) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay inmuebles cargados.</div>';
   const cost=c.valid*_PUB_BULK_COST_PER;
   const shortKeys=cost>0 && cost>S.keysLeft;
-  const warnRows=_pubBulkRows.filter(a=>a.warnings&&a.warnings.length);
-  const hasAi=_pubBulkRows.some(a=>(a.aiFields||[]).length);
   const dupeRows=_pubBulkRows.filter(a=>a.dupe).length;
+  const abierta=_pubBulkCurrentRow();
+  const ayuda='Toca un inmueble para revisar sus datos y sus fotos. Los datos que completó la IA tienen borde punteado (en naranja, los que dedujo sin que estuvieran escritos). Puedes publicar sin fotos y agregarlas después en "Mis publicaciones".';
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:13px;font-weight:600">${esc(_pubBulkFileName||'Archivo cargado')} · ${c.total} fila${c.total!==1?'s':''} · <span style="color:var(--green)">${c.valid} lista${c.valid!==1?'s':''}</span>${c.invalid?` · <span style="color:var(--red)">${c.invalid} con errores</span>`:''}</div>
-      <div style="font-size:12px;color:var(--muted)">${cost>0?`Costo: 🔑 ${cost} llaves · Saldo: ${S.keysLeft}`:'Publicación gratuita'}</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div style="font-size:13px;font-weight:600">${esc(_pubBulkFileName||'Tus inmuebles')} · ${c.total} inmueble${c.total!==1?'s':''} · <span style="color:var(--green)">${c.valid} listo${c.valid!==1?'s':''}</span>${c.invalid?` · <span style="color:var(--red)">${c.invalid} por corregir</span>`:''}</div>
+      <span style="margin-left:auto"></span>${_pubInfoHTML('pubRevisarAyuda',ayuda)}
     </div>
-    ${c.invalid?`<div class="pub-tip" style="margin-top:10px"><span>✏️</span><div>Corrige las celdas marcadas en rojo directamente en la tabla. También puedes eliminar una fila o descartar todas las que tienen errores.</div></div>`:''}
-    ${hasAi?`<div class="pub-tip" style="margin-top:10px"><span>✨</span><div>Las celdas con <strong>borde punteado</strong> las completamos automáticamente a partir de tu texto. Revísalas: en <span style="color:#d97706">naranja</span> están las que deducimos sin que estuvieran escritas.</div></div>`:''}
-    ${dupeRows?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⧉ ${dupeRows} fila${dupeRows!==1?'s':''} parece${dupeRows!==1?'n':''} repetida${dupeRows!==1?'s':''}. No bloquea el envío, pero revísalo para no publicar dos veces el mismo inmueble.</div>`:''}
-    ${warnRows.length?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⚠️ ${warnRows.length} fila${warnRows.length!==1?'s':''} con advertencias (no bloquean): ${warnRows.slice(0,3).map((a,i)=>'fila '+(i+1)+': '+a.warnings[0]).join('; ')}${warnRows.length>3?' ...':''}</div>`:''}
-    <div style="overflow-x:auto;margin-top:10px;border-radius:8px;border:1px solid var(--border)">
-      <table class="pub-preview-table">
-        <thead><tr><th style="width:30px">#</th>${_PUB_BULK_EDIT_COLS.map(k=>`<th>${k}</th>`).join('')}<th>estado</th><th style="width:32px"></th></tr></thead>
-        <tbody>${_pubBulkRows.map((a,i)=>{
-          const bad=k=>!a.valid && a.errors.some(e=>e.toLowerCase().indexOf(_pubBulkErrKey(k))===0);
-          return `<tr style="background:${a.valid?'transparent':'#fff8f8'}">
-            <td>${i+1}</td>
-            ${_PUB_BULK_EDIT_COLS.map(k=>`<td><input value="${esc(a.row[k]||'')}" title="${esc(_pubBulkCellTitle(a,k))}" onchange="_pubBulkEdit(${i},'${k}',this.value)" style="width:100%;min-width:96px;border-radius:5px;padding:4px 6px;font-size:11px;background:#fff;${_pubBulkCellStyle(a,k,bad(k))}"></td>`).join('')}
-            <td style="font-size:11px">${a.valid?'<span style="color:var(--green)">✓ Lista</span>':`<span style="color:var(--red)" title="${esc(a.errors.join('; '))}">✗ ${esc(a.errors[0])}${a.errors.length>1?` (+${a.errors.length-1})`:''}</span>`}${a.warnings&&a.warnings.length?`<br><span style="color:#b08000" title="${esc(a.warnings.join('; '))}">⚠ ${a.warnings.length}</span>`:''}${a.dupe?`<br><span style="color:#b08000" title="${esc(a.dupe)}">⧉ Repetido</span>`:''}${a.notes&&a.notes.length?`<br><span style="color:var(--muted)" title="${esc(a.notes.join(' '))}">ℹ ${a.notes.length}</span>`:''}</td>
-            <td><button onclick="_pubBulkRemoveRow(${i})" title="Eliminar fila" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:14px">✕</button></td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>
+    ${_pubInfoBoxHTML('pubRevisarAyuda',ayuda)}
+    ${dupeRows?`<div style="margin-top:8px;padding:8px 12px;background:#fff8e5;border:1px solid #f5c842;border-radius:6px;font-size:11px;color:#7a5a00">⧉ ${dupeRows} inmueble${dupeRows!==1?'s':''} parece${dupeRows!==1?'n':''} repetido${dupeRows!==1?'s':''}: revísalo para no publicarlo dos veces.</div>`:''}
+    ${abierta?'':_pubBulkUploaderHTML(null)}
+    ${_pubPhotoBatchHTML(_pubBulkRows)}
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">${_pubBulkRows.map((a,i)=>_pubBulkCardHTML(a,i)).join('')}</div>
+    <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
     <div class="pub-actions" style="margin-top:18px">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="pub-btn ghost" onclick="_pubBulkGo(1)">← Cambiar archivo</button>
+        <button class="pub-btn ghost" onclick="_pubBulkGo(1)">← Volver</button>
         ${_pubBulkFromMap&&_pubBulkRaw.length?`<button class="pub-btn ghost" onclick="_pubBulkGo('map')">🔀 Revisar columnas</button>`:''}
-        ${c.invalid?`<button class="pub-btn ghost" onclick="_pubBulkDropInvalid()">Descartar ${c.invalid} con errores</button>`:''}
+        ${c.invalid&&c.valid?`<button class="pub-btn ghost" onclick="_pubBulkDropInvalid()">Quitar ${c.invalid} por corregir</button>`:''}
       </div>
-      <button class="pub-btn primary" ${(!c.valid||c.invalid||shortKeys)?'disabled':''} onclick="_pubBulkGo(3)">
-        ${c.invalid?`Corrige ${c.invalid} fila${c.invalid!==1?'s':''} para continuar`:shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:`Continuar a fotos → ${c.valid} inmueble${c.valid!==1?'s':''}`}
+      <button class="pub-btn primary" id="pubBulkSubmitBtn" ${(!c.valid||c.invalid||shortKeys)?'disabled':''} onclick="_pubBulkSubmit()">
+        ${c.invalid?`Corrige ${c.invalid} para publicar`:shortKeys?`⚠️ Faltan ${cost-S.keysLeft} llaves`:`🚀 Publicar ${c.valid} inmueble${c.valid!==1?'s':''}`}
       </button>
     </div>`;
+}
+// El único cargador de fotos. a = inmueble de la tarjeta abierta (o null).
+function _pubBulkUploaderHTML(a){
+  const varios=_pubBulkRows.length>=2;
+  const lbl=a?'Arrastra aquí las fotos de este inmueble':varios?'Arrastra aquí las fotos de tus inmuebles':'Arrastra aquí las fotos';
+  const sub=a?`hasta ${_PUB_BULK_PHOTO_MAX} · también una carpeta o un ZIP`:'Con una subcarpeta por inmueble se reparten solas · también un ZIP';
+  return `<div class="pub-drop-zone" style="margin-top:12px;padding:16px 12px;cursor:default"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="_pubDropPhotos(event,_pubBulkPhotoFiles)">
+    <div class="dz-lbl">📷 ${lbl}</div>
+    <div class="dz-sub">${sub}</div>
+    ${_pubPhotoSourcesHTML('bulk')}
+  </div>`;
+}
+function _pubBulkCardHTML(a,i){
+  const abierta=i===_pubBulkPhotoIdx;
+  const r=a.row, fotos=a.photos||[];
+  const precio=r.precio?`${r.tipo_moneda||''} ${Number(r.precio).toLocaleString('es-PE')}`.trim():'';
+  const resumen=[r.distrito,r.tipo_propiedad,r.tipo_publicacion,precio,r.area_techada?`${r.area_techada} m²`:(r.area_terreno?`${r.area_terreno} m²`:'')].filter(Boolean).join(' · ');
+  const estado=a.valid?'<span style="color:var(--green);font-weight:600">✓ Lista</span>':`<span style="color:var(--red);font-weight:600">✗ ${a.errors.length} por corregir</span>`;
+  const portada=fotos[0]?`<img src="${fotos[0]}" style="width:100%;height:100%;object-fit:cover">`:'<span style="font-size:22px">📷</span>';
+  const head=`<div style="display:flex;gap:10px;align-items:center;cursor:pointer" onclick="_pubBulkToggle(${i})">
+      <div style="width:64px;height:64px;flex:0 0 64px;border-radius:8px;overflow:hidden;background:var(--light);display:flex;align-items:center;justify-content:center">${portada}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.direccion||r.titulo||'Inmueble '+(i+1))}</div>
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(resumen)}</div>
+        <div style="font-size:11px;margin-top:2px">${estado} · 📷 ${fotos.length} foto${fotos.length!==1?'s':''}${a.dupe?' · <span style="color:#b08000">⧉ Repetido</span>':''}</div>
+      </div>
+      <button onclick="event.stopPropagation();_pubBulkRemoveRow(${i})" title="Quitar este inmueble" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:15px;padding:4px">✕</button>
+      <span style="color:var(--muted);font-size:12px">${abierta?'▲':'▼'}</span>
+    </div>`;
+  if(!abierta) return `<div class="pub-bulk-card" style="border:1px solid ${a.valid?'var(--border)':'#f3b4b4'};border-radius:10px;padding:10px 12px;background:#fff">${head}</div>`;
+  const campo=k=>{
+    const bad=!a.valid && a.errors.some(e=>e.toLowerCase().indexOf(_pubBulkErrKey(k))===0);
+    const st=`width:100%;box-sizing:border-box;border-radius:6px;padding:6px 8px;font-size:12px;background:#fff;${_pubBulkCellStyle(a,k,bad)}`;
+    const input=k==='descripcion'
+      ?`<textarea rows="3" onchange="_pubBulkEdit(${i},'${k}',this.value)" title="${esc(_pubBulkCellTitle(a,k))}" style="${st};resize:vertical;font-family:inherit">${esc(r[k]||'')}</textarea>`
+      :`<input value="${esc(r[k]||'')}" onchange="_pubBulkEdit(${i},'${k}',this.value)" title="${esc(_pubBulkCellTitle(a,k))}" style="${st}">`;
+    return `<label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);${k==='descripcion'||k==='titulo'||k==='direccion'?'grid-column:1/-1':''}">${_PUB_BULK_LABELS[k]||k}${input}</label>`;
+  };
+  return `<div class="pub-bulk-card" style="border:2px solid ${a.valid?'var(--blue)':'var(--red)'};border-radius:10px;padding:10px 12px;background:#fff">
+    ${head}
+    ${a.valid?'':`<div style="margin-top:10px;padding:8px 10px;background:#fff1f1;border-radius:8px;font-size:12px;color:var(--red)">${a.errors.map(e=>`• ${esc(e)}`).join('<br>')}</div>`}
+    ${(a.warnings||[]).length?`<div style="margin-top:6px;font-size:11px;color:#7a5a00">⚠ ${esc(a.warnings.join(' · '))}</div>`:''}
+    ${(a.notes||[]).length?`<div style="margin-top:6px;font-size:11px;color:var(--muted)">ℹ ${esc(a.notes.join(' · '))}</div>`:''}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:10px">${_PUB_BULK_EDIT_COLS.map(campo).join('')}</div>
+    <div style="font-size:13px;font-weight:700;margin-top:14px">📸 Fotos</div>
+    ${_pubBulkUploaderHTML(a)}
+    ${_pubPhotoToolsHTML('bulk')}
+    ${fotos.length||_pubPoolLibres(a).length?`<div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',fotos)}${_pubPoolTilesHTML(a)}</div>`:''}
+    ${_pubPoolLibres(a).length?`<div style="font-size:11px;color:var(--muted);margin-top:4px">Las fotos con ＋ son de tus archivos y enlaces: tócalas para agregarlas.</div>`:''}
+    ${fotos.length?_pubPhotoAdviceHTML(fotos):''}
+    <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkToggle(${i})">Listo ✓</button></div>
+  </div>`;
+}
+// Abre (o cierra) la tarjeta de un inmueble. Al abrir una con 2+ fotos que la
+// IA todavía no ordenó, se ordenan solas.
+function _pubBulkToggle(i){
+  _pubBulkPhotoIdx = _pubBulkPhotoIdx===i ? -1 : i;
+  _pubBulkRefresh();
+  const a=_pubBulkCurrentRow();
+  if(a && !a._iaOrden && (a.photos||[]).length>=2) _pubPhotoAutoOrden('bulk',a);
 }
 // Campos completados automáticamente y aún sin tocar: borde punteado
 // (naranja si la IA los dedujo sin que estuvieran escritos).
@@ -8269,29 +8338,25 @@ let _pubBulkPhotoIdx = 0;
 // Mismo máximo que el formulario de una publicación.
 const _PUB_BULK_PHOTO_MAX = 20;
 function _pubBulkValidRows(){ return _pubBulkRows.filter(a=>a.valid); }
+// Inmueble de la tarjeta abierta (_pubBulkPhotoIdx = índice en _pubBulkRows; -1 = ninguna).
 function _pubBulkCurrentRow(){
-  const list=_pubBulkValidRows();
-  if(_pubBulkPhotoIdx>=list.length) _pubBulkPhotoIdx=Math.max(0,list.length-1);
-  return list[_pubBulkPhotoIdx];
+  if(_pubBulkPhotoIdx>=_pubBulkRows.length) _pubBulkPhotoIdx=-1;
+  return _pubBulkPhotoIdx>=0 ? _pubBulkRows[_pubBulkPhotoIdx] : null;
 }
-function _pubBulkPhotoNav(delta){
-  const list=_pubBulkValidRows();
-  _pubBulkPhotoIdx=Math.min(list.length-1,Math.max(0,_pubBulkPhotoIdx+delta));
-  _pubBulkRefresh();
-}
-function _pubBulkOpenPhotoPicker(){
-  const inp=document.getElementById('pubBulkPhotoInput');
-  if(!inp) return;
-  inp.value='';
-  inp.click();
-}
+// Fotos al cargador de "Revisar y publicar": con una subcarpeta por inmueble
+// (y 2+ inmuebles) se reparten; si no, van a la tarjeta abierta; sin tarjeta
+// abierta y con varios inmuebles, se agrupan por fecha y lugar para asignar.
 async function _pubBulkPhotoFiles(files){
-  const a=_pubBulkCurrentRow();
+  const lista=await _pubExpandPhotoFiles(Array.from(files||[]));
+  if(!lista.length) return;
+  const a=_pubBulkCurrentRow() || (_pubBulkRows.length===1 ? _pubBulkRows[0] : null);
+  const carpetas=new Set(lista.map(_pubFotoCarpeta));
+  if(_pubBulkRows.length>=2 && (carpetas.size>=2 || !a)) return _pubPhotoBatchFiles(lista);
   if(!a) return;
   if(!a.photos) a.photos=[];
-  await _pubAddPhotoFiles(a.photos,files,_PUB_BULK_PHOTO_MAX,_pubBulkRefresh);
+  await _pubAddPhotoFiles(a.photos,lista,_PUB_BULK_PHOTO_MAX,_pubBulkRefresh);
   _pubBulkRefresh();
-  const inp=document.getElementById('pubBulkPhotoInput'); if(inp) inp.value='';
+  if(!a._iaOrden && a.photos.length>=2) _pubPhotoAutoOrden('bulk',a);
 }
 function _pubBulkPhotoRemove(i){
   const a=_pubBulkCurrentRow();
@@ -8390,7 +8455,7 @@ async function _pubPhotoBatchFiles(files){
     try{ items.push({ ...exif, time:exif.time||f.lastModified||0, carpeta:_pubFotoCarpeta(f), dataUrl:await _pubToJpegDataUrl(f) }); }
     catch(e){ console.warn('[reco] foto descartada:', f.name, e); }
   }
-  const rows=_pubBulkValidRows();
+  const rows=_pubBulkRows;
   const carpetas=[...new Set(items.map(x=>x.carpeta))];
   if(carpetas.length>=2){
     const usadas=new Set();
@@ -8411,7 +8476,7 @@ async function _pubPhotoBatchFiles(files){
 }
 function _pubPhotoGroupSet(i,row){ if(_pubPhotoGroups[i]) _pubPhotoGroups[i].row=Number(row); }
 function _pubPhotoGroupsApply(){
-  const rows=_pubBulkValidRows();
+  const rows=_pubBulkRows;
   let asignadas=0, sobran=0;
   _pubPhotoGroups.forEach(g=>{
     const a=rows[g.row];
@@ -8428,25 +8493,9 @@ function _pubPhotoGroupsApply(){
   _pubBulkRefresh();
 }
 function _pubPhotoBatchHTML(rows){
-  const input=`<input type="file" id="pubBatchInput" accept="${_PUB_PHOTO_ACCEPT}" multiple style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" onchange="_pubPhotoBatchFiles(this.files)">`;
-  if(!_pubPhotoGroups.length){
-    // Con un solo inmueble basta la zona de fotos de abajo.
-    if(rows.length<2) return input;
-    const ayuda='Ordena las fotos en una carpeta con una subcarpeta por inmueble, por ejemplo "Fotos/Av. Pardo 340" y "Fotos/Jr. Huiracocha 1200", y súbela entera (desde tu computadora, como ZIP o desde Google Drive). Cada subcarpeta se asigna sola al inmueble con el nombre más parecido. Si las fotos no están en subcarpetas, las agrupamos por fecha y lugar. Siempre revisas antes de confirmar.';
-    const b='flex:1 1 140px;font-size:12px;padding:8px 10px';
-    return `${input}<div style="margin-top:10px;padding:12px;border:1px dashed var(--border);border-radius:10px;background:#fff"
-        ondragover="event.preventDefault()" ondrop="_pubDropPhotos(event,_pubPhotoBatchFiles)">
-      <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600">📦 Fotos de todos tus inmuebles a la vez<span style="margin-left:auto"></span>${_pubInfoHTML('pubLoteAyuda',ayuda)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">Una subcarpeta por inmueble y cada una se asigna sola.</div>
-      ${_pubInfoBoxHTML('pubLoteAyuda',ayuda)}
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
-        <button class="pub-btn ghost" style="${b}" onclick="_pubPickFolder(_pubPhotoBatchFiles)" title="La carpeta con una subcarpeta por inmueble">📂 Elegir carpeta</button>
-        <button class="pub-btn ghost" style="${b}" onclick="_pubDriveOpen('batch')" title="Pega el enlace de la carpeta compartida">☁️ Google Drive</button>
-        <button class="pub-btn ghost" style="${b}" onclick="document.getElementById('pubBatchInput').click()" title="Un ZIP o muchas fotos sueltas">🗜️ ZIP o fotos</button>
-      </div></div>`;
-  }
+  if(!_pubPhotoGroups.length) return '';
   const opts=sel=>`<option value="-1"${sel===-1?' selected':''}>— no asignar —</option>`+rows.map((r,i)=>`<option value="${i}"${sel===i?' selected':''}>${i+1}. ${esc(String(r.row.direccion||r.row.titulo||'').slice(0,40))}</option>`).join('');
-  return `${input}<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
+  return `<div style="margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:#fff">
     <div style="font-size:13px;font-weight:700">📦 Fotos agrupadas (${_pubPhotoGroups.length} grupo${_pubPhotoGroups.length!==1?'s':''})</div>
     <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Propusimos un grupo por inmueble en el orden de tu lista. Cambia lo que no corresponda y confirma.</div>
     ${_pubPhotoGroups.map((g,i)=>`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-top:1px solid var(--border)">
@@ -8458,69 +8507,6 @@ function _pubPhotoBatchHTML(rows){
       <button class="pub-btn primary" style="font-size:12px;padding:6px 12px" onclick="_pubPhotoGroupsApply()">Asignar fotos</button>
       <button class="pub-btn ghost" style="font-size:12px;padding:6px 12px" onclick="_pubPhotoGroups=[];_pubBulkRefresh()">Descartar grupos</button>
     </div></div>`;
-}
-function _pubBulkPhotosHTML(){
-  const list=_pubBulkValidRows();
-  if(!list.length) return '<div style="padding:14px;color:var(--muted);font-size:13px">No hay inmuebles válidos.</div>';
-  const a=_pubBulkCurrentRow();
-  const photos=a.photos||[];
-  const done=list.filter(x=>x.photos&&x.photos.length).length;
-  const ayuda='Los avisos con fotos reciben más contactos. Las fotos que encontramos en tus enlaces, PDF o presentaciones ya están en cada inmueble. Puedes saltar este paso y agregarlas después en "Mis publicaciones".';
-  return `<div style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700">📸 Fotos de cada inmueble<span style="margin-left:auto"></span>${_pubInfoHTML('pubFotosAyuda',ayuda)}</div>
-    ${_pubInfoBoxHTML('pubFotosAyuda',ayuda)}
-    ${_pubPhotoBatchHTML(list)}
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:14px">
-      <div style="font-size:13px;font-weight:700">Inmueble ${_pubBulkPhotoIdx+1} de ${list.length}</div>
-      <div style="font-size:12px;color:var(--muted)">${done} de ${list.length} con fotos</div>
-    </div>
-    <div style="height:6px;background:var(--border);border-radius:99px;margin-top:8px;overflow:hidden">
-      <div style="height:100%;width:${Math.round(((_pubBulkPhotoIdx+1)/list.length)*100)}%;background:var(--blue)"></div>
-    </div>
-    <div style="margin-top:12px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--light)">
-      <div style="font-size:13px;font-weight:600">${esc(a.row.direccion||'')}</div>
-      <div style="font-size:12px;color:var(--muted)">${esc(a.row.distrito||'')} · ${esc(a.row.tipo_propiedad||'')} · ${esc(a.row.tipo_publicacion||'')} · ${esc(a.row.tipo_moneda||'')} ${esc(String(a.row.precio||''))}</div>
-    </div>
-    <div class="pub-drop-zone" style="margin-top:12px"
-      onclick="_pubBulkOpenPhotoPicker()"
-      ondragover="event.preventDefault();this.classList.add('drag')"
-      ondragleave="this.classList.remove('drag')"
-      ondrop="_pubDropPhotos(event,_pubBulkPhotoFiles)">
-      <div class="dz-icon">📷</div>
-      <div class="dz-lbl">Arrastra aquí las fotos de este inmueble</div>
-      <div class="dz-sub">hasta ${_PUB_BULK_PHOTO_MAX} · también una carpeta o un ZIP</div>
-      ${_pubPhotoSourcesHTML('bulk')}
-    </div>
-    <input type="file" id="pubBulkPhotoInput" accept="${_PUB_PHOTO_ACCEPT}" multiple
-      style="position:absolute;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"
-      onchange="_pubBulkPhotoFiles(this.files)">
-    ${_pubPhotoToolsHTML('bulk')}
-    ${photos.length?`<div class="pub-photos" style="margin-top:10px">${_pubPhotoStripHTML('bulk',photos)}</div>${_pubPhotoAdviceHTML(photos)}`:''}
-    ${_pubBulkPoolHTML(a)}
-    <div class="pub-actions" style="margin-top:18px">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="pub-btn ghost" onclick="${_pubBulkPhotoIdx===0?'_pubBulkGo(2)':'_pubBulkPhotoNav(-1)'}">← ${_pubBulkPhotoIdx===0?'Volver a revisar':'Anterior'}</button>
-        <button class="pub-btn ghost" onclick="_pubBulkGo(4)">Omitir fotos y continuar</button>
-      </div>
-      <button class="pub-btn primary" onclick="${_pubBulkPhotoIdx>=list.length-1?'_pubBulkGo(4)':'_pubBulkPhotoNav(1)'}">
-        ${_pubBulkPhotoIdx>=list.length-1?'Continuar →':(photos.length?'Siguiente inmueble →':'Saltar este →')}
-      </button>
-    </div>`;
-}
-function _pubBulkSendHTML(){
-  const c=_pubBulkCounts();
-  const cost=c.valid*_PUB_BULK_COST_PER;
-  const withPhotos=_pubBulkRows.filter(a=>a.valid && a.photos && a.photos.length).length;
-  return `<div class="pub-tip"><span>🚀</span><div><strong>Todo listo.</strong> Al enviar, cada inmueble entra en revisión. Nuestro equipo valida los datos y te avisamos por correo al aprobarlos.</div></div>
-    <div style="margin-top:12px;font-size:13px;line-height:1.9">
-      <div>• Inmuebles a enviar: <strong>${c.valid}</strong></div>
-      <div>• Con fotos adjuntas: <strong>${withPhotos}</strong>${withPhotos<c.valid?` <span style="color:var(--muted)">(${c.valid-withPhotos} se enviarán sin fotos)</span>`:''}</div>
-      <div>• Costo: <strong>${cost>0?`🔑 ${cost} llaves`:'gratuito'}</strong></div>
-    </div>
-    <div id="pubBulkProgress" style="display:none;margin-top:14px;padding:10px 12px;background:var(--light);border-radius:8px;font-size:13px"></div>
-    <div class="pub-actions" style="margin-top:18px">
-      <button class="pub-btn ghost" onclick="_pubBulkGo(3)">← Volver a fotos</button>
-      <button class="pub-btn primary" id="pubBulkSubmitBtn" ${!c.valid?'disabled':''} onclick="_pubBulkSubmit()">Enviar ${c.valid} a revisión</button>
-    </div>`;
 }
 // ── BUG-15: Plantilla XLSX real + CSV con BOM/punto y coma ──
 // Esquema definitivo de 30 columnas para la carga masiva.
@@ -8905,7 +8891,7 @@ async function _pubShowBulkPreview(rows){
   if(capped) toast(`⚠️ El archivo tiene ${rows.length} filas. Solo se procesarán las primeras ${_PUB_BULK_MAX}.`);
   _pubBulkRaw = workRows;
   _pubBulkHeaders = [...new Set(workRows.flatMap(r=>Object.keys(r)))].filter(h=>String(h).trim()!=='');
-  _pubBulkPhotoIdx=0;
+  _pubBulkPhotoIdx=-1;
   _pubBulkMapAI={};
   _pubBulkFromMap=false;
   if(_pubBulkNeedsMapping(_pubBulkHeaders)){
@@ -9080,7 +9066,7 @@ function _pubBulkLoadRows(rows){
   _pubBulkBatchId = '';
   _pubDocPhotoPool = [];
   _pubBulkRows = rows.map(r => { const n=_pubNormalizeImportRow(r); return _pubBulkEntry(n.row,{notes:n.notes,stdNotes:n.stdNotes}); });
-  _pubBulkPhotoIdx=0;
+  _pubBulkPhotoIdx=-1;
   _pubBulkGo(2);
   _pubDraftsSave();
   _pubLoadOwnFingerprints();
@@ -9199,7 +9185,7 @@ function _pubBulkLoadDrafts(drafts,meta){
     draftId:d.id, source:d.source||_pubBulkSource, aiFields:d.aiFields||[], inferred:d.inferredFields||[],
     edited:(d.edited||[]).reduce((o,k)=>{ o[k]=1; return o; },{}), notes:d.notes||[], photos:d.photos||d.photoUrls||[] }));
   _pubDraftGroups=_pubDraftGroups.filter(x=>x.batchId!==_pubBulkBatchId);
-  _pubBulkPhotoIdx=0;
+  _pubBulkPhotoIdx=-1;
   _pubBulkGo(2);
   _pubLoadOwnFingerprints();
 }
@@ -10089,11 +10075,23 @@ function _pubBulkPoolAdd(i){
   a.photos.push(ph);
   _pubBulkRefresh();
 }
-function _pubBulkPoolHTML(a){
-  if(!_pubDocPhotoPool.length) return '';
-  const used=new Set(_pubBulkRows.flatMap(r=>r.photos||[]));
-  return `<div style="margin-top:14px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff"><div style="font-size:13px;font-weight:600">📎 Fotos de tus archivos y enlaces (${_pubDocPhotoPool.length}) <span style="font-weight:400;font-size:11px;color:var(--muted)">· toca para agregar a este inmueble</span></div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${_pubDocPhotoPool.map((ph,i)=>`<img src="${ph}" onclick="_pubBulkPoolAdd(${i})" title="Agregar a este inmueble" style="width:64px;height:64px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid ${(a.photos||[]).includes(ph)?'var(--blue)':'transparent'};opacity:${used.has(ph)&&!(a.photos||[]).includes(ph)?'.45':'1'}">`).join('')}</div></div>`;
+// Fotos de tus archivos y enlaces que este inmueble todavía no tiene (índices del pool).
+function _pubPoolLibres(a){
+  const propias=new Set((a&&a.photos)||[]);
+  return _pubDocPhotoPool.map((ph,i)=>i).filter(i=>!propias.has(_pubDocPhotoPool[i]));
+}
+// En la misma grilla que las fotos del inmueble: las disponibles, con ＋.
+// Atenuadas si ya están en otro inmueble.
+function _pubPoolTilesHTML(a){
+  const usadas=new Set(_pubBulkRows.flatMap(r=>r.photos||[]));
+  return _pubPoolLibres(a).map(i=>{
+    const ph=_pubDocPhotoPool[i];
+    return `<div class="pub-photo-slot pub-pool-slot" onclick="_pubBulkPoolAdd(${i})" title="Agregar a este inmueble${usadas.has(ph)?' (ya está en otro)':''}"
+      style="position:relative;overflow:hidden;cursor:pointer;opacity:${usadas.has(ph)?'.4':'.75'};border:2px dashed var(--border)">
+      <img src="${ph}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;pointer-events:none">
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)">＋</div>
+    </div>`;
+  }).join('');
 }
 
 async function _pubBulkSubmit(){
