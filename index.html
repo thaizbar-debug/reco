@@ -7978,10 +7978,7 @@ function _pubBulkHTML(){
   return `<div class="pub-card" style="max-width:900px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
       <h3 style="margin:0">📊 Subir varios inmuebles</h3>
-      ${_pubBulkStep===1?`<div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla Excel</button>
-        <button class="pub-btn ghost" style="font-size:12px;padding:7px 14px;opacity:.8" onclick="_pubDownloadTemplateCSV()">⬇ CSV</button>
-      </div>`:`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkReset()">↺ Empezar de nuevo</button>`}
+      ${_pubBulkStep===1?`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubDownloadTemplate()">⬇ Descargar plantilla Excel</button>`:`<button class="pub-btn ghost" style="font-size:12px;padding:7px 14px" onclick="_pubBulkReset()">↺ Empezar de nuevo</button>`}
     </div>
     ${_pubBulkStepperHTML()}
     <div id="pubBulkStepBody">${_pubBulkStepBodyHTML()}</div>
@@ -7994,49 +7991,56 @@ function _pubBulkStepBodyHTML(){
   if(_pubBulkStep===4) return _pubBulkSendHTML();
   return _pubBulkUploadHTML();
 }
+// Botón ⓘ con su ayuda (oculta hasta tocarlo; el texto también va de tooltip).
+function _pubInfoHTML(id,texto){
+  return `<button type="button" class="pub-info" aria-label="Más información" title="${esc(texto)}" onclick="event.preventDefault();event.stopPropagation();const t=document.getElementById('${id}');if(t)t.hidden=!t.hidden"
+    style="border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:50%;width:20px;height:20px;padding:0;font-size:11px;font-weight:700;cursor:pointer;line-height:18px;flex:0 0 auto">i</button>`;
+}
+function _pubInfoBoxHTML(id,texto){
+  return `<div id="${id}" hidden style="font-size:11px;color:var(--muted);background:var(--light);border-radius:8px;padding:6px 8px;margin-bottom:8px;line-height:1.5">${esc(texto)}</div>`;
+}
+const _PUB_ARCHIVO_AYUDA='Excel o CSV (con la plantilla o tu propio formato), PDF, Word, PowerPoint, chat de WhatsApp exportado (.zip o .txt), flyers o capturas (varias a la vez) y videos de reels o TikTok. La IA arma las fichas con sus fotos; tú revisas y publicas.';
+const _PUB_TEXTO_AYUDA='Notas del celular, mensajes de WhatsApp o el texto de un aviso. Uno o muchos inmuebles.';
+const _PUB_WABOT_AYUDA='Envía tus inmuebles a nuestro WhatsApp como texto, fotos o notas de voz y escribe LISTO. Aquí los revisas y publicas.';
 function _pubBulkUploadHTML(){
-  const box='border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff';
+  // Recuadros iguales: título (con ⓘ), contenido y botones del mismo ancho al pie.
+  const box='border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:#fff;display:flex;flex-direction:column';
+  const head=(titulo,id,ayuda,extra)=>`<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:8px">${titulo}${extra||''}<span style="margin-left:auto"></span>${_pubInfoHTML(id,ayuda)}</div>${_pubInfoBoxHTML(id,ayuda)}`;
+  const pie='margin-top:auto;padding-top:10px;display:flex;flex-direction:column;gap:6px';
+  const btn='width:100%;font-size:13px;padding:9px 14px';
   return `<div id="pubDraftsBanner">${_pubDraftsBannerHTML()}</div>
     <div id="pubSharedBox">${_pubSharedHTML()}</div>
-    <div class="pub-tip"><span>💡</span><div><strong>Sube lo que ya tienes, como lo tengas.</strong> Pega el enlace de tu post de Facebook, Instagram o TikTok, de tu web o de tu aviso en un portal; o sube Excel o CSV (con la plantilla o con tu propio formato), PDF, Word, PowerPoint, el chat de WhatsApp exportado, el video de un reel o capturas de pantalla. La IA arma las fichas con sus fotos; tú solo revisas y publicas.</div></div>
     <label for="pubBulkInput" class="pub-drop-zone" id="pubBulkDrop"
       ondragover="event.preventDefault();this.classList.add('drag')"
       ondragleave="this.classList.remove('drag')"
       ondrop="event.preventDefault();this.classList.remove('drag');_pubBulkFiles(event.dataTransfer.files)">
       <div class="dz-icon">📁</div>
-      <div class="dz-lbl">Arrastra tu archivo aquí o haz clic para seleccionar</div>
-      <div class="dz-sub">Excel o CSV · PDF, Word (.docx) o PowerPoint (.pptx) · chat de WhatsApp (.zip o .txt) · flyers o capturas (JPG/PNG, varias a la vez) · video de un reel o TikTok (MP4/MOV)</div>
+      <div class="dz-lbl">Arrastra tu archivo o haz clic</div>
+      <div class="dz-sub" style="display:flex;align-items:center;justify-content:center;gap:6px">Excel, PDF, Word, PowerPoint, WhatsApp, imágenes o video ${_pubInfoHTML('pubArchivoAyuda',_PUB_ARCHIVO_AYUDA)}</div>
+      ${_pubInfoBoxHTML('pubArchivoAyuda',_PUB_ARCHIVO_AYUDA)}
     </label>
     <input type="file" id="pubBulkInput" multiple accept=".csv,.xlsx,.xls,.pdf,.docx,.pptx,.zip,.txt,image/*,video/*,.mp4,.mov" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);opacity:0" onchange="_pubBulkFiles(this.files)">
     <details style="margin-top:8px;font-size:12px;color:var(--muted)"><summary style="cursor:pointer">💬 ¿Cómo exporto un chat de WhatsApp?</summary>
       <div style="margin-top:6px;line-height:1.6">Abre el chat o grupo donde compartes tus inmuebles → <strong>⋮ Más → Exportar chat</strong> (en iPhone: nombre del chat → <strong>Exportar chat</strong>) → <strong>Incluir archivos</strong>, y súbelo aquí. Las fotos se asignan solas a cada inmueble. Los nombres de quienes escriben no se envían a la IA.</div></details>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:14px">
       <div style="${box};border:2px solid var(--blue)">
-        <div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:8px">🔗 Desde un enlace <span style="font-size:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 7px">Lo más rápido</span>
-          <button type="button" class="pub-url-info" aria-label="¿Qué enlaces puedo pegar?" title="${esc(_PUB_URL_AYUDA)}" onclick="const t=document.getElementById('pubUrlAyuda');if(t)t.hidden=!t.hidden" style="margin-left:auto;border:1px solid var(--border);background:#fff;color:var(--muted);border-radius:50%;width:20px;height:20px;padding:0;font-size:11px;font-weight:700;cursor:pointer;line-height:18px">i</button></div>
-        <div id="pubUrlAyuda" hidden style="font-size:11px;color:var(--muted);background:var(--light);border-radius:8px;padding:6px 8px;margin-bottom:8px;line-height:1.5">${esc(_PUB_URL_AYUDA)}</div>
+        ${head('🔗 Desde un enlace','pubUrlAyuda',_PUB_URL_AYUDA,'<span style="font-size:10px;font-weight:700;color:#fff;background:var(--blue);border-radius:99px;padding:1px 7px">Lo más rápido</span>')}
         <input id="pubUrlInput" type="url" placeholder="Pega tu enlace (URL)" onkeydown="if(event.key==='Enter')_pubUrlImport()" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:13px">
         <label style="display:flex;gap:6px;align-items:center;font-size:11px;margin-top:8px"><input type="checkbox" id="pubUrlAuth"> Soy el anunciante o tengo autorización</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
-          <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubUrlImport()">Importar</button>
-          <a href="#" onclick="event.preventDefault();_pubProfileList()" title="Pega el enlace de tu perfil en un portal o de la página de proyectos de tu web" style="font-size:11px;color:var(--blue)">o todos los de mi perfil</a>
+        <div style="${pie}">
+          <button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubUrlImport()">Importar</button>
+          <button class="pub-btn ghost" style="${btn}" onclick="_pubProfileList()" title="Pega el enlace de tu perfil en un portal o de la página de proyectos de tu web">Importar perfil</button>
         </div>
       </div>
       <div style="${box}">
-        <div style="font-size:13px;font-weight:700">✍️ Pegar texto</div>
-        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Notas del celular, mensajes de WhatsApp o el texto de un aviso. Uno o muchos inmuebles.</div>
-        <textarea id="pubPasteText" rows="6" placeholder="Ej: Vendo dpto. en Surco, 3 dorm, 2 baños, 90 m2, US$ 185 mil. Alquilo casa en La Molina 250 m2, S/ 6,500…" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12px;resize:vertical"></textarea>
-        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px;margin-top:8px" onclick="_pubTextImport()">Buscar inmuebles con IA</button>
-      </div>
-      <div style="${box}">
-        <div style="font-size:13px;font-weight:700">🔄 Que se actualice solo</div>
-        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">¿Tu inventario está en un CRM (EasyBroker, Wasi…), en tu web o en Google Sheets? Conéctalo una vez: ReCo trae lo nuevo, actualiza precios y retira lo vendido. También puedes reenviar fichas por correo o usar nuestra API.</div>
-        <button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="closePublish();navigateUserSection('integraciones')">Ir a Integraciones</button>
+        ${head('✍️ Pegar texto','pubTextoAyuda',_PUB_TEXTO_AYUDA)}
+        <textarea id="pubPasteText" rows="5" placeholder="Ej: Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:8px;padding:8px;font:inherit;font-size:12px;resize:vertical"></textarea>
+        <div style="${pie}"><button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubTextImport()">Importar</button></div>
       </div>
       ${_PUB_WA_BOT_NUMBER?`<div style="${box}">
-        <div style="font-size:13px;font-weight:700">🤖 ReCo en tu WhatsApp</div>
-        <div style="font-size:11px;color:var(--muted);margin:2px 0 8px">Envía tus inmuebles a nuestro WhatsApp como texto, fotos o notas de voz y escribe <strong>LISTO</strong>. Te respondemos con lo que encontramos y aquí los revisas y publicas.</div>
-        <div id="pubWaBotBox"><button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubWaBotConnect()">Conectar mi WhatsApp</button></div>
+        ${head('🤖 ReCo en tu WhatsApp','pubWaBotAyuda',_PUB_WABOT_AYUDA)}
+        <div style="font-size:12px;color:var(--muted)">Texto, fotos o notas de voz</div>
+        <div id="pubWaBotBox" style="${pie}"><button class="pub-btn primary pub-import-btn" style="${btn}" onclick="_pubWaBotConnect()">Importar</button></div>
       </div>`:''}
     </div>
     <div id="pubBulkPreview"></div>`;
@@ -8055,7 +8059,7 @@ async function _pubWaBotConnect(){
     if(box) box.innerHTML=`<div style="font-size:12px;line-height:1.6">
       ${(d.linked||[]).length?`Ya conectado: <strong>${esc(d.linked.join(', '))}</strong> · <a href="#" onclick="event.preventDefault();_pubWaBotUnlink()" style="color:var(--red)">Desconectar</a><br>Para conectar otro número:<br>`:''}
       Envía <strong style="font-size:15px;letter-spacing:1px">VINCULAR ${esc(d.code)}</strong> a nuestro WhatsApp (vence en ${esc(d.minutes)} min).
-      <a class="pub-btn primary" style="display:inline-block;font-size:12px;padding:7px 14px;margin-top:6px;text-decoration:none" href="${link}" target="_blank" rel="noopener">Abrir WhatsApp</a></div>`;
+      <a class="pub-btn primary" style="display:block;text-align:center;box-sizing:border-box;width:100%;font-size:13px;padding:9px 14px;margin-top:6px;text-decoration:none" href="${link}" target="_blank" rel="noopener">Abrir WhatsApp</a></div>`;
   }catch(e){ _pubImportFail(e,'No se pudo generar el código.'); }
 }
 async function _pubWaBotUnlink(){
@@ -8064,7 +8068,7 @@ async function _pubWaBotUnlink(){
     await _getFunctions().httpsCallable('whatsappLink')({ action:'unlink' });
     toast('✅ WhatsApp desconectado.');
     const box=document.getElementById('pubWaBotBox');
-    if(box) box.innerHTML=`<button class="pub-btn primary" style="font-size:12px;padding:7px 14px" onclick="_pubWaBotConnect()">Conectar mi WhatsApp</button>`;
+    if(box) box.innerHTML=`<button class="pub-btn primary pub-import-btn" style="width:100%;font-size:13px;padding:9px 14px" onclick="_pubWaBotConnect()">Importar</button>`;
   }catch(e){ _pubImportFail(e,'No se pudo desconectar.'); }
 }
 // Ruta de Storage de una foto guardada por el bot (imports/…), o ''.
@@ -9903,7 +9907,7 @@ async function _pubUseShared(){
   if(texto.length>=15){
     _pubShared=null;
     const ta=document.getElementById('pubPasteText'); if(ta) ta.value=texto;
-    if(!imgs.length){ toast('📲 Revisa el texto y pulsa "Buscar inmuebles con IA".'); return; }
+    if(!imgs.length){ toast('📲 Revisa el texto y pulsa "Importar".'); return; }
     if(!_pubImportReady('leer texto')) return;
     try{
       const photos=[];
@@ -12165,22 +12169,30 @@ const _INT_MAP_FIELDS=[['id','Código / id'],['direccion','Dirección'],['distri
   ['nro_banos','Baños'],['titulo','Título'],['descripcion','Descripción']];
 let _intState={ kind:'feed', preview:null, mapping:null };
 
+// Conexiones automáticas (CRM, feeds, Google Sheets), correo para publicar y
+// API: apagadas por ahora (los usuarios aún no las necesitan). El servidor
+// sigue listo; se reactivan poniendo true.
+let _INT_AVANZADAS=false;
 async function renderIntegraciones(el){
   if(!auth.currentUser){ closeUserSection(); openAuthModal('login', function(){ navigateUserSection('integraciones'); }); return; }
   el.innerHTML='<button class="us-back" onclick="closeUserSection()">← Volver</button>'
     +'<div class="us-title">🔌 Integraciones</div>'
     +'<div class="us-card" id="intMeta"><div style="font-weight:700;margin-bottom:4px">📣 Tus posts de Facebook e Instagram</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
-    +'<div class="us-card"><div style="font-weight:700;margin-bottom:4px">🔄 Conexiones automáticas</div>'
+    +(_INT_AVANZADAS?_intAvanzadasHTML():'');
+  _intLoadMeta();
+  if(!_INT_AVANZADAS) return;
+  _intNewRender();
+  _intLoadSources();
+  _intLoadEmail();
+  _intLoadApi();
+}
+function _intAvanzadasHTML(){
+  return '<div class="us-card"><div style="font-weight:700;margin-bottom:4px">🔄 Conexiones automáticas</div>'
     +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:12px;line-height:1.5">Conecta el inventario que ya tienes en tu CRM, tu web o una hoja de Google. ReCo lo lee cada pocas horas: trae lo nuevo, actualiza precios y cambios, y retira lo que ya no está. Todo pasa por la misma revisión que una publicación normal.</div>'
     +'<div id="intSources"><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
     +'<div id="intNew"></div></div>'
     +'<div class="us-card" id="intEmail"><div style="font-weight:700;margin-bottom:4px">✉️ Correo para publicar</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>'
     +'<div class="us-card" id="intApi"><div style="font-weight:700;margin-bottom:4px">🧩 API para desarrolladores</div><p style="color:var(--muted);font-size:.85rem">Cargando…</p></div>';
-  _intNewRender();
-  _intLoadMeta();
-  _intLoadSources();
-  _intLoadEmail();
-  _intLoadApi();
 }
 
 // ── Facebook e Instagram: traer los posts del corredor ──

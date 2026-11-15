@@ -46,7 +46,7 @@ test.describe('Fase 1: pegar texto', () => {
       ] });
     });
     await page.fill('#pubPasteText', 'Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil.\n\nAlquilo casa en La Molina 250 m2, S/ 6,500');
-    await page.click('text=Buscar inmuebles con IA');
+    await page.locator('#pubPasteText').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => _pubBulkStep === 2);
     const [d] = await calls(page, 'extractListings');
     expect(d).toMatchObject({ kind: 'text', channel: 'text', sourceName: 'Texto pegado' });
@@ -59,7 +59,7 @@ test.describe('Fase 1: pegar texto', () => {
   test('un chat pegado se reconoce como WhatsApp y sin nombres', async ({ page }) => {
     await page.evaluate(() => { __fn.extractListings = () => ({ batchId: 'T2', drafts: [] }); });
     await page.fill('#pubPasteText', '24/10/26, 09:15 - Juan Pérez: Vendo depa en Lince 70 m2\n24/10/26, 09:16 - +51 987 654 321: precio?\n24/10/26, 09:17 - Juan Pérez: US$ 120 mil');
-    await page.click('text=Buscar inmuebles con IA');
+    await page.locator('#pubPasteText').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => __calls.length > 0);
     const [d] = await calls(page, 'extractListings');
     expect(d.channel).toBe('whatsapp');
@@ -160,11 +160,11 @@ test.describe('Fase 1: desde un enlace y marcador', () => {
       ] });
     }, pngDataUrl.toString());
     await page.fill('#pubUrlInput', 'https://urbania.pe/inmueble/dpto-123');
-    await page.click('#pubModal button:text-is("Importar")');
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     expect(await page.evaluate(() => __calls.length)).toBe(0); // falta la autorización
     expect(await page.evaluate(() => __toasts.pop())).toContain('autorización');
     await page.check('#pubUrlAuth');
-    await page.click('#pubModal button:text-is("Importar")');
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => _pubBulkStep === 2);
     const [d] = await calls(page, 'importListingPage');
     expect(d).toEqual({ url: 'https://urbania.pe/inmueble/dpto-123', declaraAutorizacion: true });
@@ -178,12 +178,12 @@ test.describe('Fase 1: desde un enlace y marcador', () => {
     });
     await expect(page.locator('#pubUrlInput')).toHaveAttribute('placeholder', 'Pega tu enlace (URL)');
     await expect(page.locator('#pubUrlAyuda')).toBeHidden();
-    await page.locator('.pub-url-info').click();
+    await page.locator('#pubUrlAyuda').locator('xpath=..').locator('.pub-info').click();
     await expect(page.locator('#pubUrlAyuda')).toContainText('Urbania, Adondevivir');
     await expect(page.locator('#pubModal')).not.toContainText('Enviar a ReCo');
     await page.fill('#pubUrlInput', 'https://urbania.pe/inmueble/1234567');
     await page.check('#pubUrlAuth');
-    await page.click('#pubModal button:text-is("Importar")');
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'pubPasteText');
     expect((await page.evaluate(() => __toasts)).join(" ")).toContain('Pegar texto');
   });
