@@ -31,6 +31,7 @@ async function abrirIntegraciones(page, fns) {
       eventos: ['property.created', 'property.approved'],
     });
     Object.assign(__fn, f || {});
+    _INT_AVANZADAS = true; // apagadas por defecto; aquí se prueban encendidas
     closePublish();
     navigateUserSection('integraciones');
   }, [fns || null, SRC]);
@@ -40,13 +41,13 @@ async function abrirIntegraciones(page, fns) {
 test.describe('Fase 3: Integraciones', () => {
   test.beforeEach(async ({ page }) => { await setupImportPage(page); });
 
-  test('la carga masiva ofrece ir a Integraciones y el menú tiene la sección', async ({ page }) => {
-    await expect(page.locator('#pubModal')).toContainText('Que se actualice solo');
-    await page.evaluate(() => { __fn.importSources = () => ({ sources: [] }); __fn.emailIngest = () => ({ disponible: false }); __fn.apiAccess = () => ({ keys: [] }); });
-    await page.locator('#pubModal button', { hasText: 'Ir a Integraciones' }).click();
+  test('por ahora Integraciones solo muestra Facebook e Instagram; la carga masiva no ofrece CRM ni API', async ({ page }) => {
+    await expect(page.locator('#pubModal')).not.toContainText('Que se actualice solo');
+    await page.evaluate(() => { __fn.metaConnect = () => ({ disponible: false }); closePublish(); navigateUserSection('integraciones'); });
     await expect(page.locator('#userSectionContent')).toContainText('🔌 Integraciones');
-    expect(await page.evaluate(() => location.hash)).toBe('#integraciones');
-    await expect(page.locator('#intEmail')).toContainText('Muy pronto');
+    await expect(page.locator('#intMeta')).toBeVisible();
+    await expect(page.locator('#intSources, #intEmail, #intApi')).toHaveCount(0);
+    expect(await page.evaluate(() => __calls.filter((c) => ['importSources', 'emailIngest', 'apiAccess'].includes(c.name)).length)).toBe(0);
     expect(await page.evaluate(() => document.documentElement.innerHTML.includes("navigateUserSection('integraciones')\">🔌 Integraciones"))).toBe(true);
   });
 

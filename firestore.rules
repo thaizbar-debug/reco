@@ -367,6 +367,10 @@ service cloud.firestore {
       allow read: if isAdmin();
       allow write: if false;
     }
+    // /trackLimits/{uid}: límite por hora de trackPublish (solo admin SDK).
+    match /trackLimits/{uid} {
+      allow read, write: if false;
+    }
 
     // Bot de WhatsApp (functions/index.js → whatsappLink, whatsappWebhook,
     // whatsappProcessMessage). Guardan teléfonos y mensajes: solo el admin

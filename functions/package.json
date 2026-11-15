@@ -11,9 +11,10 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "node index.test.js && node shared/catalogo.test.js && node shared/import-core.test.js && node whatsapp-core.test.js && node feed-core.test.js && node social-core.test.js"
+    "test": "node index.test.js && node shared/catalogo.test.js && node shared/import-core.test.js && node whatsapp-core.test.js && node feed-core.test.js && node social-core.test.js && node photo-core.test.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "firebase-admin": "^12.4.0",
     "firebase-functions": "^6.0.0"
   },

@@ -402,6 +402,14 @@
       const u = attr(tag, 'data-src') || attr(tag, 'data-lazy') || attr(tag, 'src');
       if (u && IMG_URL_RE.test(u) && !/logo|icon|sprite|avatar|placeholder|pixel/i.test(u)) addImg(u);
     });
+    // Portales que arman la galería con JavaScript (Urbania, Adondevivir…):
+    // las fotos solo están como URLs dentro de los scripts de la página.
+    if (images.length < 4) {
+      const plano = h.replace(/\\u002F/gi, '/').replace(/\\\//g, '/');
+      (plano.match(/https?:\/\/[^"'\s<>()\\]+?\.(?:jpe?g|webp|png)(?:\?[^"'\s<>()\\]*)?/gi) || []).forEach((u) => {
+        if (!/logo|icon|sprite|avatar|placeholder|pixel|banner|favicon|thumb/i.test(u)) addImg(u);
+      });
+    }
     const text = decodeEntities(h
       .replace(/<(script|style|noscript|svg|template|iframe)\b[\s\S]*?<\/\1>/gi, ' ')
       .replace(/<br\s*\/?>|<\/(p|div|li|h\d|tr|section|article)>/gi, '\n')
@@ -472,8 +480,8 @@
     return out.slice(0, max || 60);
   }
 
-  // Texto que ve la IA para una página (también la que manda el marcador del
-  // navegador), dentro de `max` caracteres; las fotos van como [FOTO id].
+  // Texto que ve la IA para una página, dentro de `max` caracteres; las fotos
+  // van como [FOTO id].
   function pageToText(p, url, photoIds, max) {
     const lim = max || 18000;
     const parts = [`URL: ${url}`];

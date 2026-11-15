@@ -120,7 +120,7 @@ test.describe('Fase 0: carga inteligente — bandeja de revisión', () => {
     expect(res.before.precio).toContain('dashed');
     expect(res.before.titulo).toContain('#d97706');
     expect(res.before.html).toContain('borde punteado');
-    expect(res.before.html).toContain('ℹ 1');
+    expect(res.before.html).toContain('ℹ Quitamos 1 dato de contacto');
     expect(res.after).not.toContain('dashed');
     expect(res.edited).toEqual({ precio: 1 });
   });
@@ -139,7 +139,7 @@ test.describe('Fase 0: carga inteligente — bandeja de revisión', () => {
     expect(res.dupes[0]).toBe('');
     expect(res.dupes[1]).toContain('fila 1');
     expect(res.dupes[2]).toContain('Ya tienes');
-    expect(res.html).toContain('parecen repetidas');
+    expect(res.html).toContain('parecen repetidos');
   });
 
   test('banner de borradores pendientes con Retomar / Descartar', async ({ page }) => {

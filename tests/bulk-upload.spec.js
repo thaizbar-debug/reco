@@ -335,9 +335,9 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
   });
 
   // ── Wizard steps ─────────────────────────────────────────────────
-  test('_PUB_BULK_STEPS has 4 steps', async ({ page }) => {
+  test('_PUB_BULK_STEPS has 2 steps', async ({ page }) => {
     const steps = await page.evaluate(() => _PUB_BULK_STEPS);
-    expect(steps).toHaveLength(4);
+    expect(steps).toEqual(['Importar', 'Revisar y publicar']);
   });
 
   test('_pubBulkStepNum returns 1 for map step', async ({ page }) => {
@@ -505,7 +505,7 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
       return document.getElementById('pubBulkStepBody').innerHTML;
     }, base);
     expect(html).toContain("_pubBulkEdit(0,'area_terreno'");
-    expect(html).toMatch(/onchange="_pubBulkEdit\(0,'area_terreno',this.value\)" style="[^"]*var\(--red\)/);
+    expect(html).toMatch(/_pubBulkEdit\(0,'area_terreno',this.value\)"[^>]*style="[^"]*var\(--red\)/);
   });
 
   test('Excel propio: basta con mapear una de las dos áreas', async ({ page }) => {
@@ -559,8 +559,9 @@ test.describe('PR A: Carga masiva — esquema de 30 columnas', () => {
   });
 
   // ── Photo assistant (MEJ-01) ─────────────────────────────────────
-  test('_PUB_BULK_PHOTO_MAX is 12', async ({ page }) => {
-    const max = await page.evaluate(() => _PUB_BULK_PHOTO_MAX);
-    expect(max).toBe(12);
+  // Mismo máximo que "Publicar uno" (antes 12).
+  test('_PUB_BULK_PHOTO_MAX is 20, same as the single form', async ({ page }) => {
+    const r = await page.evaluate(() => [_PUB_BULK_PHOTO_MAX, _PUB_MAX_PHOTOS]);
+    expect(r).toEqual([20, 20]);
   });
 });

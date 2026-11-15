@@ -15,7 +15,7 @@
 
 const { onCall, onRequest, HttpsError } = require('firebase-functions/v2/https');
 const { defineSecret, defineString } = require('firebase-functions/params');
-const { onDocumentWritten, onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentWritten, onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { logger } = require('firebase-functions');
 const { initializeApp } = require('firebase-admin/app');
@@ -30,7 +30,11 @@ const RecoSocial = require('./social-core');
 initializeApp();
 const db = getFirestore();
 
-const openaiKey = defineSecret('OPENAI_API_KEY');
+// IA de texto e imágenes: Claude (ver _aiStructured). Modelo principal y de
+// respaldo configurables sin tocar el código.
+const anthropicKey = defineSecret('ANTHROPIC_API_KEY');
+const aiModel = defineString('AI_MODEL', { default: 'claude-haiku-5-5' });
+const aiFallbackModel = defineString('AI_FALLBACK_MODEL', { default: 'claude-sonnet-5-5' });
 const culqiSecretKey = defineSecret('CULQI_SECRET_KEY');
 // Bot de WhatsApp (Cloud API de Meta). Ver whatsappWebhook más abajo.
 const waToken = defineSecret('WHATSAPP_TOKEN');
@@ -1390,20 +1394,23 @@ exports.grantKeys = onCall(
   }
 );
 
-// MEJ-04: generateListingCopy — AI-powered listing description
-// Uses fetch() instead of the openai SDK to avoid an extra dependency in the
-// Cloud Function bundle; functionally identical (gpt-4o-mini, temperature 0.7,
-// response_format: json_object).
+// MEJ-04: generateListingCopy — AI-powered listing description (Claude vía
+// _aiStructured: modelo principal y, si falla, el de respaldo).
 // ─────────────────────────────────────────────────────────────────────────────
 const AI_COPY_LIMIT_PER_HOUR = 30;
+const AI_COPY_SCHEMA = {
+  type: 'object', additionalProperties: false, required: ['titulo', 'descripcion'],
+  properties: { titulo: { type: 'string' }, descripcion: { type: 'string' } },
+};
 
 exports.generateListingCopy = onCall(
   {
     region: REGION,
     maxInstances: 10,
+    timeoutSeconds: 300,
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'generateListingCopy');
@@ -1467,50 +1474,17 @@ Reglas:
    {"titulo":"...","descripcion":"..."}
    donde título ≤ 90 caracteres y descripción tiene entre 500 y 900 caracteres distribuidos en 2 a 3 párrafos separados por \\n\\n.`;
 
-    // ── Call OpenAI via fetch ──
-    const key = openaiKey.value();
-    if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
-
-    let body;
-    try {
-      const res = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${key}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          temperature: 0.7,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: JSON.stringify(ficha) },
-          ],
-        }),
-      });
-      body = await res.json();
-      if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
-    } catch (e) {
-      logger.error('[generateListingCopy] OpenAI error', { err: e && e.message });
-      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
-    }
-
-    const raw = (body.choices?.[0]?.message?.content || '').trim();
+    // ── IA (Claude, con respaldo en la misma llamada) ──
     let parsed;
     try {
-      parsed = JSON.parse(raw);
-    } catch (_) {
-      const titleMatch = raw.match(/"titulo"\s*:\s*"([^"]+)"/);
-      const descMatch = raw.match(/"descripcion"\s*:\s*"([^"]+)"/);
-      parsed = {
-        titulo: titleMatch ? titleMatch[1] : '',
-        descripcion: descMatch ? descMatch[1] : '',
-      };
-    }
-
-    if (!parsed.titulo && !parsed.descripcion) {
-      throw new HttpsError('internal', 'La IA no generó contenido válido.');
+      ({ data: parsed } = await _aiStructured({
+        fn: 'generateListingCopy', system: systemPrompt, content: JSON.stringify(ficha), schema: AI_COPY_SCHEMA, maxTokens: 4000,
+        validate: (r) => (r && String(r.titulo || '').trim() && String(r.descripcion || '').trim() ? true : 'Texto vacío'),
+      }));
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[generateListingCopy] IA error', { err: e && e.message });
+      throw new HttpsError('internal', 'Error al generar texto. Intenta de nuevo.');
     }
 
     return {
@@ -1563,7 +1537,7 @@ Reglas:
 // 'imagenes': flyers o capturas de pantalla sueltas (cada imagen va como
 // página escaneada).
 const IMPORT_DOC_TYPES = ['pdf', 'docx', 'pptx', 'whatsapp', 'imagenes', 'video'];
-// Audio de un video subido (WAV 16 kHz mono, máx. ~150 s) para Whisper.
+// Audio de un video subido (WAV 16 kHz mono, máx. ~150 s) para transcribir (Speech-to-Text).
 const IMPORT_AUDIO_RE = /^data:audio\/(wav|x-wav|mpeg|mp4|webm|ogg);base64,[A-Za-z0-9+/=]+$/;
 const IMPORT_AUDIO_MAX_CHARS = 7 * 1024 * 1024;
 const IMPORT_DOC_MAX_IMAGES = 6;
@@ -1599,26 +1573,103 @@ ${etiquetas}
 13. evidencia: copia literal (máx. 600 caracteres) del fragmento de donde salen el precio, las áreas y los ambientes. En páginas escaneadas (imágenes), transcribe lo que lees en ellas.`;
 }
 
-async function _openaiStructured(systemPrompt, userContent, schemaName, schema) {
-  const key = openaiKey.value();
-  if (!key) throw new HttpsError('failed-precondition', 'Clave OpenAI no configurada.');
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      response_format: { type: 'json_schema', json_schema: { name: schemaName, strict: true, schema } },
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent },
-      ],
-    }),
-  });
-  const body = await res.json();
-  if (!res.ok) throw new Error(body.error?.message || `HTTP ${res.status}`);
-  return JSON.parse(body.choices?.[0]?.message?.content || '{}');
+// ─────────────────────────────────────────────────────────────────────────────
+// IA (Claude). Cada pedido va primero al modelo rápido y económico (AI_MODEL,
+// Claude Haiku) y, si falla por cualquier motivo, se repite EN LA MISMA
+// LLAMADA con AI_FALLBACK_MODEL (Claude Sonnet): el usuario nunca tiene que
+// volver a intentar. Cuenta como falla:
+//   - error de la API (caída, sobrecarga, límite, tiempo agotado),
+//   - respuesta rechazada (refusal) o cortada por largo (max_tokens),
+//   - JSON que no se puede leer,
+//   - un resultado que no pasa la validación de quien llama (p. ej. ningún
+//     inmueble en un texto que claramente tiene contenido).
+// Contenido: texto, o partes { type: 'text', text }, { type: 'image', dataUrl }
+// y { type: 'pdf', name, data (base64) }.
+// ─────────────────────────────────────────────────────────────────────────────
+const AI_MAX_TOKENS = 16000;
+const AI_TIMEOUT_MS = 120000;
+const AI_IMAGE_RE = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/;
+function _aiModels(only) {
+  const primary = aiModel.value() || 'claude-haiku-5-5';
+  const fallback = aiFallbackModel.value() || 'claude-sonnet-5-5';
+  if (only === 'fallback') return [fallback];
+  return primary === fallback ? [primary] : [primary, fallback];
 }
+// Esquemas en el formato que acepta la salida estructurada de Claude:
+// { type: ['string', 'null'] } → anyOf.
+function _aiSchema(s) {
+  if (Array.isArray(s)) return s.map(_aiSchema);
+  if (!s || typeof s !== 'object') return s;
+  const out = {};
+  Object.entries(s).forEach(([k, v]) => { out[k] = k === 'enum' || k === 'required' ? v : _aiSchema(v); });
+  if (Array.isArray(out.type)) {
+    const tipos = out.type;
+    delete out.type;
+    return { anyOf: tipos.map((t) => ({ ...out, type: t })) };
+  }
+  return out;
+}
+function _aiContent(content) {
+  if (typeof content === 'string') return content;
+  return content.map((p) => {
+    // PDF (adjunto de un correo): Claude lo lee directamente, texto e imágenes.
+    if (p.type === 'pdf') return { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: String(p.data || '') }, title: String(p.name || 'ficha.pdf').slice(0, 200) };
+    if (p.type !== 'image') return { type: 'text', text: String(p.text || '') };
+    const m = AI_IMAGE_RE.exec(p.dataUrl || '');
+    if (!m) throw new HttpsError('invalid-argument', 'Imagen inválida.');
+    return { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } };
+  });
+}
+const _aiFail = (msg, extra) => Object.assign(new Error(msg), extra || {});
+// ultimo: es el último modelo de la lista. Los anteriores no se reintentan
+// (se pasa de inmediato al siguiente); el último reintenta una vez los errores
+// pasajeros de la API (sobrecarga, límite, red).
+async function _aiCall(model, o, ultimo) {
+  const { Anthropic } = require('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: anthropicKey.value(), maxRetries: ultimo ? 1 : 0, timeout: ultimo ? AI_TIMEOUT_MS : AI_TIMEOUT_MS / 2 });
+  const res = await client.messages.create({
+    model,
+    max_tokens: o.maxTokens || AI_MAX_TOKENS,
+    system: o.system,
+    messages: [{ role: 'user', content: _aiContent(o.content) }],
+    output_config: { effort: 'low', ...(o.schema && { format: { type: 'json_schema', schema: _aiSchema(o.schema) } }) },
+  });
+  if (res.stop_reason === 'refusal') throw _aiFail('La IA rechazó el pedido', { refusal: true });
+  // Cortada por largo (p. ej. un proyecto con decenas de unidades): el JSON queda incompleto.
+  if (res.stop_reason === 'max_tokens') throw _aiFail('Respuesta de la IA cortada por largo', { truncated: true });
+  const text = res.content.filter((b) => b.type === 'text').map((b) => b.text).join('').trim();
+  let data = text;
+  if (o.schema) {
+    try { data = JSON.parse(text); } catch (_) { throw _aiFail('Respuesta de la IA con JSON inválido'); }
+  }
+  const ok = o.validate ? o.validate(data) : true;
+  if (ok !== true) throw _aiFail(typeof ok === 'string' ? ok : 'Resultado de la IA no válido', { invalid: true, data });
+  return data;
+}
+// → { data, model, respaldo } (respaldo: lo resolvió el segundo modelo).
+// o: { fn, system, content, schema?, validate?, maxTokens?, only?: 'fallback',
+//      acceptInvalid?: si el último modelo también da un resultado "no válido"
+//      (p. ej. vacío), se devuelve igual en vez de fallar }.
+async function _aiStructured(o) {
+  if (!anthropicKey.value()) throw new HttpsError('failed-precondition', 'Clave de la IA no configurada.');
+  const models = _aiModels(o.only);
+  let last;
+  for (let i = 0; i < models.length; i++) {
+    try {
+      const data = await _aiCall(models[i], o, i === models.length - 1);
+      if (i > 0) logger.info(`[${o.fn}] resuelto con el modelo de respaldo`, { model: models[i] });
+      return { data, model: models[i], respaldo: i > 0 };
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      last = e;
+      logger.warn(`[${o.fn}] ${models[i]} falló`, { err: e && e.message, status: e && e.status, truncated: !!(e && e.truncated) });
+    }
+  }
+  if (last && last.invalid && o.acceptInvalid) return { data: last.data, model: models[models.length - 1], respaldo: models.length > 1 };
+  throw last;
+}
+// Si la lista de inmuebles no entra en la respuesta, se pide de nuevo más corta.
+const IMPORT_SHORT_PROMPT = `\n\nIMPORTANTE: la respuesta anterior fue demasiado larga. Devuelve como máximo 12 inmuebles (en un proyecto, una entrada por tipología, no por unidad), con descripcion de máximo 400 caracteres y evidencia de máximo 300.`;
 
 // Valida la entrada de kind 'document' y arma el contenido multimodal.
 function _extractDocumentInput(d, text) {
@@ -1640,7 +1691,7 @@ function _extractDocumentInput(d, text) {
   const content = [{ type: 'text', text: text || '(El documento solo tiene páginas escaneadas.)' }];
   images.forEach((im) => {
     content.push({ type: 'text', text: `Página escaneada ${String(im.page || '').slice(0, 10)}:` });
-    content.push({ type: 'image_url', image_url: { url: im.dataUrl, detail: 'high' } });
+    content.push({ type: 'image', dataUrl: im.dataUrl });
   });
   return { fileType, photoIds, images: images.length, content };
 }
@@ -1674,13 +1725,28 @@ async function _importRateLimit(uid) {
 //   draftExtra / eventExtra  campos adicionales para el borrador / evento
 async function _extractAndSaveDrafts(o) {
   const t0 = Date.now();
-  let parsed;
+  // Ningún inmueble en una fuente con contenido suele ser un error del modelo
+  // rápido: se prueba con el de respaldo (y si tampoco encuentra, es real).
+  const conContenido = Array.isArray(o.userContent) || (String(o.text || '').length >= 40 && /\d/.test(o.text));
+  const pedido = {
+    fn: o.fn, system: _extractSystemPrompt(), content: o.userContent || o.text, schema: RecoImport.EXTRACTION_SCHEMA,
+    validate: (r) => (!r || !Array.isArray(r.inmuebles) ? 'Respuesta sin lista de inmuebles'
+      : (!r.inmuebles.length && conContenido ? 'Ningún inmueble encontrado' : true)),
+    acceptInvalid: true,
+  };
+  let ia;
   try {
-    parsed = await _openaiStructured(_extractSystemPrompt(), o.userContent || o.text, 'inmuebles', RecoImport.EXTRACTION_SCHEMA);
+    ia = await _aiStructured(pedido).catch((e) => {
+      if (!e || !e.truncated) throw e;
+      logger.warn(`[${o.fn}] respuesta larga: se pide más corta`);
+      return _aiStructured({ ...pedido, system: pedido.system + IMPORT_SHORT_PROMPT, only: 'fallback' });
+    });
   } catch (e) {
-    logger.error(`[${o.fn}] OpenAI error`, { err: e && e.message });
+    if (e instanceof HttpsError) throw e;
+    logger.error(`[${o.fn}] IA error`, { err: e && e.message, truncated: !!(e && e.truncated), chars: String(o.text || '').length });
     throw new HttpsError('internal', o.errorMessage || 'No pudimos leer el contenido. Intenta de nuevo.');
   }
+  const parsed = ia.data || {};
   const items = (Array.isArray(parsed.inmuebles) ? parsed.inmuebles : []).slice(0, IMPORT_MAX_LISTINGS_PER_CALL);
 
   // Las partes de una misma fuente comparten batchId (y su "Retomar").
@@ -1718,6 +1784,7 @@ async function _extractAndSaveDrafts(o) {
   });
   batch.set(db.collection('importEvents').doc(), {
     uid: o.uid, kind: o.kind, channel: o.channel, chars: o.text.length, listings: drafts.length,
+    modelo: ia.model, respaldo: ia.respaldo,
     ...(o.eventExtra || {}),
     ms: Date.now() - t0, createdAt: FieldValue.serverTimestamp(),
   });
@@ -1733,7 +1800,7 @@ exports.extractListings = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'extractListings');
@@ -1769,7 +1836,7 @@ exports.extractListings = onCall(
       try {
         const [head, b64] = audio.split(',');
         const mime = head.slice(5, head.indexOf(';'));
-        const t = await _transcribe(Buffer.from(b64, 'base64'), mime, `audio.${mime.split('/')[1].replace('x-', '').replace('mpeg', 'mp3')}`);
+        const t = await _transcribe(Buffer.from(b64, 'base64'), mime);
         if (t) {
           text = `${text}\n\nLo que se dice en el video:\n${t}`.trim();
           doc.content[0] = { type: 'text', text };
@@ -1842,7 +1909,10 @@ Para cada campo de ReCo, indica el nombre EXACTO de la columna que lo contiene, 
 Campos de ReCo:
 ${RecoImport.COLS.map((k) => `- ${k}: ${IMPORT_COLUMN_HINTS[k]}`).join('\n')}`;
   const user = `Columnas: ${JSON.stringify(headers)}\nFilas de ejemplo:\n${sample.map((r) => JSON.stringify(r)).join('\n')}`;
-  const parsed = await _openaiStructured(prompt, user, 'mapeo_columnas', schema);
+  const { data: parsed } = await _aiStructured({
+    fn: 'mapImportColumns', system: prompt, content: user, schema, maxTokens: 4000,
+    validate: (r) => (r && r.mapeo && typeof r.mapeo === 'object' ? true : 'Respuesta sin mapeo'),
+  });
   const mapeo = {};
   Object.entries((parsed && parsed.mapeo) || {}).forEach(([k, v]) => {
     if (RecoImport.COLS.includes(k) && typeof v === 'string' && headers.includes(v)) mapeo[k] = v;
@@ -1854,9 +1924,10 @@ exports.mapImportColumns = onCall(
   {
     region: REGION,
     maxInstances: 10,
+    timeoutSeconds: 300,
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'mapImportColumns');
@@ -1875,7 +1946,7 @@ exports.mapImportColumns = onCall(
     try {
       mapeo = await _aiMapColumns(headers, sample);
     } catch (e) {
-      logger.error('[mapImportColumns] OpenAI error', { err: e && e.message });
+      logger.error('[mapImportColumns] IA error', { err: e && e.message });
       throw new HttpsError('internal', 'No pudimos reconocer las columnas. Indícalas a mano.');
     }
     await db.collection('importEvents').doc().set({
@@ -1895,18 +1966,15 @@ exports.mapImportColumns = onCall(
 //                      Instagram, TikTok o YouTube (social-core.js lee sus
 //                      páginas públicas de inserción; si el post trae un video
 //                      descargable, se transcribe su audio). Si el sitio
-//                      bloquea la descarga → failed-precondition,
-//                      details.reason 'blocked' (el cliente ofrece el marcador
-//                      "Enviar a ReCo"); un post privado → 'social-private';
+//                      bloquea la descarga (también a través del servicio de
+//                      lectura, ver _fetchPageHtml) → failed-precondition,
+//                      details.reason 'blocked' (el cliente ofrece pegar el
+//                      texto); un post privado → 'social-private';
 //                      el enlace de un perfil de red → 'social-profile'.
 //   { url, modo: 'perfil' }  Perfil de un portal, página de resultados o
 //                      listado de proyectos de una web: devuelve { avisos:
 //                      [{ url, title }] } (máx. IMPORT_PROFILE_MAX_LISTINGS)
 //                      sin usar la IA.
-//   { url, pagina }    Lo manda el marcador del navegador, que corre en la
-//                      página del aviso que el usuario ya tiene abierta:
-//                      { title, meta, jsonld, text, images }. Sirve para
-//                      cualquier dominio.
 // Siempre: declaraAutorizacion === true (el usuario declara que es el
 // anunciante o tiene autorización). Las fotos (máx. IMPORT_URL_MAX_PHOTOS)
 // las descarga el servidor y vuelven como data URL con su id; la IA solo ve
@@ -1924,7 +1992,7 @@ exports.mapImportColumns = onCall(
 // Cualquier otro sitio usa la detección genérica de enlaces de inmuebles.
 const IMPORT_URL_HOSTS = ['urbania.pe', 'adondevivir.com', 'properati.com.pe', 'babilonia.pe', 'nexoinmobiliario.pe',
   'mercadolibre.com.pe', 'infocasas.com.pe', 'remax.pe'];
-const IMPORT_VIDEO_MAX_BYTES = 24 * 1024 * 1024; // límite de Whisper: 25 MB
+const IMPORT_VIDEO_MAX_BYTES = 24 * 1024 * 1024; // video de un post (su audio va a Speech-to-Text)
 // Lecturas de páginas por usuario y hora (aparte del límite de la IA): un
 // enlace que falla no gasta una importación, pero el servidor no se puede usar
 // para descargar páginas sin tope.
@@ -1982,7 +2050,7 @@ async function _assertPublicUrl(u) {
   return url;
 }
 // GET con validación SSRF en cada salto, timeout y tope de bytes.
-async function _safeFetch(u, { maxBytes, accept }) {
+async function _safeFetch(u, { maxBytes, accept, headers }) {
   let url = await _assertPublicUrl(u);
   for (let hop = 0; hop <= 3; hop++) {
     const ctrl = new AbortController();
@@ -1990,7 +2058,7 @@ async function _safeFetch(u, { maxBytes, accept }) {
     try {
       const res = await fetch(url.href, {
         redirect: 'manual', signal: ctrl.signal,
-        headers: { 'User-Agent': IMPORT_FETCH_UA, 'Accept': accept, 'Accept-Language': 'es-PE,es;q=0.9' },
+        headers: headers || { 'User-Agent': IMPORT_FETCH_UA, 'Accept': accept, 'Accept-Language': 'es-PE,es;q=0.9' },
       });
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
         url = await _assertPublicUrl(new URL(res.headers.get('location'), url).href);
@@ -2014,20 +2082,39 @@ async function _safeFetch(u, { maxBytes, accept }) {
 }
 // Una foto por URL (validación SSRF, tope de tamaño, descarta íconos).
 // → { buf, mime } o null.
-async function _fetchImage(u) {
-  try {
-    const r = await _safeFetch(u, { maxBytes: IMPORT_URL_PHOTO_BYTES, accept: 'image/jpeg,image/png,image/webp' });
-    const type = (r.type.match(/^image\/(jpeg|png|webp)/i) || [])[0];
-    if (r.status !== 200 || !type || r.truncated || r.body.length < IMPORT_URL_MIN_PHOTO_BYTES) return null;
+// servicio: la página se leyó por el servicio de lectura; si el portal también
+// bloquea sus fotos, se piden por el mismo servicio.
+async function _fetchImage(u, servicio) {
+  const valida = (r) => {
+    const type = (String(r && r.type).match(/^image\/(jpeg|png|webp)/i) || [])[0];
+    if (!r || r.status !== 200 || !type || r.truncated || r.body.length < IMPORT_URL_MIN_PHOTO_BYTES) return null;
     return { buf: r.body, mime: type.toLowerCase() };
-  } catch (_) { return null; /* foto inaccesible: se omite */ }
+  };
+  let im = null;
+  try {
+    im = valida(await _safeFetch(u, { maxBytes: IMPORT_URL_PHOTO_BYTES, accept: 'image/jpeg,image/png,image/webp' }));
+  } catch (_) { im = null; /* foto inaccesible */ }
+  if (im || !servicio) return im;
+  try {
+    await _assertPublicUrl(u);
+    const key = scraperKey.value() || '';
+    if (!key) return null;
+    const [req1] = _scraperRequests(String(scraperProvider.value() || 'scrapingbee').toLowerCase(), key, u);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_FETCH_TIMEOUT_MS * 2);
+    try {
+      const res = await fetch(req1, { signal: ctrl.signal });
+      const buf = Buffer.from(await res.arrayBuffer());
+      return valida({ status: res.status, type: res.headers.get('content-type') || '', body: buf, truncated: buf.length > IMPORT_URL_PHOTO_BYTES });
+    } finally { clearTimeout(timer); }
+  } catch (_) { return null; }
 }
-async function _downloadPhotos(urls) {
+async function _downloadPhotos(urls, opts) {
   const photos = [];
   let total = 0;
   for (const u of urls) {
     if (photos.length >= IMPORT_URL_MAX_PHOTOS || total >= IMPORT_URL_PHOTOS_TOTAL_BYTES) break;
-    const im = await _fetchImage(u);
+    const im = await _fetchImage(u, !!(opts && opts.servicio));
     if (!im) continue;
     total += im.buf.length;
     photos.push({ id: `u-${photos.length + 1}`, dataUrl: `data:${im.mime};base64,${im.buf.toString('base64')}` });
@@ -2036,15 +2123,73 @@ async function _downloadPhotos(urls) {
 }
 // HTML de una página pública. 403/429/503 o páginas de verificación
 // ("captcha", "Just a moment") = el sitio no deja descargar desde un
-// servidor → reason 'blocked' (el cliente ofrece el marcador).
-async function _fetchPageHtml(url) {
-  const r = await _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml' })
-    .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
-  const html = r ? r.body.toString('utf8') : '';
-  if (!r || r.status !== 200 || !/html/i.test(r.type) || /captcha|cf-chl|just a moment|access denied|attention required/i.test(html.slice(0, 5000))) {
-    throw new HttpsError('failed-precondition', 'Esa página no permitió leerla desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador o pega el texto del aviso.', { reason: 'blocked' });
+// servidor. Los portales grandes (Urbania, Adondevivir…) están detrás de
+// protecciones anti-bots que bloquean a los servidores en la nube:
+//   1) se reintenta con los encabezados de un navegador;
+//   2) si hay un servicio de lectura configurado (SCRAPER_PROVIDER +
+//      SCRAPER_API_KEY, ver docs/LECTURA-DE-PORTALES.md), se lee a través de él;
+//   3) si no, reason 'blocked' (el cliente ofrece pegar el texto).
+const scraperKey = defineSecret('SCRAPER_API_KEY');
+const scraperProvider = defineString('SCRAPER_PROVIDER', { default: 'scrapingbee' });
+const IMPORT_SCRAPER_TIMEOUT_MS = 70000;
+const IMPORT_BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'es-PE,es;q=0.9,en;q=0.8',
+  'Sec-Fetch-Dest': 'document', 'Sec-Fetch-Mode': 'navigate', 'Sec-Fetch-Site': 'none', 'Upgrade-Insecure-Requests': '1',
+};
+const _pageBlocked = (r) => !r || r.status !== 200 || !/html/i.test(r.type) || !r.body.length
+  || /captcha|cf-chl|just a moment|access denied|attention required|px-captcha|are you a robot|verify you are human/i.test(r.body.toString('utf8', 0, 6000));
+// Pedido al servicio de lectura → [{ url, params }] en orden de costo (el
+// segundo, más caro, solo si el primero también fue bloqueado).
+function _scraperRequests(provider, key, target) {
+  const q = (base, p) => `${base}?${new URLSearchParams(p).toString()}`;
+  if (provider === 'zenrows') {
+    return [q('https://api.zenrows.com/v1/', { apikey: key, url: target, premium_proxy: 'true', proxy_country: 'pe' }),
+      q('https://api.zenrows.com/v1/', { apikey: key, url: target, js_render: 'true', premium_proxy: 'true', proxy_country: 'pe' })];
   }
-  return { html, url: r.url };
+  if (provider === 'scraperapi') {
+    return [q('https://api.scraperapi.com/', { api_key: key, url: target, country_code: 'pe', premium: 'true' }),
+      q('https://api.scraperapi.com/', { api_key: key, url: target, country_code: 'pe', ultra_premium: 'true' })];
+  }
+  return [q('https://app.scrapingbee.com/api/v1/', { api_key: key, url: target, premium_proxy: 'true', country_code: 'pe', render_js: 'false' }),
+    q('https://app.scrapingbee.com/api/v1/', { api_key: key, url: target, stealth_proxy: 'true', country_code: 'pe' })];
+}
+async function _scraperFetch(target) {
+  let key = '';
+  try { key = scraperKey.value() || ''; } catch (_) { key = ''; }
+  if (!key) return null;
+  const provider = String(scraperProvider.value() || 'scrapingbee').toLowerCase();
+  for (const u of _scraperRequests(provider, key, target)) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), IMPORT_SCRAPER_TIMEOUT_MS);
+    try {
+      const res = await fetch(u, { signal: ctrl.signal, headers: { 'Accept': 'text/html' } });
+      const body = Buffer.from(await res.arrayBuffer()).subarray(0, IMPORT_URL_HTML_BYTES);
+      const r = { status: res.status, type: res.headers.get('content-type') || 'text/html', body, url: target };
+      if (!_pageBlocked(r)) return r;
+      logger.warn('[importListingPage] servicio de lectura sin éxito', { provider, status: res.status });
+    } catch (e) {
+      logger.warn('[importListingPage] servicio de lectura falló', { provider, err: e && e.message });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
+}
+async function _fetchPageHtml(url, uid) {
+  const get = (headers) => _safeFetch(url.href, { maxBytes: IMPORT_URL_HTML_BYTES, accept: 'text/html,application/xhtml+xml', headers })
+    .catch((e) => { if (e instanceof HttpsError) throw e; return null; });
+  let r = await get();
+  let via = 'directo';
+  if (_pageBlocked(r)) { r = await get(IMPORT_BROWSER_HEADERS); via = 'navegador'; }
+  if (_pageBlocked(r)) { r = await _scraperFetch((r && r.url) || url.href); via = 'servicio'; }
+  if (_pageBlocked(r)) {
+    logger.warn('[importListingPage] página bloqueada', { host: url.hostname });
+    await db.collection('importEvents').doc().set({ uid: uid || null, kind: 'bloqueado', channel: 'url', host: url.hostname, createdAt: FieldValue.serverTimestamp() }).catch(() => {});
+    throw new HttpsError('failed-precondition', `${url.hostname.replace(/^www\./, '')} no dejó que ReCo leyera la página. Copia el texto del aviso y pégalo en "Pegar texto".`, { reason: 'blocked' });
+  }
+  return { html: r.body.toString('utf8'), url: r.url, via };
 }
 // Sigue las redirecciones de un enlace corto (facebook.com/share/…, vm.tiktok…)
 // sin leer el cuerpo. Si la red manda al login, el destino real va en next=.
@@ -2113,27 +2258,12 @@ async function _videoTranscript(videoUrl) {
   try {
     const r = await _safeFetch(videoUrl, { maxBytes: IMPORT_VIDEO_MAX_BYTES, accept: 'video/mp4,video/*' });
     if (r.status !== 200 || r.truncated || !/video|octet-stream/i.test(r.type) || r.body.length < 10000) return '';
-    return await _transcribe(r.body, 'video/mp4', 'video.mp4');
+    return await _transcribe(r.body, 'video/mp4');
   } catch (e) {
     logger.warn('[importListingPage] video no transcrito', { err: e && e.message });
     return '';
   }
 }
-// Página que manda el marcador: se aceptan solo strings y con tope.
-function _cleanPagina(p) {
-  const str = (v, n) => String(v == null ? '' : v).slice(0, n);
-  const meta = {};
-  Object.entries(p && typeof p.meta === 'object' ? p.meta : {}).slice(0, 40)
-    .forEach(([k, v]) => { meta[str(k, 60)] = str(v, 1000); });
-  return {
-    title: str(p.title, 300), meta,
-    jsonld: (Array.isArray(p.jsonld) ? p.jsonld : []).slice(0, 5).map((x) => str(x, 8000)),
-    datos: [],
-    text: str(p.text, 30000),
-    images: (Array.isArray(p.images) ? p.images : []).slice(0, 60).map((x) => str(x, 2000)).filter((x) => /^https?:\/\//.test(x)),
-  };
-}
-
 exports.importListingPage = onCall(
   {
     region: REGION,
@@ -2142,7 +2272,7 @@ exports.importListingPage = onCall(
     memory: '512MiB',
     consumeAppCheckToken: true,
     enforceAppCheck: true,
-    secrets: [openaiKey],
+    secrets: [anthropicKey, scraperKey],
   },
   async (request) => {
     _logAppCheck(request, 'importListingPage');
@@ -2161,11 +2291,11 @@ exports.importListingPage = onCall(
     // avisos, sin IA (no consume el límite por hora). El cliente elige
     // cuáles importar y llama de nuevo, uno por uno, con el mismo lote.
     const social = RecoSocial.detect(url.href);
-    if (!(d.pagina && typeof d.pagina === 'object')) await _fetchRateLimit(uid);
+    await _fetchRateLimit(uid);
     if (d.modo === 'perfil') {
       // Perfiles de redes: solo con la cuenta conectada (Integraciones).
       if (social) throw _socialError('social-profile');
-      const r = await _fetchPageHtml(url);
+      const r = await _fetchPageHtml(url, uid);
       const avisos = RecoImport.extractListingLinks(r.html, r.url, IMPORT_PROFILE_MAX_LISTINGS,
         { generic: !_importHostAllowed(new URL(r.url).hostname) });
       await db.collection('importEvents').doc().set({
@@ -2176,16 +2306,15 @@ exports.importListingPage = onCall(
 
     let pagina;
     let red = null;
-    const viaMarcador = !!(d.pagina && typeof d.pagina === 'object');
-    if (viaMarcador) {
-      pagina = _cleanPagina(d.pagina);
-    } else if (social) {
+    let via = null;
+    if (social) {
       const s = await _readSocial(url.href, social);
       pagina = s.pagina;
       red = s.det.red;
     } else {
-      const r = await _fetchPageHtml(url);
+      const r = await _fetchPageHtml(url, uid);
       pagina = RecoImport.parseListingHtml(r.html, r.url);
+      via = r.via;
     }
     if (!pagina.text && !pagina.jsonld.length && !Object.keys(pagina.meta).length && !(pagina.images || []).length) {
       throw new HttpsError('invalid-argument', 'La página no tiene contenido legible.');
@@ -2202,7 +2331,7 @@ exports.importListingPage = onCall(
       if (t) { pagina.text = `${pagina.text}\n\nLo que se dice en el video:\n${t}`.trim(); transcrito = true; }
     }
 
-    const photos = await _downloadPhotos(pagina.images);
+    const photos = await _downloadPhotos(pagina.images, { servicio: via === 'servicio' });
     const photoIds = photos.map((p) => p.id);
     const text = RecoImport.pageToText(pagina, url.href, photoIds, IMPORT_TEXT_MAX_CHARS - 500);
     const result = await _extractAndSaveDrafts({
@@ -2211,7 +2340,7 @@ exports.importListingPage = onCall(
       text, photoIds, sourceLabel: 'la página',
       errorMessage: 'No pudimos leer el aviso. Intenta de nuevo o pega su texto.',
       draftExtra: { sourceUrl: url.href.slice(0, 500) },
-      eventExtra: { host: url.hostname, viaMarcador, photos: photos.length, ...(red && { red, video: transcrito }) },
+      eventExtra: { host: url.hostname, photos: photos.length, ...(via && { via }), ...(red && { red, video: transcrito }) },
     });
     // Un aviso suele ser un solo inmueble: si la IA no le asignó fotos, son
     // todas las de la página. Solo vuelven las fotos asignadas.
@@ -2300,7 +2429,7 @@ async function _metaFetchPosts(red, pageId, token, after) {
 
 exports.metaConnect = onCall(
   { region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB', consumeAppCheckToken: true, enforceAppCheck: true,
-    secrets: [openaiKey, metaAppSecret] },
+    secrets: [anthropicKey, metaAppSecret] },
   async (request) => {
     _logAppCheck(request, 'metaConnect');
     requireVerifiedAuth(request);
@@ -2549,17 +2678,85 @@ async function _waMedia(mediaId) {
   if (buf.length > WA_MEDIA_MAX_BYTES) throw new Error('media muy grande');
   return { buf, mime: String(meta.mime_type || '').split(';')[0] };
 }
-async function _transcribe(buf, mime, filename) {
-  const fd = new FormData();
-  fd.append('file', new Blob([buf], { type: mime || 'audio/ogg' }), filename || 'nota.ogg');
-  fd.append('model', 'whisper-1');
-  fd.append('language', 'es');
-  const r = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST', headers: { Authorization: `Bearer ${openaiKey.value()}` }, body: fd,
-  });
-  const body = await r.json();
-  if (!r.ok) throw new Error(body.error?.message || `HTTP ${r.status}`);
-  return String(body.text || '').trim().slice(0, 4000);
+// ─────────────────────────────────────────────────────────────────────────────
+// Transcripción de audio — Google Cloud Speech-to-Text (API v2). Notas de voz
+// del bot, audio de los videos subidos y de los videos de posts. Usa la cuenta
+// de servicio de las funciones (sin clave): hay que habilitar la API y darle
+// el rol "Cloud Speech Client" (docs/IA.md). Formatos: OGG/Opus, WAV, MP3, MP4/AAC.
+//   1) recognize (síncrono) con el audio en el pedido: lo normal (audios cortos).
+//   2) Si Google no lo acepta así (audio largo o pesado), batchRecognize con el
+//      audio subido un momento a Cloud Storage; se espera el resultado.
+// Modelo, región e idioma se cambian sin tocar el código (STT_*).
+// ─────────────────────────────────────────────────────────────────────────────
+const sttLocation = defineString('STT_LOCATION', { default: 'us-central1' });
+const sttModel = defineString('STT_MODEL', { default: 'chirp_2' });
+const sttLanguage = defineString('STT_LANGUAGE', { default: 'es-US' });
+const STT_SYNC_MAX_BYTES = 9 * 1024 * 1024; // el pedido síncrono admite hasta 10 MB
+const STT_BATCH_WAIT_MS = 150000;
+const STT_POLL_MS = 1500;
+async function _gcpToken() {
+  const r = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token',
+    { headers: { 'Metadata-Flavor': 'Google' } });
+  if (!r.ok) throw new Error(`token HTTP ${r.status}`);
+  return (await r.json()).access_token;
+}
+function _gcpProject() {
+  if (process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT) return process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT;
+  try { return JSON.parse(process.env.FIREBASE_CONFIG || '{}').projectId || ''; } catch (_) { return ''; }
+}
+function _sttTarget() {
+  const loc = sttLocation.value() || 'us-central1';
+  return { host: loc === 'global' ? 'speech.googleapis.com' : `${loc}-speech.googleapis.com`, recognizer: `projects/${_gcpProject()}/locations/${loc}/recognizers/_` };
+}
+const _sttConfig = () => ({
+  autoDecodingConfig: {}, languageCodes: [sttLanguage.value() || 'es-US'], model: sttModel.value() || 'chirp_2',
+  features: { enableAutomaticPunctuation: true },
+});
+const _sttText = (results) => (results || []).map((r) => ((r.alternatives || [])[0] || {}).transcript || '')
+  .join(' ').replace(/\s+/g, ' ').trim().slice(0, 4000);
+async function _sttFetch(url, token, body) {
+  const r = await fetch(url, body ? { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    : { headers: { Authorization: `Bearer ${token}` } });
+  const b = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error((b.error && b.error.message) || `HTTP ${r.status}`), { status: r.status });
+  return b;
+}
+async function _transcribe(buf, mime) {
+  if (!buf || !buf.length) return '';
+  const token = await _gcpToken();
+  const { host, recognizer } = _sttTarget();
+  if (buf.length <= STT_SYNC_MAX_BYTES) {
+    try {
+      const res = await _sttFetch(`https://${host}/v2/${recognizer}:recognize`, token, { config: _sttConfig(), content: buf.toString('base64') });
+      return _sttText(res.results);
+    } catch (e) {
+      // Permisos o API sin habilitar: el lote fallaría igual.
+      if (e.status !== 400) throw e;
+      logger.info('[transcribe] síncrono no aceptado: se usa el lote', { err: e.message });
+    }
+  }
+  const { getStorage } = require('firebase-admin/storage');
+  const bucket = getStorage().bucket();
+  const path = `tmp/transcripciones/${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  await bucket.file(path).save(buf, { contentType: mime || 'application/octet-stream', resumable: false });
+  try {
+    const uri = `gs://${bucket.name}/${path}`;
+    let op = await _sttFetch(`https://${host}/v2/${recognizer}:batchRecognize`, token,
+      { config: _sttConfig(), files: [{ uri }], recognitionOutputConfig: { inlineResponseConfig: {} } });
+    const t0 = Date.now();
+    while (!op.done) {
+      if (Date.now() - t0 > STT_BATCH_WAIT_MS) throw new Error('La transcripción tardó demasiado');
+      await new Promise((ok) => setTimeout(ok, STT_POLL_MS));
+      op = await _sttFetch(`https://${host}/v2/${op.name}`, token);
+    }
+    if (op.error && op.error.code) throw new Error(op.error.message || 'Error de transcripción');
+    const results = (op.response && op.response.results) || {};
+    const archivo = results[uri] || Object.values(results)[0] || {};
+    if (archivo.error && archivo.error.code) throw new Error(archivo.error.message || 'Error de transcripción');
+    return _sttText(((archivo.inlineResult && archivo.inlineResult.transcript) || archivo.transcript || {}).results);
+  } finally {
+    bucket.file(path).delete().catch(() => {});
+  }
 }
 // Foto a Storage con token de descarga (la web la muestra y, al publicar,
 // publishProperty la copia a publications/).
@@ -2643,7 +2840,7 @@ async function _waProcessSession(phone, uid) {
 }
 
 exports.whatsappProcessMessage = onDocumentCreated(
-  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [openaiKey, waToken] },
+  { region: REGION, document: 'whatsappInbox/{msgId}', timeoutSeconds: 540, memory: '1GiB', secrets: [anthropicKey, waToken] },
   async (event) => {
     const m = event.data && event.data.data();
     if (!m || !m.from) return;
@@ -3182,7 +3379,7 @@ async function _sourcePreview(input, mapping, usarIA) {
 exports.importSources = onCall(
   {
     region: REGION, maxInstances: 10, timeoutSeconds: 540, memory: '1GiB',
-    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [openaiKey],
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [anthropicKey],
   },
   async (request) => {
     _logAppCheck(request, 'importSources');
@@ -3732,7 +3929,7 @@ function _emailBody(text) {
   return String(text || '').replace(/\r/g, '').replace(/\n-- ?\n[\s\S]*$/, '').replace(/\n{3,}/g, '\n\n').trim();
 }
 exports.emailProcess = onDocumentCreated(
-  { region: REGION, document: 'emailInbox/{msgId}', timeoutSeconds: 300, memory: '1GiB', secrets: [openaiKey] },
+  { region: REGION, document: 'emailInbox/{msgId}', timeoutSeconds: 300, memory: '1GiB', secrets: [anthropicKey] },
   async (event) => {
     const m = event.data && event.data.data();
     if (!m || !m.uid) return;
@@ -3759,7 +3956,7 @@ exports.emailProcess = onDocumentCreated(
     for (const pdf of (m.pdfs || [])) {
       try {
         const [buf] = await getStorage().bucket().file(pdf.path).download();
-        content.push({ type: 'file', file: { filename: pdf.name || 'ficha.pdf', file_data: `data:application/pdf;base64,${buf.toString('base64')}` } });
+        content.push({ type: 'pdf', name: pdf.name || 'ficha.pdf', data: buf.toString('base64') });
       } catch (e) {
         logger.warn('[emailProcess] PDF no disponible', { err: e && e.message });
       }
@@ -3955,6 +4152,180 @@ exports.sendVerificationViaResend = onCall(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Fotos de publicaciones (Storage: publications/{pubId}/{uid}/{n}.jpg y su
+// miniatura t{n}.jpg).
+//
+//   cleanupPublicationPhotos  trigger: al eliminar una publicación (el dueño
+//                             o un admin) se borran todas sus fotos.
+//   updatePublicationPhotos   callable: el dueño cambia las fotos de una
+//                             publicación ya enviada (quitar, ordenar, elegir
+//                             portada, agregar las que no se subieron). Si
+//                             agrega fotos a una publicación aprobada o
+//                             rechazada, vuelve a revisión.
+//
+// Client contract:
+//   await httpsCallable('updatePublicationPhotos')({ pubId, photoUrls, thumbUrls })
+//   // → { status, photoUrls, thumbUrls, removed }
+// Las fotos nuevas las sube el navegador antes (storage.rules deja escribir
+// al dueño en publications/{pubId}/{uid}/); aquí solo se aceptan URLs de esa
+// carpeta.
+// ─────────────────────────────────────────────────────────────────────────────
+const PUB_MAX_PHOTOS = 20;
+exports.cleanupPublicationPhotos = onDocumentDeleted(
+  { region: REGION, document: 'publications/{pubId}' },
+  async (event) => {
+    const pubId = event.params && event.params.pubId;
+    if (!pubId || !/^[A-Za-z0-9]{1,40}$/.test(pubId)) return;
+    try {
+      const { getStorage } = require('firebase-admin/storage');
+      await getStorage().bucket().deleteFiles({ prefix: `publications/${pubId}/` });
+    } catch (e) {
+      logger.warn('[cleanupPublicationPhotos] no se borraron las fotos', { pubId, err: e && e.message });
+    }
+  }
+);
+
+// URL de descarga de Storage → ruta del archivo ('' si no es de Storage).
+function _storagePathOf(u) {
+  const m = String(u || '').match(/^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/[^/]+\/o\/([^?#]+)/);
+  if (!m) return '';
+  try { return decodeURIComponent(m[1]); } catch (_) { return ''; }
+}
+exports.updatePublicationPhotos = onCall(
+  { region: REGION, maxInstances: 10, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'updatePublicationPhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const pubId = String(d.pubId || '');
+    if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+    const ref = db.collection('publications').doc(pubId);
+    const snap = await ref.get();
+    if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+    const pub = snap.data();
+
+    const own = (u, thumb) => {
+      const p = _storagePathOf(u);
+      return new RegExp(`^publications/${pubId}/${uid}/${thumb ? 't' : ''}\\d{1,3}\\.jpg$`).test(p) ? p : '';
+    };
+    const urls = Array.isArray(d.photoUrls) ? d.photoUrls.map(String) : [];
+    if (urls.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+    if (new Set(urls).size !== urls.length) throw new HttpsError('invalid-argument', 'Hay fotos repetidas.');
+    // Las fotos que ya tenía (p. ej. copiadas del bot) se aceptan aunque no
+    // sigan el patrón; las nuevas tienen que estar en la carpeta del dueño.
+    const antes = new Set(Array.isArray(pub.photoUrls) ? pub.photoUrls : []);
+    if (!urls.every((u) => antes.has(u) || own(u, false))) throw new HttpsError('invalid-argument', 'Foto no válida para esta publicación.');
+    let thumbs = Array.isArray(d.thumbUrls) ? d.thumbUrls.map(String) : [];
+    const thumbsAntes = new Set(Array.isArray(pub.thumbUrls) ? pub.thumbUrls : []);
+    if (thumbs.length !== urls.length || !thumbs.every((u) => !u || thumbsAntes.has(u) || own(u, true))) thumbs = [];
+
+    const nuevas = urls.filter((u) => !antes.has(u));
+    const quitadas = [...antes].filter((u) => !urls.includes(u));
+    const quitadasThumbs = [...thumbsAntes].filter((u) => !thumbs.includes(u));
+    const up = {
+      photoUrls: urls, thumbUrls: thumbs, photosPending: false, photoError: null,
+      photosUpdatedAt: FieldValue.serverTimestamp(),
+    };
+    // Fotos nuevas en una publicación ya revisada: vuelve a moderación.
+    if (nuevas.length && (pub.status === 'approved' || pub.status === 'rejected')) up.status = 'pending';
+    await ref.update(up);
+
+    // Se borran del Storage las que se quitaron (solo las de la carpeta del dueño).
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    let removed = 0;
+    for (const u of quitadas.concat(quitadasThumbs)) {
+      const path = _storagePathOf(u);
+      if (!path.startsWith(`publications/${pubId}/`)) continue;
+      try { await bucket.file(path).delete(); removed++; } catch (_) { /* ya no estaba */ }
+    }
+    return { status: up.status || pub.status, photoUrls: urls, thumbUrls: thumbs, removed };
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// analyzePhotos — fotos con IA: ambiente de cada foto, calidad, marcas de
+// agua, texto encima y personas; propone la portada y el orden
+// (functions/photo-core.js). Cuenta en el límite por hora de la IA.
+//   photos  [dataUrl JPEG chico (~512 px)] o [{ url }] de una publicación
+//           propia (pubId): las URLs se leen de Storage en el servidor.
+// No guarda nada: el navegador aplica el orden y muestra los avisos.
+// ─────────────────────────────────────────────────────────────────────────────
+const RecoPhotos = require('./photo-core');
+const PHOTO_AI_MAX_CHARS = 400 * 1024;
+const PHOTO_AI_MAX_BYTES = 3 * 1024 * 1024;
+exports.analyzePhotos = onCall(
+  {
+    region: REGION, maxInstances: 10, timeoutSeconds: 300, memory: '512MiB',
+    consumeAppCheckToken: true, enforceAppCheck: true, secrets: [anthropicKey],
+  },
+  async (request) => {
+    _logAppCheck(request, 'analyzePhotos');
+    requireVerifiedAuth(request);
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const items = Array.isArray(d.photos) ? d.photos : [];
+    if (items.length < 2) throw new HttpsError('invalid-argument', 'Agrega al menos 2 fotos.');
+    if (items.length > PUB_MAX_PHOTOS) throw new HttpsError('invalid-argument', `Máximo ${PUB_MAX_PHOTOS} fotos.`);
+
+    // Fotos ya subidas: solo las de una publicación propia.
+    let permitidas = null;
+    if (items.some((it) => typeof it !== 'string')) {
+      const pubId = String(d.pubId || '');
+      if (!/^[A-Za-z0-9]{1,40}$/.test(pubId)) throw new HttpsError('invalid-argument', 'Publicación inválida.');
+      const snap = await db.collection('publications').doc(pubId).get();
+      if (!snap.exists || snap.data().userId !== uid) throw new HttpsError('not-found', 'Publicación no encontrada.');
+      const p = snap.data();
+      permitidas = new Set([].concat(p.photoUrls || [], p.thumbUrls || []));
+    }
+    const sinFoto = () => new HttpsError('invalid-argument', 'Foto no válida.');
+    const leer = [];
+    for (const it of items) {
+      if (typeof it === 'string') {
+        if (!IMPORT_IMAGE_RE.test(it) || it.length > PHOTO_AI_MAX_CHARS) throw sinFoto();
+        leer.push(it);
+        continue;
+      }
+      const url = it && typeof it.url === 'string' ? it.url : '';
+      const path = _storagePathOf(url);
+      if (!permitidas || !permitidas.has(url) || !path.startsWith('publications/')) throw sinFoto();
+      leer.push(path);
+    }
+
+    await _importRateLimit(uid);
+    const { getStorage } = require('firebase-admin/storage');
+    const bucket = getStorage().bucket();
+    const dataUrls = [];
+    for (const x of leer) {
+      if (x.startsWith('data:')) { dataUrls.push(x); continue; }
+      let buf;
+      try { [buf] = await bucket.file(x).download(); } catch (_) { throw new HttpsError('not-found', 'Una de las fotos ya no existe. Recarga la página.'); }
+      if (buf.length > PHOTO_AI_MAX_BYTES) throw new HttpsError('invalid-argument', 'Una de las fotos es demasiado grande.');
+      dataUrls.push(`data:image/jpeg;base64,${buf.toString('base64')}`);
+    }
+
+    let parsed;
+    try {
+      ({ data: parsed } = await _aiStructured({
+        fn: 'analyzePhotos', system: RecoPhotos.PROMPT, content: RecoPhotos.content(dataUrls), schema: RecoPhotos.SCHEMA, maxTokens: 4000,
+        validate: (r) => (r && Array.isArray(r.fotos) && r.fotos.length ? true : 'Respuesta sin fotos'),
+      }));
+    } catch (e) {
+      if (e instanceof HttpsError) throw e;
+      logger.error('[analyzePhotos] IA error', { err: e && e.message });
+      throw new HttpsError('internal', 'No pudimos revisar las fotos. Intenta de nuevo.');
+    }
+    const r = RecoPhotos.normalizar(parsed, dataUrls.length);
+    await db.collection('importEvents').doc().set({
+      uid, kind: 'fotos', channel: 'fotos', photos: dataUrls.length,
+      marcaAgua: r.fotos.filter((f) => f.marcaAgua).length, createdAt: FieldValue.serverTimestamp(),
+    });
+    return r;
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // onPublicationModerated — Firestore trigger on /publications/{pubId}.
 //
 // When a publication's status transitions to 'approved' or 'rejected',
@@ -4061,5 +4432,98 @@ exports.onPublicationModerated = onDocumentWritten(
         pubId, err: e.message,
       });
     }
+  }
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Embudo de publicación: el cliente marca cada paso (trackPublish) y el panel
+// de admin lo resume junto con las importaciones (publishStats).
+//
+// trackPublish  { paso, canal?, n?, conNota?, ms? } → { ok }
+//   Pasos: inicio · importado · fotos · manual · revisar · publicado · fallo.
+//   Máx. TRACK_MAX_HORA eventos por usuario y hora (los demás se ignoran).
+// publishStats  { dias? (1–90, 30) } → { embudo, canales, respaldoPct, bloqueados, ... }
+//   Solo admin.
+// ─────────────────────────────────────────────────────────────────────────────
+const TRACK_PASOS = ['inicio', 'importado', 'fotos', 'manual', 'revisar', 'publicado', 'fallo'];
+const TRACK_MAX_HORA = 120;
+
+exports.trackPublish = onCall(
+  { region: REGION, maxInstances: 5, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'trackPublish');
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Inicia sesión.');
+    const uid = request.auth.uid;
+    const d = request.data || {};
+    const paso = String(d.paso || '');
+    if (!TRACK_PASOS.includes(paso)) throw new HttpsError('invalid-argument', 'paso inválido.');
+    const hora = new Date().toISOString().slice(0, 13);
+    const limRef = db.collection('trackLimits').doc(uid);
+    const permitido = await db.runTransaction(async (tx) => {
+      const s = await tx.get(limRef);
+      const l = s.exists ? s.data() : {};
+      const n = l.hora === hora ? Number(l.n) || 0 : 0;
+      if (n >= TRACK_MAX_HORA) return false;
+      tx.set(limRef, { hora, n: n + 1 });
+      return true;
+    });
+    if (!permitido) return { ok: false };
+    const num = (v, max) => { const x = Number(v); return Number.isFinite(x) && x >= 0 ? Math.min(Math.round(x), max) : undefined; };
+    const ev = { uid, kind: 'embudo', paso, createdAt: FieldValue.serverTimestamp() };
+    const canal = String(d.canal || '').replace(/[^a-z_]/gi, '').slice(0, 20);
+    if (canal) ev.channel = canal;
+    const n = num(d.n, 500); if (n !== undefined) ev.listings = n;
+    const ms = num(d.ms, 3600e3); if (ms !== undefined) ev.ms = ms;
+    if (typeof d.conNota === 'boolean') ev.conNota = d.conNota;
+    await db.collection('importEvents').doc().set(ev);
+    return { ok: true };
+  }
+);
+
+// Resumen de importEvents (separado para poder probarlo sin Firestore).
+function _publishStatsResumen(eventos) {
+  const embudo = {}, usuarios = {};
+  TRACK_PASOS.forEach((p) => { embudo[p] = 0; usuarios[p] = new Set(); });
+  const canales = {}, bloqueados = {};
+  let ia = 0, respaldo = 0;
+  for (const e of eventos) {
+    if (e.kind === 'embudo') {
+      if (embudo[e.paso] === undefined) continue;
+      embudo[e.paso]++; if (e.uid) usuarios[e.paso].add(e.uid);
+      continue;
+    }
+    if (e.kind === 'bloqueado') { const h = String(e.host || '?'); bloqueados[h] = (bloqueados[h] || 0) + 1; continue; }
+    if (e.kind === 'sync') continue;
+    const c = canales[e.channel || e.kind || '?'] || (canales[e.channel || e.kind || '?'] = { veces: 0, inmuebles: 0, msTotal: 0, conMs: 0, vacias: 0 });
+    c.veces++;
+    c.inmuebles += Number(e.listings) || 0;
+    if (e.listings === 0) c.vacias++;
+    if (Number(e.ms) > 0) { c.msTotal += Number(e.ms); c.conMs++; }
+    if (e.modelo) { ia++; if (e.respaldo) respaldo++; }
+  }
+  const pct = (a, b) => (b ? Math.round((a / b) * 1000) / 10 : 0);
+  const u = (p) => usuarios[p].size;
+  return {
+    embudo: TRACK_PASOS.map((p) => ({ paso: p, eventos: embudo[p], usuarios: u(p) })),
+    conversionPct: pct(u('publicado'), u('inicio')),
+    canales: Object.entries(canales).map(([canal, c]) => ({
+      canal, veces: c.veces, inmuebles: c.inmuebles, vaciasPct: pct(c.vacias, c.veces),
+      msPromedio: c.conMs ? Math.round(c.msTotal / c.conMs) : null,
+    })).sort((a, b) => b.veces - a.veces),
+    respaldoPct: pct(respaldo, ia),
+    bloqueados: Object.entries(bloqueados).map(([host, veces]) => ({ host, veces })).sort((a, b) => b.veces - a.veces).slice(0, 10),
+  };
+}
+
+exports.publishStats = onCall(
+  { region: REGION, maxInstances: 3, consumeAppCheckToken: true, enforceAppCheck: true },
+  async (request) => {
+    _logAppCheck(request, 'publishStats');
+    _requireAdminCaller(request);
+    const dias = Math.min(90, Math.max(1, Math.round(Number(request.data && request.data.dias) || 30)));
+    const desde = Timestamp.fromMillis(Date.now() - dias * 86400e3);
+    const snap = await db.collection('importEvents').where('createdAt', '>=', desde).limit(20000).get();
+    const eventos = snap.docs.map((x) => x.data());
+    return { dias, total: eventos.length, truncado: eventos.length >= 20000, ...(_publishStatsResumen(eventos)) };
   }
 );

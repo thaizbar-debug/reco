@@ -9,6 +9,7 @@
 const { test, expect } = require('@playwright/test');
 const Module = require('module');
 const path = require('path');
+const { claude } = require('./helpers/mock-functions');
 
 // ── In-memory Firestore mock ──
 function createMockFirestore() {
@@ -74,6 +75,7 @@ function loadRealHandler() {
     'firebase-functions/v2/firestore': {
       onDocumentWritten: () => ({}),
       onDocumentCreated: () => ({}),
+      onDocumentDeleted: () => ({}),
     },
     'firebase-functions/v2/scheduler': {
       onSchedule: () => ({}),
@@ -151,13 +153,13 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
     const uid = 'stress-test-user';
 
     // Calls 1-30: all should pass the rate-limit check.
-    // They will fail at the fetch() to OpenAI — that's expected and fine.
+    // They will fail at the fetch() to the Claude API — that's expected and fine.
     // We catch those errors and only care about resource-exhausted.
     for (let i = 1; i <= 30; i++) {
       try {
         await handler(makeRequest(uid));
       } catch (e) {
-        // "fetch is not defined" or OpenAI errors are expected — rate limit passed
+        // "fetch is not defined" or Claude API errors are expected — rate limit passed
         if (e.code === 'resource-exhausted') {
           throw new Error(`Call ${i} was rejected by rate limit but should have passed`);
         }
@@ -225,7 +227,7 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
       if (e.code === 'resource-exhausted') {
         resetError = e;
       }
-      // Other errors (fetch/OpenAI) are fine — rate limit passed
+      // Other errors (fetch/Claude API) are fine — rate limit passed
     }
     expect(resetError).toBeUndefined();
 
@@ -258,15 +260,8 @@ test.describe('MEJ-04: Rate limit stress test (real handler)', () => {
     const uid = 'truncation-test-user';
     const longTitle = 'A'.repeat(500);
     const longDesc = 'B'.repeat(6000);
-    const fakeResponse = JSON.stringify({
-      choices: [{ message: { content: JSON.stringify({ titulo: longTitle, descripcion: longDesc }) } }],
-    });
-
     const origFetch = global.fetch;
-    global.fetch = async () => ({
-      ok: true,
-      json: async () => JSON.parse(fakeResponse),
-    });
+    global.fetch = async () => claude({ titulo: longTitle, descripcion: longDesc });
 
     try {
       const result = await handler(makeRequest(uid, { district: 'Miraflores', area: 120 }));
