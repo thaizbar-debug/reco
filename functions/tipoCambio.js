@@ -35,8 +35,15 @@ function limaDate(d) {
 
 // Respuesta JSON del BCRP → último día con valor válido, o null.
 // Los feriados vienen como "n.d."; el texto puede traer BOM.
+// Si el BCRP devuelve HTML u otro formato no-JSON (p.ej. fin de semana
+// o mantenimiento), retorna null en vez de lanzar.
 function latestFromBcrp(text) {
-  const json = JSON.parse(String(text).replace(/^﻿/, ''));
+  let json;
+  try {
+    json = JSON.parse(String(text).replace(/^﻿/, ''));
+  } catch (e) {
+    return null;
+  }
   const rows = (json.periods || [])
     .map(p => ({ fecha: parseBcrpDay(p.name), valor: parseFloat(p.values && p.values[0]) }))
     .filter(r => r.fecha && isFinite(r.valor) && r.valor > 0)
