@@ -4,7 +4,15 @@
     "serie": "PN01234PM",
     "nombre": "Tipo de cambio bancario promedio venta (S/ por US$)",
     "frecuencia": "Mensual",
-    "nota": "Promedios mensuales publicados en Cuadros Estadísticos del BCRP. Para actualizar con datos oficiales: https://estadisticas.bcrp.gob.pe/estadisticas/series/mensuales/resultados/PN01234PM/html"
+    "nota": "'mensual'/'anual': promedios del BCRP (serie PN01234PM). 'ultimo': TC diario más reciente (BCRP, serie PD04640PD), usado por la web para convertir soles a dólares. Actualizar con: node scripts/update-tc-bcrp.js"
+  },
+  "ultimo": {
+    "fecha": "2026-10-02",
+    "valor": 3.437,
+    "serie": "PD04640PD",
+    "nombre": "Tipo de cambio interbancario venta, promedio del día (S/ por US$)",
+    "fuente": "BCRP - Banco Central de Reserva del Perú",
+    "actualizado": "2026-10-04"
   },
   "mensual": {
     "2010-01": 2.857, "2010-02": 2.854, "2010-03": 2.840, "2010-04": 2.840,

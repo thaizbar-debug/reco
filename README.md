@@ -13,6 +13,7 @@ El proyecto usa [Playwright](https://playwright.dev/) como suite de pruebas E2E.
 | MEJ-05: Campos de pisos | `tests/mej05-floors.spec.js` | 7 |
 | MEJ-06: Legacy tag mapping | `tests/mej05-floors.spec.js` | 3 |
 | Carga masiva (30 columnas) | `tests/bulk-upload.spec.js` | 28 |
+| Perfil del anunciante + ficha PDF | `tests/publisher-pdf.spec.js` | 12 |
 | Carga inteligente Fase 0: bandeja, borradores, duplicados | `tests/import-phase0.spec.js` | 9 |
 | Carga inteligente: `extractListings`, `importListingPage`, `mapImportColumns`, bot de WhatsApp y `publishProperty` (handlers reales) | `tests/import-engine.test.js` | 27 |
 | Importar PDF, Word y PowerPoint (lectura real de `tests/fixtures/import`) | `tests/import-documents.spec.js` | 7 |
@@ -31,7 +32,6 @@ Los tests de documentos sirven pdf.js y JSZip desde `node_modules` (devDependenc
 `tests/fixtures/import/make_fixtures.py` y `make_pdf.js`.
 
 Documentación de integraciones: `docs/API.md` (API pública), `docs/INTEGRACIONES.md` (puesta en marcha) y `docs/REDES-SOCIALES.md` (captar desde Facebook, Instagram y TikTok).
-
 ### Ejecutar localmente
 
 ```bash
