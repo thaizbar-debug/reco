@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Búsqueda especial: inmuebles en Lima por distrito, m² y precio | Reco</title>
+<meta name="description" content="Busca departamentos, casas y terrenos en venta o alquiler en Lima por distrito, metros cuadrados, dormitorios y precio. Compara el precio del m² por distrito."/>
+<meta name="robots" content="index,follow,max-image-preview:large"/>
+<link rel="canonical" href="https://recosac.com/busqueda-especial/"/>
+<meta name="theme-color" content="#0891b2"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png"/>
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="Reco"/>
+<meta property="og:locale" content="es_PE"/>
+<meta property="og:url" content="https://recosac.com/busqueda-especial/"/>
+<meta property="og:title" content="Búsqueda especial: inmuebles en Lima por distrito, m² y precio | Reco"/>
+<meta property="og:description" content="Busca departamentos, casas y terrenos en venta o alquiler en Lima por distrito, metros cuadrados, dormitorios y precio. Compara el precio del m² por distrito."/>
+<meta property="og:image" content="https://recosac.com/assets/og-image.jpg"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","name":"Búsqueda especial","url":"https://recosac.com/busqueda-especial/","inLanguage":"es-PE"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Inicio","item":"https://recosac.com/"},{"@type":"ListItem","position":2,"name":"Búsqueda especial","item":"https://recosac.com/busqueda-especial/"}]}]}</script>
+<style>
+:root{--blue:#0891b2;--blue-dark:#0e7490;--ink:#0f172a;--muted:#64748b;--line:#e2e8f0;--bg:#f8fafc;--card:#fff}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+a{color:var(--blue-dark)}
+.top{background:#fff;border-bottom:1px solid var(--line)}
+.top-in,.wrap,.foot-in{max-width:1080px;margin:0 auto;padding:0 16px}
+.top-in{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.4rem;color:var(--blue);text-decoration:none}
+.logo img{width:28px;height:28px}
+.top a.btn{font-size:.9rem}
+.crumbs{font-size:.85rem;color:var(--muted);padding:16px 0 8px}
+.crumbs a{color:var(--muted)}
+.gallery{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x mandatory;border-radius:14px}
+.gallery img{flex:0 0 auto;width:min(100%,640px);aspect-ratio:4/3;object-fit:cover;scroll-snap-align:start;border-radius:14px;background:#e2e8f0}
+.noimg{aspect-ratio:16/6;border-radius:14px;background:linear-gradient(135deg,#0891b2,#06b6d4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;font-weight:600}
+.grid{display:grid;grid-template-columns:1fr;gap:24px;padding:20px 0 8px}
+@media(min-width:880px){.grid{grid-template-columns:1fr 320px}}
+h1{font-size:1.6rem;line-height:1.25;margin-bottom:4px}
+@media(min-width:600px){h1{font-size:2rem}}
+.addr,.lead{color:var(--muted);margin-bottom:16px}
+.price{font-size:1.8rem;font-weight:800;color:var(--blue-dark)}
+.sqm{display:inline-block;margin-top:4px;font-size:.85rem;background:#ecfeff;color:var(--blue-dark);padding:2px 10px;border-radius:999px}
+.specs{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:20px 0}
+.spec{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center}
+.spec b{display:block;font-size:1.2rem}
+.spec span{font-size:.8rem;color:var(--muted)}
+h2{font-size:1.15rem;margin:24px 0 10px}
+h3{font-size:1rem;margin:16px 0 6px}
+.tags{display:flex;flex-wrap:wrap;gap:6px;list-style:none}
+.tags li{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.85rem}
+.tags a{text-decoration:none}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;position:sticky;top:16px}
+.cta{display:block;text-align:center;background:var(--blue);color:#fff;text-decoration:none;font-weight:700;padding:14px;border-radius:12px;margin-bottom:10px}
+.cta:hover{background:var(--blue-dark)}
+.cta.sec{background:#fff;color:var(--blue-dark);border:1px solid var(--blue)}
+.cta.inline{display:inline-block;padding:10px 20px}
+.note{font-size:.8rem;color:var(--muted);margin-top:10px}
+.related{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;list-style:none}
+.related a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;text-decoration:none;color:var(--ink);height:100%}
+.related small{display:block;color:var(--muted)}
+.related strong{color:var(--blue-dark)}
+.links{columns:220px;list-style:none;font-size:.92rem}
+.links li{break-inside:avoid;padding:2px 0}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:.92rem}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{background:#f1f5f9;font-weight:600}
+td.n{text-align:right;white-space:nowrap}
+th.n{text-align:right}
+@media(max-width:600px){th,td{padding:6px 8px;font-size:.85rem}}
+.tbl{overflow-x:auto}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:16px 0}
+.form label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:4px}
+.form select,.form input{font:inherit;color:var(--ink);padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;width:100%}
+.form button{font:inherit;font-weight:700;background:var(--blue);color:#fff;border:0;border-radius:10px;padding:10px;cursor:pointer;align-self:end}
+.section{padding-bottom:16px}
+main{padding-bottom:40px}
+footer{background:#0f172a;color:#cbd5e1;font-size:.85rem;padding:24px 0}
+.foot-in{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
+footer a{color:#cbd5e1}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+  <a class="logo" href="/"><img src="/assets/favicon-32.png" alt="" width="28" height="28">reco</a>
+  <a class="btn" href="/">Ir al mapa →</a>
+</div></header>
+<main class="wrap">
+  <nav class="crumbs" aria-label="Ruta"><a href="/">Inicio</a> › Búsqueda especial</nav>
+
+  <h1>Búsqueda especial</h1>
+  <p class="lead">Busca departamentos, casas, terrenos y locales en venta o alquiler por distrito, metros cuadrados, dormitorios y precio. También puedes explorar los avisos por distrito y comparar el precio del m².</p>
+  <form id="bsForm" class="form">
+    <label>Operación<select name="op"><option value="Venta">Venta</option><option value="Alquiler">Alquiler</option></select></label>
+    <label>Tipo<select name="t"><option value="">Todos</option><option value="Casa">Casa</option><option value="Departamento">Departamento</option><option value="Inmueble">Inmueble</option><option value="Local comercial">Local comercial</option><option value="Oficina">Oficina</option><option value="Terreno">Terreno</option></select></label>
+    <label>Distrito<select name="d"><option value="">Todos</option><option value="Amarilis">Amarilis</option><option value="Anta">Anta</option><option value="Asia">Asia</option><option value="Ate">Ate</option><option value="Barranca">Barranca</option><option value="Barranco">Barranco</option><option value="Bellavista">Bellavista</option><option value="Breña">Breña</option><option value="Callao">Callao</option><option value="Carabayllo">Carabayllo</option><option value="Casma">Casma</option><option value="Cercado de Lima">Cercado de Lima</option><option value="Cerro Azul">Cerro Azul</option><option value="Chaclacayo">Chaclacayo</option><option value="Chancay">Chancay</option><option value="Chilca">Chilca</option><option value="Chincha">Chincha</option><option value="Chontabamba">Chontabamba</option><option value="Chorrillos">Chorrillos</option><option value="Cieneguilla">Cieneguilla</option><option value="Comas">Comas</option><option value="Culebras">Culebras</option><option value="El Agustino">El Agustino</option><option value="El Carmen">El Carmen</option><option value="Huacho">Huacho</option><option value="Hualmay">Hualmay</option><option value="Huancabamba">Huancabamba</option><option value="Huancavelica">Huancavelica</option><option value="Huaral">Huaral</option><option value="Huarochirí">Huarochirí</option><option value="Imperial">Imperial</option><option value="Independencia">Independencia</option><option value="Jesús María">Jesús María</option><option value="La Molina">La Molina</option><option value="La Perla">La Perla</option><option value="La Punta">La Punta</option><option value="La Victoria">La Victoria</option><option value="Lince">Lince</option><option value="Los Olivos">Los Olivos</option><option value="Lurigancho">Lurigancho</option><option value="Lurín">Lurín</option><option value="Magdalena del Mar">Magdalena del Mar</option><option value="Mala">Mala</option><option value="Mancora">Mancora</option><option value="Maras">Maras</option><option value="Miraflores">Miraflores</option><option value="Morales">Morales</option><option value="Nuevo Imperial">Nuevo Imperial</option><option value="Oxapampa">Oxapampa</option><option value="Pachacamac">Pachacamac</option><option value="Paracas">Paracas</option><option value="Pucusana">Pucusana</option><option value="Pueblo Libre">Pueblo Libre</option><option value="Puente Piedra">Puente Piedra</option><option value="Punta Hermosa">Punta Hermosa</option><option value="Punta Negra">Punta Negra</option><option value="Rímac">Rímac</option><option value="Samanco">Samanco</option><option value="San Andrés">San Andrés</option><option value="San Antonio">San Antonio</option><option value="San Bartolo">San Bartolo</option><option value="San Borja">San Borja</option><option value="San Isidro">San Isidro</option><option value="San Juan de Lurigancho">San Juan de Lurigancho</option><option value="San Juan de Miraflores">San Juan de Miraflores</option><option value="San Luis">San Luis</option><option value="San Martin de Porres">San Martin de Porres</option><option value="San Miguel">San Miguel</option><option value="San Vicente de Cañete">San Vicente de Cañete</option><option value="Santa Anita">Santa Anita</option><option value="Santa Cruz de Flores">Santa Cruz de Flores</option><option value="Santa Maria del Mar">Santa Maria del Mar</option><option value="Santa Rosa">Santa Rosa</option><option value="Santa Rosa de Quives">Santa Rosa de Quives</option><option value="Santiago de Surco">Santiago de Surco</option><option value="Satipo">Satipo</option><option value="Sunampe">Sunampe</option><option value="Surco">Surco</option><option value="Surquillo">Surquillo</option><option value="Trujillo">Trujillo</option><option value="Tumbes">Tumbes</option><option value="Vegueta">Vegueta</option><option value="Ventanilla">Ventanilla</option><option value="Villa El Salvador">Villa El Salvador</option><option value="Villa María del Triunfo">Villa María del Triunfo</option></select></label>
+    <label>m² mínimo<input name="amin" type="number" min="0" inputmode="numeric" placeholder="Ej. 60"></label>
+    <label>m² máximo<input name="amax" type="number" min="0" inputmode="numeric" placeholder="Ej. 120"></label>
+    <label>Dormitorios<select name="b"><option value="">Cualquiera</option><option value="1">1 o más</option><option value="2">2 o más</option><option value="3">3 o más</option><option value="4">4 o más</option></select></label>
+    <label>Precio máximo<input name="pmax" type="number" min="0" inputmode="numeric" placeholder="Sin límite"></label>
+    <label>Moneda<select name="c"><option value="$">US$</option><option value="S/">S/</option></select></label>
+    <button type="submit">Buscar</button>
+  </form>
+  <noscript><p class="note">Activa JavaScript para usar el buscador, o navega por las búsquedas de abajo.</p></noscript>
+  <div id="bsRes" class="section"></div>
+
+  <section class="section">
+    <h2>Precio del m² por distrito</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Distrito</th><th class="n">Departamentos US$/m²</th><th class="n">Casas US$/m²</th></tr></thead>
+      <tbody>
+        <tr><td><a href="/busqueda-especial/precio-m2-barranco/">Barranco</a></td><td class="n">2,500 <small>(13)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-isidro/">San Isidro</a></td><td class="n">2,459 <small>(18)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-miraflores/">Miraflores</a></td><td class="n">2,379 <small>(80)</small></td><td class="n">1,529 <small>(4)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-santiago-de-surco/">Santiago de Surco</a></td><td class="n">2,093 <small>(95)</small></td><td class="n">1,646 <small>(11)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-bartolo/">San Bartolo</a></td><td class="n">2,049 <small>(3)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-punta-hermosa/">Punta Hermosa</a></td><td class="n">2,000 <small>(3)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-borja/">San Borja</a></td><td class="n">1,960 <small>(17)</small></td><td class="n">1,765 <small>(5)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-pueblo-libre/">Pueblo Libre</a></td><td class="n">1,784 <small>(4)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-lince/">Lince</a></td><td class="n">1,741 <small>(4)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-surquillo/">Surquillo</a></td><td class="n">1,693 <small>(10)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-la-molina/">La Molina</a></td><td class="n">1,606 <small>(10)</small></td><td class="n">1,210 <small>(17)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-chorrillos/">Chorrillos</a></td><td class="n">1,567 <small>(34)</small></td><td class="n">813 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-miguel/">San Miguel</a></td><td class="n">1,567 <small>(3)</small></td><td class="n">869 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-jesus-maria/">Jesús María</a></td><td class="n">1,565 <small>(7)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-magdalena-del-mar/">Magdalena del Mar</a></td><td class="n">1,529 <small>(4)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-cercado-de-lima/">Cercado de Lima</a></td><td class="n">1,481 <small>(4)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-ate/">Ate</a></td><td class="n">1,283 <small>(5)</small></td><td class="n">—</td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-juan-de-lurigancho/">San Juan de Lurigancho</a></td><td class="n">1,029 <small>(4)</small></td><td class="n">783 <small>(6)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-los-olivos/">Los Olivos</a></td><td class="n">1,013 <small>(30)</small></td><td class="n">673 <small>(4)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-martin-de-porres/">San Martin de Porres</a></td><td class="n">997 <small>(8)</small></td><td class="n">650 <small>(7)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-comas/">Comas</a></td><td class="n">623 <small>(4)</small></td><td class="n">598 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-pucusana/">Pucusana</a></td><td class="n">—</td><td class="n">977 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-san-juan-de-miraflores/">San Juan de Miraflores</a></td><td class="n">—</td><td class="n">768 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-barranca/">Barranca</a></td><td class="n">—</td><td class="n">765 <small>(3)</small></td></tr>
+        <tr><td><a href="/busqueda-especial/precio-m2-villa-maria-del-triunfo/">Villa María del Triunfo</a></td><td class="n">—</td><td class="n">750 <small>(4)</small></td></tr>
+      </tbody></table></div>
+    <p class="note">Mediana del precio de oferta por m² de los avisos en venta en dólares; entre paréntesis, la cantidad de avisos.</p>
+  </section>
+  <section class="section">
+    <h2>En toda Lima</h2>
+    <ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-lima/">Casas en venta (103)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima/">Departamentos en venta (422)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-lima/">Locales comerciales en venta (47)</a></li><li><a href="/busqueda-especial/oficinas-en-venta-en-lima/">Oficinas en venta (18)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-lima/">Terrenos en venta (91)</a></li><li><a href="/busqueda-especial/casas-en-alquiler-en-lima/">Casas en alquiler (8)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima/">Departamentos en alquiler (49)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-alquiler-en-lima/">Locales comerciales en alquiler (30)</a></li><li><a href="/busqueda-especial/oficinas-en-alquiler-en-lima/">Oficinas en alquiler (23)</a></li><li><a href="/busqueda-especial/terrenos-en-alquiler-en-lima/">Terrenos en alquiler (4)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-lima/">Inmuebles en venta (692)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-lima/">Inmuebles en alquiler (116)</a></li><li><a href="/busqueda-especial/casas-en-venta-en-lima-3-dormitorios/">Casas en venta de 3 dormitorios (6)</a></li><li><a href="/busqueda-especial/casas-en-venta-en-lima-4-o-mas-dormitorios/">Casas en venta de 4 o más dormitorios (87)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-1-dormitorio/">Departamentos en venta de 1 dormitorio (28)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-2-dormitorios/">Departamentos en venta de 2 dormitorios (113)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-3-dormitorios/">Departamentos en venta de 3 dormitorios (220)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-4-o-mas-dormitorios/">Departamentos en venta de 4 o más dormitorios (35)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-hasta-60-m2/">Departamentos en venta de hasta 60 m² (45)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-60-a-90-m2/">Departamentos en venta de 60 a 90 m² (122)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-90-a-120-m2/">Departamentos en venta de 90 a 120 m² (101)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-120-a-180-m2/">Departamentos en venta de 120 a 180 m² (83)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-lima-mas-de-180-m2/">Departamentos en venta de más de 180 m² (44)</a></li><li><a href="/busqueda-especial/casas-en-alquiler-en-lima-3-dormitorios/">Casas en alquiler de 3 dormitorios (4)</a></li><li><a href="/busqueda-especial/casas-en-alquiler-en-lima-4-o-mas-dormitorios/">Casas en alquiler de 4 o más dormitorios (3)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-1-dormitorio/">Departamentos en alquiler de 1 dormitorio (6)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-2-dormitorios/">Departamentos en alquiler de 2 dormitorios (13)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-3-dormitorios/">Departamentos en alquiler de 3 dormitorios (18)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-4-o-mas-dormitorios/">Departamentos en alquiler de 4 o más dormitorios (4)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-hasta-60-m2/">Departamentos en alquiler de hasta 60 m² (12)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-60-a-90-m2/">Departamentos en alquiler de 60 a 90 m² (15)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-90-a-120-m2/">Departamentos en alquiler de 90 a 120 m² (5)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-120-a-180-m2/">Departamentos en alquiler de 120 a 180 m² (6)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-lima-mas-de-180-m2/">Departamentos en alquiler de más de 180 m² (3)</a></li></ul>
+  </section>
+  <section class="section">
+    <h2>Por distrito</h2>
+    <h3>Santiago de Surco</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-santiago-de-surco/">Casas en venta (12)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-santiago-de-surco/">Departamentos en venta (121)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-santiago-de-surco/">Locales comerciales en venta (4)</a></li><li><a href="/busqueda-especial/casas-en-alquiler-en-santiago-de-surco/">Casas en alquiler (4)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-santiago-de-surco/">Departamentos en alquiler (6)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-alquiler-en-santiago-de-surco/">Locales comerciales en alquiler (3)</a></li><li><a href="/busqueda-especial/oficinas-en-alquiler-en-santiago-de-surco/">Oficinas en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-santiago-de-surco/">Inmuebles en venta (141)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-santiago-de-surco/">Inmuebles en alquiler (16)</a></li><li><a href="/busqueda-especial/precio-m2-santiago-de-surco/">Precio del m²</a></li></ul>
+    <h3>Miraflores</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-miraflores/">Casas en venta (5)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-miraflores/">Departamentos en venta (82)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-miraflores/">Locales comerciales en venta (4)</a></li><li><a href="/busqueda-especial/oficinas-en-venta-en-miraflores/">Oficinas en venta (7)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-miraflores/">Terrenos en venta (5)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-miraflores/">Departamentos en alquiler (6)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-miraflores/">Inmuebles en venta (103)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-miraflores/">Inmuebles en alquiler (8)</a></li><li><a href="/busqueda-especial/precio-m2-miraflores/">Precio del m²</a></li></ul>
+    <h3>Los Olivos</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-los-olivos/">Casas en venta (4)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-los-olivos/">Departamentos en venta (30)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-los-olivos/">Locales comerciales en venta (5)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-alquiler-en-los-olivos/">Locales comerciales en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-los-olivos/">Inmuebles en venta (41)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-los-olivos/">Inmuebles en alquiler (7)</a></li><li><a href="/busqueda-especial/precio-m2-los-olivos/">Precio del m²</a></li></ul>
+    <h3>Chorrillos</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-chorrillos/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-chorrillos/">Departamentos en venta (34)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-chorrillos/">Inmuebles en venta (38)</a></li><li><a href="/busqueda-especial/precio-m2-chorrillos/">Precio del m²</a></li></ul>
+    <h3>La Molina</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-la-molina/">Casas en venta (17)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-la-molina/">Departamentos en venta (11)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-la-molina/">Terrenos en venta (4)</a></li><li><a href="/busqueda-especial/oficinas-en-alquiler-en-la-molina/">Oficinas en alquiler (6)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-la-molina/">Inmuebles en venta (33)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-la-molina/">Inmuebles en alquiler (7)</a></li><li><a href="/busqueda-especial/precio-m2-la-molina/">Precio del m²</a></li></ul>
+    <h3>San Isidro</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-san-isidro/">Departamentos en venta (18)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-san-isidro/">Departamentos en alquiler (7)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-isidro/">Inmuebles en venta (23)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-san-isidro/">Inmuebles en alquiler (9)</a></li><li><a href="/busqueda-especial/precio-m2-san-isidro/">Precio del m²</a></li></ul>
+    <h3>San Borja</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-san-borja/">Casas en venta (5)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-san-borja/">Departamentos en venta (18)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-borja/">Inmuebles en venta (27)</a></li><li><a href="/busqueda-especial/precio-m2-san-borja/">Precio del m²</a></li></ul>
+    <h3>San Martin de Porres</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-san-martin-de-porres/">Casas en venta (7)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-san-martin-de-porres/">Departamentos en venta (9)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-san-martin-de-porres/">Terrenos en venta (7)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-martin-de-porres/">Inmuebles en venta (25)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-san-martin-de-porres/">Inmuebles en alquiler (3)</a></li><li><a href="/busqueda-especial/precio-m2-san-martin-de-porres/">Precio del m²</a></li></ul>
+    <h3>Barranca</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-barranca/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-barranca/">Terrenos en venta (13)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-barranca/">Inmuebles en venta (21)</a></li><li><a href="/busqueda-especial/precio-m2-barranca/">Precio del m²</a></li></ul>
+    <h3>Cercado de Lima</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-cercado-de-lima/">Departamentos en venta (4)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-cercado-de-lima/">Locales comerciales en venta (3)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-cercado-de-lima/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/oficinas-en-alquiler-en-cercado-de-lima/">Oficinas en alquiler (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-cercado-de-lima/">Inmuebles en venta (14)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-cercado-de-lima/">Inmuebles en alquiler (7)</a></li><li><a href="/busqueda-especial/precio-m2-cercado-de-lima/">Precio del m²</a></li></ul>
+    <h3>Ate</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-ate/">Departamentos en venta (5)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-ate/">Locales comerciales en venta (6)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-ate/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-alquiler-en-ate/">Locales comerciales en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-ate/">Inmuebles en venta (16)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-ate/">Inmuebles en alquiler (4)</a></li><li><a href="/busqueda-especial/precio-m2-ate/">Precio del m²</a></li></ul>
+    <h3>Carabayllo</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-carabayllo/">Terrenos en venta (9)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-carabayllo/">Departamentos en alquiler (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-carabayllo/">Inmuebles en venta (14)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-carabayllo/">Inmuebles en alquiler (6)</a></li></ul>
+    <h3>San Juan de Lurigancho</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-san-juan-de-lurigancho/">Casas en venta (7)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-san-juan-de-lurigancho/">Departamentos en venta (6)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-san-juan-de-lurigancho/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-juan-de-lurigancho/">Inmuebles en venta (18)</a></li><li><a href="/busqueda-especial/precio-m2-san-juan-de-lurigancho/">Precio del m²</a></li></ul>
+    <h3>Surquillo</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-surquillo/">Departamentos en venta (12)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-surquillo/">Departamentos en alquiler (4)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-surquillo/">Inmuebles en venta (14)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-surquillo/">Inmuebles en alquiler (5)</a></li><li><a href="/busqueda-especial/precio-m2-surquillo/">Precio del m²</a></li></ul>
+    <h3>Comas</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-comas/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-comas/">Departamentos en venta (5)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-comas/">Locales comerciales en venta (4)</a></li><li><a href="/busqueda-especial/departamentos-en-alquiler-en-comas/">Departamentos en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-comas/">Inmuebles en venta (14)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-comas/">Inmuebles en alquiler (4)</a></li><li><a href="/busqueda-especial/precio-m2-comas/">Precio del m²</a></li></ul>
+    <h3>Barranco</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-barranco/">Departamentos en venta (15)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-barranco/">Inmuebles en venta (17)</a></li><li><a href="/busqueda-especial/precio-m2-barranco/">Precio del m²</a></li></ul>
+    <h3>Cieneguilla</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-cieneguilla/">Terrenos en venta (9)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-cieneguilla/">Inmuebles en venta (11)</a></li></ul>
+    <h3>Magdalena del Mar</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-magdalena-del-mar/">Departamentos en venta (7)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-magdalena-del-mar/">Inmuebles en venta (10)</a></li><li><a href="/busqueda-especial/precio-m2-magdalena-del-mar/">Precio del m²</a></li></ul>
+    <h3>Asia</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-asia/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/terrenos-en-venta-en-asia/">Terrenos en venta (7)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-asia/">Inmuebles en venta (10)</a></li></ul>
+    <h3>Puente Piedra</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-puente-piedra/">Terrenos en venta (6)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-puente-piedra/">Inmuebles en venta (9)</a></li></ul>
+    <h3>San Juan de Miraflores</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-san-juan-de-miraflores/">Casas en venta (4)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-juan-de-miraflores/">Inmuebles en venta (8)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-san-juan-de-miraflores/">Inmuebles en alquiler (3)</a></li><li><a href="/busqueda-especial/precio-m2-san-juan-de-miraflores/">Precio del m²</a></li></ul>
+    <h3>San Miguel</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-san-miguel/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/departamentos-en-venta-en-san-miguel/">Departamentos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-miguel/">Inmuebles en venta (8)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-san-miguel/">Inmuebles en alquiler (3)</a></li><li><a href="/busqueda-especial/precio-m2-san-miguel/">Precio del m²</a></li></ul>
+    <h3>La Victoria</h3><ul class="tags"><li><a href="/busqueda-especial/locales-comerciales-en-venta-en-la-victoria/">Locales comerciales en venta (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-la-victoria/">Inmuebles en venta (8)</a></li></ul>
+    <h3>Lurigancho</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-lurigancho/">Terrenos en venta (4)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-lurigancho/">Inmuebles en venta (9)</a></li></ul>
+    <h3>Lince</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-lince/">Departamentos en venta (6)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-lince/">Inmuebles en venta (8)</a></li><li><a href="/busqueda-especial/precio-m2-lince/">Precio del m²</a></li></ul>
+    <h3>Mala</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-mala/">Terrenos en venta (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-mala/">Inmuebles en venta (9)</a></li></ul>
+    <h3>Pachacamac</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-pachacamac/">Terrenos en venta (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-pachacamac/">Inmuebles en venta (8)</a></li></ul>
+    <h3>Pueblo Libre</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-pueblo-libre/">Departamentos en venta (5)</a></li><li><a href="/busqueda-especial/locales-comerciales-en-alquiler-en-pueblo-libre/">Locales comerciales en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-pueblo-libre/">Inmuebles en alquiler (4)</a></li><li><a href="/busqueda-especial/precio-m2-pueblo-libre/">Precio del m²</a></li></ul>
+    <h3>Chaclacayo</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-chaclacayo/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-chaclacayo/">Inmuebles en venta (6)</a></li></ul>
+    <h3>Jesús María</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-jesus-maria/">Departamentos en venta (8)</a></li><li><a href="/busqueda-especial/precio-m2-jesus-maria/">Precio del m²</a></li></ul>
+    <h3>Callao</h3><ul class="tags"><li><a href="/busqueda-especial/oficinas-en-alquiler-en-callao/">Oficinas en alquiler (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-callao/">Inmuebles en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-alquiler-en-callao/">Inmuebles en alquiler (4)</a></li></ul>
+    <h3>Lurín</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-lurin/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-lurin/">Inmuebles en venta (6)</a></li></ul>
+    <h3>Paracas</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-paracas/">Terrenos en venta (5)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-paracas/">Inmuebles en venta (7)</a></li></ul>
+    <h3>Punta Hermosa</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-punta-hermosa/">Departamentos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-punta-hermosa/">Inmuebles en venta (7)</a></li><li><a href="/busqueda-especial/precio-m2-punta-hermosa/">Precio del m²</a></li></ul>
+    <h3>Pucusana</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-pucusana/">Casas en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-pucusana/">Inmuebles en venta (5)</a></li><li><a href="/busqueda-especial/precio-m2-pucusana/">Precio del m²</a></li></ul>
+    <h3>San Antonio</h3><ul class="tags"><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-antonio/">Inmuebles en venta (4)</a></li></ul>
+    <h3>San Bartolo</h3><ul class="tags"><li><a href="/busqueda-especial/departamentos-en-venta-en-san-bartolo/">Departamentos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-san-bartolo/">Inmuebles en venta (4)</a></li><li><a href="/busqueda-especial/precio-m2-san-bartolo/">Precio del m²</a></li></ul>
+    <h3>Santa Rosa</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-santa-rosa/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-santa-rosa/">Inmuebles en venta (5)</a></li></ul>
+    <h3>Cerro Azul</h3><ul class="tags"><li><a href="/busqueda-especial/inmuebles-en-venta-en-cerro-azul/">Inmuebles en venta (4)</a></li></ul>
+    <h3>Chilca</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-chilca/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-chilca/">Inmuebles en venta (4)</a></li></ul>
+    <h3>Huacho</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-huacho/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-huacho/">Inmuebles en venta (4)</a></li></ul>
+    <h3>Hualmay</h3><ul class="tags"><li><a href="/busqueda-especial/terrenos-en-venta-en-hualmay/">Terrenos en venta (3)</a></li><li><a href="/busqueda-especial/inmuebles-en-venta-en-hualmay/">Inmuebles en venta (4)</a></li></ul>
+    <h3>Punta Negra</h3><ul class="tags"><li><a href="/busqueda-especial/inmuebles-en-venta-en-punta-negra/">Inmuebles en venta (3)</a></li></ul>
+    <h3>Villa María del Triunfo</h3><ul class="tags"><li><a href="/busqueda-especial/casas-en-venta-en-villa-maria-del-triunfo/">Casas en venta (4)</a></li><li><a href="/busqueda-especial/precio-m2-villa-maria-del-triunfo/">Precio del m²</a></li></ul>
+    <h3>Huaral</h3><ul class="tags"><li><a href="/busqueda-especial/inmuebles-en-venta-en-huaral/">Inmuebles en venta (3)</a></li></ul>
+    <h3>Ventanilla</h3><ul class="tags"><li><a href="/busqueda-especial/inmuebles-en-venta-en-ventanilla/">Inmuebles en venta (3)</a></li></ul>
+  </section>
+</main>
+<footer><div class="foot-in">
+  <span>© Reco · Lima, Perú · VANET DATA S.A.C.</span>
+  <span><a href="/busqueda-especial/">Búsqueda especial</a> · <a href="/index.html#terminos">Términos</a> · <a href="/index.html#privacidad">Privacidad</a> · <a href="/index.html#reclamaciones">Libro de Reclamaciones</a></span>
+</div></footer>
+<script>
+(function(){
+  var f=document.getElementById('bsForm'),out=document.getElementById('bsRes'),data=null;
+  function e(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function n(v){v=parseFloat(v);return isFinite(v)?v:null;}
+  function fmt(v){return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,',');}
+  function money(c,v){return (c==='S/'?'S/ ':'US$ ')+fmt(v);}
+  function run(){
+    var q={op:f.op.value,t:f.t.value,d:f.d.value,amin:n(f.amin.value),amax:n(f.amax.value),b:n(f.b.value),pmax:n(f.pmax.value),c:f.c.value};
+    var r=data.filter(function(x){
+      return x.o===q.op&&(!q.t||x.t===q.t)&&(!q.d||x.d===q.d)
+        &&(q.amin==null||x.a>=q.amin)&&(q.amax==null||(x.a>0&&x.a<=q.amax))
+        &&(q.b==null||x.b>=q.b)&&(q.pmax==null||(x.c===q.c&&x.p<=q.pmax));
+    }).sort(function(a,b){return a.p-b.p;});
+    var map='/index.html#'+(q.d?'q='+encodeURIComponent(q.d)+'&':'')+'op='+(q.op==='Alquiler'?'alquiler':'venta');
+    out.innerHTML='<h2>'+r.length+' resultado'+(r.length===1?'':'s')+'</h2>'
+      +(r.length?'<ul class="related">'+r.slice(0,60).map(function(x){
+        var m=[x.t];if(x.a>0)m.push(x.a+' m²');if(x.b>0)m.push(x.b+' dorm.');
+        return '<li><a href="/inmueble/'+e(x.s)+'/"><small>'+e(m.join(' · '))+' · '+e(x.d)+'</small>'+e(x.ad)+'<br><strong>'+e(money(x.c,x.p))+(x.o==='Alquiler'?' al mes':'')+'</strong></a></li>';
+      }).join('')+'</ul>':'<p class="lead">No hay inmuebles con esos filtros. Prueba ampliando el rango.</p>')
+      +(r.length>60?'<p class="note">Mostrando 60 de '+r.length+'. Afina los filtros o <a href="'+map+'">mira todos en el mapa</a>.</p>':'');
+    var ps=new URLSearchParams();['op','t','d','amin','amax','b','pmax','c'].forEach(function(k){if(f[k].value)ps.set(k,f[k].value);});
+    try{history.replaceState(null,'','?'+ps.toString());}catch(_){}
+  }
+  f.addEventListener('submit',function(ev){
+    ev.preventDefault();
+    if(data){run();return;}
+    out.innerHTML='<p class="lead">Buscando…</p>';
+    fetch('/busqueda-especial/inmuebles.json').then(function(r){return r.json();}).then(function(j){data=j;run();})
+      .catch(function(){out.innerHTML='<p class="lead">No se pudo cargar la búsqueda. Intenta de nuevo.</p>';});
+  });
+  f.op.addEventListener('change',function(){f.c.value=f.op.value==='Alquiler'?'S/':'$';});
+  var ps=new URLSearchParams(location.search),any=false;
+  ps.forEach(function(v,k){if(f[k]){f[k].value=v;any=true;}});
+  if(any)f.requestSubmit?f.requestSubmit():f.dispatchEvent(new Event('submit'));
+})();
+</script>
+</body>
+</html>
