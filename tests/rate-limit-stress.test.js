@@ -59,6 +59,7 @@ function loadRealHandler() {
         handlers[name] = handler;
         return sentinel;
       },
+      onRequest: () => ({}),
       HttpsError: class HttpsError extends Error {
         constructor(code, message) {
           super(message);
@@ -68,6 +69,7 @@ function loadRealHandler() {
     },
     'firebase-functions/params': {
       defineSecret(name) { return { value: () => 'fake-key-for-test', name }; },
+      defineString(name) { return { value: () => '', name }; },
     },
     'firebase-functions/v2/firestore': {
       onDocumentWritten: () => ({}),
