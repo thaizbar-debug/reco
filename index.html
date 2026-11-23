@@ -3072,6 +3072,12 @@ let properties = [];
 // implícito creado recién dentro de loadData) para que filtrar o abrir un
 // detalle mientras Firestore aún responde no lance "GEO is not defined".
 let GEO = {};
+function _rebuildGeo(){
+  GEO = {};
+  properties.forEach(p=>{
+    if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
+  });
+}
 
 // ── Modo demo ─────────────────────────────────────────────────
 // Con ?demo=1 en la URL, o al abrir index.html directo desde el disco
@@ -3169,8 +3175,7 @@ function _showDemoBanner(demo){
     if(typeof goToApp === 'function' && document.body.classList.contains('show-home')) goToApp('');
     openPublisherProfile(t.dataset.pub);
   });
-  document.body.appendChild(b);
-}
+  document.body.appendChild(b);}
 
 async function loadData(){
   document.getElementById('resList').innerHTML=`
@@ -3192,11 +3197,13 @@ async function loadData(){
     DRIVE_FILES = data.drive || {};
     Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
+    // Build coordinates now: the Firestore query below can take seconds and
+    // the home's featured cards are already clickable meanwhile.
+    _rebuildGeo();
     if(demo){
       properties = properties.concat(demo.properties.map(p => _pubDocToProperty(p.id, p)));
       _showDemoBanner(demo);
-    }
-    // Merge approved community publications into the same list. They render
+    }    // Merge approved community publications into the same list. They render
     // and filter identically to static properties — the only difference is
     // the photos come from Firebase Storage instead of Drive.
     try {
@@ -3206,10 +3213,7 @@ async function loadData(){
     } catch(e){
       console.warn('[reco] could not load community publications:', e.message);
     }
-    GEO = {};
-    properties.forEach(p=>{
-      if(p.lat!=null && p.lng!=null && isFinite(p.lat) && isFinite(p.lng)) GEO[p.id]=[p.lat, p.lng];
-    });
+    _rebuildGeo();
     buildSuggestions();
     buildPriceHistogram();
     _resetPriceSliders();
@@ -5841,7 +5845,9 @@ function openDetail(id){
   document.getElementById('detailPanel').classList.add('open');
   document.getElementById('detailPanel').scrollTop = 0;
 
-  applyFilters();
+  // A failure refreshing the list/map must never leave the panel stuck on
+  // the skeleton — the detail itself does not depend on it.
+  try{ applyFilters(); }catch(e){ console.warn('[reco] applyFilters failed in openDetail:', e); }
 
   // Histórico requires a key — show gate if not yet unlocked
   if(p.op==='Histórico' && !S.unlockedIds.has(id)){
