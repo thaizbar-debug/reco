@@ -325,16 +325,6 @@ service cloud.firestore {
                     || isAdmin();
     }
 
-    // /publicData/{docId}
-    //
-    // Datos de referencia públicos que escribe solo el backend (Admin
-    // SDK), p.ej. /publicData/tipoCambio que actualiza a diario la
-    // función programada updateTipoCambio. Lectura abierta (también sin
-    // sesión); ningún cliente puede escribir.
-    match /publicData/{docId} {
-      allow read: if true;
-      allow write: if false;
-    }
     // /importDrafts/{draftId}
     //
     // Borradores del roadmap de carga inteligente: cada fila importada
@@ -376,6 +366,10 @@ service cloud.firestore {
     match /importEvents/{eventId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+    // /trackLimits/{uid}: límite por hora de trackPublish (solo admin SDK).
+    match /trackLimits/{uid} {
+      allow read, write: if false;
     }
 
     // Bot de WhatsApp (functions/index.js → whatsappLink, whatsappWebhook,
@@ -440,6 +434,7 @@ service cloud.firestore {
     match /metaTokens/{uid} {
       allow read, write: if false;
     }
+
     // Default deny for any other path
     match /{document=**} {
       allow read, write: if false;

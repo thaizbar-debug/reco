@@ -76,19 +76,19 @@ test.describe('Enlace de un post', () => {
   test.beforeEach(async ({ page }) => { await setupImportPage(page); });
 
   test('la tarjeta invita a pegar posts; post privado → subir captura o pegar texto; perfil → conectar', async ({ page }) => {
-    await expect(page.locator('#pubModal')).toContainText('Facebook, Instagram o TikTok');
+    await expect(page.locator('#pubUrlAyuda')).toHaveText(/Facebook, Instagram o TikTok/); // en la ayuda ⓘ, no a la vista
     const fail = (reason, msg) => page.evaluate(([r, m]) => {
       __fn.importListingPage = () => { const e = new Error(m); e.details = { reason: r }; throw e; };
     }, [reason, msg]);
     await page.fill('#pubUrlInput', 'https://www.facebook.com/share/abc/');
     await page.check('#pubUrlAuth');
     await fail('social-private', 'No pudimos leer ese post: puede ser privado.');
-    await page.locator('button', { hasText: 'Importar aviso' }).click();
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await expect(page.locator('#pubBulkPreview')).toContainText('No pudimos leer ese post');
     await expect(page.locator('#pubBulkPreview label', { hasText: 'Subir captura del post' })).toHaveAttribute('for', 'pubBulkInput');
     await expect(page.locator('#pubBulkPreview')).not.toContainText('Conectar Facebook');
     await fail('social-profile', 'Ese enlace es de un perfil, no de un post.');
-    await page.locator('button', { hasText: 'Importar aviso' }).click();
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await expect(page.locator('#pubBulkPreview button', { hasText: 'Conectar Facebook / Instagram' })).toBeVisible();
   });
 });

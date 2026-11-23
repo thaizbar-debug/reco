@@ -90,7 +90,7 @@ Prioridad = impacto en número de corredores × facilidad técnica.
 | # | Dónde quedó |
 |---|---|
 | 0.1 | `firestore.rules` → `/importDrafts` (solo el dueño; el cliente solo crea borradores `excel`/`csv`, los de IA los escribe el servidor), `/importUsage`, `/importEvents`. TTL sobre `expiresAt` en `firestore.indexes.json`. |
-| 0.2 | `functions/index.js` → `extractListings` (`kind: 'text'`, canal `text`/`whatsapp`). Salida estructurada estricta (`gpt-4o-mini`, temperatura 0) + `guardInvented` + `normalizeRow`. Límite de 30 llamadas/hora y 50 inmuebles por llamada. |
+| 0.2 | `functions/index.js` → `extractListings` (`kind: 'text'`, canal `text`/`whatsapp`). Salida estructurada (Claude Haiku 5.5 y, si falla, Claude Sonnet 5.5 en la misma llamada; ver `docs/IA.md`) + `guardInvented` + `normalizeRow`. Límite de 30 llamadas/hora y 50 inmuebles por llamada. |
 | 0.3 | `functions/shared/import-core.js` → módulo único que usan el navegador (`window.RecoImport`) y el servidor. Incluye `RESO_MAP` y limpieza de teléfonos y correos. Los campos de opciones cerradas (tipo, operación, moneda, estado, antigüedad, sí/no; sinónimos y abreviaturas) se delegan en `functions/shared/catalogo.js`. Tests: `cd functions && npm test`. |
 | 0.4 | `index.html` → la carga masiva normaliza todas las filas, las guarda como borradores, muestra "Retomar / Descartar", resalta los campos de IA (borde punteado) y avisa de duplicados. `publishProperty` borra el borrador en la misma transacción en que publica. |
 | 0.5 | `importEvents` (por extracción: canal, caracteres, inmuebles, ms) y, en cada publicación importada, `importChannel`, `importAiFields`, `importEdits` y `fingerprint`. |
@@ -126,7 +126,7 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 | 1.2 | Tarjeta "Pegar texto" → `extractListings` (`kind: 'text'`), en partes de ≤ 18 000 caracteres. Si lo pegado es un chat, se trata como WhatsApp (sin nombres). |
 | 1.3 | `.zip` (con fotos) o `.txt` exportados → `_pubWaRead`: formatos Android e iPhone, adjuntos como `[FOTO w-N]` (sin stickers), remitentes como "Contacto N", lo más reciente de chats largos (120 000 caracteres). Va como `extractListings` `kind: 'document'`, `fileType: 'whatsapp'` (canal `whatsapp`). |
 | 1.4 | Tarjeta "Desde un enlace" → Cloud Function **`importListingPage`**: solo portales conocidos (`IMPORT_URL_HOSTS`), protección SSRF (IPs públicas, puertos 80/443, ≤ 3 redirecciones validadas, timeout y tope de tamaño), lectura de JSON-LD, metadatos, `__NEXT_DATA__` y texto (`parseListingHtml`), hasta 12 fotos descargadas por el servidor. Autorización del anunciante obligatoria. Las fotos se convierten a JPEG en el navegador. |
-| 1.5 | Marcador "📌 Enviar a ReCo" (`_pubBookmarkletCode`): corre en la página del aviso, abre ReCo en `#importar` y le pasa el aviso por `postMessage` (solo al origen de ReCo; ReCo solo acepta mensajes de la pestaña que la abrió). Sirve para cualquier portal y cuando el portal bloquea al servidor. |
+| 1.5 | ~~Marcador "Enviar a ReCo"~~ (retirado: era complicado para los usuarios). En su lugar, `importListingPage` reintenta como navegador y lee los portales protegidos a través de un **servicio de lectura** (ScrapingBee, ZenRows o ScraperAPI), también sus fotos. Ver `docs/LECTURA-DE-PORTALES.md`. |
 
 ### Fase 2 — Canales móviles y multimedia (1–3 meses)
 
@@ -142,8 +142,8 @@ Como `index.html` carga `functions/shared/import-core.js`, ese archivo tiene que
 
 | # | Dónde quedó |
 |---|---|
-| 2.1 | Bot: `whatsappLink` (código `VINCULAR`), `whatsappWebhook` (firma de Meta, guarda cada mensaje una sola vez) y `whatsappProcessMessage` (comandos, sesión, notas de voz transcritas con Whisper, fotos a Storage `imports/`, mismo pipeline de extracción, respuesta con resumen y enlace a `#borradores`). Lógica pura en `functions/whatsapp-core.js`. Al publicar, `publishProperty` copia las fotos del bot a `publications/`. **Configuración pendiente:** `docs/WHATSAPP-BOT.md`. |
-| 2.2 | Paso de fotos → "Súbelas de una vez": agrupación por fecha de captura y GPS del EXIF (`_pubExifInfo`, `_pubGroupPhotos`: grupo nuevo a los 15 min o 200 m), propuesta de un grupo por inmueble y asignación con un clic. Pendiente: clasificar ambientes, elegir portada y detectar marcas de agua (requieren IA de visión por foto). |
+| 2.1 | Bot: `whatsappLink` (código `VINCULAR`), `whatsappWebhook` (firma de Meta, guarda cada mensaje una sola vez) y `whatsappProcessMessage` (comandos, sesión, notas de voz transcritas con Google Speech-to-Text, fotos a Storage `imports/`, mismo pipeline de extracción, respuesta con resumen y enlace a `#borradores`). Lógica pura en `functions/whatsapp-core.js`. Al publicar, `publishProperty` copia las fotos del bot a `publications/`. **Configuración pendiente:** `docs/WHATSAPP-BOT.md`. |
+| 2.2 | Paso de fotos → "Súbelas de una vez": agrupación por fecha de captura y GPS del EXIF (`_pubExifInfo`, `_pubGroupPhotos`: grupo nuevo a los 15 min o 200 m), propuesta de un grupo por inmueble y asignación con un clic. Clasificar ambientes, elegir portada y detectar marcas de agua: "✨ Ordenar con IA" (`analyzePhotos`, ver Fotos). Desde Google Drive: una subcarpeta por inmueble (`docs/GOOGLE-DRIVE.md`). |
 | 2.3 | "Importar todos los de mi perfil": `importListingPage` `modo: 'perfil'` lista los avisos (sin IA; `extractListingLinks`), el corredor elige y se importan uno por uno al mismo lote. Si se acaba el límite por hora, se carga lo importado y se avisa cuántos faltan. |
 | 2.4 | Además de PDF/Word/PowerPoint: **flyers o capturas** (varias imágenes a la vez) como páginas escaneadas (`fileType: 'imagenes'`). Pendiente: .doc/.ppt antiguos. |
 | 2.5 | `manifest.webmanifest` (app instalable, `share_target`) + `sw.js` (solo recibe lo compartido; no cachea nada más) + `_pubReadShared`: documentos/Excel/chats, texto (con fotos), enlaces o imágenes ("¿fotos o flyers?") van al importador correcto. |
@@ -182,7 +182,29 @@ Tras probar con un post de Facebook, un brochure en PDF y enlaces de Facebook, T
 | M2 | PDF | Fotos de páginas sin texto (renders de fachada) y **planos dibujados como foto** (página renderizada, marcada "(plano)"); se descartan fondos lisos y hojas escaneadas. Brochure de prueba: de 10 a 16 fotos. |
 | M3 | **Enlace de cualquier post o web** | `importListingPage` acepta cualquier web pública y lee posts de Facebook, Instagram, TikTok y YouTube por sus vías públicas de inserción (`functions/social-core.js`), con transcripción del video si es descargable. Ver `docs/REDES-SOCIALES.md`. |
 | M3b | Conectar página de Facebook / Instagram | `metaConnect` + `metaOAuth` (Graph API): ver los últimos posts y traerlos de a 10. Requiere la app de Meta y su revisión. |
-| M4 | Video subido | Reel/TikTok descargado: hasta 6 imágenes + audio transcrito (Whisper). |
+| M4 | Video subido | Reel/TikTok descargado: hasta 6 imágenes + audio transcrito (Google Speech-to-Text). |
+
+### Carga de fotos
+
+| Parte | Qué | Dónde quedó |
+|---|---|---|
+| 1 | Arreglos y lo básico | Borrado al eliminar (`cleanupPublicationPhotos`), subida de a 3 con reintentos, miniaturas de 480 px, portada y orden, editor "📷 Fotos" (`updatePublicationPhotos`), HEIC en cualquier navegador. |
+| 2 | Calidad sin IA | Repetidas (dHash), oscuras, borrosas y de baja resolución, en el navegador. |
+| 3 | **Fotos con IA** | "✨ Ordenar con IA" (`analyzePhotos`, `functions/photo-core.js`): ambiente de cada foto, portada (buena y sin marca de agua, texto ni personas; nunca un plano), orden por ambientes con planos al final, y aviso de marcas de agua de otros portales. Copias de 512 px en baja resolución (pocos tokens); cuenta en el límite de 30 por hora. |
+| 4 | **Google Drive** | "📁 Desde Google Drive": enlace de carpeta o foto compartida (API de Drive con la clave de la web) y, si se configura, Google Picker para fotos privadas (`drive.file`). En la carga masiva, una subcarpeta por inmueble, asignada por nombre. Configuración: `docs/GOOGLE-DRIVE.md`. |
+
+### Publicar más fácil (flujo completo)
+
+| # | Qué | Dónde quedó |
+|---|---|---|
+| 1 | **Una sola entrada** | "Publicar inmuebles" abre en *¿Qué tienes?*: archivo, enlace, texto o fotos. El formulario queda como "✏️ Prefiero llenarlo a mano", con vuelta atrás. |
+| 2 | **Empezar por las fotos** | Tarjeta "📷 Fotos del inmueble": fotos (computadora, carpeta o Drive) + nota escrita o dictada (🎤, Web Speech del navegador). Con nota, la IA arma la ficha; sin nota, queda la ficha con fotos para completar. |
+| 3 | **Revisar y publicar en una pantalla** | Los pasos Validar, Fotos y Enviar se unen: una tarjeta por inmueble con sus datos, fotos y "🚀 Publicar N inmuebles". Un solo cargador de fotos: con una subcarpeta por inmueble (o sin tarjeta abierta) las reparte; con una tarjeta abierta, las suma a ese inmueble. Las fotos de archivos y enlaces aparecen con ＋ en la misma grilla. |
+| 3b | **Editar con el formulario completo** | "✏️ Editar" en cada tarjeta abre el mismo formulario de llenarlo a mano (mapa, dormitorios, baños, estacionamientos, pisos, estado, ascensor, amoblado, mascotas, **etiquetas** y fotos) con los datos del inmueble; "✓ Guardar y volver a la revisión" lo devuelve a su tarjeta. |
+| 4 | **IA automática** | Al pasar al paso 2 a mano, título y descripción se redactan solos si están vacíos. Las fotos se ordenan solas (≥ 3 a mano; al abrir una tarjeta o agregar fotos en la revisión). |
+| 5 | **Celular primero** | En el celular, aviso para instalar ReCo y compartir avisos, fotos o mensajes directo al importador (`share_target`). |
+| 6 | **Sin callejones** | Si una importación falla: pegar el texto, subir una captura o llenarlo a mano. |
+| 7 | **Métricas** | `trackPublish` (pasos del embudo, máx. 120/h por usuario) y `publishStats` (solo admin) → Moderación → 📈 Publicar: embudo, conversión, canales, % de respaldo de IA y sitios que bloquean. Pruebas con corredores: `docs/PRUEBAS-CON-CORREDORES.md`. |
 
 ## 5. Matriz de priorización
 

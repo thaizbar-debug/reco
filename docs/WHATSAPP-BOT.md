@@ -61,7 +61,7 @@ const _PUB_WA_BOT_NUMBER='51987654321';
 
 ## 5. Probar
 
-1. En recosac.com → Publicar → Subir varios → **ReCo en tu WhatsApp** → *Conectar mi WhatsApp* → *Abrir WhatsApp* y enviar `VINCULAR 123456`. El bot responde "quedó conectado".
+1. En recosac.com → Publicar → **ReCo en tu WhatsApp** → *Conectar mi WhatsApp* → *Abrir WhatsApp* y enviar `VINCULAR 123456`. El bot responde "quedó conectado".
 2. Enviar un texto ("Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil"), 2 fotos y una nota de voz. Escribir **LISTO**.
 3. El bot responde con el resumen y el enlace. En `#borradores` aparece el inmueble con sus fotos.
 4. Publicarlo y comprobar que las fotos estén en la publicación.
@@ -82,6 +82,7 @@ En Firestore se ven: `whatsappLinks` (número → cuenta), `whatsappSessions` (m
 ## Costos y límites
 
 - **Meta:** las respuestas del bot van dentro de la ventana de 24 h que abre el corredor al escribir (conversación de servicio). Revisa la tarifa vigente para Perú en la [página de precios de WhatsApp Business](https://developers.facebook.com/docs/whatsapp/pricing).
-- **OpenAI:** la transcripción de notas de voz (máx. 5 por envío) y la extracción, igual que en la web.
+- **Google Cloud Speech-to-Text:** la transcripción de notas de voz (máx. 5 por envío), con la cuenta de servicio de las funciones (sin clave; ver `docs/IA.md`).
+- **Claude:** la extracción, igual que en la web (Haiku y, si falla, Sonnet; ver `docs/IA.md`).
 - **Límites:** 30 procesamientos por hora y usuario (compartido con la web), 80 mensajes y 30 fotos por envío y 16 MB por archivo.
 - **Privacidad:** se guardan el teléfono (para vincularlo a la cuenta) y los mensajes hasta procesarlos. Como en el resto del importador, los teléfonos y correos se quitan de las descripciones.

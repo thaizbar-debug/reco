@@ -20,6 +20,7 @@ async function setup(page) {
     window.__extract = null; // (data) => result
     window._getFunctions = () => ({
       httpsCallable: (name) => async (data) => {
+        if (name === 'trackPublish') { (window.__track = window.__track || []).push(data.paso); return { data: { ok: true } }; } // métricas aparte
         window.__calls.push({ name, data });
         if (name !== 'extractListings' || !window.__extract) return { data: {} };
         return { data: await window.__extract(data) };
@@ -107,7 +108,7 @@ test.describe('Importar documentos con IA', () => {
       _pubBulkPoolAdd(1); _pubBulkPoolAdd(1);
       return { html, photos: _pubBulkRows[0].photos.length };
     });
-    expect(r.html).toContain('Fotos del documento');
+    expect(r.html).toContain('Las fotos con ＋');
     expect(r.photos).toBe(1); // la misma foto no se agrega dos veces
   });
 
