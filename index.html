@@ -3223,7 +3223,7 @@ async function loadData(){
     // and filter identically to static properties — the only difference is
     // the photos come from Firebase Storage instead of Drive.
     try {
-      const pubsSnap = await db.collection('publications').where('status','==','approved').limit(100).get();
+      const pubsSnap = await db.collection('publications').where('status','==','approved').get();
       const approved = pubsSnap.docs.map(d => _pubDocToProperty(d.id, d.data()));
       if(approved.length) properties = properties.concat(approved);
     } catch(e){
