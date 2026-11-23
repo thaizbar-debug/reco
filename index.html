@@ -3068,6 +3068,109 @@ function _updateLandingCounts(){
 
 let DRIVE_FILES = {};
 let properties = [];
+// Coordenadas por id de propiedad. Se declara aquí (antes era un global
+// implícito creado recién dentro de loadData) para que filtrar o abrir un
+// detalle mientras Firestore aún responde no lance "GEO is not defined".
+let GEO = {};
+
+// ── Modo demo ─────────────────────────────────────────────────
+// Con ?demo=1 en la URL, o al abrir index.html directo desde el disco
+// (file://, donde el navegador bloquea el fetch de data/properties.json),
+// se suman propiedades de PRUEBA para poder revisar los flujos sin
+// backend. Nunca se activa en una visita normal. Los datos van dentro de
+// este mismo archivo (y no en uno aparte) para que funcione aunque se
+// descargue solo index.html; _buildDemoData() únicamente se ejecuta en
+// modo demo. Anunciantes y propiedades son ficticios (IDs DEMO-…) y las
+// fotos son SVG generados aquí, así funcionan sin internet.
+function _demoRequested(){
+  try { return /[?&]demo=1(&|$)/.test(location.search) || location.protocol === 'file:'; }
+  catch(e){ return false; }
+}
+function _buildDemoData(){
+  var PALETTES = [
+    ['#0e7490', '#67e8f9'], ['#7c3aed', '#c4b5fd'], ['#b45309', '#fcd34d'],
+    ['#be123c', '#fda4af'], ['#15803d', '#86efac'], ['#1d4ed8', '#93c5fd']
+  ];
+  function photo(label, n, seed){
+    var c = PALETTES[(seed + n) % PALETTES.length];
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="560" viewBox="0 0 800 560">'
+      + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + c[0] + '"/><stop offset="1" stop-color="' + c[1] + '"/></linearGradient></defs>'
+      + '<rect width="800" height="560" fill="url(#g)"/>'
+      + '<g fill="rgba(255,255,255,.88)"><path d="M250 330 L400 210 L550 330 Z"/><rect x="285" y="330" width="230" height="140"/></g>'
+      + '<g fill="' + c[0] + '"><rect x="375" y="390" width="50" height="80"/><rect x="310" y="355" width="45" height="40"/><rect x="445" y="355" width="45" height="40"/></g>'
+      + '<text x="400" y="90" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="34" font-weight="700" fill="#fff">' + label + '</text>'
+      + '<text x="400" y="132" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="22" fill="rgba(255,255,255,.85)">Foto de prueba ' + n + '</text>'
+      + '</svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  function photos(label, count, seed){
+    var out = [];
+    for (var i = 1; i <= count; i++) out.push(photo(label, i, seed));
+    return out;
+  }
+
+  var ANDINA = { userId: 'demo-inmobiliaria-andina', userName: 'Inmobiliaria Andina (demo)' };
+  var CARLA  = { userId: 'demo-carla-rojas',         userName: 'Carla Rojas (demo)' };
+
+  // [id, anunciante, op, tipo, distrito, dirección, moneda, precio, área, dorm, baños, coch, piso, pisos, antigüedad, lat, lng, fecha, extras]
+  var rows = [
+    ['DEMO-001', ANDINA, 'Venta',    'Departamento', 'Miraflores',        'Av. Larco 1150, Dpto 802',          'USD',  320000, 110, 3, 2, 1,  8, 15,  0, -12.1265, -77.0297, '2026-09-28', ['Vista al mar', 'Gimnasio', 'Ascensor']],
+    ['DEMO-002', ANDINA, 'Venta',    'Departamento', 'Miraflores',        'Calle Berlín 245, Dpto 401',        'USD',  245000,  85, 2, 2, 1,  4,  8,  5, -12.1219, -77.0329, '2026-09-20', ['Terraza', 'Ascensor']],
+    ['DEMO-003', ANDINA, 'Venta',    'Departamento', 'San Isidro',        'Av. Pezet 610, Dpto 1201',          'USD',  480000, 150, 3, 3, 2, 12, 16,  0, -12.1006, -77.0472, '2026-09-25', ['Piscina', 'Gimnasio', 'Walk-in Closet']],
+    ['DEMO-004', ANDINA, 'Venta',    'Casa',         'La Molina',         'Calle Los Fresnos 320',             'USD',  690000, 380, 4, 4, 3,  0,  2, 12, -12.0838, -76.9415, '2026-08-30', ['Jardín', 'Piscina', 'Cuarto de servicio']],
+    ['DEMO-005', ANDINA, 'Venta',    'Departamento', 'Santiago de Surco', 'Av. Primavera 1880, Dpto 303',      'PEN',  720000,  90, 3, 2, 1,  3, 10,  2, -12.1110, -76.9876, '2026-09-15', ['Área de lavandería', 'Ascensor']],
+    ['DEMO-006', ANDINA, 'Venta',    'Departamento', 'Santiago de Surco', 'Jr. Monte Rosa 255, Dpto 702',      'USD',  210000,  95, 3, 2, 1,  7, 12,  8, -12.1050, -76.9746, '2026-09-10', ['Balcón']],
+    ['DEMO-007', ANDINA, 'Venta',    'Otros',        'Lince',             'Av. Arequipa 2450, Oficina 504',    'USD',  175000,  70, 0, 1, 1,  5, 12, 10, -12.0857, -77.0352, '2026-09-05', ['Recepción', 'Ascensor']],
+    ['DEMO-008', ANDINA, 'Venta',    'Departamento', 'Barranco',          'Jr. Domeyer 140, Dpto 201',         'USD',  295000, 105, 2, 2, 1,  2,  6,  0, -12.1491, -77.0213, '2026-09-30', ['Terraza', 'Vista a parque']],
+    ['DEMO-009', ANDINA, 'Alquiler', 'Departamento', 'Miraflores',        'Calle Alcanfores 455, Dpto 602',    'USD',    1400,  80, 2, 2, 1,  6, 10,  4, -12.1240, -77.0280, '2026-09-27', ['Amoblado', 'Ascensor']],
+    ['DEMO-010', ANDINA, 'Alquiler', 'Departamento', 'San Isidro',        'Av. Camino Real 390, Dpto 901',     'USD',    2100, 120, 3, 3, 2,  9, 14,  6, -12.0975, -77.0377, '2026-09-22', ['Piscina', 'Gimnasio']],
+    ['DEMO-011', ANDINA, 'Alquiler', 'Departamento', 'Santiago de Surco', 'Av. El Polo 670, Dpto 304',         'PEN',    4200,  95, 3, 2, 1,  3,  8,  7, -12.0920, -76.9690, '2026-09-18', ['Área común']],
+    ['DEMO-012', ANDINA, 'Alquiler', 'Casa',         'La Molina',         'Av. La Fontana 1020',               'USD',    3200, 300, 4, 4, 2,  0,  2, 15, -12.0790, -76.9530, '2026-09-12', ['Jardín', 'Cochera']],
+    ['DEMO-013', CARLA,  'Venta',    'Departamento', 'Jesús María',       'Av. Salaverry 1520, Dpto 1003',     'USD',  185000,  78, 2, 2, 1, 10, 18,  3, -12.0790, -77.0470, '2026-09-26', ['Vista a parque', 'Ascensor']],
+    ['DEMO-014', CARLA,  'Alquiler', 'Departamento', 'Pueblo Libre',      'Jr. Ica 455, Dpto 301',             'PEN',    2300,  70, 2, 1, 0,  3,  5, 20, -12.0757, -77.0636, '2026-09-29', ['Patio']],
+    ['DEMO-015', CARLA,  'Alquiler', 'Otros',        'Magdalena del Mar', 'Av. Brasil 3500, Local 2',          'USD',     950,  60, 0, 1, 0,  1,  4, 25, -12.0904, -77.0685, '2026-09-08', ['Avenida', 'Comercial']]
+  ];
+
+  var properties = rows.map(function(r, i){
+    var extras = r[18];
+    var label = r[3] + ' · ' + r[4];
+    return {
+      id: r[0],
+      userId: r[1].userId, userName: r[1].userName,
+      op: r[2], type: r[3], district: r[4], address: r[5],
+      currency: r[6], price: r[7], area: r[8], beds: r[9], baths: r[10], parking: r[11],
+      floor: r[12], floors: r[13], unitFloors: 1, age: r[14], lat: r[15], lng: r[16],
+      listedAt: r[17],
+      features: extras,
+      desc: 'PROPIEDAD DE PRUEBA (modo demo). ' + r[3] + ' en ' + r[4] + ' de ' + r[8] + ' m²'
+        + (r[9] ? ', ' + r[9] + ' dormitorios' : '') + (r[10] ? ' y ' + r[10] + ' baños' : '')
+        + '. Sirve para revisar el detalle completo, la ficha PDF y el perfil del anunciante.',
+      photoUrls: photos(label, 4, i)
+    };
+  });
+
+  return { properties: properties, publishers: [ANDINA, CARLA] };
+}
+function _loadDemoData(){
+  try { return Promise.resolve(_buildDemoData()); }
+  catch(e){ console.warn('[reco] datos demo no disponibles:', e.message); return Promise.resolve(null); }
+}
+function _showDemoBanner(demo){
+  if(document.getElementById('demoBanner')) return;
+  const b = document.createElement('div');
+  b.id = 'demoBanner';
+  b.setAttribute('role', 'status');
+  b.innerHTML = '<strong>MODO DEMO</strong> · datos de prueba'
+    + (demo.publishers || []).map(p => ` · <button type="button" data-pub="${esc(p.userId)}">${esc(p.userName)}</button>`).join('')
+    + ' <button type="button" class="demo-x" aria-label="Ocultar">✕</button>';
+  b.addEventListener('click', e => {
+    const t = e.target.closest('button'); if(!t) return;
+    if(t.classList.contains('demo-x')) { b.remove(); return; }
+    if(typeof goToApp === 'function' && document.body.classList.contains('show-home')) goToApp('');
+    openPublisherProfile(t.dataset.pub);
+  });
+  document.body.appendChild(b);
+}
 
 async function loadData(){
   document.getElementById('resList').innerHTML=`
@@ -3076,12 +3179,23 @@ async function loadData(){
       <h3 style="margin-bottom:8px">Cargando propiedades…</h3>
     </div>`;
   try {
-    const res = await fetch(DATA_URL + '?t=' + Date.now());
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
+    let data = null, loadErr = null;
+    try {
+      const res = await fetch(DATA_URL + '?t=' + Date.now());
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      data = await res.json();
+    } catch(e){ loadErr = e; }
+    const demo = _demoRequested() ? await _loadDemoData() : null;
+    if(!data && !demo) throw loadErr;
+    if(!data) console.warn('[reco] data/properties.json no cargó; solo se muestran datos demo:', loadErr && loadErr.message);
+    data = data || {};
     DRIVE_FILES = data.drive || {};
     Object.keys(_driveAssetsCache).forEach(k => delete _driveAssetsCache[k]);
     properties = data.properties || [];
+    if(demo){
+      properties = properties.concat(demo.properties.map(p => _pubDocToProperty(p.id, p)));
+      _showDemoBanner(demo);
+    }
     // Merge approved community publications into the same list. They render
     // and filter identically to static properties — the only difference is
     // the photos come from Firebase Storage instead of Drive.
@@ -3104,6 +3218,7 @@ async function loadData(){
     if(leafletMap) renderPins(getFiltered());
     applyHashNav();
     _applyLandingHash();
+    window.__recoDataReady = true;
   } catch(err){
     console.error('Error cargando datos:', err);
     document.getElementById('resList').innerHTML=`
@@ -5577,8 +5692,7 @@ function _smoothTas(d,nd){
   if(out.length<2) return out;
   for(let i=1;i<out.length;i++){out[i].v=out[i-1].m>0?parseFloat(((out[i].m-out[i-1].m)/out[i-1].m*100).toFixed(1)):undefined;}
   return out;
-}
-function buildTasChart(district, isFullReport){
+}function buildTasChart(district, isFullReport){
   const nd=_normDistTas(district);
   const d=TASACIONES_HIST[nd];
   if(!d)return'';
@@ -6795,7 +6909,6 @@ function openFullReport(id){
         ${zonifFullHTML}
 
         ${featGroupsHTML}
-
         <div class="fr-sec">
           ${buildTasChart(p.district, true)}
         </div>
@@ -6820,9 +6933,21 @@ function openFullReport(id){
                <button class="fr-cta-sec" onclick="toast('Visita agendada ✓')">📅 Agendar visita</button>`
             : `<button class="fr-cta-main" onclick="openContactModal('${p.id}','vendedor','full_detail')">📞 Contactar vendedor</button>`
           }
-          <div class="fr-agent-row">
-            <div class="fr-agent-av">RE</div>
-            <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+          ${(()=>{
+            if(isHist) return `<div class="fr-agent-row">
+              <div class="fr-agent-av">RE</div>
+              <div><div class="fr-agent-name">Equipo Reco</div><div class="fr-agent-resp">Responde en ~2h</div></div>
+            </div>`;
+            const pub = _publisherOf(p);
+            const n = _publisherListings(pub.key).length;
+            return `<button type="button" class="fr-agent-row fr-agent-link" data-pub="${esc(pub.key)}" onclick="openPublisherProfile(this.dataset.pub)" title="Ver todas las propiedades de ${esc(pub.name)}">
+              <div class="fr-agent-av">${esc(_agInitials(pub.name))}</div>
+              <div class="fr-agent-txt"><div class="fr-agent-name">${esc(pub.name)}</div>${pub.isReco?'<div class="fr-agent-resp">Responde en ~2h</div>':''}<div class="fr-agent-more">Ver sus ${n} ${n===1?'propiedad':'propiedades'} →</div></div>
+            </button>`;
+          })()}
+          <div class="fr-sidebar-actions">
+            <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
+            ${!isHist?`<button class="fr-btn-ghost" onclick="exportPropertyPdf('${esc(p.id)}')">↗ Exportar PDF</button>`:''}
           </div>
           <div class="fr-sidebar-actions">
             <button class="fr-btn-ghost" onclick="toggleFavorite('${esc(p.id)}');this.textContent=isFavorite('${esc(p.id)}')?'❤️ Guardado':'♡ Guardar'">${isFavorite(p.id)?'❤️ Guardado':'♡ Guardar'}</button>
@@ -6845,7 +6970,14 @@ function openFullReport(id){
 
   overlay.classList.add('open');
   overlay.scrollTop = 0;
-
+  // Entrada de historial para que "atrás" del navegador cierre el detalle
+  // (ver listener popstate junto a closeFullReport). Si ya había un detalle
+  // abierto se reemplaza, así "atrás" no recorre detalles intermedios.
+  try {
+    const st = Object.assign({}, history.state || {}, { frReport: p.id });
+    if(history.state && history.state.frReport) history.replaceState(st, '', location.href);
+    else history.pushState(st, '', location.href);
+  } catch(e){}
   // Inicializar mapa Leaflet en el hero
   if(hasGeo){
     try{
@@ -7042,8 +7174,618 @@ function openFullReport(id){
   })();
 }
 
-function closeFullReport(){
-  document.getElementById('frOverlay').classList.remove('open');
+function closeFullReport(fromPop){
+  const ov = document.getElementById('frOverlay');
+  const wasOpen = ov.classList.contains('open');
+  ov.classList.remove('open');
+  // Si al abrir el detalle se agregó una entrada al historial, la
+  // consumimos para que el botón "atrás" del navegador no quede desfasado.
+  if(wasOpen && !fromPop && history.state && history.state.frReport) history.back();
+}
+// El detalle completo no tiene botón "Volver": se cierra con el botón
+// "atrás" del navegador (o Escape). Para eso openFullReport agrega una
+// entrada al historial ({frReport:id}) y aquí la detectamos al volver.
+window.addEventListener('popstate', function(){
+  const ov = document.getElementById('frOverlay');
+  if(ov && ov.classList.contains('open') && !(history.state && history.state.frReport)) closeFullReport(true);
+});
+
+// ─────────────────────── EXPORTAR PDF ─────────────────────────
+// Genera una ficha imprimible en una pestaña nueva y abre el diálogo
+// de impresión del navegador ("Guardar como PDF"). Se hace 100% en el
+// cliente: no se envían datos a ningún servidor, no se cargan librerías
+// de terceros y el texto queda vectorial/seleccionable (a diferencia de
+// html2canvas+jsPDF, que rasteriza la página). Todo el contenido
+// proviene de `esc()` y el documento lleva su propia CSP restrictiva.
+// Tipo de cambio S/ por US$ para convertir montos en soles. Fuentes, de
+// más a menos fresca:
+//   1. Firestore /publicData/tipoCambio — lo actualiza a diario la Cloud
+//      Function programada updateTipoCambio desde la API del BCRP.
+//   2. data/tc_pen_usd_bcrp.json (bloque `ultimo`; scripts/update-tc-bcrp.js).
+//   3. La constante de abajo, si nada de lo anterior carga.
+// Siempre gana el dato con la fecha más reciente.
+const _TC = { valor: 3.437, fecha: '2026-10-02', fuente: 'BCRP' };
+function _tcApply(valor, fecha){
+  valor = +valor;
+  if(!(valor > 2.5 && valor < 6) || !fecha) return;
+  if(String(fecha) < String(_TC.fecha)) return;
+  _TC.valor = valor; _TC.fecha = String(fecha); _TC.fuente = 'BCRP';
+}
+function _loadTipoCambio(){
+  const fromJson = fetch('data/tc_pen_usd_bcrp.json?t=' + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if(!d) return;
+      if(d.ultimo) return _tcApply(d.ultimo.valor, d.ultimo.fecha);
+      const m = d.mensual || {}, k = Object.keys(m).sort().pop();
+      if(k) _tcApply(m[k], k);
+    })
+    .catch(() => {});
+  const fromFirestore = Promise.resolve()
+    .then(() => (typeof db !== 'undefined' && db) ? db.collection('publicData').doc('tipoCambio').get() : null)
+    .then(snap => { if(snap && snap.exists){ const t = snap.data(); _tcApply(t.valor, t.fecha); } })
+    .catch(() => {});
+  return Promise.all([fromJson, fromFirestore]);
+}
+// Al cargar solo está el JSON: `db` se define en un <script> posterior,
+// así que Firestore se consulta otra vez al abrir el perfil.
+_loadTipoCambio();
+function _tcLabel(){
+  const f = String(_TC.fecha||'').split('-');
+  const fecha = f.length === 3 ? `${f[2]}/${f[1]}/${f[0]}` : f.length === 2 ? `${f[1]}/${f[0]}` : _TC.fecha;
+  return `S/ ${_TC.valor.toFixed(3)} por US$ (${_TC.fuente}, ${fecha})`;
+}
+
+// Dominio público de Reco. Los links del PDF siempre apuntan aquí (y no a
+// location.href), porque el PDF se comparte fuera de la plataforma: un
+// link a file:// o a un entorno de pruebas no le serviría a quien lo recibe.
+const RECO_PUBLIC_URL = 'https://recosac.com/';
+
+// Agrupa las etiquetas de una propiedad con las mismas categorías del
+// formulario de publicación. Las etiquetas antiguas se traducen con
+// _PUB_FEAT_LEGACY_MAP; lo que no calce en ninguna va a "Otros atributos".
+function _featGroups(features){
+  const groups = [
+    { title: 'Características del inmueble', icon: '🏷️', list: _PUB_FEATS_GEN },
+    { title: 'Áreas comunes del edificio',  icon: '🏢', list: _PUB_FEATS_AMB },
+    { title: 'Vistas',                       icon: '👁️', list: _PUB_FEATS_VISTA },
+    { title: 'Tipo de vía de acceso',        icon: '🛣️', list: _PUB_FEATS_ACCESO },
+    { title: 'Carácter de la zona',          icon: '📍', list: _PUB_FEATS_ZONA }
+  ].map(g => Object.assign({}, g, { items: [] }));
+  const otros = { title: 'Otros atributos', icon: '✨', items: [] };
+  // Etiquetas frecuentes del inventario que no están en el formulario.
+  const extra = { 'Cuarto de servicio': 0, 'Amoblado': 0, 'Cochera': 0, 'Ascensor': 1 };
+  const seen = new Set();
+  (features || []).forEach(f => {
+    if(!f || seen.has(f)) return;
+    seen.add(f);
+    const mapped = _PUB_FEAT_LEGACY_MAP[f] || f;
+    const g = groups.find(g => g.list.includes(f) || g.list.includes(mapped)) || groups[extra[f]];
+    (g || otros).items.push(f);
+  });
+  return groups.concat([otros]).filter(g => g.items.length);
+}
+
+function exportPropertyPdf(id){
+  const p = properties.find(x=>x.id===id);
+  if(!p) return;
+  if(p.op === 'Histórico'){ toast('⚠️ La ficha PDF solo está disponible para Comprar y Alquilar'); return; }
+  // Abrimos la pestaña de forma síncrona dentro del click para que el
+  // bloqueador de pop-ups no la intercepte.
+  const w = window.open('', '_blank');
+  if(!w){ toast('⚠️ Tu navegador bloqueó la pestaña. Permite pop-ups para exportar el PDF.'); return; }
+
+  const cur = p.cur, isAlq = p.op === 'Alquiler';
+  const sqm = sqmPriceNet(p);
+  const photos = driveAssets(p).photos.slice(0,3); // 1 grande + 2: llena la grilla sin huecos
+  const pub = _publisherOf(p);
+  const listingUrl = RECO_PUBLIC_URL + '#prop=' + encodeURIComponent(p.id);
+  const listingLabel = 'recosac.com/#prop=' + p.id;
+  const today = new Date().toLocaleDateString('es-PE',{day:'2-digit',month:'long',year:'numeric'});
+  const money = v => `${esc(cur)} ${fmtNum(Math.round(v))}`;
+  const levels = p.unitFloors > 1 ? (p.unitFloors === 2 ? 'Dúplex' : p.unitFloors === 3 ? 'Tríplex' : `${p.unitFloors} niveles`) : '';
+
+  // Mismos datos que la ficha del detalle completo.
+  const specs = [
+    ['Tipo', p.type],
+    ['Operación', isAlq ? 'Alquiler mensual' : 'Venta'],
+    ['Distrito', p.district],
+    ['Área', p.area > 0 ? `${p.area} m²` : ''],
+    ['Área de terreno', p.areaTerr > 0 ? `${p.areaTerr} m²` : ''],
+    ['Dormitorios', p.beds > 0 ? p.beds : ''],
+    ['Baños', p.baths > 0 ? p.baths : ''],
+    ['Estacionamientos', parkCount(p) > 0 ? parkCount(p) : ''],
+    ['Depósitos', depCount(p) > 0 ? depCount(p) : ''],
+    ['Piso', (p.floor > 0 || p.floors > 0) ? `${p.floor || '—'}${p.floors ? ' de ' + p.floors : ''}${levels ? ' · ' + levels : ''}` : ''],
+    [p.age === 0 ? 'Condición' : 'Antigüedad', p.age === 0 ? 'A estrenar' : (p.age > 0 ? `${p.age} años` : '')]
+  ].filter(r => r[1] !== '' && r[1] != null);
+  // Ojo: la segunda columna ya va escapada (money() escapa la moneda).
+  const values = [
+    [isAlq ? 'Precio mensual' : 'Precio solicitado', money(p.price)],
+    ['Valor por m²', sqm > 0 ? money(sqm) : ''],
+    ['Tipo de propiedad', p.bank ? 'Propiedad de banco' : '']
+  ].filter(r => r[1]);
+  const groups = _featGroups(p.features);
+  const enReco = isAlq
+    ? ['Contexto de mercado del distrito', 'Comparables cercanos', 'Guía de la zona', 'Zonificación y uso de suelo', 'Más propiedades del anunciante']
+    : ['Contexto de mercado del distrito', 'Simulación hipotecaria', 'Comparables cercanos', 'Guía de la zona', 'Zonificación y uso de suelo', 'Más propiedades del anunciante'];
+
+  const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reco - ${esc(p.address)} - ${esc(p.district)}</title>
+<style>
+  @page{size:A4;margin:14mm 14mm 16mm}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#0E1117;background:#eef0f3;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .bar{position:sticky;top:0;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;padding:10px 16px;background:#0E1117;color:#fff;font-size:13px}
+  .bar button{background:#0e7490;color:#fff;border:none;border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;font-size:13px}
+  .bar span{opacity:.75}
+  .sheet{max-width:210mm;margin:18px auto;background:#fff;padding:14mm;box-shadow:0 2px 14px rgba(0,0,0,.08)}
+  header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0e7490;padding-bottom:10px;margin-bottom:16px}
+  header img{height:34px}
+  header .meta{text-align:right;font-size:10px;color:#64748b;line-height:1.5}
+  h1{font-size:22px;margin:0 0 4px;line-height:1.25}
+  .loc{font-size:12px;color:#555B6A;margin-bottom:12px}
+  .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:#ecfeff;color:#0e7490;margin-right:6px}
+  .price{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;background:#f6f8fa;border-radius:10px;padding:12px 14px;margin:10px 0 16px}
+  .price .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#8E94A0;font-weight:600}
+  .price .val{font-size:26px;font-weight:800;color:#0e7490;line-height:1.1}
+  .price .sub{font-size:12px;color:#555B6A}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:16px}
+  .photos img{width:100%;height:150px;object-fit:cover;border-radius:6px;display:block;background:#e5e7eb}
+  .photos img:first-child{grid-column:1/-1;height:240px}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#0e7490;margin:18px 0 8px;border-bottom:1px solid #e5e7eb;padding-bottom:4px}
+  h3{font-size:12px;margin:10px 0 5px;color:#2A2F3A}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  td{padding:6px 8px;border-bottom:1px solid #f0f1f3}
+  td:first-child{color:#555B6A;width:45%}
+  td:last-child{font-weight:600}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .tags{display:flex;flex-wrap:wrap;gap:4px}
+  .tag{font-size:10.5px;border:1px solid #d9dde3;border-radius:4px;padding:2px 7px;color:#2A2F3A;background:#fafbfc}
+  .desc{font-size:12px;line-height:1.6;white-space:pre-line}
+  .box{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;font-size:12px;line-height:1.55}
+  .cta{margin-top:20px;border-radius:12px;padding:16px 18px;background:linear-gradient(135deg,#ecfeff,#f0fdfa);border:1.5px solid #0e7490}
+  .cta strong.t{display:block;font-size:15px;color:#0e7490;margin-bottom:4px}
+  .cta p{margin:0 0 8px;font-size:12px;line-height:1.5;color:#2A2F3A}
+  .cta ul{margin:0 0 12px;padding-left:18px;font-size:12px;line-height:1.6;columns:2;column-gap:18px}
+  .cta a.btn{display:inline-block;background:#0e7490;color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:9px 16px;border-radius:8px}
+  .cta .url{display:block;margin-top:6px;font-size:11px;color:#0e7490;word-break:break-all}
+  footer{margin-top:22px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:9.5px;color:#8E94A0;line-height:1.5}
+  footer a{color:#0e7490;word-break:break-all}
+  .avoid{break-inside:avoid;page-break-inside:avoid}
+  @media print{
+    body{background:#fff}
+    .bar{display:none}
+    .sheet{margin:0;padding:0;box-shadow:none;max-width:none}
+  }
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}.sheet{padding:16px}.cta ul{columns:1}}
+</style></head>
+<body>
+<div class="bar"><button onclick="window.print()">⬇ Descargar / Guardar como PDF</button><span>En el diálogo elige «Guardar como PDF» como destino.</span></div>
+<div class="sheet">
+  <header>
+    <img src="${esc(RECO_PUBLIC_URL + 'data/reco_logo.jpg')}" alt="Reco">
+    <div class="meta">Ficha de propiedad · Ref. ${esc(p.id)}<br>Generada el ${esc(today)}</div>
+  </header>
+
+  <div><span class="badge">${isAlq ? 'En alquiler' : 'En venta'}</span><span class="badge">${esc(p.type)}</span>${p.isNew ? '<span class="badge">A estrenar</span>' : ''}${p.bank ? '<span class="badge">Propiedad de banco</span>' : ''}</div>
+  <h1>${esc(p.address)}</h1>
+  <div class="loc">📍 ${esc(p.district)}${p.province && p.province !== p.district ? ' · '+esc(p.province) : ''}${p.department ? ' · '+esc(p.department) : ''}</div>
+
+  <div class="price avoid">
+    <div><div class="lbl">${isAlq ? 'Precio mensual' : 'Precio solicitado'}</div><div class="val">${money(p.price)}</div></div>
+    ${sqm > 0 ? `<div class="sub"><strong>${money(sqm)}</strong> / m²</div>` : ''}
+    ${p.area > 0 ? `<div class="sub"><strong>${esc(p.area)}</strong> m²</div>` : ''}
+  </div>
+
+  ${photos.length ? `<div class="photos">${photos.map((u,i)=>`<img src="${esc(u)}" alt="Foto ${i+1}">`).join('')}</div>` : ''}
+
+  <div class="grid2">
+    <div class="avoid">
+      <h2>Características</h2>
+      <table>${specs.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</table>
+    </div>
+    <div class="avoid">
+      <h2>Valores</h2>
+      <table>${values.map(r=>`<tr><td>${esc(r[0])}</td><td>${r[1]}</td></tr>`).join('')}</table>
+      <h2>Contacto</h2>
+      <div class="box"><strong>${esc(pub.name)}</strong><br>Escríbele desde la publicación en Reco:<br><a href="${esc(listingUrl)}">${esc(listingLabel)}</a></div>
+    </div>
+  </div>
+
+  ${groups.length ? `<h2>Amenidades y atributos</h2>
+  ${groups.map(g => `<div class="avoid"><h3>${g.icon} ${esc(g.title)}</h3><div class="tags">${g.items.map(f=>`<span class="tag">${esc(f)}</span>`).join('')}</div></div>`).join('')}` : ''}
+
+  ${p.desc && p.desc !== p.address ? `<h2>Descripción</h2><div class="desc">${esc(p.desc)}</div>` : ''}
+
+  <div class="cta avoid">
+    <strong class="t">¿Quieres ver el análisis completo de esta propiedad?</strong>
+    <p>Esta ficha resume la publicación. En <strong>Reco</strong> encuentras además:</p>
+    <ul>${enReco.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <a class="btn" href="${esc(listingUrl)}">Ver esta propiedad en Reco →</a>
+    <span class="url">${esc(listingLabel)}</span>
+  </div>
+
+  <footer>
+    Documento generado por Reco (recosac.com) a partir de la información publicada. Precios, áreas y características son referenciales y pueden variar; verifícalos con el anunciante antes de tomar cualquier decisión. Reco no actúa como intermediario en la transacción.
+  </footer>
+</div>
+<script>
+  (function(){
+    var imgs = Array.prototype.slice.call(document.images), left = imgs.length, done = false;
+    function go(){ if(done) return; done = true; setTimeout(function(){ window.print(); }, 250); }
+    if(!left) return go();
+    imgs.forEach(function(im){
+      if(im.complete) { if(--left === 0) go(); return; }
+      im.addEventListener('load', function(){ if(--left === 0) go(); });
+      im.addEventListener('error', function(){ im.style.display='none'; if(--left === 0) go(); });
+    });
+    setTimeout(go, 5000);
+  })();
+<\/script>
+</body></html>`;
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  try { w.opener = null; } catch(e){}
+  if(typeof gtag === 'function') gtag('event','export_pdf',{property_id:p.id, op:p.op});
+}
+
+// ─────────────────────── PERFIL DEL ANUNCIANTE ────────────────
+// Cada propiedad de Comprar/Alquilar pertenece a un anunciante: las
+// publicaciones de la comunidad a su `userId`, y el inventario propio
+// (data/properties.json) al "Equipo Reco". Desde el detalle completo se
+// puede abrir la cartera completa del anunciante con insights + filtros.
+const _AG_RECO_KEY = 'reco';
+const _AG_PAGE = 24;
+let _ag = null; // { key, name, list, filters, shown }
+
+function _publisherOf(p){
+  if(p && p.userId){
+    // Nunca mostramos el email del anunciante en vistas públicas.
+    const name = (p.userName && String(p.userName).trim()) || 'Anunciante';
+    return { key: p.userId, name, isReco: false };
+  }
+  return { key: _AG_RECO_KEY, name: 'Equipo Reco', isReco: true };
+}
+// Misma regla de visibilidad que el buscador y los contadores de la
+// portada: solo Comprar/Alquilar con al menos una foto. Así los totales
+// del perfil cuadran con lo que el usuario realmente puede ver.
+function _publisherListings(key){
+  return properties.filter(p => p.op !== 'Histórico' && _publisherOf(p).key === key && driveAssets(p).photos.length > 0);
+}
+function _agInitials(name){
+  // Solo palabras que empiezan con letra o número: "Inmobiliaria Andina (demo)" → "IA".
+  const w = String(name).replace(/\([^)]*\)/g, ' ').trim().split(/\s+/).map(x => x.replace(/^[^\p{L}\p{N}]+/u, '')).filter(x => /^[\p{L}\p{N}]/u.test(x));
+  return ((w[0]||'?')[0] + (w.length > 1 ? w[w.length-1][0] : (w[0]||'')[1] || '')).toUpperCase();
+}
+function _agUsd(p){ return p.cur === 'S/' ? p.price / _TC.valor : p.price; }
+function _agDate(raw){
+  if(!raw) return null;
+  if(typeof raw.toDate === 'function') return raw.toDate();
+  if(typeof raw === 'object' && raw.seconds) return new Date(raw.seconds*1000);
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+function _agAvg(a){ return a.length ? a.reduce((s,v)=>s+v,0)/a.length : 0; }
+// Promedio recortado: con 10+ datos descarta el 10% más bajo y el 10% más
+// alto, así un precio mal cargado (p.ej. 26M o 676) no distorsiona el perfil.
+function _agTrim(a){
+  if(a.length < 10) return _agAvg(a);
+  const s = a.slice().sort((x,y)=>x-y), k = Math.floor(s.length/10);
+  return _agAvg(s.slice(k, s.length-k));
+}
+function _agRange(a){
+  if(!a.length) return [0,0];
+  const s = a.slice().sort((x,y)=>x-y);
+  if(s.length < 10) return [s[0], s[s.length-1]];
+  const k = Math.floor(s.length/10);
+  return [s[k], s[s.length-1-k]];
+}
+function _agMedian(a){
+  if(!a.length) return 0;
+  const s = a.slice().sort((x,y)=>x-y), m = s.length>>1;
+  return s.length % 2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function _agK(v){
+  v = Math.round(v);
+  if(v >= 1e6) return (v/1e6).toFixed(v >= 1e7 ? 0 : 2).replace(/\.?0+$/,'') + 'M';
+  if(v >= 1e4) return Math.round(v/1e3) + 'k';
+  return fmtNum(v);
+}
+function _agCount(list, fn){
+  const m = new Map();
+  list.forEach(p => { const k = fn(p); if(k) m.set(k, (m.get(k)||0)+1); });
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
+function _agInsights(list){
+  const venta = list.filter(p=>p.op==='Venta' && p.price>0);
+  const alq   = list.filter(p=>p.op==='Alquiler' && p.price>0);
+  const vUsd  = venta.map(_agUsd), aUsd = alq.map(_agUsd);
+  const sqmV  = venta.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  const dists = _agCount(list, p=>p.district && p.district!=='—' ? p.district : null);
+  const types = _agCount(list, p=>p.type);
+  const areas = list.filter(p=>p.area>0).map(p=>p.area);
+  const beds  = list.filter(p=>p.beds>0).map(p=>p.beds);
+  const nNew  = list.filter(p=>p.age===0).length;
+  const dates = list.map(p=>_agDate(p.listedAt||p.publishedAt)).filter(Boolean).sort((a,b)=>a-b);
+  const avgV  = _agTrim(vUsd);
+  const rngV  = _agRange(vUsd);
+  const rngA  = _agRange(aUsd);
+  const sqmA  = alq.filter(p=>p.area>0).map(p=>_agUsd(p)/p.area);
+  // Desglose por tipo de inmueble dentro de cada operación (nunca se
+  // mezclan precios de venta con rentas mensuales).
+  const byType = types.map(([t]) => {
+    const v = venta.filter(p=>p.type===t).map(_agUsd);
+    const a = alq.filter(p=>p.type===t).map(_agUsd);
+    return { type:t, nV:v.length, avgV:_agTrim(v), medV:_agMedian(v), nA:a.length, avgA:_agTrim(a), medA:_agMedian(a) };
+  });
+  const segment = !venta.length ? '' : avgV >= 400000 ? 'segmento alto' : avgV >= 150000 ? 'segmento medio' : 'segmento económico';
+  return {
+    total: list.length, nV: venta.length, nA: alq.length,
+    avgV, medV: _agMedian(vUsd), minV: rngV[0], maxV: rngV[1], trimmed: vUsd.length >= 10 || aUsd.length >= 10,
+    avgA: _agTrim(aUsd), medA: _agMedian(aUsd), minA: rngA[0], maxA: rngA[1],
+    avgSqm: _agTrim(sqmV), avgSqmA: _agTrim(sqmA), avgArea: _agTrim(areas), avgBeds: _agAvg(beds), byType,
+    dists, types, nNew, segment,
+    first: dates[0] || null, last: dates[dates.length-1] || null
+  };
+}
+
+function openPublisherProfile(key, opts){
+  opts = opts || {};
+  // Volver con "atrás" desde un detalle abierto desde el perfil: el perfil
+  // ya está abierto, así que se conservan filtros y scroll.
+  const agOv = document.getElementById('agOverlay');
+  if(opts.fromHash && _ag && _ag.key === key && agOv && agOv.classList.contains('open')){ closeFullReport(true); return; }
+  const list = _publisherListings(key);
+  if(!list.length){ toast('Este anunciante no tiene propiedades activas'); return; }
+  // Cerrar el detalle sin history.back(): si venimos de un detalle, su
+  // entrada de historial se reemplaza abajo por la del perfil.
+  const fromReport = !!(history.state && history.state.frReport);
+  closeFullReport(true);
+  if(typeof closeDetail === 'function') closeDetail();
+  const pub = _publisherOf(list[0]);
+  _ag = { key, name: pub.name, isReco: pub.isReco, list,
+          filters: { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:'new' },
+          shown: _AG_PAGE };
+  if(!opts.fromHash){
+    const h = '#anunciante=' + encodeURIComponent(key);
+    try {
+      if(fromReport) history.replaceState({view:'app', hash:h, agProfile:true}, '', h);
+      else history.pushState({view:'app', hash:h, agProfile:true}, '', h);
+    } catch(e){}
+  }
+  _agRender();
+  const ov = document.getElementById('agOverlay');
+  ov.classList.add('open');
+  ov.scrollTop = 0;
+  // Si llega un TC más reciente (Firestore), recalcula los montos en soles.
+  const tcAntes = _TC.fecha + '|' + _TC.valor;
+  _loadTipoCambio().then(() => {
+    if(_ag && _ag.key === key && ov.classList.contains('open') && (_TC.fecha + '|' + _TC.valor) !== tcAntes) _agRender(true);
+  });
+  if(typeof gtag === 'function') gtag('event','view_publisher',{publisher:key, listings:list.length});
+}
+
+function closePublisherProfile(fromPop){
+  const ov = document.getElementById('agOverlay');
+  if(!ov || !ov.classList.contains('open')) return;
+  ov.classList.remove('open');
+  if(!fromPop && location.hash.startsWith('#anunciante=')){
+    if(history.state && history.state.agProfile) history.back();
+    else { try { history.replaceState({view:'app'}, '', location.pathname + location.search); } catch(e){} }
+  }
+}
+window.addEventListener('popstate', function(){
+  if(!location.hash.startsWith('#anunciante=')) closePublisherProfile(true);
+});
+
+function _agFiltered(){
+  const f = _ag.filters, q = f.q.trim().toLowerCase();
+  const pmin = parseFloat(f.pmin), pmax = parseFloat(f.pmax);
+  let out = _ag.list.filter(p =>
+    (!f.op || p.op === f.op) &&
+    (!f.district || p.district === f.district) &&
+    (!f.type || p.type === f.type) &&
+    (!f.beds || p.beds >= f.beds) &&
+    (isNaN(pmin) || _agUsd(p) >= pmin) &&
+    (isNaN(pmax) || _agUsd(p) <= pmax) &&
+    (!q || (p.address + ' ' + p.district).toLowerCase().includes(q))
+  );
+  const by = {
+    new:   (a,b) => ((_agDate(b.listedAt||b.publishedAt)||0) - (_agDate(a.listedAt||a.publishedAt)||0)),
+    pasc:  (a,b) => _agUsd(a) - _agUsd(b),
+    pdesc: (a,b) => _agUsd(b) - _agUsd(a),
+    area:  (a,b) => (b.area||0) - (a.area||0),
+    sqm:   (a,b) => (sqmPriceNet(a)||Infinity) - (sqmPriceNet(b)||Infinity)
+  }[f.sort];
+  if(by) out = out.slice().sort(by);
+  return out;
+}
+
+function agSetFilter(k, v){
+  if(!_ag) return;
+  _ag.filters[k] = k === 'beds' ? (parseInt(v,10)||0) : v;
+  _ag.shown = _AG_PAGE;
+  if(k === 'op') document.querySelectorAll('#agOpSeg button').forEach(b => b.classList.toggle('active', b.dataset.op === v));
+  _agRenderList();
+}
+function agClearFilters(){
+  if(!_ag) return;
+  _ag.filters = { op:'', district:'', type:'', beds:0, pmin:'', pmax:'', q:'', sort:_ag.filters.sort };
+  _ag.shown = _AG_PAGE;
+  _agRender(true);
+}
+function agPickDistrict(d){
+  agSetFilter('district', d);
+  const sel = document.getElementById('agDist'); if(sel) sel.value = d;
+  const fl = document.querySelector('#agOverlay .ag-filters'); if(fl) fl.scrollIntoView({behavior:'smooth', block:'start'});
+}
+function agShowMore(){ if(_ag){ _ag.shown += _AG_PAGE; _agRenderList(); } }
+function agOpenListing(id){ openFullReport(id); }
+
+function _agRender(keepScroll){
+  const ov = document.getElementById('agOverlay');
+  const st = keepScroll ? ov.scrollTop : 0;
+  const I = _agInsights(_ag.list);
+  const usd = v => 'US$ ' + _agK(v);
+  const topD = I.dists[0], topT = I.types[0];
+  const fmtD = d => d ? d.toLocaleDateString('es-PE',{month:'short',year:'numeric'}) : '';
+  const hasPen = _ag.list.some(p=>p.cur==='S/');
+
+  const profileLine = [
+    topT ? `Cartera enfocada en <strong>${esc(topT[0].toLowerCase())}s</strong>` : '',
+    topD ? `con mayor presencia en <strong>${esc(topD[0])}</strong>` : '',
+    I.segment ? `y un ticket de venta del <strong>${I.segment}</strong>` : ''
+  ].filter(Boolean).join(' ');
+
+  const cards = [
+    { l:'Propiedades activas', v: fmtNum(I.total), s: `${I.nV} en venta · ${I.nA} en alquiler` },
+    I.nV ? { l:'Precio promedio de venta', v: usd(I.avgV), s: `Mediana ${usd(I.medV)} · rango típico ${usd(I.minV)} – ${usd(I.maxV)}` } : null,
+    I.nA ? { l:'Alquiler promedio mensual', v: usd(I.avgA), s: `Mediana ${usd(I.medA)} · rango típico ${usd(I.minA)} – ${usd(I.maxA)}` } : null,
+    I.avgSqm ? { l:'Precio promedio por m² (venta)', v: usd(I.avgSqm), s: I.avgSqmA ? `Alquiler: ${usd(I.avgSqmA)}/m² al mes` : (I.avgArea ? `Área promedio ${fmtNum(Math.round(I.avgArea))} m²` : '') } : null,
+    topD ? { l:'Distrito principal', v: esc(topD[0]), s: `${topD[1]} propiedades · ${Math.round(topD[1]/I.total*100)}% de su cartera` } : null,
+    topT ? { l:'Tipo predominante', v: esc(topT[0]), s: I.types.slice(0,3).map(t=>`${esc(t[0])} ${Math.round(t[1]/I.total*100)}%`).join(' · ') } : null,
+    { l:'A estrenar', v: Math.round(I.nNew/I.total*100) + '%', s: `${I.nNew} de ${I.total}${I.avgBeds ? ` · ${I.avgBeds.toFixed(1)} dorm. promedio` : ''}` },
+    I.first ? { l:'Actividad', v: fmtD(I.last), s: `Última publicación · desde ${fmtD(I.first)}` } : null
+  ].filter(Boolean);
+
+  const maxD = topD ? topD[1] : 1;
+  const distBars = I.dists.slice(0,6).map(([d,n]) =>
+    `<button class="ag-dbar" onclick="agPickDistrict(this.dataset.d)" data-d="${esc(d)}">
+       <span class="ag-dbar-name">${esc(d)}</span>
+       <span class="ag-dbar-track"><span style="width:${Math.max(4, n/maxD*100)}%"></span></span>
+       <span class="ag-dbar-n">${n}</span>
+     </button>`).join('');
+
+  const f = _ag.filters;
+  const optList = (arr, sel) => arr.map(([v,n]) => `<option value="${esc(v)}"${v===sel?' selected':''}>${esc(v)} (${n})</option>`).join('');
+
+  ov.innerHTML = `
+  <div class="fr-wrap">
+    <div class="ag-subbar">
+      <div class="ag-subbar-left">
+        <button class="ag-nav-back" onclick="closePublisherProfile()">← Volver</button>
+        <div class="ag-breadcrumb">Anunciantes › ${esc(_ag.name)}</div>
+      </div>
+      <div class="ag-subbar-right">
+        <button class="fr-btn-ghost" onclick="agCopyLink()">🔗 Compartir perfil</button>
+      </div>
+    </div>
+
+    <div class="ag-body">
+      <section class="ag-hero">
+        <div class="ag-av">${esc(_agInitials(_ag.name))}</div>
+        <div class="ag-hero-main">
+          <div class="ag-kicker">${_ag.isReco ? 'Cartera verificada por Reco' : 'Anunciante en Reco'}</div>
+          <h1 class="ag-name">${esc(_ag.name)}</h1>
+          <p class="ag-summary">${profileLine}.</p>
+        </div>
+      </section>
+
+      <section class="ag-kpis">
+        ${cards.map(c=>`<div class="ag-kpi"><div class="ag-kpi-l">${c.l}</div><div class="ag-kpi-v">${c.v}</div>${c.s?`<div class="ag-kpi-s">${c.s}</div>`:''}</div>`).join('')}
+      </section>
+      <div class="ag-note">Venta y alquiler se calculan por separado.${I.trimmed ? ' Con 10 o más propiedades, los promedios excluyen el 10% de precios más bajos y el 10% más altos de cada operación.' : ''}${hasPen ? ` Montos en soles convertidos a US$ con TC ${esc(_tcLabel())}.` : ''}</div>
+
+      ${I.byType.length > 1 ? `<section class="ag-types">
+        <h2 class="fr-sec-title">Precios por tipo de inmueble <small>· promedio (mediana)</small></h2>
+        <div class="ag-table-wrap"><table class="ag-table">
+          <thead><tr><th>Tipo</th><th>Venta</th><th>Alquiler / mes</th></tr></thead>
+          <tbody>${I.byType.map(t => `<tr>
+            <td><strong>${esc(t.type)}</strong></td>
+            <td>${t.nV ? `${usd(t.avgV)} <span>(${usd(t.medV)})</span><em>${t.nV} prop.</em>` : '<span>—</span>'}</td>
+            <td>${t.nA ? `${usd(t.avgA)} <span>(${usd(t.medA)})</span><em>${t.nA} prop.</em>` : '<span>—</span>'}</td>
+          </tr>`).join('')}</tbody>
+        </table></div>
+      </section>` : ''}
+
+      ${I.dists.length > 1 ? `<section class="ag-dists">
+        <h2 class="fr-sec-title">Dónde publica <small>· top distritos</small></h2>
+        <div class="ag-dbars">${distBars}</div>
+      </section>` : ''}
+
+      <section class="ag-filters" aria-label="Filtros">
+        <div class="ag-seg" id="agOpSeg" role="group" aria-label="Operación">
+          <button data-op="" class="${!f.op?'active':''}" onclick="agSetFilter('op','')">Todas</button>
+          <button data-op="Venta" class="${f.op==='Venta'?'active':''}" onclick="agSetFilter('op','Venta')">Comprar <span>${I.nV}</span></button>
+          <button data-op="Alquiler" class="${f.op==='Alquiler'?'active':''}" onclick="agSetFilter('op','Alquiler')">Alquilar <span>${I.nA}</span></button>
+        </div>
+        <div class="ag-frow">
+          <label class="ag-f ag-f-q"><span>Buscar</span><input type="search" placeholder="Dirección o calle" value="${esc(f.q)}" oninput="agSetFilter('q',this.value)"></label>
+          <label class="ag-f"><span>Distrito</span><select id="agDist" onchange="agSetFilter('district',this.value)"><option value="">Todos</option>${optList(I.dists, f.district)}</select></label>
+          <label class="ag-f"><span>Tipo</span><select onchange="agSetFilter('type',this.value)"><option value="">Todos</option>${optList(I.types, f.type)}</select></label>
+          <label class="ag-f"><span>Dormitorios</span><select onchange="agSetFilter('beds',this.value)">${[0,1,2,3,4].map(n=>`<option value="${n}"${f.beds===n?' selected':''}>${n?n+'+':'Cualquiera'}</option>`).join('')}</select></label>
+          <label class="ag-f ag-f-num"><span>Precio mín. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="0" value="${esc(f.pmin)}" oninput="agSetFilter('pmin',this.value)"></label>
+          <label class="ag-f ag-f-num"><span>Precio máx. (US$)</span><input type="number" min="0" inputmode="numeric" placeholder="Sin límite" value="${esc(f.pmax)}" oninput="agSetFilter('pmax',this.value)"></label>
+          <label class="ag-f"><span>Ordenar</span><select onchange="agSetFilter('sort',this.value)">
+            <option value="new"${f.sort==='new'?' selected':''}>Más recientes</option>
+            <option value="pasc"${f.sort==='pasc'?' selected':''}>Precio: menor a mayor</option>
+            <option value="pdesc"${f.sort==='pdesc'?' selected':''}>Precio: mayor a menor</option>
+            <option value="area"${f.sort==='area'?' selected':''}>Mayor área</option>
+            <option value="sqm"${f.sort==='sqm'?' selected':''}>Menor precio/m²</option>
+          </select></label>
+        </div>
+      </section>
+
+      <div class="ag-list-head"><span id="agCount"></span><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>
+      <div id="agList" class="ag-list"></div>
+    </div>
+  </div>`;
+  _agRenderList();
+  ov.scrollTop = st;
+}
+
+function _agRenderList(){
+  const list = _agFiltered();
+  const shown = list.slice(0, _ag.shown);
+  const el = document.getElementById('agList');
+  const cnt = document.getElementById('agCount');
+  if(cnt) cnt.textContent = `${list.length} ${list.length===1?'propiedad':'propiedades'}${list.length!==_ag.list.length?` de ${_ag.list.length}`:''}`;
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML = `<div class="ag-empty">No hay propiedades con estos filtros.<br><button class="ag-clear" onclick="agClearFilters()">Limpiar filtros</button></div>`;
+    return;
+  }
+  el.innerHTML = shown.map(p => {
+    const ph = driveAssets(p).photos[0];
+    const sqm = sqmPriceNet(p);
+    const specs = [
+      p.area>0 ? `${esc(p.area)} m²` : '',
+      p.beds>0 ? `${esc(p.beds)} dorm.` : '',
+      p.baths>0 ? `${esc(p.baths)} baños` : '',
+      parkCount(p)>0 ? `${esc(parkCount(p))} coch.` : '',
+      p.age===0 ? 'A estrenar' : (p.age>0 ? `${esc(p.age)} años` : '')
+    ].filter(Boolean).join(' · ');
+    return `<article class="ag-row" tabindex="0" role="button" onclick="agOpenListing('${esc(p.id)}')" onkeydown="if(event.key==='Enter')agOpenListing('${esc(p.id)}')">
+      <div class="ag-thumb">${ph ? `<img src="${esc(ph)}" alt="" loading="lazy">` : `<span>${esc(p.emoji||'🏠')}</span>`}</div>
+      <div class="ag-info">
+        <div class="ag-tags"><span class="ag-op ${p.op==='Alquiler'?'alq':'ven'}">${p.op==='Alquiler'?'Alquiler':'Venta'}</span><span class="ag-type">${esc(p.type)}</span></div>
+        <div class="ag-addr">${esc(p.address)}</div>
+        <div class="ag-dist">📍 ${esc(p.district)}</div>
+        ${specs ? `<div class="ag-specs">${specs}</div>` : ''}
+      </div>
+      <div class="ag-price">
+        <div class="ag-price-v">${esc(p.cur)} ${fmtNum(Math.round(p.price))}${p.op==='Alquiler'?'<small>/mes</small>':''}</div>
+        ${sqm>0 ? `<div class="ag-price-s">${esc(p.cur)} ${fmtNum(sqm)}/m²</div>` : ''}
+        <div class="ag-cta">Ver detalle →</div>
+      </div>
+    </article>`;
+  }).join('') + (list.length > shown.length
+    ? `<button class="ag-more" onclick="agShowMore()">Ver más (${list.length - shown.length} restantes)</button>` : '');
+}
+
+function agCopyLink(){
+  if(!_ag) return;
+  const url = location.origin + location.pathname + '#anunciante=' + encodeURIComponent(_ag.key);
+  (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject())
+    .then(()=>toast('🔗 Enlace del perfil copiado'))
+    .catch(()=>toast(url));
 }
 
 // ─────────────────────── CARRUSEL FULL REPORT ────────────────
@@ -7070,7 +7812,10 @@ function frNext(){ if(_frIdx < _frTotal - 1){ _frIdx++; _frUpdate(); } }
 function frGoto(i){ _frIdx = i; _frUpdate(); }
 // Keyboard nav cuando el overlay está abierto
 document.addEventListener('keydown', e => {
-  if(!document.getElementById('frOverlay').classList.contains('open')) return;
+  if(!document.getElementById('frOverlay').classList.contains('open')){
+    if(e.key === 'Escape') closePublisherProfile();
+    return;
+  }
   if(e.key === 'ArrowLeft') frPrev();
   if(e.key === 'ArrowRight') frNext();
   if(e.key === 'Escape') closeFullReport();
@@ -10417,6 +11162,11 @@ function applyHashNav(){
     if(id) openDetail(id);
     return;
   }
+  if(h.startsWith('#anunciante=')){
+    const key = decodeURIComponent(h.slice(12));
+    if(key) openPublisherProfile(key, {fromHash:true});
+    return;
+  }
   const params = {};
   h.replace(/^#/,'').split('&').forEach(p=>{const [k,v]=p.split('=');if(k)params[k]=decodeURIComponent(v||'');});
   if(params.age!==undefined || params.feat){
@@ -10575,6 +11325,9 @@ function _applyLandingHash(){
 </div>
 <div id="frOverlay">
   <!-- contenido generado dinámicamente por openFullReport() -->
+</div>
+<div id="agOverlay">
+  <!-- contenido generado dinámicamente por openPublisherProfile() -->
 </div>
 
 <style>
@@ -10749,7 +11502,110 @@ function _applyLandingHash(){
 .fr-vanet-text{font-size:11px;color:#555B6A;line-height:1.45;}
 .fr-vanet-text strong{color:#0E1117;font-weight:600;}
 
-/* ── Photo + Map Hero ── */
+/* ── Perfil del anunciante ── */
+.ag-subbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:44px;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid var(--border,rgba(14,17,23,.1));position:sticky;top:0;z-index:10;}
+.ag-subbar-left{display:flex;align-items:center;gap:14px;min-width:0}
+.ag-subbar-right{display:flex;align-items:center;gap:8px;}
+.ag-nav-back{background:transparent;border:1.5px solid var(--border,rgba(14,17,23,.15));padding:6px 14px;border-radius:var(--r,8px);font-size:.82rem;font-weight:600;cursor:pointer;color:var(--txt,#2A2F3A);transition:background .12s,border-color .12s;}
+.ag-nav-back:hover{background:var(--light,#f1f5f9);border-color:#94a3b8}
+.ag-breadcrumb{font-size:12px;color:#8E94A0;display:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(min-width:600px){.ag-breadcrumb{display:block}}
+#agOverlay{
+  position:fixed;top:var(--nav);left:0;right:0;bottom:0;z-index:189;
+  background:#F5F3EF;overflow-y:auto;
+  transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);pointer-events:none;
+}
+#agOverlay.open{pointer-events:auto;transform:translateY(0)}
+button.fr-agent-link{width:100%;background:none;border-left:none;border-right:none;border-bottom:none;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:0;padding:14px 0 2px}
+button.fr-agent-link:hover .fr-agent-name{color:var(--blue-dark);text-decoration:underline;text-underline-offset:2px}
+button.fr-agent-link:hover .fr-agent-resp{color:var(--blue-dark)}
+.fr-agent-txt{min-width:0}
+.fr-agent-more{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:2px}
+.ag-body{padding:24px 20px 60px}
+.ag-hero{display:flex;gap:16px;align-items:center;margin-bottom:20px}
+.ag-av{width:64px;height:64px;border-radius:50%;background:var(--blue-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+.ag-hero-main{min-width:0}
+.ag-kicker{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#8E94A0}
+.ag-name{font-family:'Segoe UI',system-ui,sans-serif;font-size:28px;font-weight:800;line-height:1.15;margin:2px 0 4px}
+.ag-summary{font-size:14px;color:#555B6A;line-height:1.5;margin:0}
+.ag-summary strong{color:#0E1117}
+.ag-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.ag-kpi{background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:14px 16px}
+.ag-kpi-l{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;margin-bottom:6px}
+.ag-kpi-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:22px;font-weight:700;color:#0E1117;line-height:1.2;overflow-wrap:anywhere}
+.ag-kpi-s{font-size:12px;color:#555B6A;margin-top:4px;line-height:1.45}
+.ag-note{font-size:11px;color:#8E94A0;margin-top:8px}
+.ag-dists{margin-top:28px}
+#demoBanner{position:fixed;left:12px;bottom:12px;z-index:9600;max-width:calc(100vw - 24px);background:#7c2d12;color:#fff;font-size:12px;line-height:1.5;padding:8px 12px;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+#demoBanner button{background:none;border:none;color:#fed7aa;font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;padding:0}
+#demoBanner .demo-x{text-decoration:none;margin-left:6px;color:#fff;opacity:.8}
+.ag-types{margin-top:28px}
+.ag-table-wrap{overflow-x:auto;max-width:760px}
+.ag-table{width:100%;border-collapse:collapse;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;overflow:hidden;font-size:13px}
+.ag-table th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8E94A0;padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-table td{padding:10px 14px;border-bottom:1px solid rgba(14,17,23,.06);color:#0E1117;white-space:nowrap}
+.ag-table tr:last-child td{border-bottom:none}
+.ag-table td span{color:#8E94A0;font-size:12px}
+.ag-table td em{display:block;font-style:normal;font-size:11px;color:#8E94A0}
+.ag-dbars{display:flex;flex-direction:column;gap:6px;max-width:640px}
+.ag-dbar{display:grid;grid-template-columns:minmax(110px,180px) 1fr 40px;align-items:center;gap:10px;background:none;border:none;padding:4px 0;font:inherit;cursor:pointer;text-align:left;color:#0E1117}
+.ag-dbar-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dbar-track{height:10px;background:#E8E5DF;border-radius:5px;overflow:hidden}
+.ag-dbar-track span{display:block;height:100%;background:var(--blue-dark);border-radius:5px}
+.ag-dbar-n{font-size:12px;font-weight:600;text-align:right;color:#555B6A}
+.ag-dbar:hover .ag-dbar-name{color:var(--blue-dark);text-decoration:underline}
+.ag-filters{position:sticky;top:44px;z-index:5;background:#F5F3EF;padding:14px 0 10px;margin-top:24px;border-bottom:1px solid rgba(14,17,23,.1)}
+.ag-seg{display:inline-flex;background:#E8E5DF;border-radius:10px;padding:3px;margin-bottom:10px}
+.ag-seg button{border:none;background:none;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:#555B6A;cursor:pointer}
+.ag-seg button span{font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-seg button.active{background:#fff;color:#0E1117;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ag-frow{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ag-f{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ag-f span{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#8E94A0}
+.ag-f input,.ag-f select{width:100%;border:1px solid rgba(14,17,23,.18);border-radius:8px;padding:8px 10px;font-size:13px;background:#fff;color:#0E1117;outline:none}
+.ag-f input:focus,.ag-f select:focus{border-color:var(--blue-dark)}
+.ag-f-q{grid-column:span 2}
+@media(min-width:1000px){.ag-frow{grid-template-columns:2fr repeat(6,minmax(0,1fr))}.ag-f-q{grid-column:auto}}
+.ag-list-head{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px;font-size:13px;color:#555B6A;font-weight:600}
+.ag-clear{background:none;border:none;color:var(--blue-dark);font-size:13px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 0}
+.ag-list{display:flex;flex-direction:column;gap:10px}
+.ag-row{display:grid;grid-template-columns:150px 1fr auto;gap:16px;align-items:center;background:#FDFCFA;border:1px solid rgba(14,17,23,.1);border-radius:12px;padding:10px;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.ag-row:hover,.ag-row:focus-visible{border-color:rgba(8,145,178,.45);box-shadow:0 4px 14px rgba(14,17,23,.06);outline:none}
+.ag-thumb{width:150px;height:104px;border-radius:8px;overflow:hidden;background:#E0DDD7;display:flex;align-items:center;justify-content:center;font-size:34px}
+.ag-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.ag-info{min-width:0}
+.ag-tags{display:flex;gap:6px;margin-bottom:4px}
+.ag-op,.ag-type{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:4px}
+.ag-op.ven{background:#ecfeff;color:var(--blue-dark)}
+.ag-op.alq{background:#FDF3E3;color:#8B5E0A}
+.ag-type{background:#F0EEEA;color:#555B6A}
+.ag-addr{font-size:15px;font-weight:700;color:#0E1117;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-dist{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-specs{font-size:12px;color:#8E94A0;margin-top:4px}
+.ag-price{text-align:right;padding-right:6px;white-space:nowrap}
+.ag-price-v{font-family:'Segoe UI',system-ui,sans-serif;font-size:19px;font-weight:800;color:#0E1117}
+.ag-price-v small{font-size:11px;font-weight:500;color:#8E94A0;margin-left:2px}
+.ag-price-s{font-size:12px;color:#555B6A;margin-top:2px}
+.ag-cta{font-size:12px;font-weight:600;color:var(--blue-dark);margin-top:8px}
+.ag-more{display:block;margin:10px auto 0;background:#fff;border:1.5px solid rgba(14,17,23,.18);border-radius:9px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;color:#0E1117}
+.ag-more:hover{background:#ecfeff;border-color:var(--blue-dark)}
+.ag-empty{text-align:center;padding:40px 16px;color:#555B6A;font-size:14px;background:#FDFCFA;border:1px dashed rgba(14,17,23,.18);border-radius:12px}
+@media(max-width:640px){
+  .ag-body{padding:18px 16px 48px}
+  .ag-name{font-size:23px}
+  .ag-av{width:52px;height:52px;font-size:18px}
+  .ag-kpis{grid-template-columns:1fr 1fr}
+  .ag-kpi-v{font-size:16px;overflow-wrap:normal;hyphens:auto}
+  .ag-kpi{padding:12px}
+  .ag-filters{position:static}
+  .ag-frow{grid-template-columns:1fr 1fr}
+  .ag-f-q{grid-column:1/-1}
+  .ag-row{grid-template-columns:96px 1fr;gap:12px}
+  .ag-thumb{width:96px;height:80px}
+  .ag-price{grid-column:1/-1;text-align:left;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding:0}
+  .ag-cta{margin:0 0 0 auto}
+  .ag-addr{white-space:normal;font-size:14px}
+}/* ── Photo + Map Hero ── */
 .fr-hero-split{display:grid;grid-template-columns:1fr;gap:0;height:260px;overflow:hidden;border-radius:14px;margin-bottom:24px;border:1px solid rgba(14,17,23,.1);}
 @media(min-width:600px){.fr-hero-split{grid-template-columns:1fr 1fr;height:320px;}}
 .fr-hero-photo{position:relative;overflow:hidden;background:#E0DDD7;}
@@ -10977,8 +11833,7 @@ button,a,select,label,[onclick]{-webkit-tap-highlight-color:rgba(8,145,178,.12);
   .global-legal-bar .glb-copy{display:none}
   .cookie-banner{padding:6px 12px;gap:8px}
   .fr-gallery{height:240px}
-}
-</style>
+}</style>
 
 <!-- ══ USER SECTION VIEW ══════════════════════════════════ -->
 <div id="userSection">
