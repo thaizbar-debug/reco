@@ -1,5 +1,7 @@
 # Integraciones (Fase 3): puesta en marcha
 
+> **Por ahora oculto en la web.** Conexiones automáticas (CRM, feeds, Google Sheets), correo para publicar y API no se muestran: Integraciones solo tiene "Tus posts de Facebook e Instagram" y la carga masiva no ofrece "Que se actualice solo". El servidor sigue listo; para mostrarlas otra vez, `_INT_AVANZADAS = true` en `index.html`.
+
 Qué hay y qué falta configurar para activarlo. El código está en `functions/index.js`
 (secciones "Conexiones automáticas", "API pública" y "Correo de ingesta") y
 `functions/feed-core.js`; la pantalla está en **Mi cuenta → 🔌 Integraciones** (`#integraciones`).

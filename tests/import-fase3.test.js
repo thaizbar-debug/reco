@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const dns = require('dns');
 const fs = require('fs');
 const path = require('path');
-const { loadFunctions, req, httpReq, httpRes, mockFetch, jpeg } = require('./helpers/mock-functions');
+const { loadFunctions, req, httpReq, httpRes, mockFetch, jpeg, claude, CLAUDE_URL } = require('./helpers/mock-functions');
 
 const FIX = (f) => fs.readFileSync(path.join(__dirname, 'fixtures', 'feeds', f), 'utf8');
 const KYERO = FIX('kyero.xml');
@@ -22,7 +22,7 @@ const SHEET_CSV = 'https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStU
 const xml = (s) => new Response(s, { status: 200, headers: { 'content-type': 'application/xml' } });
 const json = (o, status) => new Response(typeof o === 'string' ? o : JSON.stringify(o), { status: status || 200, headers: { 'content-type': 'application/json' } });
 const csv = (s) => new Response(s, { status: 200, headers: { 'content-type': 'text/csv' } });
-const openai = (payload) => json({ choices: [{ message: { content: JSON.stringify(payload) } }] });
+const ia = (payload) => claude(payload);
 
 let origFetch, origLookup;
 test.beforeEach(() => {
@@ -426,14 +426,14 @@ test.describe('Fase 3: correo de ingesta', () => {
     expect(inbox[0].otros).toEqual(['precios.xlsx']);
 
     let aiBody;
-    mockFetch([['https://api.openai.com/', (u, init) => {
+    mockFetch([[CLAUDE_URL, (u, init) => {
       aiBody = JSON.parse(init.body);
-      return openai({ inmuebles: [aiItem({ tipo_publicacion: 'Venta', tipo_propiedad: 'depa', distrito: 'Surco', direccion: 'Av. Primavera 1450',
+      return ia({ inmuebles: [aiItem({ tipo_publicacion: 'Venta', tipo_propiedad: 'depa', distrito: 'Surco', direccion: 'Av. Primavera 1450',
         nro_dormitorios: '3', nro_banos: '2', area_techada: '90 m2', precio: 'US$ 185 mil', titulo: 'Depa en Surco', descripcion: 'Vendo depa en Surco' })] });
     }]]);
     await F.exports.emailProcess.__handler({ params: { msgId: inbox[0].id }, data: { data: () => F.db.store[`emailInbox/${inbox[0].id}`] } });
-    const userMsg = aiBody.messages[1].content;
-    expect(userMsg.find((c) => c.type === 'file').file.file_data).toMatch(/^data:application\/pdf;base64,/);
+    const userMsg = aiBody.messages[0].content;
+    expect(userMsg.find((c) => c.type === 'document').source).toMatchObject({ type: 'base64', media_type: 'application/pdf' });
     expect(userMsg[0].text).toContain('[FOTO e-1]');
     expect(userMsg[0].text).not.toContain('Juan Pérez'); // firma recortada
     const [dr] = docs(F, 'importDrafts');

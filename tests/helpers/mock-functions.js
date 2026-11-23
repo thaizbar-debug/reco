@@ -101,6 +101,7 @@ function createMockBucket() {
   return {
     name: 'reco-test.appspot.com',
     files: {},
+    deleteFiles({ prefix }) { Object.keys(this.files).filter((k) => k.startsWith(prefix)).forEach((k) => delete this.files[k]); return Promise.resolve(); },
     file(p) {
       const b = this;
       return {
@@ -111,6 +112,7 @@ function createMockBucket() {
           b.files[dest._path] = { ...b.files[p], opts }; return Promise.resolve();
         },
         download() { return b.files[p] ? Promise.resolve([b.files[p].buf]) : Promise.reject(new Error('No such object: ' + p)); },
+        delete() { if (!b.files[p]) return Promise.reject(new Error('No such object: ' + p)); delete b.files[p]; return Promise.resolve(); },
       };
     },
   };
@@ -142,13 +144,14 @@ function loadFunctions(opts) {
   const authUsers = (opts && opts.authUsers) || {};
   global.__recoMockBucket = bucket;
   installStorageMock();
+  if (!process.env.GCLOUD_PROJECT) process.env.GCLOUD_PROJECT = 'reco-test';
   const mocks = {
     'firebase-functions/v2/https': { onCall: handlerOf, onRequest: handlerOf, HttpsError },
     'firebase-functions/params': {
       defineSecret(name) { return { value: () => (secrets[name] != null ? secrets[name] : 'fake-key'), name }; },
       defineString(name) { return { value: () => (secrets[name] != null ? secrets[name] : ''), name }; },
     },
-    'firebase-functions/v2/firestore': { onDocumentWritten: handlerOf, onDocumentCreated: handlerOf },
+    'firebase-functions/v2/firestore': { onDocumentWritten: handlerOf, onDocumentCreated: handlerOf, onDocumentDeleted: handlerOf },
     'firebase-functions/v2/scheduler': { onSchedule: handlerOf },
     'firebase-functions': { logger: { info() {}, warn() {}, error() {} } },
     'firebase-admin/app': { initializeApp() {} },
@@ -217,4 +220,46 @@ function mockFetch(routes) {
 }
 const jpeg = (n, seed) => new Response(Buffer.alloc(n || 9000, seed || 7), { status: 200, headers: { 'content-type': 'image/jpeg' } });
 
-module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, STORAGE_MOCK_KEY };
+// IA (Claude, API de Messages). CLAUDE_URL para las rutas de mockFetch;
+// claude(payload) arma la respuesta (payload: objeto → JSON, o texto tal cual).
+// opts: { stop_reason, status, model }. Un status de error devuelve un error de la API.
+const CLAUDE_URL = 'https://api.anthropic.com/v1/messages';
+function claude(payload, opts) {
+  const o = opts || {};
+  if (o.status && o.status >= 400) {
+    return new Response(JSON.stringify({ type: 'error', error: { type: 'overloaded_error', message: 'Overloaded' } }),
+      { status: o.status, headers: { 'content-type': 'application/json' } });
+  }
+  return new Response(JSON.stringify({
+    id: 'msg_test', type: 'message', role: 'assistant', model: o.model || 'claude-haiku-5-5',
+    content: [{ type: 'text', text: typeof payload === 'string' ? payload : JSON.stringify(payload) }],
+    stop_reason: o.stop_reason || 'end_turn', stop_sequence: null, usage: { input_tokens: 10, output_tokens: 10 },
+  }), { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
+// Transcripción (Google Cloud Speech-to-Text v2): rutas para mockFetch.
+// calls guarda cada pedido { url, body }; texto es lo que "se dijo".
+// opts.sync: respuesta del pedido síncrono (por defecto, el texto); { status: 400 }
+// fuerza el camino por lotes, que responde con el texto al primer sondeo.
+function speech(calls, texto, opts) {
+  const o = opts || {};
+  const res = (b, status) => new Response(JSON.stringify(b), { status: status || 200, headers: { 'content-type': 'application/json' } });
+  const resultado = { results: [{ alternatives: [{ transcript: texto || '' }] }] };
+  return [
+    ['http://metadata.google.internal/', () => res({ access_token: 'token-gcp', expires_in: 3600 })],
+    [/-speech\.googleapis\.com\/v2\/projects\/[^/]+\/locations\/[^/]+\/recognizers\/_:recognize$/, (u, init) => {
+      calls.push({ url: u, body: JSON.parse(init.body), auth: init.headers.Authorization });
+      return o.sync && o.sync.status ? res({ error: { code: o.sync.status, message: 'Audio too long' } }, o.sync.status) : res(resultado);
+    }],
+    [/-speech\.googleapis\.com\/v2\/projects\/[^/]+\/locations\/[^/]+\/recognizers\/_:batchRecognize$/, (u, init) => {
+      calls.push({ url: u, body: JSON.parse(init.body), lote: true });
+      return res({ name: 'projects/p/locations/l/operations/op1', done: false });
+    }],
+    [/-speech\.googleapis\.com\/v2\/projects\/p\/locations\/l\/operations\/op1$/, () => {
+      const uri = (calls.find((c) => c.lote) || { body: { files: [{}] } }).body.files[0].uri;
+      return res({ name: 'op1', done: true, response: { results: { [uri]: { inlineResult: { transcript: resultado } } } } });
+    }],
+  ];
+}
+
+module.exports = { loadFunctions, createMockFirestore, req, httpReq, httpRes, mockFetch, jpeg, claude, CLAUDE_URL, speech, STORAGE_MOCK_KEY };

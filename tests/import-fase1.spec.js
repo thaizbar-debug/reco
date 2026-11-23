@@ -1,5 +1,5 @@
 // Fase 1 de carga inteligente: pegar texto, chats de WhatsApp, importar
-// desde enlace y marcador "Enviar a ReCo". Los archivos se leen de verdad
+// desde enlace. Los archivos se leen de verdad
 // (tests/fixtures/import); las Cloud Functions se simulan.
 const { test, expect } = require('@playwright/test');
 const path = require('path');
@@ -20,6 +20,7 @@ async function setup(page) {
     window.__fn = {}; // nombre → (data) => result
     window._getFunctions = () => ({
       httpsCallable: (name) => async (data) => {
+        if (name === 'trackPublish') { (window.__track = window.__track || []).push(data.paso); return { data: { ok: true } }; } // métricas aparte
         window.__calls.push({ name, data });
         if (!window.__fn[name]) return { data: {} };
         return { data: await window.__fn[name](data) };
@@ -46,7 +47,7 @@ test.describe('Fase 1: pegar texto', () => {
       ] });
     });
     await page.fill('#pubPasteText', 'Vendo dpto. en Surco, 3 dorm, 90 m2, US$ 185 mil.\n\nAlquilo casa en La Molina 250 m2, S/ 6,500');
-    await page.click('text=Buscar inmuebles con IA');
+    await page.locator('#pubPasteText').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => _pubBulkStep === 2);
     const [d] = await calls(page, 'extractListings');
     expect(d).toMatchObject({ kind: 'text', channel: 'text', sourceName: 'Texto pegado' });
@@ -59,7 +60,7 @@ test.describe('Fase 1: pegar texto', () => {
   test('un chat pegado se reconoce como WhatsApp y sin nombres', async ({ page }) => {
     await page.evaluate(() => { __fn.extractListings = () => ({ batchId: 'T2', drafts: [] }); });
     await page.fill('#pubPasteText', '24/10/26, 09:15 - Juan Pérez: Vendo depa en Lince 70 m2\n24/10/26, 09:16 - +51 987 654 321: precio?\n24/10/26, 09:17 - Juan Pérez: US$ 120 mil');
-    await page.click('text=Buscar inmuebles con IA');
+    await page.locator('#pubPasteText').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => __calls.length > 0);
     const [d] = await calls(page, 'extractListings');
     expect(d.channel).toBe('whatsapp');
@@ -160,11 +161,11 @@ test.describe('Fase 1: desde un enlace y marcador', () => {
       ] });
     }, pngDataUrl.toString());
     await page.fill('#pubUrlInput', 'https://urbania.pe/inmueble/dpto-123');
-    await page.click('text=Importar aviso');
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     expect(await page.evaluate(() => __calls.length)).toBe(0); // falta la autorización
     expect(await page.evaluate(() => __toasts.pop())).toContain('autorización');
     await page.check('#pubUrlAuth');
-    await page.click('text=Importar aviso');
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
     await page.waitForFunction(() => _pubBulkStep === 2);
     const [d] = await calls(page, 'importListingPage');
     expect(d).toEqual({ url: 'https://urbania.pe/inmueble/dpto-123', declaraAutorizacion: true });
@@ -172,50 +173,20 @@ test.describe('Fase 1: desde un enlace y marcador', () => {
     expect(r).toEqual({ photo: 'data:image/jpeg;base64,', source: 'url', name: 'urbania.pe' });
   });
 
-  test('portal bloqueado: se abre la ayuda del marcador', async ({ page }) => {
+  test('portal bloqueado: lleva a "Pegar texto"; la tarjeta solo muestra el enlace y la casilla', async ({ page }) => {
     await page.evaluate(() => {
-      __fn.importListingPage = () => { throw Object.assign(new Error('El portal no permitió leer el aviso desde ReCo. Usa el botón "Enviar a ReCo" desde tu navegador.'), { code: 'functions/failed-precondition', details: { reason: 'blocked' } }); };
+      __fn.importListingPage = () => { throw Object.assign(new Error('urbania.pe no dejó que ReCo leyera la página. Copia el texto del aviso y pégalo en "Pegar texto".'), { code: 'functions/failed-precondition', details: { reason: 'blocked' } }); };
     });
-    await page.fill('#pubUrlInput', 'https://otro-portal.pe/aviso/1');
+    await expect(page.locator('#pubUrlInput')).toHaveAttribute('placeholder', 'Pega tu enlace (URL)');
+    await expect(page.locator('#pubUrlAyuda')).toBeHidden();
+    await page.locator('#pubUrlAyuda').locator('xpath=..').locator('.pub-info').click();
+    await expect(page.locator('#pubUrlAyuda')).toContainText('Urbania, Adondevivir');
+    await expect(page.locator('#pubModal')).not.toContainText('Enviar a ReCo');
+    await page.fill('#pubUrlInput', 'https://urbania.pe/inmueble/1234567');
     await page.check('#pubUrlAuth');
-    await page.click('text=Importar aviso');
-    await page.waitForFunction(() => document.getElementById('pubMarcador').open);
-    const html = await page.evaluate(() => document.getElementById('pubMarcador').innerHTML);
-    expect(html).toContain('href="javascript:');
-    expect(html).toContain('Enviar a ReCo');
-  });
-
-  test('marcador: el código abre ReCo y envía el aviso solo a su origen', async ({ page }) => {
-    const code = await page.evaluate(() => decodeURIComponent(_pubBookmarkletCode().slice('javascript:'.length)));
-    expect(code).toContain('"http://localhost:3123/#importar"');
-    expect(code).toContain('w.postMessage(msg,"http://localhost:3123")');
-    expect(() => new Function(code)).not.toThrow(); // es JavaScript válido
-  });
-
-  test('ReCo recibe el aviso del marcador solo de la pestaña que lo abrió', async ({ page }) => {
-    const r = await page.evaluate(async () => {
-      const acks = [];
-      const opener = { postMessage: (m) => acks.push(m) };
-      Object.defineProperty(window, 'opener', { configurable: true, get: () => opener });
-      const pagina = { title: 'Casa en venta - Portal X', meta: {}, jsonld: [], text: 'Casa 200 m2 US$ 300 mil', images: [] };
-      // De otra ventana: se ignora.
-      _pubOnImportMessage({ data: { type: 'reco-import', url: 'https://x.pe/1', pagina }, source: {}, origin: 'https://x.pe' });
-      const ignored = _pubPendingPage === null;
-      _pubOnImportMessage({ data: { type: 'reco-import', url: 'https://x.pe/1', pagina }, source: opener, origin: 'https://x.pe' });
-      const banner = document.getElementById('pubPendingPage').innerHTML;
-      __fn.importListingPage = () => ({ batchId: 'U2', photos: [], drafts: [] });
-      await _pubUrlImport(true);
-      const blocked = __calls.length;
-      document.getElementById('pubPendAuth').checked = true;
-      await _pubUrlImport(true);
-      return { ignored, acks, banner, blocked, call: __calls.find(c => c.name === 'importListingPage') };
-    });
-    expect(r.ignored).toBe(true);
-    expect(r.acks).toEqual(['reco-import-ok']);
-    expect(r.banner).toContain('Recibimos un aviso de x.pe');
-    expect(r.banner).toContain('Casa en venta - Portal X');
-    expect(r.blocked).toBe(0);
-    expect(r.call.data).toMatchObject({ url: 'https://x.pe/1', declaraAutorizacion: true, pagina: { text: 'Casa 200 m2 US$ 300 mil' } });
+    await page.locator('#pubUrlInput').locator('xpath=..').locator('button', { hasText: /^Importar$/ }).click();
+    await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'pubPasteText');
+    expect((await page.evaluate(() => __toasts)).join(" ")).toContain('Pegar texto');
   });
 });
 

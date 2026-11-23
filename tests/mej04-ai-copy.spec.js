@@ -94,7 +94,7 @@ test.describe('MEJ-04: Redacción del anuncio con IA', () => {
       document.querySelectorAll('script').forEach(s => all.push(s.textContent));
       return all.join('');
     });
-    expect(scripts).toContain("httpsCallable('generateListingCopy')");
+    expect(scripts).toContain("httpsCallable('generateListingCopy',{ timeout:_PUB_IA_TIMEOUT_MS })");
   });
 
   test('_pubAiPrompt sends district and area from _pd (no address)', async ({ page }) => {

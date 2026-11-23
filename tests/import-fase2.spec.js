@@ -76,8 +76,10 @@ test.describe('Fase 2: fotos en bloque', () => {
       _pubBulkLoadRows([{ ...base, direccion: 'Casa A' }, { ...base, direccion: 'Casa B' }]);
       _pubBulkGo(3);
     });
-    expect(await page.evaluate(() => document.getElementById('pubBulkStepBody').innerHTML)).toContain('Súbelas de una vez');
-    await page.setInputFiles('#pubBatchInput', FOTOS);
+    expect(await page.evaluate(() => document.getElementById('pubBulkStepBody').innerHTML)).toContain('Arrastra aquí las fotos de tus inmuebles');
+    await page.evaluate(() => { const i = document.createElement('input'); i.type = 'file'; i.multiple = true; i.id = '__fotos';
+      i.onchange = () => _pubBulkPhotoFiles(i.files); document.body.appendChild(i); });
+    await page.setInputFiles('#__fotos', FOTOS);
     await page.waitForFunction(() => _pubPhotoGroups.length > 0, null, { timeout: 30000 });
     const g = await page.evaluate(() => ({ groups: _pubPhotoGroups.map(x => [x.photos.length, x.row]), html: document.getElementById('pubBulkStepBody').innerHTML }));
     expect(g.groups).toEqual([[2, 0], [2, 1], [1, -1]]); // el tercero no tiene inmueble: queda sin asignar
@@ -111,7 +113,7 @@ test.describe('Fase 2: perfil completo de un portal', () => {
     });
     await page.fill('#pubUrlInput', 'https://urbania.pe/inmobiliarias/demo-1234567');
     await page.check('#pubUrlAuth');
-    await page.click('text=Importar todos los de mi perfil');
+    await page.click('#pubModal button:text-is("Importar perfil")');
     await page.waitForFunction(() => document.getElementById('pubBulkPreview').textContent.includes('3 avisos en el perfil'));
     await page.evaluate(() => { _pubProfileAvisos[2].sel = false; _pubProfileRender(); });
     await page.click('text=Importar 2 avisos');
