@@ -1,0 +1,42 @@
+{
+  "name": "ReCo — Inmuebles",
+  "short_name": "ReCo",
+  "description": "Busca, valoriza y publica inmuebles en Lima.",
+  "lang": "es-PE",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0e7490",
+  "icons": [
+    { "src": "icons/reco-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/reco-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "share_target": {
+    "action": "./compartir",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "archivos",
+          "accept": [
+            "image/*",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+            "text/csv",
+            "text/plain",
+            "application/zip",
+            ".pdf", ".docx", ".pptx", ".xlsx", ".xls", ".csv", ".txt", ".zip"
+          ]
+        }
+      ]
+    }
+  }
+}
