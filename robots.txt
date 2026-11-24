@@ -1,5 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /admin.html
+Disallow: /scripts/
+Disallow: /data/*.xlsx
+Disallow: /data/*.docx
+Disallow: /data/*.zip
 # Archivos internos, maquetas y prototipos que no deben aparecer en buscadores
 Disallow: /diseños antiguos/
 Disallow: /diseños%20antiguos/
@@ -8,7 +13,6 @@ Disallow: /demo-pin-
 Disallow: /docs/
 Disallow: /tests/
 Disallow: /functions/
-Disallow: /scripts/
 Disallow: /tools/
 Disallow: /*.md$
 Disallow: /*.xlsx$

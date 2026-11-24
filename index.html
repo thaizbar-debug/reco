@@ -52,17 +52,23 @@
   ]
 }
 </script>
-<!-- Google Analytics 4 (Consent Mode v2). Completar GA_MEASUREMENT_ID con el ID "G-XXXXXXXXXX"
-     de la propiedad GA4; mientras esté vacío no se carga ningún script de Google. -->
+<!-- Google Analytics 4 (Consent Mode v2). GA_MEASUREMENT_ID viene de la
+     propiedad GA4 de Reco; mientras esté vacío no se carga ningún script
+     de Google. _ga(event, params) es la función que usa el resto del
+     código (login, sign_up, búsquedas…) para registrar eventos; solo
+     dispara gtag('event', …) una vez que el script de Google terminó de
+     cargar (window._ga4ok). -->
 <script>
-window.GA_MEASUREMENT_ID='';
+window.GA_MEASUREMENT_ID='G-5BLX1VDC89';
 window.dataLayer=window.dataLayer||[];
 function gtag(){dataLayer.push(arguments);}
 gtag('consent','default',{analytics_storage:'denied',ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'});
+function _ga(event,params){try{if(window._ga4ok)gtag('event',event,params||{});}catch(e){}}
 if(window.GA_MEASUREMENT_ID){
-  var _ga=document.createElement('script');_ga.async=true;
-  _ga.src='https://www.googletagmanager.com/gtag/js?id='+window.GA_MEASUREMENT_ID;
-  document.head.appendChild(_ga);
+  var _gaScriptEl=document.createElement('script');_gaScriptEl.async=true;
+  _gaScriptEl.src='https://www.googletagmanager.com/gtag/js?id='+window.GA_MEASUREMENT_ID;
+  _gaScriptEl.onload=function(){window._ga4ok=true;};
+  document.head.appendChild(_gaScriptEl);
   gtag('js',new Date());
   gtag('config',window.GA_MEASUREMENT_ID);
 }
@@ -4648,6 +4654,7 @@ function _updateSortNewLabel(){
 function applyFilters(){
   _updateSortNewLabel();
   S.query=document.getElementById('searchQ').value.trim();
+  if(S.query) _ga('search',{search_term:S.query});
   const prevMode=S.mapMode;
   S.mapMode=S.query?'text':'browse';
   if(S.mapMode!==prevMode) S.mapDiverged=false;
@@ -5681,6 +5688,7 @@ function closeDetail(){
 }
 
 function showGatePanel(p){
+  _ga('paywall_view',{property_id:p.id||'',district:p.district||''});
   const loggedIn=!!auth.currentUser;
   const has=S.keysLeft>0;
   document.getElementById('detailContent').innerHTML=`
@@ -5935,6 +5943,7 @@ var _CULQI_PUBLIC_KEY = 'pk_live_tXxwBBmY9ngPgZRH';
 var _culqiInstance = null;
 
 function selectPlan(el, name, price, qty) {
+  _ga('pro_cta_click',{plan_name:name,plan_price:price,plan_keys:qty});
   document.querySelectorAll('.plan').forEach(p => p.classList.remove('sel'));
   el.classList.add('sel');
   S.selectedPlan = { name, price, qty };
@@ -6149,6 +6158,7 @@ function openFullReport(id){
   closeDetail();
   const p = properties.find(x=>x.id===id);
   if(!p) return;
+  _ga('property_view',{property_id:id,district:p.district||'',type:p.type||'',operation:p.op||''});
 
   const assets = driveAssets(p);
   const photos  = assets.photos;
@@ -10446,6 +10456,9 @@ function _refreshMainMap(){
 }
 function goToApp(hash){
   hash = hash || '';
+  if(hash.includes('op=venta')) _ga('buy_click');
+  else if(hash.includes('op=alquiler')) _ga('rent_click');
+  else if(hash.includes('op=hist')) _ga('historical_view');
   hideLegalPages();
   document.body.classList.remove('show-home');
   document.body.classList.remove('show-user');
@@ -13189,7 +13202,7 @@ function setAuthLoading(btnId, loading) {
 function signInWithGoogle() {
   const provider = new firebase.auth.GoogleAuthProvider();
   auth.signInWithPopup(provider)
-    .then(() => _hideAuthModalAfterLogin())
+    .then(() => { _ga('login',{method:'google'}); _hideAuthModalAfterLogin(); })
     .catch(e => showAuthError(friendlyError(e.code)));
 }
 function signInWithEmail() {
@@ -13198,7 +13211,7 @@ function signInWithEmail() {
   if (!email || !pass) return showAuthError('Completa todos los campos.');
   setAuthLoading('loginBtn', true);
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => _hideAuthModalAfterLogin())
+    .then(() => { _ga('login',{method:'email'}); _hideAuthModalAfterLogin(); })
     .catch(e => showAuthError(friendlyError(e.code)))
     .finally(() => setAuthLoading('loginBtn', false));
 }
@@ -13222,6 +13235,7 @@ function registerWithEmail() {
       // EXISTS and any subsequent failure is a setup issue, not a
       // registration failure. Close the modal immediately (keeping the
       // pending intent so onAuthStateChanged can resume it).
+      _ga('sign_up',{method:'email'});
       _hideAuthModalAfterLogin();
       cred.user.updateProfile({ displayName: name }).catch(err => {
         console.warn('[reco] updateProfile failed (account created, display name pending):', err && err.message);

@@ -4435,6 +4435,8 @@ exports.onPublicationModerated = onDocumentWritten(
   }
 );
 
+Object.assign(exports, require('./admin'));
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Embudo de publicación: el cliente marca cada paso (trackPublish) y el panel
 // de admin lo resume junto con las importaciones (publishStats).
